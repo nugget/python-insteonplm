@@ -79,6 +79,8 @@ number that matches your receiver and its configured port:
 
     insteonplm_monitor --device /dev/ttyUSB0
 
+## Interesting Links
+
 - [Project Home](https://github.com/nugget/python-insteonplm)
 
 ## Credits
