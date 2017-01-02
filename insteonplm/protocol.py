@@ -59,7 +59,8 @@ class PLM(asyncio.Protocol):
         self._input_names = {}
         self._input_numbers = {}
         self.transport = None
-        self.buffer = bytearray()
+        self._buffer = bytearray()
+        self._sent_messages = []
 
     #
     # asyncio network functions
@@ -78,9 +79,9 @@ class PLM(asyncio.Protocol):
         """Called when asyncio.Protocol detects received data from network."""
         self.log.debug('Received %d bytes from PLM: %s',len(data), binascii.hexlify(data))
 
-        self.buffer.extend(data)
+        self._buffer.extend(data)
 
-        message_list, self.buffer = self._strip_messages_off_front_of_buffer(self.buffer)
+        message_list, self._buffer = self._strip_messages_off_front_of_buffer(self._buffer)
 
         for message in message_list:
             self._process_message(message)
@@ -150,6 +151,19 @@ class PLM(asyncio.Protocol):
                             message_list.append(new_message)
                             buffer = buffer[message_length:]
 
+            for sm in self._sent_messages:
+                self.log.debug('Looking for ACK/NAK on sent message: %s', binascii.hexlify(sm))
+                if buffer.find(sm) == 0 and len(buffer) > len(sm):
+                    message_length = len(sm)
+                    buffer = buffer[message_length:]
+
+                    if buffer[0] == 6:
+                        self.log.info('Sent command %s was successful!', binascii.hexlify(sm))
+                    else:
+                        self.log.warn('Sent command %s was NOT successful!', binascii.hexlify(sm))
+
+                    buffer = buffer[1:]
+                    self._sent_messages.remove(sm)
 
         return (message_list,buffer)
 
@@ -159,6 +173,7 @@ class PLM(asyncio.Protocol):
     def _send_raw(self,message):
         self.log.info('Sending %d byte message: %s', len(message), binascii.hexlify(message))
         self.transport.write(message)
+        self._sent_messages.append(message)
 
     @property
     def dump_rawdata(self):
