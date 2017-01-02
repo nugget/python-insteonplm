@@ -2,6 +2,7 @@
 
 [![Build Status](https://travis-ci.org/nugget/python-insteonplm.svg?branch=master)](https://travis-ci.org/nugget/python-insteonusb)
 [![GitHub release](https://img.shields.io/github/release/nugget/python-insteonplm.svg)]()
+[![PyPI](https://img.shields.io/pypi/v/insteonplm.svg)]()
 
 This is a Python package to interface with an Insteon Powerline Modem (formerly
 called "PowerLinc").  It should work with either the USB or RS-252 serial based
