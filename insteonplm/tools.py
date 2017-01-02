@@ -2,6 +2,7 @@
 import argparse
 import asyncio
 import logging
+import binascii
 
 import insteonplm
 
@@ -43,8 +44,10 @@ def console(loop, log):
     conn = yield from insteonplm.Connection.create(
         device=device, loop=loop, update_callback=log_callback)
 
-    yield from asyncio.sleep(2, loop=loop)
+    yield from asyncio.sleep(5, loop=loop)
 
+    # Successfully turns off the light in my computer room (yay)
+    conn.protocol._send_raw(binascii.unhexlify('02624095e6001300'))
 
 def monitor():
     """Wrapper to call console with a loop."""

@@ -156,6 +156,9 @@ class PLM(asyncio.Protocol):
     def _process_message(self,message):
         self.log.info('Processing message: %s', binascii.hexlify(message))
 
+    def _send_raw(self,message):
+        self.log.info('Sending %d byte message: %s', len(message), binascii.hexlify(message))
+        self.transport.write(message)
 
     @property
     def dump_rawdata(self):
