@@ -6,6 +6,6 @@ python:
 
 install:
     - "pip install ."
-    - "pip install insteonplm"
+    - "pip install -r requirements.txt"
 
 script: ./tests/fulltests.py
