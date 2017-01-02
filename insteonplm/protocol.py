@@ -2,6 +2,9 @@
 import asyncio
 import logging
 import time
+import binascii
+
+# 40.95.e6 is my computer room wall switch
 
 __all__ = ('PLM')
 
@@ -39,7 +42,6 @@ class PLM(asyncio.Protocol):
         self.log = logging.getLogger(__name__)
         self._connection_lost_callback = connection_lost_callback
         self._update_callback = update_callback
-        self.buffer = ''
         self._input_names = {}
         self._input_numbers = {}
         self.transport = None
@@ -59,9 +61,8 @@ class PLM(asyncio.Protocol):
 
     def data_received(self, data):
         """Called when asyncio.Protocol detects received data from network."""
-        self.buffer += data.decode()
-        self.log.debug('Received %d bytes from PLM: %s', len(self.buffer), self.buffer)
-        self.buffer = ''
+        #self.log.debug('Received %d bytes from PLM: %s', len(self.buffer), self.buffer)
+        print(binascii.hexlify(data))
 
     def connection_lost(self, exc):
         """Called when asyncio.Protocol loses the network connection."""

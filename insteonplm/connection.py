@@ -1,8 +1,8 @@
 """Module containing the connection wrapper for the PLM interface."""
 import asyncio
 import logging
-
-from serial_asyncio import create_serial_connection
+import serial
+import serial.aio
 
 from .protocol import PLM
 
@@ -99,8 +99,8 @@ class Connection:
                 else:
                     self.log.info('Connecting to PLM on %s',
                                   self.device)
-                    yield from create_serial_connection(self._loop,
-                        lambda: self.protocol, self.device)
+                    yield from serial.aio.create_serial_connection(self._loop,
+                        lambda: self.protocol, self.device, baudrate=19200)
                     self._reset_retry_interval()
                     return
 
