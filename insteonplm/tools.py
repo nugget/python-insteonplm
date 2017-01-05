@@ -45,9 +45,11 @@ def console(loop, log):
         device=device, loop=loop, update_callback=log_callback)
 
     yield from asyncio.sleep(5, loop=loop)
-
     # Successfully turns off the light in my computer room (yay)
     conn.protocol._send_raw(binascii.unhexlify('02624095e6001300'))
+
+    yield from asyncio.sleep(5, loop=loop)
+
 
 def monitor():
     """Wrapper to call console with a loop."""

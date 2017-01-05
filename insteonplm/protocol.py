@@ -6,21 +6,57 @@ import binascii
 
 # 40.95.e6 is my computer room wall switch
 
-__all__ = ('PLM')
+__all__ = ('PLM', 'PLMCode', 'PLMProtocol')
 
-# 62 needs definition
+class PLMCode(object):
+    def __init__(self, code, name = None, size = None, rsize = None):
+        self.code = code
+        self.size = size
+        self.rsize = rsize
+        self.name = name
 
-STATIC_COMMAND_LENGTHS = {
-    b'\x50': 11,
-    b'\x51': 25,
-    b'\x52': 4,
-    b'\x53': 10,
-    b'\x54': 3,
-    b'\x55': 2,
-    b'\x56': 7,
-    b'\x57': 10,
-    b'\x58': 3
-    }
+class PLMProtocol(object):
+    def __init__(self, version = 1):
+        self._codelist = []
+
+    def add(self, code, name = None, size = None, rsize = None):
+        self._codelist.append(PLMCode(code,name = name, size = size, rsize = rsize))
+
+    @property
+    def len(self):
+        return len(self._codelist)
+
+    @property
+    def codelist(self):
+        clist = []
+        for x in self._codelist:
+            clist.append(x.code)
+        return clist
+
+    def lookup(self, code):
+        for x in self._codelist:
+            if x.code == code:
+                return x
+
+    def response_bytes(self, code):
+        rsize = 0
+        for x in self._codelist:
+            if x.code == code:
+                if isinstance(x.rsize, int):
+                    rsize = x.rsize
+        return rsize
+
+PP = PLMProtocol()
+
+PP.add(b'\x50', name = 'INSTEON Standard Message Received', size = 11)
+PP.add(b'\x51', name = 'INSTEON Extended Message Received', size = 25)
+PP.add(b'\x52', name = 'X10 Message Received', size = 4)
+PP.add(b'\x53', name = 'ALL-Linking Completed', size = 10)
+PP.add(b'\x54', name = 'Button Event Report', size = 3)
+PP.add(b'\x55', name = 'User Reset Detected', size = 2)
+PP.add(b'\x56', name = 'ALL-Link CLeanup Failure Report', size = 2)
+PP.add(b'\x57', name = 'ALL-Link Record Response', size = 10)
+PP.add(b'\x58', name = 'ALL-Link Cleanup Status Report', size = 3)
 
 # In Python 3.4.4, `async` was renamed to `ensure_future`.
 try:
@@ -61,6 +97,7 @@ class PLM(asyncio.Protocol):
         self.transport = None
         self._buffer = bytearray()
         self._sent_messages = []
+
 
     #
     # asyncio network functions
@@ -136,20 +173,21 @@ class PLM(asyncio.Protocol):
                 code = bytes([buffer[1]])
                 self.log.debug('Code is %s', binascii.hexlify(code))
 
-                for c in STATIC_COMMAND_LENGTHS:
+                for c in PP.codelist:
                     if code == c:
-                        message_length = STATIC_COMMAND_LENGTHS[code]
-                        self.log.debug('Found a code %s message which is %d bytes', binascii.hexlify(code), message_length)
+                        ppc = PP.lookup(code)
 
-                        if len(buffer) < message_length:
-                            self.log.debug('I have not received the full message yet')
-                            worktodo = False
-                            break
-                        else:
-                            new_message = buffer[0:message_length]
+                        self.log.debug('Found a code %s message which is %d bytes', binascii.hexlify(code), ppc.size)
+
+                        if len(buffer) == ppc.size:
+                            new_message = buffer[0:ppc.size]
                             self.log.debug('new message is: %s', binascii.hexlify(new_message))
                             message_list.append(new_message)
-                            buffer = buffer[message_length:]
+                            buffer = buffer[ppc.size:]
+                        else:
+                            self.log.debug('I have not received enough data to process this message')
+                            worktodo = False
+                            break
 
             for sm in self._sent_messages:
                 self.log.debug('Looking for ACK/NAK on sent message: %s', binascii.hexlify(sm))
@@ -168,7 +206,36 @@ class PLM(asyncio.Protocol):
         return (message_list,buffer)
 
     def _process_message(self,message):
-        self.log.info('Processing message: %s', binascii.hexlify(message))
+        self.log.debug('Processing message: %s', binascii.hexlify(message))
+        if message[0] != 2 or len(message) < 2:
+            self.log.warn('process_message called with a malformed message')
+            return
+
+        code = bytes([message[1]])
+        self.log.debug('Code is %s', binascii.hexlify(code))
+        ppc = PP.lookup(code)
+        self.log.info(ppc.name)
+        if code == b'\x50':
+            self._parse_insteon_standard(message)
+
+    def _insteon_addr(self, addr):
+        hexaddr = str(binascii.hexlify(addr))[2:]
+        addrstr = hexaddr[0:2]+'.'+hexaddr[2:4]+'.'+hexaddr[4:6]
+        return addrstr.upper()
+
+    def _parse_insteon_standard(self,message):
+        code = bytes([message[1]])
+        imessage = message[2:11]
+        from_addr = imessage[0:3]
+        to_addr = imessage[3:6]
+        flags = imessage[6]
+        cmd1 = imessage[7]
+        cmd2 = imessage[8]
+
+        self.log.info('INSTEON message from %s to %s: cmd1:%s cmd2:%s flags:%s',
+                      self._insteon_addr(from_addr), self._insteon_addr(to_addr),
+                      hex(cmd1), hex(cmd2), hex(flags))
+
 
     def _send_raw(self,message):
         self.log.info('Sending %d byte message: %s', len(message), binascii.hexlify(message))
