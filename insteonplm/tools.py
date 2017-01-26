@@ -55,6 +55,8 @@ def console(loop, log):
 
     yield from asyncio.sleep(5, loop=loop)
 
+    conn.protocol.dump_all_link_database()
+
 
 def monitor():
     """Wrapper to call console with a loop."""

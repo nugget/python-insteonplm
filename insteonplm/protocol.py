@@ -59,6 +59,8 @@ PP.add(b'\x57', name = 'ALL-Link Record Response', size = 10)
 PP.add(b'\x58', name = 'ALL-Link Cleanup Status Report', size = 3)
 
 PP.add(b'\x60', name = 'Get IM Info', size = 2, rsize = 9)
+PP.add(b'\x69', name = 'Get First ALL-Link Record', size = 2)
+PP.add(b'\x6a', name = 'Get Next ALL-Link Record', size = 2)
 PP.add(b'\x73', name = 'Get IM Configuration', size = 2, rsize = 6)
 
 # In Python 3.4.4, `async` was renamed to `ensure_future`.
@@ -100,6 +102,7 @@ class PLM(asyncio.Protocol):
         self.transport = None
         self._buffer = bytearray()
         self._sent_messages = []
+        self._dump_in_progress = False
 
 
     #
@@ -142,7 +145,7 @@ class PLM(asyncio.Protocol):
         code = bytes([message[1]])
         ppc = PP.lookup(code)
 
-        if ppc:
+        if ppc.rsize:
             self.log.debug('Found a code %s message which returns %d bytes', binascii.hexlify(code), ppc.rsize)
             return ppc.rsize
         else:
@@ -193,6 +196,7 @@ class PLM(asyncio.Protocol):
                         self.log.debug('Still waiting for all of message to arrive, %d/%d', len(buffer), rsize)
                         return ([], buffer)
 
+                    code = bytes([buffer[1]])
                     message_length = len(sm)
                     response_length = rsize - message_length
                     response = buffer[message_length:response_length]
@@ -205,11 +209,15 @@ class PLM(asyncio.Protocol):
                     self.log.debug('ackbak is %d', acknak)
 
                     if acknak == 6:
-                        self.log.info('Sent command %s was successful!', binascii.hexlify(sm))
-                        self.log.info('Appending receipt %s', binascii.hexlify(mla))
+                        self.log.debug('Sent command %s was successful!', binascii.hexlify(sm))
+                        self.log.debug('Appending receipt %s', binascii.hexlify(mla))
                         message_list.append(mla)
                     else:
-                        self.log.warn('Sent command %s was NOT successful!', binascii.hexlify(sm))
+                        if code == b'\x6a':
+                            self.log.info('ALL-Link database dump is complete')
+                            self._dump_in_progress = False
+                        else:
+                            self.log.warn('Sent command %s was NOT successful!', binascii.hexlify(sm))
 
                     self._sent_messages.remove(sm)
 
@@ -249,14 +257,25 @@ class PLM(asyncio.Protocol):
         code = bytes([message[1]])
         self.log.debug('Code is %s', binascii.hexlify(code))
         ppc = PP.lookup(code)
-        self.log.info(ppc.name)
+
 
         if code == b'\x50':
             self._parse_insteon_standard(message)
+        elif code == b'\x53':
+            self._parse_all_link_completed(message)
+        elif code == b'\x54':
+            self._parse_button_event(message)
+        elif code == b'\x57':
+            self._parse_all_link_record(message)
         elif code == b'\x60':
             self._parse_get_plm_info(message)
         elif code == b'\x73':
             self._parse_get_plm_config(message)
+        else:
+            if ppc.name:
+                self.log.info('Unhandled event: %s (%s)', ppc.name, binascii.hexlify(message))
+            else:
+                self.log.info('Unrecognized event: UNKNOWN (%s)', binascii.hexlify(message))
 
     def _insteon_addr(self, addr):
         hexaddr = str(binascii.hexlify(addr))[2:]
@@ -277,6 +296,10 @@ class PLM(asyncio.Protocol):
                       hex(cmd1), hex(cmd2), hex(flags))
 
 
+    def _parse_button_event(self, message):
+        event = message[2]
+        self.log.info('Button event: %s', hex(event))
+
     def _parse_get_plm_info(self, message):
         plm_addr = message[2:5]
         category = message[5]
@@ -294,8 +317,35 @@ class PLM(asyncio.Protocol):
                       hex(flags), hex(spare1), hex(spare2))
 
 
+    def _parse_all_link_record(self, message):
+        flags = message[2]
+        group = message[3]
+        device_addr = message[4:7]
+        linkdata1 = message[7]
+        linkdata2 = message[8]
+        linkdata3 = message[9]
+        self.log.info('ALL-Link Record for %s: flags:%s group:%s data:%s/%s/%s',
+                      self._insteon_addr(device_addr),
+                      hex(flags), hex(group),
+                      hex(linkdata1), hex(linkdata2), hex(linkdata3))
+
+        if self._dump_in_progress is True:
+            self.get_next_all_link_record()
+
+    def _parse_all_link_completed(self, message):
+        linkcode = message[2]
+        group = message[3]
+        device_addr = message[4:7]
+        category = message[7]
+        subcategory = message[8]
+        firmware = message[9]
+        self.log.info('ALL-Link Completed for %s: group:%s category:%s sub:%s firmware:%s',
+                      self._insteon_addr(device_addr), hex(group),
+                      hex(category), hex(subcategory), hex(firmware))
+
+
     def _send_raw(self, message):
-        self.log.info('Sending %d byte message: %s', len(message), binascii.hexlify(message))
+        self.log.debug('Sending %d byte message: %s', len(message), binascii.hexlify(message))
         self.transport.write(message)
         self._sent_messages.append(message)
 
@@ -306,6 +356,18 @@ class PLM(asyncio.Protocol):
     def get_plm_config(self):
         self.log.info('Requesting PLM Config')
         self._send_raw(binascii.unhexlify('0273'))
+
+    def get_first_all_link_record(self):
+        self.log.info('Requesting First ALL-Link Record')
+        self._send_raw(binascii.unhexlify('0269'))
+
+    def get_next_all_link_record(self):
+        self.log.info('Requesting Next ALL-Link Record')
+        self._send_raw(binascii.unhexlify('026a'))
+
+    def dump_all_link_database(self):
+        self._dump_in_progress = True
+        self.get_first_all_link_record()
 
     @property
     def dump_rawdata(self):
