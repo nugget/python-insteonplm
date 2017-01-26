@@ -250,8 +250,13 @@ class PLM(asyncio.Protocol):
         self.log.debug('Code is %s', binascii.hexlify(code))
         ppc = PP.lookup(code)
         self.log.info(ppc.name)
+
         if code == b'\x50':
             self._parse_insteon_standard(message)
+        elif code == b'\x60':
+            self._parse_get_plm_info(message)
+        elif code == b'\x73':
+            self._parse_get_plm_config(message)
 
     def _insteon_addr(self, addr):
         hexaddr = str(binascii.hexlify(addr))[2:]
@@ -270,6 +275,23 @@ class PLM(asyncio.Protocol):
         self.log.info('INSTEON message from %s to %s: cmd1:%s cmd2:%s flags:%s',
                       self._insteon_addr(from_addr), self._insteon_addr(to_addr),
                       hex(cmd1), hex(cmd2), hex(flags))
+
+
+    def _parse_get_plm_info(self, message):
+        plm_addr = message[2:5]
+        category = message[5]
+        subcategory = message[6]
+        firmware = message[7]
+        self.log.info('PLM Info from %s: category:%s subcategory:%s firmware:%s',
+                      self._insteon_addr(plm_addr),
+                      hex(category), hex(subcategory), hex(firmware))
+
+    def _parse_get_plm_config(self, message):
+        flags = message[2]
+        spare1 = message[3]
+        spare2 = message[4]
+        self.log.info('PLM Config: flags:%s spare:%s spare:%s',
+                      hex(flags), hex(spare1), hex(spare2))
 
 
     def _send_raw(self, message):
