@@ -58,6 +58,9 @@ PP.add(b'\x56', name = 'ALL-Link CLeanup Failure Report', size = 2)
 PP.add(b'\x57', name = 'ALL-Link Record Response', size = 10)
 PP.add(b'\x58', name = 'ALL-Link Cleanup Status Report', size = 3)
 
+PP.add(b'\x60', name = 'Get IM Info', size = 2, rsize = 9)
+PP.add(b'\x73', name = 'Get IM Configuration', size = 2, rsize = 6)
+
 # In Python 3.4.4, `async` was renamed to `ensure_future`.
 try:
     ensure_future = asyncio.ensure_future
@@ -135,6 +138,18 @@ class PLM(asyncio.Protocol):
         if self._connection_lost_callback:
             self._connection_lost_callback()
 
+    def _rsize(self,message):
+        code = bytes([message[1]])
+        ppc = PP.lookup(code)
+
+        if ppc:
+            self.log.debug('Found a code %s message which returns %d bytes', binascii.hexlify(code), ppc.rsize)
+            return ppc.rsize
+        else:
+            set
+            self.log.debug('Unable to find an rsize for code %s', binascii.hexlify(code))
+            return len(message) + 1
+
     def _strip_messages_off_front_of_buffer(self,buffer):
         message_list = []
 
@@ -149,6 +164,10 @@ class PLM(asyncio.Protocol):
                 self.log.debug('Clean break!  There is no buffer left')
                 worktodo = False
                 break
+
+            if buffer[0] != 2:
+                buffer = buffer[1:]
+                self.log.debug('Buffer does not start at a command, trimming leading garbage')
 
             first = bytes([buffer[0]])
             self.log.debug('-- ')
@@ -166,42 +185,58 @@ class PLM(asyncio.Protocol):
                 self.log.debug('Buffer does not contain a 2, we should bail')
                 break
 
-            if buffer[0] != 2:
-                buffer = buffer[1:]
-                self.log.debug('Buffer does not start at a command, trimming leading garbage')
-            else:
-                code = bytes([buffer[1]])
-                self.log.debug('Code is %s', binascii.hexlify(code))
-
-                for c in PP.codelist:
-                    if code == c:
-                        ppc = PP.lookup(code)
-
-                        self.log.debug('Found a code %s message which is %d bytes', binascii.hexlify(code), ppc.size)
-
-                        if len(buffer) == ppc.size:
-                            new_message = buffer[0:ppc.size]
-                            self.log.debug('new message is: %s', binascii.hexlify(new_message))
-                            message_list.append(new_message)
-                            buffer = buffer[ppc.size:]
-                        else:
-                            self.log.debug('I have not received enough data to process this message')
-                            worktodo = False
-                            break
-
             for sm in self._sent_messages:
-                self.log.debug('Looking for ACK/NAK on sent message: %s', binascii.hexlify(sm))
-                if buffer.find(sm) == 0 and len(buffer) > len(sm):
-                    message_length = len(sm)
-                    buffer = buffer[message_length:]
+                rsize = self._rsize(sm)
+                self.log.debug('Looking for ACK/NAK on sent message: %s expecting rsize of %d', binascii.hexlify(sm), rsize)
+                if buffer.find(sm) == 0:
+                    if len(buffer) < rsize:
+                        self.log.debug('Still waiting for all of message to arrive, %d/%d', len(buffer), rsize)
+                        return ([], buffer)
 
-                    if buffer[0] == 6:
+                    message_length = len(sm)
+                    response_length = rsize - message_length
+                    response = buffer[message_length:response_length]
+                    acknak = buffer[-1]
+
+                    mla = buffer[:rsize]
+                    buffer = buffer[rsize:]
+
+                    self.log.debug('sm found response: %s', binascii.hexlify(response))
+                    self.log.debug('ackbak is %d', acknak)
+
+                    if acknak == 6:
                         self.log.info('Sent command %s was successful!', binascii.hexlify(sm))
+                        self.log.info('Appending receipt %s', binascii.hexlify(mla))
+                        message_list.append(mla)
                     else:
                         self.log.warn('Sent command %s was NOT successful!', binascii.hexlify(sm))
 
-                    buffer = buffer[1:]
                     self._sent_messages.remove(sm)
+
+            if len(buffer) == 0:
+                self.log.debug('Clean break!  There is no buffer left')
+                worktodo = False
+                break
+
+            code = bytes([buffer[1]])
+            self.log.debug('Code is %s', binascii.hexlify(code))
+
+            for c in PP.codelist:
+                if code == c:
+                    ppc = PP.lookup(code)
+
+                    self.log.debug('Found a code %s message which is %d bytes', binascii.hexlify(code), ppc.size)
+
+                    if len(buffer) == ppc.size:
+                        new_message = buffer[0:ppc.size]
+                        self.log.debug('new message is: %s', binascii.hexlify(new_message))
+                        message_list.append(new_message)
+                        buffer = buffer[ppc.size:]
+                    else:
+                        self.log.debug('I have not received enough data to process this message')
+                        worktodo = False
+                        break
+
 
         return (message_list,buffer)
 
@@ -237,10 +272,18 @@ class PLM(asyncio.Protocol):
                       hex(cmd1), hex(cmd2), hex(flags))
 
 
-    def _send_raw(self,message):
+    def _send_raw(self, message):
         self.log.info('Sending %d byte message: %s', len(message), binascii.hexlify(message))
         self.transport.write(message)
         self._sent_messages.append(message)
+
+    def get_plm_info(self):
+        self.log.info('Requesting PLM Info')
+        self._send_raw(binascii.unhexlify('0260'))
+
+    def get_plm_config(self):
+        self.log.info('Requesting PLM Config')
+        self._send_raw(binascii.unhexlify('0273'))
 
     @property
     def dump_rawdata(self):

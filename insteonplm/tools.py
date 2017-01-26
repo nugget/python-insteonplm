@@ -46,7 +46,12 @@ def console(loop, log):
 
     yield from asyncio.sleep(5, loop=loop)
     # Successfully turns off the light in my computer room (yay)
-    conn.protocol._send_raw(binascii.unhexlify('02624095e6001300'))
+    # conn.protocol._send_raw(binascii.unhexlify('02624095e6001300'))
+
+    conn.protocol.get_plm_info()
+
+    yield from asyncio.sleep(5, loop=loop)
+    conn.protocol.get_plm_config()
 
     yield from asyncio.sleep(5, loop=loop)
 
