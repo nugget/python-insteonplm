@@ -33,18 +33,23 @@ class PLMProtocol(object):
             clist.append(x.code)
         return clist
 
-    def lookup(self, code):
+    def lookup(self, code, fullmessage = None):
         for x in self._codelist:
             if x.code == code:
-                return x
+                if code == b'\x62' and fullmessage:
+                    x.name = 'INSTEON Fragmented Message'
+                    x.size = 8
+                    x.rsize = 9
+                    if len(fullmessage) >= 6:
+                        flags = bytes([fullmessage[5]])
+                        if flags == b'\x00':
+                            x.name = 'INSTEON Standard Message'
+                        else:
+                            x.name = 'INSTEON Extended Message'
+                            x.size = 22
+                            x.rsize = 23
 
-    def response_bytes(self, code):
-        rsize = 0
-        for x in self._codelist:
-            if x.code == code:
-                if isinstance(x.rsize, int):
-                    rsize = x.rsize
-        return rsize
+                return x
 
 PP = PLMProtocol()
 
@@ -59,6 +64,8 @@ PP.add(b'\x57', name = 'ALL-Link Record Response', size = 10)
 PP.add(b'\x58', name = 'ALL-Link Cleanup Status Report', size = 3)
 
 PP.add(b'\x60', name = 'Get IM Info', size = 2, rsize = 9)
+PP.add(b'\x61', name = 'Send ALL-Link Command', size = 5, rsize = 6)
+PP.add(b'\x62', name = 'INSTEON Fragmented Message', size = 8, rsize = 9)
 PP.add(b'\x69', name = 'Get First ALL-Link Record', size = 2)
 PP.add(b'\x6a', name = 'Get Next ALL-Link Record', size = 2)
 PP.add(b'\x73', name = 'Get IM Configuration', size = 2, rsize = 6)
@@ -143,15 +150,17 @@ class PLM(asyncio.Protocol):
 
     def _rsize(self,message):
         code = bytes([message[1]])
-        ppc = PP.lookup(code)
+        ppc = PP.lookup(code, fullmessage = message)
 
-        if ppc.rsize:
+        if hasattr(ppc, 'rsize') and ppc.rsize:
             self.log.debug('Found a code %s message which returns %d bytes', binascii.hexlify(code), ppc.rsize)
             return ppc.rsize
         else:
-            set
             self.log.debug('Unable to find an rsize for code %s', binascii.hexlify(code))
             return len(message) + 1
+
+        return retval
+
 
     def _strip_messages_off_front_of_buffer(self,buffer):
         message_list = []
@@ -231,7 +240,7 @@ class PLM(asyncio.Protocol):
 
             for c in PP.codelist:
                 if code == c:
-                    ppc = PP.lookup(code)
+                    ppc = PP.lookup(code, fullmessage = buffer)
 
                     self.log.debug('Found a code %s message which is %d bytes', binascii.hexlify(code), ppc.size)
 
@@ -256,11 +265,12 @@ class PLM(asyncio.Protocol):
 
         code = bytes([message[1]])
         self.log.debug('Code is %s', binascii.hexlify(code))
-        ppc = PP.lookup(code)
-
+        ppc = PP.lookup(code, fullmessage = message)
 
         if code == b'\x50':
             self._parse_insteon_standard(message)
+        elif code == b'\x51':
+            self._parse_insteon_extended(message)
         elif code == b'\x53':
             self._parse_all_link_completed(message)
         elif code == b'\x54':
@@ -272,7 +282,7 @@ class PLM(asyncio.Protocol):
         elif code == b'\x73':
             self._parse_get_plm_config(message)
         else:
-            if ppc.name:
+            if hasattr(ppc, 'name') and ppc.name:
                 self.log.info('Unhandled event: %s (%s)', ppc.name, binascii.hexlify(message))
             else:
                 self.log.info('Unrecognized event: UNKNOWN (%s)', binascii.hexlify(message))
@@ -291,9 +301,24 @@ class PLM(asyncio.Protocol):
         cmd1 = imessage[7]
         cmd2 = imessage[8]
 
-        self.log.info('INSTEON message from %s to %s: cmd1:%s cmd2:%s flags:%s',
+        self.log.info('INSTEON standard message from %s to %s: cmd1:%s cmd2:%s flags:%s',
                       self._insteon_addr(from_addr), self._insteon_addr(to_addr),
                       hex(cmd1), hex(cmd2), hex(flags))
+
+    def _parse_insteon_extended(self,message):
+        code = bytes([message[1]])
+        imessage = message[2:]
+        from_addr = imessage[0:3]
+        to_addr = imessage[3:6]
+        flags = imessage[6]
+        cmd1 = imessage[7]
+        cmd2 = imessage[8]
+        userdata = imessage[9:]
+
+        self.log.info('INSTEON extended message from %s to %s: cmd1:%s cmd2:%s flags:%s userdata:%s',
+                      self._insteon_addr(from_addr), self._insteon_addr(to_addr),
+                      hex(cmd1), hex(cmd2), hex(flags),
+                      binascii.hexlify(userdata))
 
 
     def _parse_button_event(self, message):
@@ -345,7 +370,7 @@ class PLM(asyncio.Protocol):
 
 
     def _send_raw(self, message):
-        self.log.debug('Sending %d byte message: %s', len(message), binascii.hexlify(message))
+        self.log.info('Sending %d byte message: %s', len(message), binascii.hexlify(message))
         self.transport.write(message)
         self._sent_messages.append(message)
 
