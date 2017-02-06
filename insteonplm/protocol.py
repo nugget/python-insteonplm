@@ -104,6 +104,7 @@ class PLM(asyncio.Protocol):
         self.log = logging.getLogger(__name__)
         self._connection_lost_callback = connection_lost_callback
         self._update_callback = update_callback
+        self._callback_new_light = None
         self._input_names = {}
         self._input_numbers = {}
         self.transport = None
@@ -235,6 +236,11 @@ class PLM(asyncio.Protocol):
                 worktodo = False
                 break
 
+            if len(buffer) < 2:
+                self.log.debug('Not enough data in buffer to proceed.')
+                worktodo = False
+                break
+
             code = bytes([buffer[1]])
             self.log.debug('Code is %s', binascii.hexlify(code))
 
@@ -253,7 +259,6 @@ class PLM(asyncio.Protocol):
                         self.log.debug('I have not received enough data to process this message')
                         worktodo = False
                         break
-
 
         return (message_list,buffer)
 
@@ -287,10 +292,23 @@ class PLM(asyncio.Protocol):
             else:
                 self.log.info('Unrecognized event: UNKNOWN (%s)', binascii.hexlify(message))
 
-    def _insteon_addr(self, addr):
-        hexaddr = str(binascii.hexlify(addr))[2:]
-        addrstr = hexaddr[0:2]+'.'+hexaddr[2:4]+'.'+hexaddr[4:6]
-        return addrstr.upper()
+    def _addr_string(self, addr):
+        if isinstance(addr, str):
+            return addr
+        else:
+            hexaddr = str(binascii.hexlify(addr))[2:-1]
+            addrstr = hexaddr[0:2]+'.'+hexaddr[2:4]+'.'+hexaddr[4:6]
+            return addrstr.upper()
+
+    def _addr_hex(self, addr):
+        if isinstance(addr, bytearray):
+            hexaddr = str(binascii.hexlify(addr))[2:-1]
+            return hexaddr
+        else:
+            return addr
+
+    def _addr_bytearray(self, addr):
+        return addr
 
     def _parse_insteon_standard(self,message):
         code = bytes([message[1]])
@@ -302,7 +320,7 @@ class PLM(asyncio.Protocol):
         cmd2 = imessage[8]
 
         self.log.info('INSTEON standard message from %s to %s: cmd1:%s cmd2:%s flags:%s',
-                      self._insteon_addr(from_addr), self._insteon_addr(to_addr),
+                      self._addr_string(from_addr), self._addr_string(to_addr),
                       hex(cmd1), hex(cmd2), hex(flags))
 
     def _parse_insteon_extended(self,message):
@@ -316,10 +334,23 @@ class PLM(asyncio.Protocol):
         userdata = imessage[9:]
 
         self.log.info('INSTEON extended message from %s to %s: cmd1:%s cmd2:%s flags:%s userdata:%s',
-                      self._insteon_addr(from_addr), self._insteon_addr(to_addr),
+                      self._addr_string(from_addr), self._addr_string(to_addr),
                       hex(cmd1), hex(cmd2), hex(flags),
                       binascii.hexlify(userdata))
 
+        if cmd1 == 3 and cmd2 == 0:
+            self._parse_product_data_response(from_addr,userdata)
+
+    def _parse_product_data_response(self, from_addr, message):
+        category = message[4]
+        subcategory = message[5]
+        self.log.info('INSTEON Product Data Response from %s: cat:%s, subcat:%s',
+                      self._addr_string(from_addr),
+                      hex(category), hex(subcategory))
+
+        if category == 1:
+            if self._callback_new_light:
+                self._callback_new_light(address = self._addr_string(device_addr), name = self._addr_string(device_addr))
 
     def _parse_button_event(self, message):
         event = message[2]
@@ -330,8 +361,8 @@ class PLM(asyncio.Protocol):
         category = message[5]
         subcategory = message[6]
         firmware = message[7]
-        self.log.info('PLM Info from %s: category:%s subcategory:%s firmware:%s',
-                      self._insteon_addr(plm_addr),
+        self.log.info('PLM Info from %s: category:%s subcat:%s firmware:%s',
+                      self._addr_string(plm_addr),
                       hex(category), hex(subcategory), hex(firmware))
 
     def _parse_get_plm_config(self, message):
@@ -350,9 +381,11 @@ class PLM(asyncio.Protocol):
         linkdata2 = message[8]
         linkdata3 = message[9]
         self.log.info('ALL-Link Record for %s: flags:%s group:%s data:%s/%s/%s',
-                      self._insteon_addr(device_addr),
+                      self._addr_string(device_addr),
                       hex(flags), hex(group),
                       hex(linkdata1), hex(linkdata2), hex(linkdata3))
+
+        self.product_data_request(device_addr)
 
         if self._dump_in_progress is True:
             self.get_next_all_link_record()
@@ -365,34 +398,49 @@ class PLM(asyncio.Protocol):
         subcategory = message[8]
         firmware = message[9]
         self.log.info('ALL-Link Completed for %s: group:%s category:%s sub:%s firmware:%s',
-                      self._insteon_addr(device_addr), hex(group),
+                      self._addr_string(device_addr), hex(group),
                       hex(category), hex(subcategory), hex(firmware))
 
+
+    def _send_hex(self, message):
+        self._send_raw(binascii.unhexlify(message))
 
     def _send_raw(self, message):
         self.log.info('Sending %d byte message: %s', len(message), binascii.hexlify(message))
         self.transport.write(message)
         self._sent_messages.append(message)
 
+    def send_insteon_standard(self, device, cmd1, cmd2):
+        rawstr = '0262'+self._addr_hex(device)+'00'+cmd1+cmd2
+        self._send_hex(rawstr)
+
+    def callback_new_light(self, callback):
+        self.log.info('Registering new light callback')
+        self._callback_new_light = callback
+
     def get_plm_info(self):
         self.log.info('Requesting PLM Info')
-        self._send_raw(binascii.unhexlify('0260'))
+        self._send_hex('0260')
 
     def get_plm_config(self):
         self.log.info('Requesting PLM Config')
-        self._send_raw(binascii.unhexlify('0273'))
+        self._send_hex('0273')
 
     def get_first_all_link_record(self):
         self.log.info('Requesting First ALL-Link Record')
-        self._send_raw(binascii.unhexlify('0269'))
+        self._send_hex('0269')
 
     def get_next_all_link_record(self):
         self.log.info('Requesting Next ALL-Link Record')
-        self._send_raw(binascii.unhexlify('026a'))
+        self._send_hex('026a')
 
     def dump_all_link_database(self):
         self._dump_in_progress = True
         self.get_first_all_link_record()
+
+    def product_data_request(self, device):
+        self.log.info('Requesting product data for %s', self._addr_string(device))
+        self.send_insteon_standard(device,'03','00')
 
     @property
     def dump_rawdata(self):
