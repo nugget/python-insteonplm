@@ -108,6 +108,7 @@ class PLM(asyncio.Protocol):
 
         self._buffer = bytearray()
         self._last_command = None
+        self._wait_for = {}
         self._recv_queue = []
         self._send_queue = []
 
@@ -257,13 +258,24 @@ class PLM(asyncio.Protocol):
             else:
                 self._wait_for_recognized_message()
 
+        self._process_queue()
+
+    def _process_queue(self):
+        self.log.debug('processing queue with %d items', len(self._send_queue))
+        if self._clear_to_send() is True:
+            self.log.debug('Clear to send next command in send_queue')
+            print(self._send_queue)
+            command, wait_for = self._send_queue[0]
+            self._send_hex(command, wait_for = wait_for)
+            self._send_queue.remove([command, wait_for])
+
+    def _clear_to_send(self):
         if len(self._buffer) == 0:
             if len(self._send_queue) > 0:
                 if self._last_command is None:
-                    self.log.debug('Clear to send next command in send_queue')
-                    command = self._send_queue[0]
-                    self._send_hex(command)
-                    self._send_queue.remove(command)
+                    if self._wait_for == {}:
+                        return True
+
 
     def _process_message(self,message):
         self.log.debug('Processing message: %s', binascii.hexlify(message))
@@ -294,6 +306,42 @@ class PLM(asyncio.Protocol):
                 self.log.info('Unhandled event: %s (%s)', ppc.name, binascii.hexlify(message))
             else:
                 self.log.info('Unrecognized event: UNKNOWN (%s)', binascii.hexlify(message))
+
+        self._eval_wait_for(message)
+        self._process_queue()
+
+    def _eval_wait_for(self, message):
+        match = True
+
+        code = bytes([message[1]])
+        if 'code' in self._wait_for:
+            if self._wait_for['code'] != code:
+                self.log.debug('code is not a match')
+                match = False
+        else:
+            self.log.debug('there is no code to find')
+
+        if code == b'\x50' or code == b'\x51':
+            cmd1 = bytes([message[9]])
+            cmd2 = bytes([message[10]])
+        else:
+            cmd1 = None
+            cmd2 = None
+
+        if 'cmd1' in self._wait_for:
+            if self._wait_for['cmd1'] != cmd1:
+                self.log.debug('cmd1 is not a match')
+                match = False
+
+        if 'cmd2' in self._wait_for:
+            if self._wait_for['cmd2'] != cmd2:
+                self.log.debug('cmd2 is not a match')
+                match = False
+
+        if match is True:
+            self.log.debug('I found what I was waiting for')
+            self._wait_for = {}
+
 
     def _addr_string(self, addr):
         if isinstance(addr, str):
@@ -412,26 +460,27 @@ class PLM(asyncio.Protocol):
                       self._addr_string(device_addr), hex(group),
                       hex(category), hex(subcategory), hex(firmware))
 
-    def _queue_hex(self, message):
+    def _queue_hex(self, message, wait_for = {}):
         self.log.debug('Adding command to queue: %s', message)
-        self._send_queue.append(message)
+        self._send_queue.append([message, wait_for])
 
-    def _send_hex(self, message):
+    def _send_hex(self, message, wait_for = {}):
         if self._last_command:
-            self._queue_hex(message)
+            self.log.debug('cannot queue because last_command is %s', binascii.hexlify(self._last_command))
+            self._queue_hex(message, wait_for)
         else:
             self._send_raw(binascii.unhexlify(message))
+            self.log.debug('setting wait_for to %s', wait_for)
+            self._wait_for = wait_for
 
     def _send_raw(self, message):
         self.log.info('Sending %d byte message: %s', len(message), binascii.hexlify(message))
         self.transport.write(message)
         self._last_command = message
 
-    def send_insteon_standard(self, device, cmd1, cmd2):
-        print(device)
+    def send_insteon_standard(self, device, cmd1, cmd2, wait_for = {}):
         rawstr = '0262'+self._addr_hex(device)+'00'+cmd1+cmd2
-        print(rawstr)
-        self._send_hex(rawstr)
+        self._send_hex(rawstr, wait_for)
 
     def callback_new_light(self, callback):
         self.log.info('Registering new light callback')
@@ -459,7 +508,7 @@ class PLM(asyncio.Protocol):
 
     def product_data_request(self, device):
         self.log.info('Requesting product data for %s', self._addr_string(device))
-        self.send_insteon_standard(device,'03','00')
+        self.send_insteon_standard(device,'03','00', wait_for = {'code': b'\x51', 'cmd1': b'\x03', 'cmd2': b'\x00'})
 
     @property
     def dump_rawdata(self):
