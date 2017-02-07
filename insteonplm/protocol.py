@@ -264,7 +264,6 @@ class PLM(asyncio.Protocol):
         self.log.debug('processing queue with %d items', len(self._send_queue))
         if self._clear_to_send() is True:
             self.log.debug('Clear to send next command in send_queue')
-            print(self._send_queue)
             command, wait_for = self._send_queue[0]
             self._send_hex(command, wait_for = wait_for)
             self._send_queue.remove([command, wait_for])
@@ -496,11 +495,11 @@ class PLM(asyncio.Protocol):
 
     def get_first_all_link_record(self):
         self.log.info('Requesting First ALL-Link Record')
-        self._send_hex('0269')
+        self._send_hex('0269', wait_for = {'code': b'\x57'})
 
     def get_next_all_link_record(self):
         self.log.info('Requesting Next ALL-Link Record')
-        self._send_hex('026a')
+        self._send_hex('026a', wait_for = {'code': b'\x57'})
 
     def dump_all_link_database(self):
         self._dump_in_progress = True
