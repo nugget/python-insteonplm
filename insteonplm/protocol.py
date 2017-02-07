@@ -101,17 +101,18 @@ class PLM(asyncio.Protocol):
                 asyncio.loop
         """
         self._loop = loop
-        self.log = logging.getLogger(__name__)
+
         self._connection_lost_callback = connection_lost_callback
         self._update_callback = update_callback
         self._callback_new_light = None
-        self._input_names = {}
-        self._input_numbers = {}
-        self.transport = None
-        self._buffer = bytearray()
-        self._sent_messages = []
-        self._dump_in_progress = False
 
+        self._buffer = bytearray()
+        self._last_command = None
+        self._recv_queue = []
+        self._send_queue = []
+
+        self.log = logging.getLogger(__name__)
+        self.transport = None
 
     #
     # asyncio network functions
@@ -131,11 +132,11 @@ class PLM(asyncio.Protocol):
         self.log.debug('Received %d bytes from PLM: %s',len(data), binascii.hexlify(data))
 
         self._buffer.extend(data)
+        self._strip_messages_off_front_of_buffer()
 
-        message_list, self._buffer = self._strip_messages_off_front_of_buffer(self._buffer)
-
-        for message in message_list:
+        for message in self._recv_queue:
             self._process_message(message)
+            self._recv_queue.remove(message)
 
     def connection_lost(self, exc):
         """Called when asyncio.Protocol loses the network connection."""
@@ -163,104 +164,97 @@ class PLM(asyncio.Protocol):
         return retval
 
 
-    def _strip_messages_off_front_of_buffer(self,buffer):
-        message_list = []
+    def _wait_for_last_command(self):
+        sm = self._last_command
+        rsize = self._rsize(sm)
+        self.log.debug('Looking for ACK/NAK on sent message: %s expecting rsize of %d', binascii.hexlify(sm), rsize)
+        if self._buffer.find(sm) == 0:
+            if len(self._buffer) < rsize:
+                self.log.debug('Still waiting for all of message to arrive, %d/%d', len(self._buffer), rsize)
+                return
 
-        if len(buffer) < 2:
-            return(message_list,buffer)
+            code = bytes([self._buffer[1]])
+            message_length = len(sm)
+            response_length = rsize - message_length
+            response = self._buffer[message_length:response_length]
+            acknak = self._buffer[rsize-1]
 
+            mla = self._buffer[:rsize]
+            buffer = self._buffer[rsize:]
+
+            if acknak == 6:
+                self.log.debug('Sent command %s was successful!', binascii.hexlify(sm))
+                self._recv_queue.append(mla)
+            else:
+                if code == b'\x6a':
+                    self.log.info('ALL-Link database dump is complete')
+                    self._dump_in_progress = False
+                else:
+                    self.log.warn('Sent command %s was NOT successful! (acknak %d)', binascii.hexlify(sm), acknak)
+
+            self._last_command = None
+            self._buffer = buffer
+
+    def _wait_for_recognized_message(self):
+        code = bytes([self._buffer[1]])
+        self.log.debug('Code is %s', binascii.hexlify(code))
+
+        for c in PP.codelist:
+            if code == c:
+                ppc = PP.lookup(code, fullmessage = self._buffer)
+
+                self.log.debug('Found a code %s message which is %d bytes', binascii.hexlify(code), ppc.size)
+
+                if len(self._buffer) == ppc.size:
+                    new_message = self._buffer[0:ppc.size]
+                    self.log.debug('new message is: %s', binascii.hexlify(new_message))
+                    self._recv_queue.append(new_message)
+                    self._buffer = self._buffer[ppc.size:]
+                else:
+                    self.log.debug('I have not received enough data to process this message')
+                    worktodo = False
+
+    def _strip_messages_off_front_of_buffer(self):
         lastlooplen = 0
         worktodo = True
 
         while worktodo:
-            if len(buffer) == 0:
+            if len(self._buffer) == 0:
                 self.log.debug('Clean break!  There is no buffer left')
                 worktodo = False
                 break
 
-            if buffer[0] != 2:
-                buffer = buffer[1:]
+            if len(self._buffer) < 2:
+                return
+
+            if self._buffer[0] != 2:
+                self._buffer = self._buffer[1:]
                 self.log.debug('Buffer does not start at a command, trimming leading garbage')
 
-            first = bytes([buffer[0]])
-            self.log.debug('-- ')
-            self.log.debug('First byte is %s', binascii.hexlify(first))
-            self.log.debug('Buffer is %d bytes: %s',len(buffer), binascii.hexlify(buffer))
+            first = bytes([self._buffer[0]])
 
-            if len(buffer) == lastlooplen:
+            self.log.debug('-- ')
+            self.log.debug('Queues: %d/%d: Buffer is %d bytes: %s',
+                           len(self._recv_queue), len(self._send_queue),
+                           len(self._buffer), binascii.hexlify(self._buffer))
+
+            if len(self._buffer) == lastlooplen:
                 self.log.warn('Buffer size unchanged after loop, That means that something went wrong')
                 worktodo = False
                 break
 
-            lastlooplen = len(buffer)
+            lastlooplen = len(self._buffer)
 
-            if buffer.find(2) < 0:
+            if self._buffer.find(2) < 0:
                 self.log.debug('Buffer does not contain a 2, we should bail')
                 break
 
-            for sm in self._sent_messages:
-                rsize = self._rsize(sm)
-                self.log.debug('Looking for ACK/NAK on sent message: %s expecting rsize of %d', binascii.hexlify(sm), rsize)
-                if buffer.find(sm) == 0:
-                    if len(buffer) < rsize:
-                        self.log.debug('Still waiting for all of message to arrive, %d/%d', len(buffer), rsize)
-                        return ([], buffer)
+            if self._last_command:
+                self._wait_for_last_command()
+            else:
+                self._wait_for_recognized_message()
 
-                    code = bytes([buffer[1]])
-                    message_length = len(sm)
-                    response_length = rsize - message_length
-                    response = buffer[message_length:response_length]
-                    acknak = buffer[-1]
 
-                    mla = buffer[:rsize]
-                    buffer = buffer[rsize:]
-
-                    self.log.debug('sm found response: %s', binascii.hexlify(response))
-                    self.log.debug('ackbak is %d', acknak)
-
-                    if acknak == 6:
-                        self.log.debug('Sent command %s was successful!', binascii.hexlify(sm))
-                        self.log.debug('Appending receipt %s', binascii.hexlify(mla))
-                        message_list.append(mla)
-                    else:
-                        if code == b'\x6a':
-                            self.log.info('ALL-Link database dump is complete')
-                            self._dump_in_progress = False
-                        else:
-                            self.log.warn('Sent command %s was NOT successful!', binascii.hexlify(sm))
-
-                    self._sent_messages.remove(sm)
-
-            if len(buffer) == 0:
-                self.log.debug('Clean break!  There is no buffer left')
-                worktodo = False
-                break
-
-            if len(buffer) < 2:
-                self.log.debug('Not enough data in buffer to proceed.')
-                worktodo = False
-                break
-
-            code = bytes([buffer[1]])
-            self.log.debug('Code is %s', binascii.hexlify(code))
-
-            for c in PP.codelist:
-                if code == c:
-                    ppc = PP.lookup(code, fullmessage = buffer)
-
-                    self.log.debug('Found a code %s message which is %d bytes', binascii.hexlify(code), ppc.size)
-
-                    if len(buffer) == ppc.size:
-                        new_message = buffer[0:ppc.size]
-                        self.log.debug('new message is: %s', binascii.hexlify(new_message))
-                        message_list.append(new_message)
-                        buffer = buffer[ppc.size:]
-                    else:
-                        self.log.debug('I have not received enough data to process this message')
-                        worktodo = False
-                        break
-
-        return (message_list,buffer)
 
     def _process_message(self,message):
         self.log.debug('Processing message: %s', binascii.hexlify(message))
@@ -305,7 +299,7 @@ class PLM(asyncio.Protocol):
             hexaddr = str(binascii.hexlify(addr))[2:-1]
             return hexaddr
         else:
-            return addr
+            return addr.replace('.','')
 
     def _addr_bytearray(self, addr):
         return addr
@@ -385,8 +379,6 @@ class PLM(asyncio.Protocol):
                       hex(flags), hex(group),
                       hex(linkdata1), hex(linkdata2), hex(linkdata3))
 
-        self.product_data_request(device_addr)
-
         if self._dump_in_progress is True:
             self.get_next_all_link_record()
 
@@ -408,10 +400,12 @@ class PLM(asyncio.Protocol):
     def _send_raw(self, message):
         self.log.info('Sending %d byte message: %s', len(message), binascii.hexlify(message))
         self.transport.write(message)
-        self._sent_messages.append(message)
+        self._last_command = message
 
     def send_insteon_standard(self, device, cmd1, cmd2):
+        print(device)
         rawstr = '0262'+self._addr_hex(device)+'00'+cmd1+cmd2
+        print(rawstr)
         self._send_hex(rawstr)
 
     def callback_new_light(self, callback):

@@ -53,16 +53,16 @@ def console(loop, log):
     #conn.protocol.product_data_request('15c3ab')
     #yield from asyncio.sleep(10, loop=loop)
 
-    #conn.protocol.product_data_request('4095e6')
-    #yield from asyncio.sleep(10, loop=loop)
+    conn.protocol.product_data_request('4095e6')
+    yield from asyncio.sleep(5, loop=loop)
 
     #conn.protocol._send_raw(binascii.unhexlify('02624095e6150300000000000000ffff000000000000'))
     #yield from asyncio.sleep(5, loop=loop)
 
-    #conn.protocol.get_plm_info()
+    conn.protocol.get_plm_info()
 
-    #yield from asyncio.sleep(5, loop=loop)
-    #conn.protocol.get_plm_config()
+    yield from asyncio.sleep(5, loop=loop)
+    conn.protocol.get_plm_config()
 
     yield from asyncio.sleep(5, loop=loop)
 
