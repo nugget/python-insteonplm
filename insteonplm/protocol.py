@@ -111,6 +111,8 @@ class PLM(asyncio.Protocol):
         self._recv_queue = []
         self._send_queue = []
 
+        self._device_list = []
+
         self.log = logging.getLogger(__name__)
         self.transport = None
 
@@ -183,12 +185,17 @@ class PLM(asyncio.Protocol):
             buffer = self._buffer[rsize:]
 
             if acknak == 6:
-                self.log.debug('Sent command %s was successful!', binascii.hexlify(sm))
-                self._recv_queue.append(mla)
+                if len(response) > 0:
+                    self.log.debug('Sent command %s was successful with response %s!', binascii.hexlify(sm), response)
+                    self._recv_queue.append(mla)
+                else:
+                    self.log.debug('Sent command %s was successful', binascii.hexlify(sm))
             else:
                 if code == b'\x6a':
                     self.log.info('ALL-Link database dump is complete')
                     self._dump_in_progress = False
+                    for da in self._device_list:
+                        self.product_data_request(da)
                 else:
                     self.log.warn('Sent command %s was NOT successful! (acknak %d)', binascii.hexlify(sm), acknak)
 
@@ -212,7 +219,6 @@ class PLM(asyncio.Protocol):
                     self._buffer = self._buffer[ppc.size:]
                 else:
                     self.log.debug('I have not received enough data to process this message')
-                    worktodo = False
 
     def _strip_messages_off_front_of_buffer(self):
         lastlooplen = 0
@@ -225,7 +231,8 @@ class PLM(asyncio.Protocol):
                 break
 
             if len(self._buffer) < 2:
-                return
+                worktodo = False
+                break
 
             if self._buffer[0] != 2:
                 self._buffer = self._buffer[1:]
@@ -233,13 +240,8 @@ class PLM(asyncio.Protocol):
 
             first = bytes([self._buffer[0]])
 
-            self.log.debug('-- ')
-            self.log.debug('Queues: %d/%d: Buffer is %d bytes: %s',
-                           len(self._recv_queue), len(self._send_queue),
-                           len(self._buffer), binascii.hexlify(self._buffer))
-
             if len(self._buffer) == lastlooplen:
-                self.log.warn('Buffer size unchanged after loop, That means that something went wrong')
+                # Buffer size did not change so we should wait for more data
                 worktodo = False
                 break
 
@@ -247,6 +249,7 @@ class PLM(asyncio.Protocol):
 
             if self._buffer.find(2) < 0:
                 self.log.debug('Buffer does not contain a 2, we should bail')
+                worktodo = False
                 break
 
             if self._last_command:
@@ -254,7 +257,13 @@ class PLM(asyncio.Protocol):
             else:
                 self._wait_for_recognized_message()
 
-
+        if len(self._buffer) == 0:
+            if len(self._send_queue) > 0:
+                if self._last_command is None:
+                    self.log.debug('Clear to send next command in send_queue')
+                    command = self._send_queue[0]
+                    self._send_hex(command)
+                    self._send_queue.remove(command)
 
     def _process_message(self,message):
         self.log.debug('Processing message: %s', binascii.hexlify(message))
@@ -296,6 +305,12 @@ class PLM(asyncio.Protocol):
 
     def _addr_hex(self, addr):
         if isinstance(addr, bytearray):
+
+            self.log.debug('-- ')
+            self.log.debug('Queues: %d/%d: Buffer is %d bytes: %s',
+                           len(self._recv_queue), len(self._send_queue),
+                           len(self._buffer), binascii.hexlify(self._buffer))
+
             hexaddr = str(binascii.hexlify(addr))[2:-1]
             return hexaddr
         else:
@@ -379,6 +394,10 @@ class PLM(asyncio.Protocol):
                       hex(flags), hex(group),
                       hex(linkdata1), hex(linkdata2), hex(linkdata3))
 
+        if not device_addr in self._device_list:
+            self.log.info('New device seen: %s', self._addr_string(device_addr))
+            self._device_list.append(device_addr)
+
         if self._dump_in_progress is True:
             self.get_next_all_link_record()
 
@@ -393,9 +412,15 @@ class PLM(asyncio.Protocol):
                       self._addr_string(device_addr), hex(group),
                       hex(category), hex(subcategory), hex(firmware))
 
+    def _queue_hex(self, message):
+        self.log.debug('Adding command to queue: %s', message)
+        self._send_queue.append(message)
 
     def _send_hex(self, message):
-        self._send_raw(binascii.unhexlify(message))
+        if self._last_command:
+            self._queue_hex(message)
+        else:
+            self._send_raw(binascii.unhexlify(message))
 
     def _send_raw(self, message):
         self.log.info('Sending %d byte message: %s', len(message), binascii.hexlify(message))
