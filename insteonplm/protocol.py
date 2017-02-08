@@ -166,6 +166,29 @@ class PLM(asyncio.Protocol):
 
         return retval
 
+    def _timeout_reached(self):
+        self.log.debug('timeout_reached invoked')
+        self._clear_wait()
+        self._process_queue()
+
+    def _clear_wait(self):
+        self.log.debug('clear_wait invoked')
+        if 'thandle' in self._wait_for:
+            self.log.debug('Cancelling wait_for timeout callback')
+            self._wait_for['thandle'].cancel()
+        self._wait_for = {}
+
+    def _schedule_wait(self, keys, timeout = 2):
+        self.log.debug('setting wait_for to %s timeout %d', keys, timeout)
+        if self._wait_for != {}:
+            self.log.warn('Overwriting stale wait_for: %s', self._wait_for)
+            self._clear_wait()
+
+        if timeout > 0:
+            self.log.debug('Setting timeout on wait_for at %d seconds', timeout)
+            keys['thandle'] = self._loop.call_later(timeout, self._timeout_reached)
+
+        self._wait_for = keys
 
     def _wait_for_last_command(self):
         sm = self._last_command
@@ -339,7 +362,7 @@ class PLM(asyncio.Protocol):
 
         if match is True:
             self.log.debug('I found what I was waiting for')
-            self._wait_for = {}
+            self._clear_wait()
 
 
     def _addr_string(self, addr):
@@ -469,8 +492,7 @@ class PLM(asyncio.Protocol):
             self._queue_hex(message, wait_for)
         else:
             self._send_raw(binascii.unhexlify(message))
-            self.log.debug('setting wait_for to %s', wait_for)
-            self._wait_for = wait_for
+            self._schedule_wait(wait_for)
 
     def _send_raw(self, message):
         self.log.info('Sending %d byte message: %s', len(message), binascii.hexlify(message))
