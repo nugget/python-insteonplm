@@ -60,7 +60,7 @@ class Connection:
         conn._auto_reconnect = auto_reconnect
 
         def connection_lost():
-            """Function callback for Protocoal class when connection is lost."""
+            """Function callback for Protocol class when connection is lost."""
             if conn._auto_reconnect and not conn._closing:
                 ensure_future(conn._reconnect(), loop=conn._loop)
 
@@ -99,8 +99,9 @@ class Connection:
                 else:
                     self.log.info('Connecting to PLM on %s',
                                   self.device)
-                    yield from serial.aio.create_serial_connection(self._loop,
-                        lambda: self.protocol, self.device, baudrate=19200)
+                    yield from serial.aio.create_serial_connection(
+                        self._loop, lambda: self.protocol,
+                        self.device, baudrate=19200)
                     self._reset_retry_interval()
                     return
 
@@ -108,7 +109,7 @@ class Connection:
                 self._increase_retry_interval()
                 interval = self._get_retry_interval()
                 self.log.warning('Connecting failed, retry in %i seconds: %s',
-                              interval, device)
+                                 interval, self.device)
                 yield from asyncio.sleep(interval, loop=self._loop)
 
     def close(self):
