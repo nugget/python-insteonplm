@@ -102,7 +102,6 @@ class PLMProtocol(object):
 
                 return x
 
-
 PP = PLMProtocol()
 
 PP.add(b'\x50', name='INSTEON Standard Message Received', size=11)
@@ -122,13 +121,14 @@ PP.add(b'\x69', name='Get First ALL-Link Record', size=2)
 PP.add(b'\x6a', name='Get Next ALL-Link Record', size=2)
 PP.add(b'\x73', name='Get IM Configuration', size=2, rsize=6)
 
-Device = collections.namedtuple('Device', ['cat', 'subcat', 'firmware'])
+Device = collections.namedtuple('Device', ['cat', 'subcat', 'firmware', 'onlevel'])
 
 
 class ALDB:
     def __init__(self):
         self._devices = {}
         self._cb_new_device = []
+        self._cb_status = []
         self.state = 'empty'
         self.log = logging.getLogger(__name__)
 
@@ -157,6 +157,16 @@ class ALDB:
     def new_device_callback(self, callback, criteria):
         self.log.warn('New callback %s with %s', callback, criteria)
         self._cb_new_device.append([callback, criteria])
+
+    def status_update_callback(self, callback, criteria):
+        self.log.warn('Status callback %s', callback, criteria)
+        self._cb_status.append([callback, criteria])
+
+    def setattr(self, key, attr, value):
+        if key in self._devices:
+            self._devices[key][attr] = value
+        else:
+            raise KeyError
 
 
 # In Python 3.4.4, `async` was renamed to `ensure_future`.
@@ -193,7 +203,7 @@ class PLM(asyncio.Protocol):
         self._loop = loop
 
         self._connection_lost_callback = connection_lost_callback
-        self._update_callback = update_callback
+        self._update_callback = [[update_callback,{}]]
 
         self._buffer = bytearray()
         self._last_command = None
@@ -480,6 +490,7 @@ class PLM(asyncio.Protocol):
                       from_addr.human, to_addr.human,
                       hex(cmd1), hex(cmd2), hex(flags))
 
+
     def _parse_insteon_extended(self, message):
         imessage = message[2:]
         from_addr = Address(imessage[0:3])
@@ -503,7 +514,10 @@ class PLM(asyncio.Protocol):
         onlevel = imessage[8]
         self.log.info('INSTEON Dimmer %s is at level %s',
                       from_addr.human, hex(onlevel))
-
+        self.devices.setattr(from_addr.hex, 'onlevel', onlevel)
+        for cb, criteria in self._update_callback:
+            self.log.info('update callback %s with criteria %s', cb, criteria)
+            self._loop.call_soon(cb, message)
 
     def _parse_product_data_response(self, from_addr, message):
         from_addr = Address(from_addr)
@@ -645,10 +659,26 @@ class PLM(asyncio.Protocol):
     def new_device_callback(self, callback, criteria):
         self.devices.new_device_callback(callback, criteria)
 
+    def update_callback(self, callback, criteria):
+        self._update_callback.append([callback, criteria])
+
+    def get_device_attr(self, addr, attr):
+        address = Address(addr)
+        device = self.devices[address.hex]
+        if attr in device:
+            return device[attr]
+
+    def turn_off(self, addr):
+        device = Address(addr)
+        self.send_insteon_standard(device,'13','00')
+
+    def turn_on(self, addr, brightness=255):
+        device = Address(addr)
+        self.send_insteon_standard(device,'11','ff')
+
     def poll_devices(self):
         for d in dir(self.devices):
             self.status_request(d)
-
 
     def list_devices(self):
         for d in dir(self.devices):
