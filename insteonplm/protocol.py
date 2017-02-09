@@ -3,10 +3,69 @@ import asyncio
 import logging
 import time
 import binascii
+import collections
 
 # 40.95.e6 is my computer room wall switch
 
-__all__ = ('PLM', 'PLMCode', 'PLMProtocol')
+__all__ = ('PLM', 'PLMCode', 'PLMProtocol', 'Address')
+
+class Address(bytearray):
+    def __init__(self, addr):
+        self.log = logging.getLogger(__name__)
+        self.addr = self.normalize(addr)
+
+    def normalize(self, addr):
+        if isinstance(addr, Address):
+            return addr.hex
+        if isinstance(addr, bytearray):
+            addr = bytes(addr)
+        if isinstance(addr, bytes):
+            return binascii.hexlify(addr).decode()
+        if isinstance(addr, str):
+            addr.replace('.','')
+            addr = addr[0:6]
+            return addr.lower()
+        else:
+            self.log.warn('Address class initialized with unknown type %s', type(addr))
+            return 'aabbcc'
+
+    @property
+    def human(self):
+        addrstr = self.addr[0:2]+'.'+self.addr[2:4]+'.'+self.addr[4:6]
+        return addrstr.upper()
+
+    @property
+    def hex(self):
+        return self.addr
+
+    @property
+    def bytes(self):
+        return binascii.hexlify(self.addr)
+
+
+"""
+    def _addr_string(self, addr):
+        if isinstance(addr, str):
+            return addr
+        else:
+            hexaddr = str(binascii.hexlify(addr))[2:-1]
+            addrstr = hexaddr[0:2]+'.'+hexaddr[2:4]+'.'+hexaddr[4:6]
+            return addrstr.upper()
+
+    def _addr_hex(self, addr):
+        if isinstance(addr, bytearray):
+
+            self.log.debug('-- ')
+            self.log.debug('Queues: %d/%d: Buffer is %d bytes: %s',
+                           len(self._recv_queue), len(self._send_queue),
+                           len(self._buffer), binascii.hexlify(self._buffer))
+
+            hexaddr = str(binascii.hexlify(addr))[2:-1]
+            return hexaddr
+        else:
+            return addr.replace('.','')
+"""
+
 
 class PLMCode(object):
     def __init__(self, code, name = None, size = None, rsize = None):
@@ -70,11 +129,30 @@ PP.add(b'\x69', name = 'Get First ALL-Link Record', size = 2)
 PP.add(b'\x6a', name = 'Get Next ALL-Link Record', size = 2)
 PP.add(b'\x73', name = 'Get IM Configuration', size = 2, rsize = 6)
 
+Device = collections.namedtuple('Device', ['address', 'cat', 'subcat', 'firmware'])
+
+class ALDB:
+    def __init__(self):
+        self._devices = []
+
+    def __len__(self):
+        return len(self._devices)
+
+    def __getitem__(self, address):
+        for c in self._devices:
+            if address == c['address']:
+                return c
+
+    def __setitem__(self, dinfo):
+        oldval = Device()
+
+
 # In Python 3.4.4, `async` was renamed to `ensure_future`.
 try:
     ensure_future = asyncio.ensure_future
 except AttributeError:
     ensure_future = asyncio.async
+
 
 # pylint: disable=too-many-instance-attributes, too-many-public-methods
 class PLM(asyncio.Protocol):
@@ -365,55 +443,32 @@ class PLM(asyncio.Protocol):
             self._clear_wait()
 
 
-    def _addr_string(self, addr):
-        if isinstance(addr, str):
-            return addr
-        else:
-            hexaddr = str(binascii.hexlify(addr))[2:-1]
-            addrstr = hexaddr[0:2]+'.'+hexaddr[2:4]+'.'+hexaddr[4:6]
-            return addrstr.upper()
-
-    def _addr_hex(self, addr):
-        if isinstance(addr, bytearray):
-
-            self.log.debug('-- ')
-            self.log.debug('Queues: %d/%d: Buffer is %d bytes: %s',
-                           len(self._recv_queue), len(self._send_queue),
-                           len(self._buffer), binascii.hexlify(self._buffer))
-
-            hexaddr = str(binascii.hexlify(addr))[2:-1]
-            return hexaddr
-        else:
-            return addr.replace('.','')
-
-    def _addr_bytearray(self, addr):
-        return addr
 
     def _parse_insteon_standard(self,message):
         code = bytes([message[1]])
         imessage = message[2:11]
-        from_addr = imessage[0:3]
-        to_addr = imessage[3:6]
+        from_addr = Address(imessage[0:3])
+        to_addr = Address(imessage[3:6])
         flags = imessage[6]
         cmd1 = imessage[7]
         cmd2 = imessage[8]
 
         self.log.info('INSTEON standard message from %s to %s: cmd1:%s cmd2:%s flags:%s',
-                      self._addr_string(from_addr), self._addr_string(to_addr),
+                      from_addr.human, to_addr.human,
                       hex(cmd1), hex(cmd2), hex(flags))
 
     def _parse_insteon_extended(self,message):
         code = bytes([message[1]])
         imessage = message[2:]
-        from_addr = imessage[0:3]
-        to_addr = imessage[3:6]
+        from_addr = Address(imessage[0:3])
+        to_addr = Address(imessage[3:6])
         flags = imessage[6]
         cmd1 = imessage[7]
         cmd2 = imessage[8]
         userdata = imessage[9:]
 
         self.log.info('INSTEON extended message from %s to %s: cmd1:%s cmd2:%s flags:%s userdata:%s',
-                      self._addr_string(from_addr), self._addr_string(to_addr),
+                      from_addr.human, to_addr.human,
                       hex(cmd1), hex(cmd2), hex(flags),
                       binascii.hexlify(userdata))
 
@@ -421,27 +476,23 @@ class PLM(asyncio.Protocol):
             self._parse_product_data_response(from_addr,userdata)
 
     def _parse_product_data_response(self, from_addr, message):
+        from_addr = Address(from_addr)
         category = message[4]
         subcategory = message[5]
         self.log.info('INSTEON Product Data Response from %s: cat:%s, subcat:%s',
-                      self._addr_string(from_addr),
-                      hex(category), hex(subcategory))
-
-        if category == 1:
-            if self._callback_new_light:
-                self._callback_new_light(address = self._addr_string(device_addr), name = self._addr_string(device_addr))
+                      from_addr.human, hex(category), hex(subcategory))
 
     def _parse_button_event(self, message):
         event = message[2]
         self.log.info('Button event: %s', hex(event))
 
     def _parse_get_plm_info(self, message):
-        plm_addr = message[2:5]
+        plm_addr = Address(message[2:5])
         category = message[5]
         subcategory = message[6]
         firmware = message[7]
         self.log.info('PLM Info from %s: category:%s subcat:%s firmware:%s',
-                      self._addr_string(plm_addr),
+                      plm_addr.human,
                       hex(category), hex(subcategory), hex(firmware))
 
     def _parse_get_plm_config(self, message):
@@ -455,17 +506,17 @@ class PLM(asyncio.Protocol):
     def _parse_all_link_record(self, message):
         flags = message[2]
         group = message[3]
-        device_addr = message[4:7]
+        device_addr = Address(message[4:7])
         linkdata1 = message[7]
         linkdata2 = message[8]
         linkdata3 = message[9]
         self.log.info('ALL-Link Record for %s: flags:%s group:%s data:%s/%s/%s',
-                      self._addr_string(device_addr),
+                      device_addr.human,
                       hex(flags), hex(group),
                       hex(linkdata1), hex(linkdata2), hex(linkdata3))
 
         if not device_addr in self._device_list:
-            self.log.info('New device seen: %s', self._addr_string(device_addr))
+            self.log.info('New device seen: %s', device_addr.human)
             self._device_list.append(device_addr)
 
         if self._dump_in_progress is True:
@@ -474,12 +525,12 @@ class PLM(asyncio.Protocol):
     def _parse_all_link_completed(self, message):
         linkcode = message[2]
         group = message[3]
-        device_addr = message[4:7]
+        device_addr = Address(message[4:7])
         category = message[7]
         subcategory = message[8]
         firmware = message[9]
         self.log.info('ALL-Link Completed for %s: group:%s category:%s sub:%s firmware:%s',
-                      self._addr_string(device_addr), hex(group),
+                      device_addr.human, hex(group),
                       hex(category), hex(subcategory), hex(firmware))
 
     def _queue_hex(self, message, wait_for = {}):
@@ -500,7 +551,13 @@ class PLM(asyncio.Protocol):
         self._last_command = message
 
     def send_insteon_standard(self, device, cmd1, cmd2, wait_for = {}):
-        rawstr = '0262'+self._addr_hex(device)+'00'+cmd1+cmd2
+        device = Address(device)
+        rawstr = '0262'+device.hex+'00'+cmd1+cmd2
+        self._send_hex(rawstr, wait_for)
+
+    def send_insteon_extended(self, device, cmd1, cmd2, wait_for = {}):
+        device = Address(device)
+        rawstr = '0262'+device.hex+'00'+cmd1+cmd2
         self._send_hex(rawstr, wait_for)
 
     def callback_new_light(self, callback):
@@ -527,9 +584,13 @@ class PLM(asyncio.Protocol):
         self._dump_in_progress = True
         self.get_first_all_link_record()
 
-    def product_data_request(self, device):
-        self.log.info('Requesting product data for %s', self._addr_string(device))
+    def product_data_request(self, addr):
+        device = Address(addr)
+        self.log.info('Requesting product data for %s', device.human)
         self.send_insteon_standard(device,'03','00', wait_for = {'code': b'\x51', 'cmd1': b'\x03', 'cmd2': b'\x00'})
+
+    def device_stats(self):
+        self.log.info('There are %d items in the ALDB', len(self.device_list))
 
     @property
     def dump_rawdata(self):
