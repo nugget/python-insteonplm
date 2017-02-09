@@ -128,7 +128,9 @@ Device = collections.namedtuple('Device', ['cat', 'subcat', 'firmware'])
 class ALDB:
     def __init__(self):
         self._devices = {}
+        self._cb_new_device = []
         self.state = 'empty'
+        self.log = logging.getLogger(__name__)
 
     def __len__(self):
         return len(self._devices)
@@ -137,15 +139,24 @@ class ALDB:
         return self._devices.keys()
 
     def __getitem__(self, address):
-        return self._devices[address]
+        if address in self._devices:
+            return self._devices[address]
+        raise KeyError
 
     def __setitem__(self, key, value):
         if key in self._devices:
             if 'firmware' in value and value['firmware'] < 255:
                 self._devices[key] = value
+
         else:
             self._devices[key] = value
-        # print('device ',key,' is now ',self._devices[key])
+            for cb, criteria in self._cb_new_device:
+                self.log.warning('I should callback to %s if %s', cb, criteria)
+                cb(address=key, name=key)
+
+    def new_device_callback(self, callback, criteria):
+        self.log.warn('New callback %s with %s', callback, criteria)
+        self._cb_new_device.append([callback, criteria])
 
 
 # In Python 3.4.4, `async` was renamed to `ensure_future`.
@@ -309,10 +320,10 @@ class PLM(asyncio.Protocol):
                                            da, hex(d['cat']))
                         else:
                             self.product_data_request(da)
+                    self.poll_devices()
                 else:
                     self.log.warn('Sent command %s UNsuccessful! (acknak %d)',
                                   binascii.hexlify(sm), acknak)
-
             self._last_command = None
             self._buffer = buffer
 
@@ -453,6 +464,8 @@ class PLM(asyncio.Protocol):
 
         if match is True:
             self.log.debug('I found what I was waiting for')
+            if 'callback' in self._wait_for:
+                self._wait_for['callback'](message)
             self._clear_wait()
 
     def _parse_insteon_standard(self, message):
@@ -483,6 +496,14 @@ class PLM(asyncio.Protocol):
 
         if cmd1 == 3 and cmd2 == 0:
             self._parse_product_data_response(from_addr, userdata)
+
+    def _parse_status_response(self, message):
+        imessage = message[2:]
+        from_addr = Address(imessage[0:3])
+        onlevel = imessage[8]
+        self.log.info('INSTEON Dimmer %s is at level %s',
+                      from_addr.human, hex(onlevel))
+
 
     def _parse_product_data_response(self, from_addr, message):
         from_addr = Address(from_addr)
@@ -604,3 +625,32 @@ class PLM(asyncio.Protocol):
         self.send_insteon_standard(
             device, '03', '00',
             wait_for={'code': b'\x51', 'cmd1': b'\x03', 'cmd2': b'\x00'})
+
+    def text_string_request(self, addr):
+        """Request Device Text String."""
+        device = Address(addr)
+        self.log.info('Requesting text string for %s', device.human)
+        self.send_insteon_standard(
+            device, '03', '02',
+            wait_for={'code': b'\x51', 'cmd1': b'\x03', 'cmd2': b'\x02'})
+
+    def status_request(self, addr):
+        """Request Device Status."""
+        device = Address(addr)
+        self.log.info('Requesting status for %s', device.human)
+        self.send_insteon_standard(
+            device, '19', '00',
+            wait_for={'code': b'\x50', 'callback': self._parse_status_response})
+
+    def new_device_callback(self, callback, criteria):
+        self.devices.new_device_callback(callback, criteria)
+
+    def poll_devices(self):
+        for d in dir(self.devices):
+            self.status_request(d)
+
+
+    def list_devices(self):
+        for d in dir(self.devices):
+            dev = self.devices[d]
+            print(d,':',dev)
