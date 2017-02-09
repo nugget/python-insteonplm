@@ -280,6 +280,11 @@ class PLM(asyncio.Protocol):
                 if code == b'\x6a':
                     self.log.info('ALL-Link database dump is complete')
                     self.devices.state = 'loaded'
+                    for da in dir(self.devices):
+                        if 'cat' in self.devices[da] and self.devices[da]['cat'] > 0:
+                            self.log.debug('I already know the category for %s (%s)', da, hex(self.devices[da]['cat']))
+                        else:
+                            self.product_data_request(da)
                 else:
                     self.log.warn('Sent command %s was NOT successful! (acknak %d)', binascii.hexlify(sm), acknak)
 
