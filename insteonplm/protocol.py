@@ -43,30 +43,6 @@ class Address(bytearray):
         return binascii.hexlify(self.addr)
 
 
-"""
-    def _addr_string(self, addr):
-        if isinstance(addr, str):
-            return addr
-        else:
-            hexaddr = str(binascii.hexlify(addr))[2:-1]
-            addrstr = hexaddr[0:2]+'.'+hexaddr[2:4]+'.'+hexaddr[4:6]
-            return addrstr.upper()
-
-    def _addr_hex(self, addr):
-        if isinstance(addr, bytearray):
-
-            self.log.debug('-- ')
-            self.log.debug('Queues: %d/%d: Buffer is %d bytes: %s',
-                           len(self._recv_queue), len(self._send_queue),
-                           len(self._buffer), binascii.hexlify(self._buffer))
-
-            hexaddr = str(binascii.hexlify(addr))[2:-1]
-            return hexaddr
-        else:
-            return addr.replace('.','')
-"""
-
-
 class PLMCode(object):
     def __init__(self, code, name = None, size = None, rsize = None):
         self.code = code
@@ -129,22 +105,29 @@ PP.add(b'\x69', name = 'Get First ALL-Link Record', size = 2)
 PP.add(b'\x6a', name = 'Get Next ALL-Link Record', size = 2)
 PP.add(b'\x73', name = 'Get IM Configuration', size = 2, rsize = 6)
 
-Device = collections.namedtuple('Device', ['address', 'cat', 'subcat', 'firmware'])
+Device = collections.namedtuple('Device', ['cat', 'subcat', 'firmware'])
 
 class ALDB:
     def __init__(self):
-        self._devices = []
+        self._devices = {}
+        self.state = 'empty'
 
     def __len__(self):
         return len(self._devices)
 
-    def __getitem__(self, address):
-        for c in self._devices:
-            if address == c['address']:
-                return c
+    def __dir__(self):
+        return self._devices.keys()
 
-    def __setitem__(self, dinfo):
-        oldval = Device()
+    def __getitem__(self, address):
+        return self._devices[address]
+
+    def __setitem__(self, key, value):
+        if key in self._devices:
+            if 'firmware' in value and value['firmware'] < 255:
+                self._devices[key] = value
+        else:
+            self._devices[key] = value
+        #print('device ',key,' is now ',self._devices[key])
 
 
 # In Python 3.4.4, `async` was renamed to `ensure_future`.
@@ -190,7 +173,7 @@ class PLM(asyncio.Protocol):
         self._recv_queue = []
         self._send_queue = []
 
-        self._device_list = []
+        self.devices = ALDB()
 
         self.log = logging.getLogger(__name__)
         self.transport = None
@@ -207,6 +190,7 @@ class PLM(asyncio.Protocol):
         self.transport.set_write_buffer_limits(128)
         limit = self.transport.get_write_buffer_size()
         self.log.debug('Write buffer size is %d', limit)
+        self.load_all_link_database()
 
     def data_received(self, data):
         """Called when asyncio.Protocol detects received data from network."""
@@ -295,9 +279,7 @@ class PLM(asyncio.Protocol):
             else:
                 if code == b'\x6a':
                     self.log.info('ALL-Link database dump is complete')
-                    self._dump_in_progress = False
-                    for da in self._device_list:
-                        self.product_data_request(da)
+                    self.devices.state = 'loaded'
                 else:
                     self.log.warn('Sent command %s was NOT successful! (acknak %d)', binascii.hexlify(sm), acknak)
 
@@ -479,8 +461,11 @@ class PLM(asyncio.Protocol):
         from_addr = Address(from_addr)
         category = message[4]
         subcategory = message[5]
+        firmware = message[6]
         self.log.info('INSTEON Product Data Response from %s: cat:%s, subcat:%s',
                       from_addr.human, hex(category), hex(subcategory))
+
+        self.devices[from_addr.hex] = dict(cat=category,subcat=subcategory,firmware=firmware)
 
     def _parse_button_event(self, message):
         event = message[2]
@@ -515,11 +500,9 @@ class PLM(asyncio.Protocol):
                       hex(flags), hex(group),
                       hex(linkdata1), hex(linkdata2), hex(linkdata3))
 
-        if not device_addr in self._device_list:
-            self.log.info('New device seen: %s', device_addr.human)
-            self._device_list.append(device_addr)
+        self.devices[device_addr.hex] = dict(cat=linkdata1,subcat=linkdata2,firmware=linkdata3)
 
-        if self._dump_in_progress is True:
+        if self.devices.state == 'loading':
             self.get_next_all_link_record()
 
     def _parse_all_link_completed(self, message):
@@ -546,7 +529,7 @@ class PLM(asyncio.Protocol):
             self._schedule_wait(wait_for)
 
     def _send_raw(self, message):
-        self.log.info('Sending %d byte message: %s', len(message), binascii.hexlify(message))
+        self.log.debug('Sending %d byte message: %s', len(message), binascii.hexlify(message))
         self.transport.write(message)
         self._last_command = message
 
@@ -580,26 +563,11 @@ class PLM(asyncio.Protocol):
         self.log.info('Requesting Next ALL-Link Record')
         self._send_hex('026a', wait_for = {'code': b'\x57'})
 
-    def dump_all_link_database(self):
-        self._dump_in_progress = True
+    def load_all_link_database(self):
+        self.devices.state = 'loading'
         self.get_first_all_link_record()
 
     def product_data_request(self, addr):
         device = Address(addr)
         self.log.info('Requesting product data for %s', device.human)
         self.send_insteon_standard(device,'03','00', wait_for = {'code': b'\x51', 'cmd1': b'\x03', 'cmd2': b'\x00'})
-
-    def device_stats(self):
-        self.log.info('There are %d items in the ALDB', len(self.device_list))
-
-    @property
-    def dump_rawdata(self):
-        """Return contents of transport object for debugging forensics."""
-        if hasattr(self, 'transport'):
-            attrs = vars(self.transport)
-            return ', '.join("%s: %s" % item for item in attrs.items())
-
-    @property
-    def test_string(self):
-        """I really do."""
-        return 'I like cows'
