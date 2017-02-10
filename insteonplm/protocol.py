@@ -499,11 +499,11 @@ class PLM(asyncio.Protocol):
                       from_addr.human, to_addr.human,
                       hex(cmd1), hex(cmd2), hex(flags))
 
-        if cmd1 == 0x13:
+        if cmd1 == 0x13 or cmd1 == 0x14:
             if self.devices.setattr(from_addr.hex, 'onlevel', 0):
                 self._do_update_callback(message)
-        elif cmd1 == 0x11:
-            if self.devices.setattr(from_addr.hex, 'onlevel', 255):
+        elif cmd1 == 0x11 or cmd1 == 0x12:
+            if self.devices.setattr(from_addr.hex, 'onlevel', cmd2):
                 self._do_update_callback(message)
 
     def _parse_insteon_extended(self, message):
@@ -692,7 +692,8 @@ class PLM(asyncio.Protocol):
 
     def turn_on(self, addr, brightness=255):
         device = Address(addr)
-        self.send_insteon_standard(device,'11','ff')
+        bhex = str.format('{:02X}', int(brightness)).lower()
+        self.send_insteon_standard(device,'11',bhex)
 
     def poll_devices(self):
         for d in dir(self.devices):
