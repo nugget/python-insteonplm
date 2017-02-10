@@ -6,7 +6,7 @@ import collections
 
 # 40.95.e6 is my computer room wall switch
 
-__all__ = ('PLM', 'PLMCode', 'PLMProtocol', 'Address')
+__all__ = ('PLM', 'PLMCode', 'PLMProtocol', 'Address', 'ALDB')
 
 
 class Address(bytearray):
@@ -456,7 +456,7 @@ class PLM(asyncio.Protocol):
     def _eval_wait_for(self, message):
         match = True
 
-        code = bytes([message[1]])
+        code = message[1]
         if 'code' in self._wait_for:
             if self._wait_for['code'] != code:
                 self.log.debug('code is not a match')
@@ -464,9 +464,9 @@ class PLM(asyncio.Protocol):
         else:
             self.log.debug('there is no code to find')
 
-        if code == b'\x50' or code == b'\x51':
-            cmd1 = bytes([message[9]])
-            cmd2 = bytes([message[10]])
+        if code == 0x50 or code == 0x51:
+            cmd1 = message[9]
+            cmd2 = message[10]
         else:
             cmd1 = None
             cmd2 = None
@@ -638,12 +638,12 @@ class PLM(asyncio.Protocol):
     def get_first_all_link_record(self):
         """Request first ALL-Link record."""
         self.log.info('Requesting First ALL-Link Record')
-        self._send_hex('0269', wait_for={'code': b'\x57'})
+        self._send_hex('0269', wait_for={'code': 0x57})
 
     def get_next_all_link_record(self):
         """Request next ALL-Link record."""
         self.log.info('Requesting Next ALL-Link Record')
-        self._send_hex('026a', wait_for={'code': b'\x57'})
+        self._send_hex('026a', wait_for={'code': 0x57})
 
     def load_all_link_database(self):
         """Load the ALL-Link Database into object."""
@@ -656,7 +656,7 @@ class PLM(asyncio.Protocol):
         self.log.info('Requesting product data for %s', device.human)
         self.send_insteon_standard(
             device, '03', '00',
-            wait_for={'code': b'\x51', 'cmd1': b'\x03', 'cmd2': b'\x00'})
+            wait_for={'code': 0x51, 'cmd1': 0x03, 'cmd2': 0x00})
 
     def text_string_request(self, addr):
         """Request Device Text String."""
@@ -664,7 +664,7 @@ class PLM(asyncio.Protocol):
         self.log.info('Requesting text string for %s', device.human)
         self.send_insteon_standard(
             device, '03', '02',
-            wait_for={'code': b'\x51', 'cmd1': b'\x03', 'cmd2': b'\x02'})
+            wait_for={'code': 0x51, 'cmd1': 0x03, 'cmd2': 0x02})
 
     def status_request(self, addr):
         """Request Device Status."""
@@ -672,7 +672,7 @@ class PLM(asyncio.Protocol):
         self.log.info('Requesting status for %s', device.human)
         self.send_insteon_standard(
             device, '19', '00',
-            wait_for={'code': b'\x50', 'callback': self._parse_status_response})
+            wait_for={'code': 0x50, 'callback': self._parse_status_response})
 
     def new_device_callback(self, callback, criteria):
         self.devices.new_device_callback(callback, criteria)
