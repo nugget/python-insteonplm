@@ -480,14 +480,19 @@ class PLM(asyncio.Protocol):
                 if key not in message:
                     self.log.debug('key %s from criteria is not in message', key)
                     match = False
+                    break
                 elif criteria[key] != message[key]:
                     self.log.debug('key %s from criteria does not match: %s/%s', key, criteria[key], message[key])
+                    match = False
+                    break
 
 
         if match is True:
             self.log.debug('I found what I was waiting for')
             if '_callback' in criteria:
                 criteria['_callback'](messagestring)
+        else:
+            self.log.debug('message did not match criteria')
 
         return match
 
