@@ -164,7 +164,16 @@ class ALDB:
 
     def setattr(self, key, attr, value):
         if key in self._devices:
+            oldvalue = None
+            if attr in self._devices[key]:
+                oldvalue = self._devices[key][attr]
             self._devices[key][attr] = value
+            if value != oldvalue:
+                self.log.info('Device %s.%s changed: %s->%s"',
+                              key, attr, oldvalue, value)
+                return True
+            else:
+                return False
         else:
             raise KeyError
 
@@ -490,6 +499,12 @@ class PLM(asyncio.Protocol):
                       from_addr.human, to_addr.human,
                       hex(cmd1), hex(cmd2), hex(flags))
 
+        if cmd1 == 0x13:
+            if self.devices.setattr(from_addr.hex, 'onlevel', 0):
+                self._do_update_callback(message)
+        elif cmd1 == 0x11:
+            if self.devices.setattr(from_addr.hex, 'onlevel', 255):
+                self._do_update_callback(message)
 
     def _parse_insteon_extended(self, message):
         imessage = message[2:]
@@ -515,6 +530,9 @@ class PLM(asyncio.Protocol):
         self.log.info('INSTEON Dimmer %s is at level %s',
                       from_addr.human, hex(onlevel))
         self.devices.setattr(from_addr.hex, 'onlevel', onlevel)
+        self._do_update_callback(message)
+
+    def _do_update_callback(self, message):
         for cb, criteria in self._update_callback:
             self.log.info('update callback %s with criteria %s', cb, criteria)
             self._loop.call_soon(cb, message)
