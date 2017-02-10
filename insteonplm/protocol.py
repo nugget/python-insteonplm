@@ -283,9 +283,9 @@ class PLM(asyncio.Protocol):
 
     def _clear_wait(self):
         self.log.debug('clear_wait invoked')
-        if 'thandle' in self._wait_for:
+        if '_thandle' in self._wait_for:
             self.log.debug('Cancelling wait_for timeout callback')
-            self._wait_for['thandle'].cancel()
+            self._wait_for['_thandle'].cancel()
         self._wait_for = {}
 
     def _schedule_wait(self, keys, timeout=2):
@@ -296,7 +296,7 @@ class PLM(asyncio.Protocol):
 
         if timeout > 0:
             self.log.debug('Set timeout on wait_for at %d seconds', timeout)
-            keys['thandle'] = self._loop.call_later(timeout,
+            keys['_thandle'] = self._loop.call_later(timeout,
                                                     self._timeout_reached)
 
         self._wait_for = keys
@@ -450,19 +450,16 @@ class PLM(asyncio.Protocol):
                 self.log.info('Unrecognized event: UNKNOWN (%s)',
                               binascii.hexlify(message))
 
-        self._eval_wait_for(message)
+        if self._message_matches_criteria(message, self._wait_for):
+            self.log.debug('clearing wait_for')
+            self._clear_wait()
+
         self._process_queue()
 
-    def _eval_wait_for(self, message):
-        match = True
+    def _unroll_message(self, message):
+        payload = {}
 
         code = message[1]
-        if 'code' in self._wait_for:
-            if self._wait_for['code'] != code:
-                self.log.debug('code is not a match')
-                match = False
-        else:
-            self.log.debug('there is no code to find')
 
         if code == 0x50 or code == 0x51:
             cmd1 = message[9]
@@ -471,21 +468,28 @@ class PLM(asyncio.Protocol):
             cmd1 = None
             cmd2 = None
 
-        if 'cmd1' in self._wait_for:
-            if self._wait_for['cmd1'] != cmd1:
-                self.log.debug('cmd1 is not a match')
-                match = False
+        return dict(code=code, cmd1=cmd1, cmd2=cmd2)
 
-        if 'cmd2' in self._wait_for:
-            if self._wait_for['cmd2'] != cmd2:
-                self.log.debug('cmd2 is not a match')
-                match = False
+    def _message_matches_criteria(self, messagestring, criteria):
+        match = True
+        message = self._unroll_message(messagestring)
+
+        for key in criteria.keys():
+            if key[0] != '_':
+                self.log.debug('eval_criteria looking for %s', key)
+                if key not in message:
+                    self.log.debug('key %s from criteria is not in message', key)
+                    match = False
+                elif criteria[key] != message[key]:
+                    self.log.debug('key %s from criteria does not match: %s/%s', key, criteria[key], message[key])
+
 
         if match is True:
             self.log.debug('I found what I was waiting for')
-            if 'callback' in self._wait_for:
-                self._wait_for['callback'](message)
-            self._clear_wait()
+            if '_callback' in criteria:
+                criteria['_callback'](messagestring)
+
+        return match
 
     def _parse_insteon_standard(self, message):
         imessage = message[2:11]
@@ -672,7 +676,7 @@ class PLM(asyncio.Protocol):
         self.log.info('Requesting status for %s', device.human)
         self.send_insteon_standard(
             device, '19', '00',
-            wait_for={'code': 0x50, 'callback': self._parse_status_response})
+            wait_for={'code': 0x50, '_callback': self._parse_status_response})
 
     def new_device_callback(self, callback, criteria):
         self.devices.new_device_callback(callback, criteria)
