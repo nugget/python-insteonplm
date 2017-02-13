@@ -4,8 +4,6 @@ import logging
 import binascii
 import collections
 
-# 40.95.e6 is my computer room wall switch
-
 __all__ = ('PLM', 'PLMCode', 'PLMProtocol', 'Address', 'ALDB')
 
 
@@ -75,12 +73,9 @@ class PLMProtocol(object):
         """Return the number of PLMCodes in the Protocol."""
         return len(self._codelist)
 
-    def __dir__(self):
-        """Return the full list of PLMCodes."""
-        clist = []
+    def __iter__(self):
         for x in self._codelist:
-            clist.append(x.code)
-        return clist
+            yield x.code
 
     def add(self, code, name=None, size=None, rsize=None):
         """Add a new PLMCode to the Protocol."""
@@ -136,8 +131,9 @@ class IPDB(object):
     def __len__(self):
         return len(self._products)
 
-    def __dir__(self):
-        return self._products.keys()
+    def __iter__(self):
+        for x in self._products.keys():
+            yield x
 
     def __getitem__(self, cat, subcat):
         if address in self._products:
@@ -160,8 +156,9 @@ class ALDB(object):
     def __len__(self):
         return len(self._devices)
 
-    def __dir__(self):
-        return self._devices.keys()
+    def __iter__(self):
+        for x in self._devices.keys():
+            yield x
 
     def __getitem__(self, address):
         if address in self._devices:
@@ -365,7 +362,7 @@ class PLM(asyncio.Protocol):
                 if code == 0x6a:
                     self.log.info('ALL-Link database dump is complete')
                     self.devices.state = 'loaded'
-                    for da in dir(self.devices):
+                    for da in self.devices:
                         d = self.devices[da]
                         if 'cat' in d and d['cat'] > 0:
                             self.log.debug('I know the category for %s (0x%x)',
@@ -383,7 +380,7 @@ class PLM(asyncio.Protocol):
         code = self._buffer[1]
         self.log.debug('Code is 0x%x', code)
 
-        for c in dir(PP):
+        for c in PP:
             if c == code or c == bytes([code]):
                 ppc = PP.lookup(code, fullmessage=self._buffer)
 
@@ -738,10 +735,10 @@ class PLM(asyncio.Protocol):
         self.send_insteon_standard(device,'11',bhex)
 
     def poll_devices(self):
-        for d in dir(self.devices):
+        for d in self.devices:
             self.status_request(d)
 
     def list_devices(self):
-        for d in dir(self.devices):
+        for d in self.devices:
             dev = self.devices[d]
             print(d,':',dev)
