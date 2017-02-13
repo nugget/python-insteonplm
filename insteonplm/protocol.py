@@ -17,6 +17,9 @@ class Address(bytearray):
         self.log = logging.getLogger(__name__)
         self.addr = self.normalize(addr)
 
+    def __repr__(self):
+        return self.human
+
     def normalize(self, addr):
         """Take any format of address and turn it into a hex string."""
         if isinstance(addr, Address):
@@ -87,13 +90,13 @@ class PLMProtocol(object):
         """Return the PLMCode from a byte and optional stream buffer."""
         for x in self._codelist:
             if x.code == code:
-                if code == b'\x62' and fullmessage:
+                if code == 0x62 and fullmessage:
                     x.name = 'INSTEON Fragmented Message'
                     x.size = 8
                     x.rsize = 9
                     if len(fullmessage) >= 6:
-                        flags = bytes([fullmessage[5]])
-                        if flags == b'\x00':
+                        flags = fullmessage[5]
+                        if flags == 0x00:
                             x.name = 'INSTEON Standard Message'
                         else:
                             x.name = 'INSTEON Extended Message'
@@ -104,22 +107,22 @@ class PLMProtocol(object):
 
 PP = PLMProtocol()
 
-PP.add(b'\x50', name='INSTEON Standard Message Received', size=11)
-PP.add(b'\x51', name='INSTEON Extended Message Received', size=25)
-PP.add(b'\x52', name='X10 Message Received', size=4)
-PP.add(b'\x53', name='ALL-Linking Completed', size=10)
-PP.add(b'\x54', name='Button Event Report', size=3)
-PP.add(b'\x55', name='User Reset Detected', size=2)
-PP.add(b'\x56', name='ALL-Link CLeanup Failure Report', size=2)
-PP.add(b'\x57', name='ALL-Link Record Response', size=10)
-PP.add(b'\x58', name='ALL-Link Cleanup Status Report', size=3)
+PP.add(0x50, name='INSTEON Standard Message Received', size=11)
+PP.add(0x51, name='INSTEON Extended Message Received', size=25)
+PP.add(0x52, name='X10 Message Received', size=4)
+PP.add(0x53, name='ALL-Linking Completed', size=10)
+PP.add(0x54, name='Button Event Report', size=3)
+PP.add(0x55, name='User Reset Detected', size=2)
+PP.add(0x56, name='ALL-Link CLeanup Failure Report', size=2)
+PP.add(0x57, name='ALL-Link Record Response', size=10)
+PP.add(0x58, name='ALL-Link Cleanup Status Report', size=3)
 
-PP.add(b'\x60', name='Get IM Info', size=2, rsize=9)
-PP.add(b'\x61', name='Send ALL-Link Command', size=5, rsize=6)
-PP.add(b'\x62', name='INSTEON Fragmented Message', size=8, rsize=9)
-PP.add(b'\x69', name='Get First ALL-Link Record', size=2)
-PP.add(b'\x6a', name='Get Next ALL-Link Record', size=2)
-PP.add(b'\x73', name='Get IM Configuration', size=2, rsize=6)
+PP.add(0x60, name='Get IM Info', size=2, rsize=9)
+PP.add(0x61, name='Send ALL-Link Command', size=5, rsize=6)
+PP.add(0x62, name='INSTEON Fragmented Message', size=8, rsize=9)
+PP.add(0x69, name='Get First ALL-Link Record', size=2)
+PP.add(0x6a, name='Get Next ALL-Link Record', size=2)
+PP.add(0x73, name='Get IM Configuration', size=2, rsize=6)
 
 Device = collections.namedtuple('Device', ['cat', 'subcat', 'firmware', 'onlevel'])
 
@@ -264,16 +267,15 @@ class PLM(asyncio.Protocol):
             self._connection_lost_callback()
 
     def _rsize(self, message):
-        code = bytes([message[1]])
+        code = message[1]
         ppc = PP.lookup(code, fullmessage=message)
 
         if hasattr(ppc, 'rsize') and ppc.rsize:
-            self.log.debug('Found a code %s message which returns %d bytes',
-                           binascii.hexlify(code), ppc.rsize)
+            self.log.debug('Found a code 0x%x message which returns %d bytes',
+                           code, ppc.rsize)
             return ppc.rsize
         else:
-            self.log.debug('Unable to find an rsize for code %s',
-                           binascii.hexlify(code))
+            self.log.debug('Unable to find an rsize for code 0x%x', code)
             return len(message) + 1
 
     def _timeout_reached(self):
@@ -312,7 +314,7 @@ class PLM(asyncio.Protocol):
                                len(self._buffer), rsize)
                 return
 
-            code = bytes([self._buffer[1]])
+            code = self._buffer[1]
             message_length = len(sm)
             response_length = rsize - message_length
             response = self._buffer[message_length:response_length]
@@ -321,7 +323,7 @@ class PLM(asyncio.Protocol):
             mla = self._buffer[:rsize]
             buffer = self._buffer[rsize:]
 
-            if acknak == 6:
+            if acknak == 0x06:
                 if len(response) > 0:
                     self.log.debug('Sent command %s OK with response %s',
                                    binascii.hexlify(sm), response)
@@ -329,33 +331,33 @@ class PLM(asyncio.Protocol):
                 else:
                     self.log.debug('Sent command %s OK', binascii.hexlify(sm))
             else:
-                if code == b'\x6a':
+                if code == 0x6a:
                     self.log.info('ALL-Link database dump is complete')
                     self.devices.state = 'loaded'
                     for da in dir(self.devices):
                         d = self.devices[da]
                         if 'cat' in d and d['cat'] > 0:
-                            self.log.debug('I know the category for %s (%s)',
-                                           da, hex(d['cat']))
+                            self.log.debug('I know the category for %s (0x%x)',
+                                           da, d['cat'])
                         else:
                             self.product_data_request(da)
                     self.poll_devices()
                 else:
-                    self.log.warn('Sent command %s UNsuccessful! (acknak %d)',
+                    self.log.warn('Sent command %s UNsuccessful! (acknak 0x%x)',
                                   binascii.hexlify(sm), acknak)
             self._last_command = None
             self._buffer = buffer
 
     def _wait_for_recognized_message(self):
-        code = bytes([self._buffer[1]])
-        self.log.debug('Code is %s', binascii.hexlify(code))
+        code = self._buffer[1]
+        self.log.debug('Code is 0x%x', code)
 
         for c in dir(PP):
-            if code == c:
+            if c == code or c == bytes([code]):
                 ppc = PP.lookup(code, fullmessage=self._buffer)
 
-                self.log.debug('Found a code %s message which is %d bytes',
-                               binascii.hexlify(code), ppc.size)
+                self.log.debug('Found a code 0x%x message which is %d bytes',
+                               code, ppc.size)
 
                 if len(self._buffer) == ppc.size:
                     new_message = self._buffer[0:ppc.size]
@@ -424,23 +426,23 @@ class PLM(asyncio.Protocol):
             self.log.warn('process_message called with a malformed message')
             return
 
-        code = bytes([message[1]])
-        self.log.debug('Code is %s', binascii.hexlify(code))
+        code = message[1]
+        self.log.debug('Code is 0x%x', code)
         ppc = PP.lookup(code, fullmessage=message)
 
-        if code == b'\x50':
+        if code == 0x50:
             self._parse_insteon_standard(message)
-        elif code == b'\x51':
+        elif code == 0x51:
             self._parse_insteon_extended(message)
-        elif code == b'\x53':
+        elif code == 0x53:
             self._parse_all_link_completed(message)
-        elif code == b'\x54':
+        elif code == 0x54:
             self._parse_button_event(message)
-        elif code == b'\x57':
+        elif code == 0x57:
             self._parse_all_link_record(message)
-        elif code == b'\x60':
+        elif code == 0x60:
             self._parse_get_plm_info(message)
-        elif code == b'\x73':
+        elif code == 0x73:
             self._parse_get_plm_config(message)
         else:
             if hasattr(ppc, 'name') and ppc.name:
@@ -610,7 +612,7 @@ class PLM(asyncio.Protocol):
         self._send_queue.append([message, wait_for])
 
     def _send_hex(self, message, wait_for={}):
-        if self._last_command:
+        if self._last_command or self._wait_for:
             self.log.debug('Still waiting on last_command.')
             self._queue_hex(message, wait_for)
         else:
