@@ -128,10 +128,10 @@ Product = collections.namedtuple('Product', ['cat', 'subcat', 'product_key', 'de
 
 class IPDB(object):
     def __init__(self):
-        self._products = {}
+        self._products = []
         self.log = logging.getLogger(__name__)
-        self._products.append((0x01,0x20,None,'SwitchLinc Dimmer (600W)', '2477D',['onoff','dimmable'])
-        self._products.append((0x01,0x07,None,'LampLinc Dimmer V2 2-pin', '2856D2',['onoff','dimmable'])
+        self._products.append(Product(0x01,0x20,None,'SwitchLinc Dimmer (600W)', '2477D',['onoff','dimmable']))
+        self._products.append(Product(0x01,0x07,None,'LampLinc Dimmer V2 2-pin', '2856D2',['onoff','dimmable']))
 
     def __len__(self):
         return len(self._products)
@@ -179,7 +179,7 @@ class ALDB(object):
                 self.log.warning('I should callback to %s if %s', cb, criteria)
                 cb(address=key, name=key)
 
-    def new_device_callback(self, callback, criteria):
+    def add_device_callback(self, callback, criteria):
         self.log.warn('New callback %s with %s', callback, criteria)
         self._cb_new_device.append([callback, criteria])
 
@@ -237,7 +237,8 @@ class PLM(asyncio.Protocol):
         self._loop = loop
 
         self._connection_lost_callback = connection_lost_callback
-        self._update_callback = [[update_callback,{}]]
+        self._update_callbacks = [[update_callback,{}]]
+        self._message_callbacks = []
 
         self._buffer = bytearray()
         self._last_command = None
@@ -249,6 +250,14 @@ class PLM(asyncio.Protocol):
 
         self.log = logging.getLogger(__name__)
         self.transport = None
+
+        self.add_message_callback(self._parse_insteon_standard, dict(code=0x50))
+        self.add_message_callback(self._parse_insteon_extended, dict(code=0x51))
+        self.add_message_callback(self._parse_all_link_completed, dict(code=0x53))
+        self.add_message_callback(self._parse_button_event, dict(code=0x54))
+        self.add_message_callback(self._parse_all_link_record, dict(code=0x57))
+        self.add_message_callback(self._parse_get_plm_info, dict(code=0x60))
+        self.add_message_callback(self._parse_get_plm_config, dict(code=0x73))
 
     #
     # asyncio network functions
@@ -450,23 +459,16 @@ class PLM(asyncio.Protocol):
 
         code = message[1]
         self.log.debug('Code is 0x%x', code)
-        ppc = PP.lookup(code, fullmessage=message)
 
-        if code == 0x50:
-            self._parse_insteon_standard(message)
-        elif code == 0x51:
-            self._parse_insteon_extended(message)
-        elif code == 0x53:
-            self._parse_all_link_completed(message)
-        elif code == 0x54:
-            self._parse_button_event(message)
-        elif code == 0x57:
-            self._parse_all_link_record(message)
-        elif code == 0x60:
-            self._parse_get_plm_info(message)
-        elif code == 0x73:
-            self._parse_get_plm_config(message)
-        else:
+        callbacked = False
+        for cb, criteria in self._message_callbacks:
+            if self._message_matches_criteria(message, criteria):
+                self.log.debug('message callback %s with criteria %s', cb, criteria)
+                self._loop.call_soon(cb, message)
+                callbacked = True
+
+        if callbacked is False:
+            ppc = PP.lookup(code, fullmessage=message)
             if hasattr(ppc, 'name') and ppc.name:
                 self.log.info('Unhandled event: %s (%s)', ppc.name,
                               binascii.hexlify(message))
@@ -479,6 +481,7 @@ class PLM(asyncio.Protocol):
             self._clear_wait()
 
         self._process_queue()
+
 
     def _unroll_message(self, message):
         payload = {}
@@ -566,8 +569,8 @@ class PLM(asyncio.Protocol):
         self._do_update_callback(message)
 
     def _do_update_callback(self, message):
-        for cb, criteria in self._update_callback:
-            self.log.info('update callback %s with criteria %s', cb, criteria)
+        for cb, criteria in self._update_callbacks:
+            self.log.debug('update callback %s with criteria %s', cb, criteria)
             self._loop.call_soon(cb, message)
 
     def _parse_product_data_response(self, from_addr, message):
@@ -646,6 +649,17 @@ class PLM(asyncio.Protocol):
         self.transport.write(message)
         self._last_command = message
 
+    def add_message_callback(self, callback, criteria):
+        self._message_callbacks.append([callback, criteria])
+        self.log.debug('Added message callback to %s on %s', callback, criteria)
+
+    def add_update_callback(self, callback, criteria):
+        self._update_callbacks.append([callback, criteria])
+        self.log.debug('Added update callback to %s on %s', callback, criteria)
+
+    def add_device_callback(self, callback, criteria):
+        self.devices.add_device_callback(callback, criteria)
+
     def send_insteon_standard(self, device, cmd1, cmd2, wait_for={}):
         """Send an INSTEON Standard message to the PLM."""
         device = Address(device)
@@ -707,11 +721,6 @@ class PLM(asyncio.Protocol):
             device, '19', '00',
             wait_for={'code': 0x50, '_callback': self._parse_status_response})
 
-    def new_device_callback(self, callback, criteria):
-        self.devices.new_device_callback(callback, criteria)
-
-    def update_callback(self, callback, criteria):
-        self._update_callback.append([callback, criteria])
 
     def get_device_attr(self, addr, attr):
         address = Address(addr)
