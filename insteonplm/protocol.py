@@ -124,10 +124,32 @@ PP.add(0x69, name='Get First ALL-Link Record', size=2)
 PP.add(0x6a, name='Get Next ALL-Link Record', size=2)
 PP.add(0x73, name='Get IM Configuration', size=2, rsize=6)
 
+Product = collections.namedtuple('Product', ['cat', 'subcat', 'product_key', 'description', 'model', 'capabilities'])
+
+class IPDB(object):
+    def __init__(self):
+        self._products = {}
+        self.log = logging.getLogger(__name__)
+        self._products.append((0x01,0x20,None,'SwitchLinc Dimmer (600W)', '2477D',['onoff','dimmable'])
+        self._products.append((0x01,0x07,None,'LampLinc Dimmer V2 2-pin', '2856D2',['onoff','dimmable'])
+
+    def __len__(self):
+        return len(self._products)
+
+    def __dir__(self):
+        return self._products.keys()
+
+    def __getitem__(self, cat, subcat):
+        if address in self._products:
+            return self._products[address]
+        raise KeyError
+
+
+
 Device = collections.namedtuple('Device', ['cat', 'subcat', 'firmware', 'onlevel'])
 
 
-class ALDB:
+class ALDB(object):
     def __init__(self):
         self._devices = {}
         self._cb_new_device = []
