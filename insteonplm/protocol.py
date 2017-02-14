@@ -4,7 +4,7 @@ import logging
 import binascii
 import collections
 
-from .products import IPDB
+from .ipdb import IPDB
 from .plm import PLMProtocol
 
 __all__ = ('PLM', 'ALDB', 'Address')
@@ -57,7 +57,6 @@ class Address(bytearray):
 PP = PLMProtocol()
 
 
-
 class ALDB(object):
     Device = collections.namedtuple('Device', ['cat', 'subcat', 'firmware', 'onlevel'])
     ipdb = IPDB()
@@ -82,10 +81,15 @@ class ALDB(object):
         raise KeyError
 
     def __setitem__(self, key, value):
+        if not 'cat' in value or value['cat'] == 0:
+            self.log.debug('Ignoring device setitem with no cat: %s', value)
+            return
+
         if key in self._devices:
             if 'firmware' in value and value['firmware'] < 255:
                 self._devices[key] = value
         else:
+            productdata = self.ipdb[value['cat'], value['subcat']]
             self._devices[key] = value
             for cb, criteria in self._cb_new_device:
                 self.log.warning('I should callback to %s if %s', cb, criteria)
