@@ -7,8 +7,9 @@ Product = collections.namedtuple('Product', ['cat', 'subcat', 'product_key', 'de
 
 class IPDB(object):
     products = []
-    products.append(Product(0x01,0x20,None,'SwitchLinc Dimmer (600W)', '2477D',['onoff','dimmable']))
-    products.append(Product(0x01,0x07,None,'LampLinc Dimmer V2 2-pin', '2856D2',['onoff','dimmable']))
+    products.append(Product(0x01,0x07,None,'LampLinc Dimmer V2 2-pin', '2856D2',['switch','dimmable']))
+    products.append(Product(0x01,0x20,None,'SwitchLinc Dimmer (600W)', '2477D',['switch','dimmable']))
+    products.append(Product(0x07,0x00,None,'I/O Linc', '2450',['switch','sensor']))
 
     def __init__(self):
         self.log = logging.getLogger(__name__)

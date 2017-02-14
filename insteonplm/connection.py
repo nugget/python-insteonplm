@@ -24,8 +24,7 @@ class Connection:
     @classmethod
     @asyncio.coroutine
     def create(cls, device='/dev/ttyUSB0',
-               auto_reconnect=True, loop=None, protocol_class=PLM,
-               update_callback=None):
+            auto_reconnect=True, loop=None, protocol_class=PLM):
         """Initiate a connection to a specific device.
 
         Here is where we supply the device and callback callables we
@@ -37,8 +36,6 @@ class Connection:
             Should the Connection try to automatically reconnect if needed?
         :param loop:
             asyncio.loop for async operation
-        :param update_callback"
-            This function is called whenever PLM state data changes
 
         :type device:
             str
@@ -65,8 +62,7 @@ class Connection:
                 ensure_future(conn._reconnect(), loop=conn._loop)
 
         conn.protocol = protocol_class(
-            connection_lost_callback=connection_lost, loop=conn._loop,
-            update_callback=update_callback)
+            connection_lost_callback=connection_lost, loop=conn._loop)
 
         yield from conn._reconnect()
 

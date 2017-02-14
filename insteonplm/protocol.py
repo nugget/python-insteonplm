@@ -26,7 +26,7 @@ class Address(bytearray):
         if isinstance(addr, Address):
             return addr.hex
         if isinstance(addr, bytearray):
-            addr = bytes(addr)
+            return addr.hex()
         if isinstance(addr, bytes):
             return binascii.hexlify(addr).decode()
         if isinstance(addr, str):
@@ -89,18 +89,17 @@ class ALDB(object):
                 self._devices[key] = value
         else:
             productdata = self.ipdb[value['cat'], value['subcat']]
-            print(value)
-            print(productdata)
             value.update(productdata._asdict())
-            print(value)
+            value['address_hex'] = key
+            value['address'] = Address(key).human
             self._devices[key] = value
 
-            self.log.info('New INSTEON Device %s: %s (%02x:%02x)',
-                          key, value['description'], value['cat'], value['subcat'])
+            self.log.info('New INSTEON Device %r: %s (%02x:%02x)',
+                          Address(key), value['description'], value['cat'], value['subcat'])
 
             for cb, criteria in self._cb_new_device:
-                self.log.warning('I should callback to %s if %s', cb, criteria)
-                cb(address=key, name=key)
+                if self._device_matches_criteria(value,criteria):
+                    cb(value)
 
     def add_device_callback(self, callback, criteria):
         self.log.warn('New callback %s with %s', callback, criteria)
@@ -125,6 +124,32 @@ class ALDB(object):
         else:
             raise KeyError
 
+    def _device_matches_criteria(self, device, criteria):
+        match = True
+
+        for key in criteria.keys():
+            if key == 'capability':
+                if criteria[key] not in device['capabilities']:
+                    self.log.debug('device does not advertise capability %s', key)
+                    match = False
+                    break
+            elif key[0] != '_':
+                if key not in device:
+                    self.log.debug('key %s from criteria is not in device', key)
+                    match = False
+                    break
+                elif criteria[key] != device[key]:
+                    self.log.debug('key %s from criteria does not match: %s/%s', key, criteria[key], message[key])
+                    match = False
+                    break
+
+        if match is True:
+            self.log.debug('I found what I was waiting for')
+        else:
+            self.log.debug('device did not match criteria')
+
+        return match
+
 
 # In Python 3.4.4, `async` was renamed to `ensure_future`.
 try:
@@ -137,7 +162,7 @@ except AttributeError:
 class PLM(asyncio.Protocol):
     """The Insteon PLM IP control protocol handler."""
 
-    def __init__(self, update_callback=None, loop=None, connection_lost_callback=None):
+    def __init__(self, loop=None, connection_lost_callback=None):
         """Protocol handler that handles all status and changes on PLM.
 
         This class is expected to be wrapped inside a Connection class object
@@ -160,7 +185,7 @@ class PLM(asyncio.Protocol):
         self._loop = loop
 
         self._connection_lost_callback = connection_lost_callback
-        self._update_callbacks = [[update_callback,{}]]
+        self._update_callbacks = []
         self._message_callbacks = []
 
         self._buffer = bytearray()
@@ -414,11 +439,13 @@ class PLM(asyncio.Protocol):
         if code == 0x50 or code == 0x51:
             cmd1 = message[9]
             cmd2 = message[10]
+            address = Address(message[2:5]).hex
         else:
             cmd1 = None
             cmd2 = None
+            address = None
 
-        return dict(code=code, cmd1=cmd1, cmd2=cmd2)
+        return dict(code=code, cmd1=cmd1, cmd2=cmd2, address=address)
 
     def _message_matches_criteria(self, messagestring, criteria):
         match = True
@@ -494,7 +521,8 @@ class PLM(asyncio.Protocol):
     def _do_update_callback(self, message):
         for cb, criteria in self._update_callbacks:
             self.log.debug('update callback %s with criteria %s', cb, criteria)
-            self._loop.call_soon(cb, message)
+            if self._message_matches_criteria(message, criteria):
+                self._loop.call_soon(cb, message)
 
     def _parse_product_data_response(self, from_addr, message):
         from_addr = Address(from_addr)

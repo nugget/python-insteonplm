@@ -37,12 +37,20 @@ def console(loop, log):
         """Receives event callback from PLM Protocol class."""
         log.info('Callback invoked: %s', message)
 
+
     device = args.device
 
     log.info('Connecting to Insteon PLM at %s', device)
 
     conn = yield from insteonplm.Connection.create(
-        device=device, loop=loop, update_callback=log_callback)
+        device=device, loop=loop)
+
+    def async_insteonplm_light_callback(device):
+        log.warn('New Light Device')
+        print(device)
+
+    criteria = dict(capability='switch')
+    conn.protocol.add_device_callback(async_insteonplm_light_callback, criteria)
 
     #yield from asyncio.sleep(5, loop=loop)
     # Successfully turns off the light in my computer room (yay)
@@ -52,13 +60,21 @@ def console(loop, log):
     #conn.protocol.product_data_request('15c3ab')
     #yield from asyncio.sleep(10, loop=loop)
 
-    if 1==2:
+    yield from asyncio.sleep(5, loop=loop)
+
+    if 1==1:
+        conn.protocol.text_string_request('4095e6')
+
+    if 1==0:
+        conn.protocol.product_data_request('395fa4')
+
+    if 1==0:
+        conn.protocol.product_data_request('4095e6')
+        conn.protocol.product_data_request('4095e6')
+        conn.protocol.product_data_request('4095e6')
+        conn.protocol.product_data_request('4095e6')
+        conn.protocol.product_data_request('4095e6')
         yield from asyncio.sleep(5, loop=loop)
-        conn.protocol.product_data_request('4095e6')
-        conn.protocol.product_data_request('4095e6')
-        conn.protocol.product_data_request('4095e6')
-        conn.protocol.product_data_request('4095e6')
-        conn.protocol.product_data_request('4095e6')
 
     #conn.protocol._send_raw(binascii.unhexlify('02624095e6150300000000000000ffff000000000000'))
     #yield from asyncio.sleep(5, loop=loop)
@@ -68,12 +84,14 @@ def console(loop, log):
     #yield from asyncio.sleep(5, loop=loop)
     #conn.protocol.get_plm_config()
 
-    if 1==1:
+    if 1==0:
         yield from asyncio.sleep(5, loop=loop)
         conn.protocol.dump_all_link_database()
+        yield from asyncio.sleep(5, loop=loop)
 
 
 def monitor():
+
     """Wrapper to call console with a loop."""
     log = logging.getLogger(__name__)
     loop = asyncio.get_event_loop()
