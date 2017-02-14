@@ -58,7 +58,6 @@ PP = PLMProtocol()
 
 
 class ALDB(object):
-    Device = collections.namedtuple('Device', ['cat', 'subcat', 'firmware', 'onlevel'])
     ipdb = IPDB()
 
     def __init__(self):
@@ -90,7 +89,15 @@ class ALDB(object):
                 self._devices[key] = value
         else:
             productdata = self.ipdb[value['cat'], value['subcat']]
+            print(value)
+            print(productdata)
+            value.update(productdata._asdict())
+            print(value)
             self._devices[key] = value
+
+            self.log.info('New INSTEON Device %s: %s (%02x:%02x)',
+                          key, value['description'], value['cat'], value['subcat'])
+
             for cb, criteria in self._cb_new_device:
                 self.log.warning('I should callback to %s if %s', cb, criteria)
                 cb(address=key, name=key)
