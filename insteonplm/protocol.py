@@ -102,8 +102,14 @@ class ALDB(object):
                     cb(value)
 
     def add_device_callback(self, callback, criteria):
-        self.log.warn('New callback %s with %s', callback, criteria)
+        self.log.warn('New callback %s with %s (%d items already in list)', callback, criteria, len(self._devices.keys()))
         self._cb_new_device.append([callback, criteria])
+        for d in self:
+            value = self[d]
+            if self._device_matches_criteria(value,criteria):
+                self.log.info('retroactive callback for device %s matching %s', value['address'], criteria)
+                callback(value)
+
 
     def status_update_callback(self, callback, criteria):
         self.log.warn('Status callback %s', callback, criteria)
