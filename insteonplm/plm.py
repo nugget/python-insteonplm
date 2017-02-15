@@ -173,6 +173,10 @@ class Message(object):
             self.spare1 = rawmessage[3]
             self.spare2 = rawmessage[4]
 
+    def __repr__(self):
+        attrs = vars(self)
+        return ', '.join("%s: %r" % item for item in attrs.items())
+
     def decode_flags(self, flags):
         retval = {}
         if flags is not None:

@@ -72,6 +72,8 @@ class ALDB(object):
     def setattr(self, key, attr, value):
         key = Address(key).hex
 
+        self.log.debug('setattr called with %s %s %s', key, attr, value)
+
         if key in self._devices:
             oldvalue = None
             if attr in self._devices[key]:
@@ -82,12 +84,17 @@ class ALDB(object):
                               key, attr, oldvalue, value)
                 return True
             else:
+                self.log.info('Device %s.%s unchanged: %s->%s"',
+                              key, attr, oldvalue, value)
                 return False
         else:
             raise KeyError
 
     def _device_matches_criteria(self, device, criteria):
         match = True
+
+        if 'address' in criteria:
+            criteria['address'] = Address(criteria['address'])
 
         for key in criteria.keys():
             if key == 'capability':
@@ -101,7 +108,7 @@ class ALDB(object):
                     match = False
                     break
                 elif criteria[key] != device[key]:
-                    self.log.debug('key %s from criteria does not match: %s/%s', key, criteria[key], device[key])
+                    self.log.debug('key %s from criteria does not match: %r/%r', key, criteria[key], device[key])
                     match = False
                     break
 
@@ -380,10 +387,10 @@ class PLM(asyncio.Protocol):
         if callbacked is False:
             ppc = PP.lookup(code, fullmessage=message)
             if hasattr(ppc, 'name') and ppc.name:
-                self.log.info('Unhandled event: %s (%s)', ppc.name,
+                self.log.warning('Unhandled event: %s (%s)', ppc.name,
                               binascii.hexlify(message))
             else:
-                self.log.info('Unrecognized event: UNKNOWN (%s)',
+                self.log.warning('Unrecognized event: UNKNOWN (%s)',
                               binascii.hexlify(message))
 
         if self._message_matches_criteria(message, self._wait_for):
@@ -396,18 +403,22 @@ class PLM(asyncio.Protocol):
 
     def _message_matches_criteria(self, rawmessage, criteria):
         match = True
+
+        if 'address' in criteria:
+            criteria['address'] = Address(criteria['address'])
+
         msg = Message(rawmessage)
 
         for key in criteria.keys():
             if key[0] != '_':
-                self.log.debug('eval_criteria looking for %s', key)
+                self.log.debug('_mmc looking for %s', key)
                 mattr = getattr(msg, key, None)
                 if mattr is None:
                     self.log.debug('key %s from criteria is not in message', key)
                     match = False
                     break
                 elif criteria[key] != mattr:
-                    self.log.debug('key %s from criteria does not match: %s/%s', key, criteria[key], mattr)
+                    self.log.debug('key %s from criteria does not match: %r/%r', key, criteria[key], mattr)
                     match = False
                     break
 
@@ -428,9 +439,11 @@ class PLM(asyncio.Protocol):
                       msg.cmd1, msg.cmd2, msg.flagsval)
 
         if msg.cmd1 == 0x13 or msg.cmd1 == 0x14:
+            self.log.debug('Hey You Guys')
             if self.devices.setattr(msg.address, 'onlevel', 0):
                 self._do_update_callback(rawmessage)
         elif msg.cmd1 == 0x11 or msg.cmd1 == 0x12:
+            self.log.debug('Hey Youse Guys')
             if self.devices.setattr(msg.address, 'onlevel', msg.cmd2):
                 self._do_update_callback(rawmessage)
 
@@ -610,9 +623,11 @@ class PLM(asyncio.Protocol):
     def get_device_attr(self, addr, attr):
         address = Address(addr)
         device = self.devices[address.hex]
-        self.log.info('request device attr %s from %s: %s', attr, address.human, device)
         if attr in device:
+            self.log.debug('Device attr %s from %r: %r', attr, address, device[attr])
             return device[attr]
+        else:
+            self.log.warning('Device attr %s from %r: NOTFOUND (%r)', attr, address, device)
 
     def turn_off(self, addr):
         device = Address(addr)
