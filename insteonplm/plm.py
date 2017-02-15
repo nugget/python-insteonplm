@@ -16,6 +16,15 @@ class Address(bytearray):
     def __repr__(self):
         return self.human
 
+    def __str__(self):
+        return self.human
+
+    def __eq__(self, other):
+        return self.hex == other.hex
+
+    def __ne__(self, other):
+        return self.hex != other.hex
+
     def normalize(self, addr):
         """Take any format of address and turn it into a hex string."""
         if isinstance(addr, Address):
