@@ -70,6 +70,8 @@ class ALDB(object):
         self._cb_status.append([callback, criteria])
 
     def setattr(self, key, attr, value):
+        key = Address(key).hex
+
         if key in self._devices:
             oldvalue = None
             if attr in self._devices[key]:
@@ -99,7 +101,7 @@ class ALDB(object):
                     match = False
                     break
                 elif criteria[key] != device[key]:
-                    self.log.debug('key %s from criteria does not match: %s/%s', key, criteria[key], message[key])
+                    self.log.debug('key %s from criteria does not match: %s/%s', key, criteria[key], device[key])
                     match = False
                     break
 
@@ -426,10 +428,10 @@ class PLM(asyncio.Protocol):
                       msg.cmd1, msg.cmd2, msg.flagsval)
 
         if msg.cmd1 == 0x13 or msg.cmd1 == 0x14:
-            if self.devices.setattr(msg.address.hex, 'onlevel', 0):
+            if self.devices.setattr(msg.address, 'onlevel', 0):
                 self._do_update_callback(rawmessage)
         elif msg.cmd1 == 0x11 or msg.cmd1 == 0x12:
-            if self.devices.setattr(msg.address.hex, 'onlevel', msg.cmd2):
+            if self.devices.setattr(msg.address, 'onlevel', msg.cmd2):
                 self._do_update_callback(rawmessage)
 
     def _parse_insteon_extended(self, rawmessage):
@@ -442,84 +444,67 @@ class PLM(asyncio.Protocol):
         if msg.cmd1 == 0x03 and msg.cmd2 == 0x00:
             self._parse_product_data_response(msg.address, msg.userdata)
 
-    def _parse_status_response(self, message):
-        imessage = message[2:]
-        from_addr = Address(imessage[0:3])
-        onlevel = imessage[8]
-        self.log.info('INSTEON device status %s is at level %s',
-                      from_addr.human, hex(onlevel))
-        self.devices.setattr(from_addr.hex, 'onlevel', onlevel)
-        self._do_update_callback(message)
+    def _parse_status_response(self, rawmessage):
+        msg = Message(rawmessage)
+        onlevel = msg.cmd2
 
-    def _parse_sensor_response(self, message):
-        imessage = message[2:]
-        from_addr = Address(imessage[0:3])
-        onlevel = imessage[8]
-        self.log.info('INSTEON device sensor %s is at level %s',
-                      from_addr.human, hex(onlevel))
-        self.devices.setattr(from_addr.hex, 'sensorlevel', onlevel)
-        self._do_update_callback(message)
+        self.log.info('INSTEON device status %r is at level %s',
+                      msg.address, hex(onlevel))
+        self.devices.setattr(msg.address, 'onlevel', onlevel)
+        self._do_update_callback(rawmessage)
 
-    def _do_update_callback(self, message):
+    def _parse_sensor_response(self, rawmessage):
+        msg = Message(rawmessage)
+        onlevel = msg.cmd2
+
+        self.log.info('INSTEON device sensor %r is at level %s',
+                      msg.address, hex(onlevel))
+        self.devices.setattr(msg.address, 'sensorlevel', onlevel)
+        self._do_update_callback(rawmessage)
+
+    def _do_update_callback(self, rawmessage):
         for cb, criteria in self._update_callbacks:
             self.log.debug('update callback %s with criteria %s', cb, criteria)
-            if self._message_matches_criteria(message, criteria):
-                self._loop.call_soon(cb, message)
+            if self._message_matches_criteria(rawmessage, criteria):
+                self._loop.call_soon(cb, rawmessage)
 
-    def _parse_product_data_response(self, from_addr, message):
-        from_addr = Address(from_addr)
-        category = message[4]
-        subcategory = message[5]
-        firmware = message[6]
-        self.log.info('INSTEON Product Data Response from %s: cat:%s, subcat:%s',
-                      from_addr.human, hex(category), hex(subcategory))
+    def _parse_product_data_response(self, address, userdata):
+        category = userdata[4]
+        subcategory = userdata[5]
+        firmware = userdata[6]
+        self.log.info('INSTEON Product Data Response from %r: cat:%s, subcat:%s',
+                      address, hex(category), hex(subcategory))
 
-        self.devices[from_addr.hex] = dict(cat=category, subcat=subcategory, firmware=firmware)
+        self.devices[address.hex] = dict(cat=category, subcat=subcategory, firmware=firmware)
 
-    def _parse_button_event(self, message):
-        event = message[2]
-        self.log.info('Button event: %s', hex(event))
+    def _parse_button_event(self, rawmessage):
+        msg = Message(rawmessage)
+        self.log.info('PLM button event: %02x (%s)', msg.event, msg.description)
 
-    def _parse_get_plm_info(self, message):
-        plm_addr = Address(message[2:5])
-        category = message[5]
-        subcategory = message[6]
-        firmware = message[7]
-        self.log.info('PLM Info from %s: category:%s subcat:%s firmware:%s',
-                      plm_addr.human,
-                      hex(category), hex(subcategory), hex(firmware))
+    def _parse_get_plm_info(self, rawmessage):
+        msg = Message(rawmessage)
+        self.log.info('PLM Info from %r: category:%02x subcat:%02x firmware:%02x',
+                      msg.address, msg.category, msg.subcategory, msg.firmware)
 
-    def _parse_get_plm_config(self, message):
-        flags = message[2]
-        spare1 = message[3]
-        spare2 = message[4]
-        self.log.info('PLM Config: flags:%s spare:%s spare:%s',
-                      hex(flags), hex(spare1), hex(spare2))
+    def _parse_get_plm_config(self, rawmessage):
+        msg = Message(rawmessage)
+        self.log.info('PLM Config: flags:%02x spare:%02x spare:%02x',
+                    msg.flagsval, msg.spare1, msg.spare2)
 
-    def _parse_all_link_record(self, message):
-        flags = message[2]
-        group = message[3]
-        device_addr = Address(message[4:7])
-        linkdata1 = message[7]
-        linkdata2 = message[8]
-        linkdata3 = message[9]
-        self.log.info('ALL-Link Record for %s: flags:%s group:%s data:%s/%s/%s',
-                      device_addr.human,
-                      hex(flags), hex(group),
-                      hex(linkdata1), hex(linkdata2), hex(linkdata3))
+    def _parse_all_link_record(self, rawmessage):
+        msg = Message(rawmessage)
 
-        self.devices[device_addr.hex] = dict(cat=linkdata1, subcat=linkdata2, firmware=linkdata3)
+        self.log.info('ALL-Link Record for %r: flags:%02x group:%02x data:%02x/%02x/%02x',
+                      msg.address, msg.flagsval, msg.group,
+                      msg.linkdata1, msg.linkdata2, msg.linkdata3)
+
+        self.devices[msg.address.hex] = dict(cat=msg.linkdata1, subcat=msg.linkdata2, firmware=msg.linkdata3)
 
         if self.devices.state == 'loading':
             self.get_next_all_link_record()
 
     def _parse_all_link_completed(self, message):
-        linkcode = message[2]
-        group = message[3]
-        device_addr = Address(message[4:7])
-        category = message[7]
-        subcategory = message[8]
-        firmware = message[9]
+        msg = Message(rawmessage)
         self.log.info('ALL-Link Completed for %s: group:%s cat:%s subcat:%s firmware:%s linkcode:%s',
                       device_addr.human, hex(group),
                       hex(category), hex(subcategory), hex(firmware),
