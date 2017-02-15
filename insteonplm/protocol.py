@@ -5,57 +5,11 @@ import binascii
 import collections
 
 from .ipdb import IPDB
-from .plm import PLMProtocol
+from .plm import Address, PLMProtocol, Message
 
-__all__ = ('PLM', 'ALDB', 'Address')
-
-
-class Address(bytearray):
-    """Datatype definition for INSTEON device address handling."""
-
-    def __init__(self, addr):
-        """Create an Address object."""
-        self.log = logging.getLogger(__name__)
-        self.addr = self.normalize(addr)
-
-    def __repr__(self):
-        return self.human
-
-    def normalize(self, addr):
-        """Take any format of address and turn it into a hex string."""
-        if isinstance(addr, Address):
-            return addr.hex
-        if isinstance(addr, bytearray):
-            return addr.hex()
-        if isinstance(addr, bytes):
-            return binascii.hexlify(addr).decode()
-        if isinstance(addr, str):
-            addr.replace('.', '')
-            addr = addr[0:6]
-            return addr.lower()
-        else:
-            self.log.warn('Address class initialized with unknown type %s', type(addr))
-            return 'aabbcc'
-
-    @property
-    def human(self):
-        """Emit the address in human-readible format (AA.BB.CC)."""
-        addrstr = self.addr[0:2]+'.'+self.addr[2:4]+'.'+self.addr[4:6]
-        return addrstr.upper()
-
-    @property
-    def hex(self):
-        """Emit the address in bare hex format (aabbcc)."""
-        return self.addr
-
-    @property
-    def bytes(self):
-        r"""Emit the address in bytes format (b'\xaabbcc')."""
-        return binascii.hexlify(self.addr)
-
+__all__ = ('PLM', 'ALDB')
 
 PP = PLMProtocol()
-
 
 class ALDB(object):
     ipdb = IPDB()
@@ -437,91 +391,73 @@ class PLM(asyncio.Protocol):
         self._process_queue()
 
 
-    def _unroll_message(self, message):
-        payload = {}
 
-        code = message[1]
-
-        if code == 0x50 or code == 0x51:
-            cmd1 = message[9]
-            cmd2 = message[10]
-            address = Address(message[2:5]).hex
-        else:
-            cmd1 = None
-            cmd2 = None
-            address = None
-
-        return dict(code=code, cmd1=cmd1, cmd2=cmd2, address=address)
-
-    def _message_matches_criteria(self, messagestring, criteria):
+    def _message_matches_criteria(self, rawmessage, criteria):
         match = True
-        message = self._unroll_message(messagestring)
+        msg = Message(rawmessage)
 
         for key in criteria.keys():
             if key[0] != '_':
                 self.log.debug('eval_criteria looking for %s', key)
-                if key not in message:
+                mattr = getattr(msg, key, None)
+                if mattr is None:
                     self.log.debug('key %s from criteria is not in message', key)
                     match = False
                     break
-                elif criteria[key] != message[key]:
-                    self.log.debug('key %s from criteria does not match: %s/%s', key, criteria[key], message[key])
+                elif criteria[key] != mattr:
+                    self.log.debug('key %s from criteria does not match: %s/%s', key, criteria[key], mattr)
                     match = False
                     break
-
 
         if match is True:
             self.log.debug('I found what I was waiting for')
             if '_callback' in criteria:
-                criteria['_callback'](messagestring)
+                criteria['_callback'](rawmessage)
         else:
             self.log.debug('message did not match criteria')
 
         return match
 
-    def _parse_insteon_standard(self, message):
-        imessage = message[2:11]
-        from_addr = Address(imessage[0:3])
-        to_addr = Address(imessage[3:6])
-        flags = imessage[6]
-        cmd1 = imessage[7]
-        cmd2 = imessage[8]
+    def _parse_insteon_standard(self, rawmessage):
+        msg = Message(rawmessage)
 
-        self.log.info('INSTEON standard message from %s to %s: cmd1:%s cmd2:%s flags:%s',
-                      from_addr.human, to_addr.human,
-                      hex(cmd1), hex(cmd2), hex(flags))
+        self.log.info('INSTEON standard %r->%r: cmd1:%02x cmd2:%02x flags:%02x',
+                      msg.address, msg.target,
+                      msg.cmd1, msg.cmd2, msg.flagsval)
 
-        if cmd1 == 0x13 or cmd1 == 0x14:
-            if self.devices.setattr(from_addr.hex, 'onlevel', 0):
-                self._do_update_callback(message)
-        elif cmd1 == 0x11 or cmd1 == 0x12:
-            if self.devices.setattr(from_addr.hex, 'onlevel', cmd2):
-                self._do_update_callback(message)
+        if msg.cmd1 == 0x13 or msg.cmd1 == 0x14:
+            if self.devices.setattr(msg.address.hex, 'onlevel', 0):
+                self._do_update_callback(rawmessage)
+        elif msg.cmd1 == 0x11 or msg.cmd1 == 0x12:
+            if self.devices.setattr(msg.address.hex, 'onlevel', msg.cmd2):
+                self._do_update_callback(rawmessage)
 
-    def _parse_insteon_extended(self, message):
-        imessage = message[2:]
-        from_addr = Address(imessage[0:3])
-        to_addr = Address(imessage[3:6])
-        flags = imessage[6]
-        cmd1 = imessage[7]
-        cmd2 = imessage[8]
-        userdata = imessage[9:]
+    def _parse_insteon_extended(self, rawmessage):
+        msg = Message(rawmessage)
 
-        self.log.info('INSTEON extended %s->%s: cmd1:%s cmd2:%s flags:%s data:%s',
-                      from_addr.human, to_addr.human,
-                      hex(cmd1), hex(cmd2), hex(flags),
-                      binascii.hexlify(userdata))
+        self.log.info('INSTEON extended %r->%r: cmd1:%02x cmd2:%02x flags:%02x data:%s',
+                      msg.address, msg.target, msg.cmd1, msg.cmd2, msg.flagsval,
+                      binascii.hexlify(msg.userdata))
 
-        if cmd1 == 3 and cmd2 == 0:
-            self._parse_product_data_response(from_addr, userdata)
+        if msg.cmd1 == 0x03 and msg.cmd2 == 0x00:
+            self._parse_product_data_response(msg.address, msg.userdata)
 
     def _parse_status_response(self, message):
         imessage = message[2:]
         from_addr = Address(imessage[0:3])
         onlevel = imessage[8]
-        self.log.info('INSTEON Dimmer %s is at level %s',
+        self.log.info('INSTEON device status %s is at level %s',
                       from_addr.human, hex(onlevel))
         self.devices.setattr(from_addr.hex, 'onlevel', onlevel)
+        self._do_update_callback(message)
+
+    def _parse_sensor_response(self, message):
+        imessage = message[2:]
+        from_addr = Address(imessage[0:3])
+        onlevel = imessage[8]
+        self.log.info('INSTEON device sensor %s is at level %s',
+                      from_addr.human, hex(onlevel))
+        self.devices.setattr(from_addr.hex, 'sensorlevel', onlevel)
         self._do_update_callback(message)
 
     def _do_update_callback(self, message):
@@ -670,7 +606,7 @@ class PLM(asyncio.Protocol):
             device, '03', '02',
             wait_for={'code': 0x51, 'cmd1': 0x03, 'cmd2': 0x02})
 
-    def status_request(self, addr):
+    def status_request(self, addr, type='main'):
         """Request Device Status."""
         device = Address(addr)
         self.log.info('Requesting status for %s', device.human)
@@ -678,10 +614,18 @@ class PLM(asyncio.Protocol):
             device, '19', '00',
             wait_for={'code': 0x50, '_callback': self._parse_status_response})
 
+    def sensor_request(self, addr):
+        """Request Device Status."""
+        device = Address(addr)
+        self.log.info('Requesting sensor status for %s', device.human)
+        self.send_insteon_standard(
+            device, '19', '01',
+            wait_for={'code': 0x50, '_callback': self._parse_sensor_response})
 
     def get_device_attr(self, addr, attr):
         address = Address(addr)
         device = self.devices[address.hex]
+        self.log.info('request device attr %s from %s: %s', attr, address.human, device)
         if attr in device:
             return device[attr]
 
@@ -696,7 +640,11 @@ class PLM(asyncio.Protocol):
 
     def poll_devices(self):
         for d in self.devices:
+            device = self.devices[d]
             self.status_request(d)
+            if 'binary_sensor' in device['capabilities']:
+                self.log.info('this is a sensor device making supplemental request')
+                self.sensor_request(d)
 
     def list_devices(self):
         for d in self.devices:
