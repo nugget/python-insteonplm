@@ -406,20 +406,15 @@ class PLM(asyncio.Protocol):
             if key[0] != '_':
                 mattr = getattr(msg, key, None)
                 if mattr is None:
-                    self.log.debug('key %s from criteria is not in message', key)
                     match = False
                     break
                 elif criteria[key] != mattr:
-                    self.log.debug('key %s from criteria does not match: %r/%r', key, criteria[key], mattr)
                     match = False
                     break
 
         if match is True:
-            self.log.debug('I found what I was waiting for')
             if '_callback' in criteria:
                 criteria['_callback'](rawmessage)
-        else:
-            self.log.debug('message did not match criteria')
 
         return match
 
@@ -481,9 +476,13 @@ class PLM(asyncio.Protocol):
         self._do_update_callback(rawmessage)
 
     def _do_update_callback(self, rawmessage):
+        msg = Message(rawmessage)
+
+        self.log.debug('Evaluating callbacks on message %r', msg)
+
         for cb, criteria in self._update_callbacks:
-            self.log.debug('update callback %s with criteria %s', cb, criteria)
             if self._message_matches_criteria(rawmessage, criteria):
+                self.log.debug('update callback %s with criteria %s', cb, criteria)
                 self._loop.call_soon(cb, rawmessage)
 
     def _parse_product_data_response(self, address, userdata):
@@ -640,7 +639,7 @@ class PLM(asyncio.Protocol):
             self.log.debug('Device attr %s from %r: %r', attr, address, device[attr])
             return device[attr]
         else:
-            self.log.warning('Device attr %s from %r: NOTFOUND (%r)', attr, address, device)
+            self.log.debug('Device attr %s from %r: NOTFOUND (%r)', attr, address, device)
 
     def turn_off(self, addr):
         device = Address(addr)
@@ -655,7 +654,7 @@ class PLM(asyncio.Protocol):
         for d in self.devices:
             device = self.devices[d]
             self.status_request(d)
-            self.extended_status_request(d)
+            # self.extended_status_request(d)
             if 'binary_sensor' in device['capabilities']:
                 self.log.info('this is a sensor device making supplemental request')
                 self.sensor_request(d)
