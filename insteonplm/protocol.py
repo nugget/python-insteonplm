@@ -17,7 +17,6 @@ class ALDB(object):
     def __init__(self):
         self._devices = {}
         self._cb_new_device = []
-        self._cb_status = []
         self.state = 'empty'
         self.log = logging.getLogger(__name__)
 
@@ -70,10 +69,6 @@ class ALDB(object):
                 self.log.info('retroactive callback for device %s matching %s', value['address'], criteria)
                 callback(value)
 
-
-    def status_update_callback(self, callback, criteria):
-        self.log.warn('Status callback %s', callback, criteria)
-        self._cb_status.append([callback, criteria])
 
     def setattr(self, key, attr, value):
         key = Address(key).hex
@@ -139,15 +134,11 @@ class PLM(asyncio.Protocol):
         This class is expected to be wrapped inside a Connection class object
         which will maintain the socket and handle auto-reconnects.
 
-            :param update_callback:
-                called if any state information changes in device (optional)
             :param connection_lost_callback:
                 called when connection is lost to device (optional)
             :param loop:
                 asyncio event loop (optional)
 
-            :type update_callback:
-                callable
             :type: connection_lost_callback:
                 callable
             :type loop:
