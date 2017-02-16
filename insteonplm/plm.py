@@ -17,7 +17,7 @@ class Address(bytearray):
         return self.human
 
     def __str__(self):
-        return self.human
+        return self.hex
 
     def __eq__(self, other):
         return self.hex == other.hex
@@ -38,7 +38,7 @@ class Address(bytearray):
             addr = addr[0:6]
             return addr.lower()
         else:
-            self.log.warn('Address class initialized with unknown type %s', type(addr))
+            self.log.warn('Address class initialized with unknown type %s: %r', type(addr), addr)
             return 'aabbcc'
 
     @property
@@ -128,6 +128,7 @@ class Message(object):
     def __init__(self, rawmessage):
         self.log = logging.getLogger(__name__)
         self.code = rawmessage[1]
+        self.rawmessage = rawmessage
 
         if self.code == 0x50 or self.code == 0x51:
             # INSTEON Standard and Extended Message
@@ -196,3 +197,5 @@ class Message(object):
             retval['hops'] = (flags & 12 >> 2)
             retval['maxhops'] = (flags & 3)
         return retval
+
+
