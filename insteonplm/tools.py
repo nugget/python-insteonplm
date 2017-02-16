@@ -98,7 +98,7 @@ def console(loop, log):
     #conn.protocol._send_raw(binascii.unhexlify('02624095e6150300000000000000ffff000000000000'))
     #yield from asyncio.sleep(5, loop=loop)
 
-    if 1==1:
+    if 1==0:
         print('-- ')
         conn.protocol.relay_request('395fa4')
         conn.protocol.relay_request('395ecb')
@@ -111,6 +111,10 @@ def console(loop, log):
         print('-- ')
         conn.protocol.turn_on('395ecb', 1)
         yield from asyncio.sleep(5, loop=loop)
+
+    if 1==1:
+        conn.protocol.status_request('395fa4')
+        conn.protocol.status_request('395ecb')
 
     if 1==0:
         yield from asyncio.sleep(5, loop=loop)
