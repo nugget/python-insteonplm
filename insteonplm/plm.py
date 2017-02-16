@@ -30,7 +30,7 @@ class Address(bytearray):
         if isinstance(addr, Address):
             return addr.hex
         if isinstance(addr, bytearray):
-            return addr.hex()
+            return binascii.hexlify(addr).decode()
         if isinstance(addr, bytes):
             return binascii.hexlify(addr).decode()
         if isinstance(addr, str):
