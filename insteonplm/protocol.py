@@ -716,7 +716,6 @@ class PLM(asyncio.Protocol):
         self.send_insteon_standard(address, '13', '00', wait_for)
 
     def turn_on(self, addr, brightness=255, ramprate=None):
-        print('turn_on', brightness, ramprate)
         address = Address(addr)
         device = self.devices[address.hex]
         self.log.debug('turn_on %r %s', addr, device.get('model'))
@@ -727,7 +726,6 @@ class PLM(asyncio.Protocol):
             self._loop.call_later(1, self.relay_request, addr)
 
         if isinstance(ramprate, int):
-            print('ramprate is an integer')
             bhex = 'fc'
             self.send_insteon_standard(address, '2e', bhex, wait_for)
         else:
