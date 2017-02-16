@@ -271,16 +271,30 @@ class PLM(asyncio.Protocol):
             response = self._buffer[message_length:response_length]
             acknak = self._buffer[rsize-1]
 
-            mla = self._buffer[:rsize]
+            mla = self._buffer[:rsize-1]
             buffer = self._buffer[rsize:]
 
+            data_in_ack = [0x19, 0x2e]
+            msg = Message(mla)
+
+            queue_ack = False
+
+            if sm != mla:
+                self.log.info('sent command and ACK response differ')
+                queue_ack = True
+
+            if hasattr(msg, 'cmd1') and msg.cmd1 in data_in_ack:
+                self.log.info('sent cmd1 is on queue_ack list')
+                queue_ack = True
+
             if acknak == 0x06:
-                if len(response) > 0:
+                if len(response) > 0 or queue_ack is True:
                     self.log.info('Sent command %s OK with response %s',
                                   binascii.hexlify(sm), response)
                     self._recv_queue.append(mla)
                 else:
                     self.log.debug('Sent command %s OK', binascii.hexlify(sm))
+
             else:
                 if code == 0x6a:
                     self.log.info('ALL-Link database dump is complete')
@@ -384,7 +398,6 @@ class PLM(asyncio.Protocol):
         self._last_message = rawmessage
 
         msg = Message(rawmessage)
-        self.log.info('%r', msg)
 
         #if hasattr(msg, 'target') and msg.target != self._me:
         #    self.log.info('Ignoring message that is not for me')
@@ -406,7 +419,7 @@ class PLM(asyncio.Protocol):
                 callbacked = True
 
         if callbacked is False:
-            ppc = PP.lookup(code, fullmessage=rawmessage)
+            ppc = PP.lookup(msg.code, fullmessage=rawmessage)
             if hasattr(ppc, 'name') and ppc.name:
                 self.log.warning('Unhandled event: %s (%s)', ppc.name,
                               binascii.hexlify(rawmessage))
@@ -664,6 +677,14 @@ class PLM(asyncio.Protocol):
             device, '19', '00',
             wait_for={'code': 0x50, '_callback': self._parse_status_response})
 
+    def relay_request(self, addr):
+        """Request Device Status."""
+        device = Address(addr)
+        self.log.info('Requesting relay status for %s', device.human)
+        self.send_insteon_standard(
+            device, '19', '01',
+            wait_for={'code': 0x50, '_callback': self._parse_relay_response})
+
     def extended_status_request(self, addr):
         """Request Operating Flags for device."""
         device = Address(addr)
@@ -687,14 +708,6 @@ class PLM(asyncio.Protocol):
             device, '2e', '00',
             userdata='00051b0000000000000000000000',
             wait_for={'code': 0x50})
-
-    def relay_request(self, addr):
-        """Request Device Status."""
-        device = Address(addr)
-        self.log.info('Requesting relay status for %s', device.human)
-        self.send_insteon_standard(
-            device, '19', '01',
-            wait_for={'code': 0x50, '_callback': self._parse_relay_response})
 
     def get_device_attr(self, addr, attr):
         address = Address(addr)

@@ -178,6 +178,11 @@ class Message(object):
             self.subcategory = rawmessage[6]
             self.firmware = rawmessage[7]
 
+        elif self.code == 0x62:
+            # 0262395fa4001900
+            self.address = Address(rawmessage[2:5])
+            self.flagsval = rawmessage[5]
+
         elif self.code == 0x73:
             self.flagsval = rawmessage[2]
             self.spare1 = rawmessage[3]
