@@ -15,7 +15,7 @@ if len(long_description) < 100:
 
 setup(
     name='insteonplm',
-    version='0.0.2',
+    version='0.7.0',
     author='David McNett',
     author_email='nugget@macnugget.org',
     url='https://github.com/nugget/python-insteonplm',
@@ -25,7 +25,7 @@ setup(
     description='Python API for controlling Insteon PowerLinc Modems',
     long_description=long_description,
     classifiers=[
-        'Development Status :: 2 - Pre-Alpha',
+        'Development Status :: 4 - Beta',
         'Intended Audience :: Developers',
         'License :: OSI Approved :: MIT License',
         'Operating System :: OS Independent',
