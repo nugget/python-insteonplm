@@ -48,7 +48,7 @@ class IPDB(object):
             capabilities.append('light')
             capabilities.append('dimmer')
 
-        if cat = 0x02:
+        if cat == 0x02:
             name = 'Unknown Device'
             capabilities.append('switch')
 
