@@ -8,9 +8,10 @@ from .protocol import PLM
 
 __all__ = ('Connection')
 
+# pylint: disable=invalid-name,no-member
 try:
     ensure_future = asyncio.ensure_future
-except:
+except AttributeError:
     ensure_future = asyncio.async
 
 
@@ -24,7 +25,7 @@ class Connection:
     @classmethod
     @asyncio.coroutine
     def create(cls, device='/dev/ttyUSB0',
-            auto_reconnect=True, loop=None, protocol_class=PLM):
+               auto_reconnect=True, loop=None, protocol_class=PLM):
         """Initiate a connection to a specific device.
 
         Here is where we supply the device and callback callables we
@@ -57,7 +58,7 @@ class Connection:
         conn._auto_reconnect = auto_reconnect
 
         def connection_lost():
-            """Function callback for Protocol class when connection is lost."""
+            """Function callback for Protocol when connection is lost."""
             if conn._auto_reconnect and not conn._closing:
                 ensure_future(conn._reconnect(), loop=conn._loop)
 
@@ -101,7 +102,7 @@ class Connection:
                     self._reset_retry_interval()
                     return
 
-            except OSError as e:
+            except OSError:
                 self._increase_retry_interval()
                 interval = self._get_retry_interval()
                 self.log.warning('Connecting failed, retry in %i seconds: %s',

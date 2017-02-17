@@ -1,11 +1,10 @@
-import asyncio
+"""Helper objects for maintaining PLM state and interfaces."""
 import logging
 import binascii
-import collections
 
 __all__ = ('Address', 'PLMProtocol')
 
-class Address(bytearray):
+class Address(object):
     """Datatype definition for INSTEON device address handling."""
 
     def __init__(self, addr):
@@ -38,8 +37,9 @@ class Address(bytearray):
             addr = addr[0:6]
             return addr.lower()
         else:
-            self.log.warn('Address class initialized with unknown type %s: %r', type(addr), addr)
-            return 'aabbcc'
+            self.log.warning('Address class init with unknown type %s: %r',
+                             type(addr), addr)
+            return '000000'
 
     @property
     def human(self):
@@ -72,7 +72,7 @@ class PLMCode(object):
 class PLMProtocol(object):
     """Class container to store PLMCode objects as a Protocol."""
 
-    def __init__(self, version=1):
+    def __init__(self):
         """Create the Protocol object."""
         self.log = logging.getLogger(__name__)
         self._codelist = []
@@ -125,6 +125,7 @@ class PLMProtocol(object):
                 return x
 
 class Message(object):
+    """Unroll a raw message string into a class with attributes."""
     def __init__(self, rawmessage):
         self.log = logging.getLogger(__name__)
         self.code = rawmessage[1]
@@ -151,14 +152,14 @@ class Message(object):
 
         elif self.code == 0x54:
             events = {0x02: 'SET button tapped',
-                     0x03: 'SET button press and hold',
-                     0x04: 'SET button released',
-                     0x12: 'Button 2 tapped',
-                     0x13: 'Button 2 press and hold',
-                     0x14: 'Button 2 released',
-                     0x22: 'Button 3 tapped',
-                     0x23: 'Button 3 press and hold',
-                     0x24: 'Button 3 released'}
+                      0x03: 'SET button press and hold',
+                      0x04: 'SET button released',
+                      0x12: 'Button 2 tapped',
+                      0x13: 'Button 2 press and hold',
+                      0x14: 'Button 2 released',
+                      0x22: 'Button 3 tapped',
+                      0x23: 'Button 3 press and hold',
+                      0x24: 'Button 3 released'}
 
             self.event = rawmessage[2]
             self.description = events.get(self.event, None)
@@ -193,6 +194,7 @@ class Message(object):
         return ', '.join("%s: %r" % item for item in attrs.items())
 
     def decode_flags(self, flags):
+        """Turn INSTEON message flags into a dict."""
         retval = {}
         if flags is not None:
             retval['broadcast'] = (flags & 128) > 0
@@ -202,5 +204,3 @@ class Message(object):
             retval['hops'] = (flags & 12 >> 2)
             retval['maxhops'] = (flags & 3)
         return retval
-
-

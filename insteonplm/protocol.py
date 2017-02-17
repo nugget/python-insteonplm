@@ -2,7 +2,6 @@
 import asyncio
 import logging
 import binascii
-import collections
 
 from .ipdb import IPDB
 from .plm import Address, PLMProtocol, Message
@@ -11,29 +10,37 @@ __all__ = ('PLM', 'ALDB')
 
 PP = PLMProtocol()
 
+
 class ALDB(object):
+    """Class holds and maintains the ALL-Link Database from the PLM device."""
+
     ipdb = IPDB()
 
     def __init__(self):
+        """Instantiate the ALL-Link Database object."""
         self._devices = {}
         self._cb_new_device = []
         self.state = 'empty'
         self.log = logging.getLogger(__name__)
 
     def __len__(self):
+        """Return the number of devices in the ALDB."""
         return len(self._devices)
 
     def __iter__(self):
-        for x in self._devices.keys():
-            yield x
+        """Iterate through each ALDB device record."""
+        for device in self._devices:
+            yield device
 
     def __getitem__(self, address):
+        """Fetch a device from the ALDB."""
         if address in self._devices:
             return self._devices[address]
         raise KeyError
 
     def __setitem__(self, key, value):
-        if not 'cat' in value or value['cat'] == 0:
+        """Add or Update a device in the ALDB."""
+        if 'cat' not in value or value['cat'] == 0:
             self.log.debug('Ignoring device setitem with no cat: %s', value)
             return
 
@@ -43,38 +50,55 @@ class ALDB(object):
         else:
             productdata = self.ipdb[value['cat'], value['subcat']]
             value.update(productdata._asdict())
-            ak = Address(key)
-            value['address_hex'] = ak.hex
-            value['address'] = ak.human
+            address = Address(key)
+            value['address_hex'] = address.hex
+            value['address'] = address.human
             self._devices[key] = value
 
             self.log.info('New INSTEON Device %r: %s (%02x:%02x)',
                           Address(key), value['description'], value['cat'], value['subcat'])
 
-            for cb, criteria in self._cb_new_device:
-                if self._device_matches_criteria(value,criteria):
-                    cb(value)
+            for callback, criteria in self._cb_new_device:
+                if self._device_matches_criteria(value, criteria):
+                    callback(value)
 
     def __repr__(self):
+        """Human representation of a device from the ALDB."""
         attrs = vars(self)
         return ', '.join("%s: %r" % item for item in attrs.items())
 
-
     def add_device_callback(self, callback, criteria):
-        self.log.warn('New callback %s with %s (%d items already in list)', callback, criteria, len(self._devices.keys()))
+        """Register a callback to be invoked when a new device appears."""
+        self.log.warning('New callback %s with %s (%d items already in list)',
+                         callback, criteria, len(self._devices.keys()))
         self._cb_new_device.append([callback, criteria])
-        for d in self:
-            value = self[d]
-            if self._device_matches_criteria(value,criteria):
-                self.log.info('retroactive callback for device %s matching %s', value['address'], criteria)
+
+        #
+        # When a new device callback is added, we want to include all
+        # previously-discovered devices as well as new devices.  So we
+        # iterate through the existing device list and trigger the callback
+        # for each of them
+        #
+        for device in self:
+            value = self[device]
+            if self._device_matches_criteria(value, criteria):
+                self.log.info('retroactive callback device %s matching %s',
+                              value['address'], criteria)
                 callback(value)
 
+    def getattr(self, key, attr):
+        """Return the requested attribute for device with address 'key'."""
+        key = Address(key).hex
+        if key in self._devices:
+            return self._devices[key].get(attr, None)
+        return None
 
     def setattr(self, key, attr, value):
+        """Set supplied attribute on designated device in the ALDB."""
         key = Address(key).hex
 
         if key in self._devices:
-            oldvalue = self._devices[key].get(attr,None)
+            oldvalue = self._devices[key].get(attr, None)
             self._devices[key][attr] = value
             if value != oldvalue:
                 self.log.info('Device %s.%s changed: %s->%s"',
@@ -96,32 +120,16 @@ class ALDB(object):
         for key in criteria.keys():
             if key == 'capability':
                 if criteria[key] not in device['capabilities']:
-                    self.log.debug('device does not advertise capability %s', key)
                     match = False
                     break
             elif key[0] != '_':
                 if key not in device:
-                    self.log.debug('key %s from criteria is not in device', key)
                     match = False
                     break
                 elif criteria[key] != device[key]:
-                    self.log.debug('key %s from criteria does not match: %r/%r', key, criteria[key], device[key])
                     match = False
                     break
-
-        if match is True:
-            self.log.debug('I found what I was waiting for')
-        else:
-            self.log.debug('device did not match criteria')
-
         return match
-
-
-# In Python 3.4.4, `async` was renamed to `ensure_future`.
-try:
-    ensure_future = asyncio.ensure_future
-except AttributeError:
-    ensure_future = asyncio.async
 
 
 # pylint: disable=too-many-instance-attributes, too-many-public-methods
@@ -244,29 +252,29 @@ class PLM(asyncio.Protocol):
     def _schedule_wait(self, keys, timeout=1):
         self.log.debug('setting wait_for to %s timeout %d', keys, timeout)
         if self._wait_for != {}:
-            self.log.warn('Overwriting stale wait_for: %s', self._wait_for)
+            self.log.warning('Overwriting stale wait_for: %s', self._wait_for)
             self._clear_wait()
 
         if timeout > 0:
             self.log.debug('Set timeout on wait_for at %d seconds', timeout)
             keys['_thandle'] = self._loop.call_later(timeout,
-                                                    self._timeout_reached)
+                                                     self._timeout_reached)
 
         self._wait_for = keys
 
     def _wait_for_last_command(self):
-        sm = self._last_command
-        rsize = self._rsize(sm)
+        sentmessage = self._last_command
+        rsize = self._rsize(sentmessage)
         self.log.debug('Wait for ACK/NAK on sent: %s expecting rsize of %d',
-                       binascii.hexlify(sm), rsize)
-        if self._buffer.find(sm) == 0:
+                       binascii.hexlify(sentmessage), rsize)
+        if self._buffer.find(sentmessage) == 0:
             if len(self._buffer) < rsize:
                 self.log.debug('Waiting for all of message to arrive, %d/%d',
                                len(self._buffer), rsize)
                 return
 
             code = self._buffer[1]
-            message_length = len(sm)
+            message_length = len(sentmessage)
             response_length = rsize - message_length
             response = self._buffer[message_length:response_length]
             acknak = self._buffer[rsize-1]
@@ -279,7 +287,7 @@ class PLM(asyncio.Protocol):
 
             queue_ack = False
 
-            if sm != mla:
+            if sentmessage != mla:
                 self.log.info('sent command and ACK response differ')
                 queue_ack = True
 
@@ -290,26 +298,27 @@ class PLM(asyncio.Protocol):
             if acknak == 0x06:
                 if len(response) > 0 or queue_ack is True:
                     self.log.info('Sent command %s OK with response %s',
-                                  binascii.hexlify(sm), response)
+                                  binascii.hexlify(sentmessage), response)
                     self._recv_queue.append(mla)
                 else:
-                    self.log.debug('Sent command %s OK', binascii.hexlify(sm))
+                    self.log.debug('Sent command %s OK',
+                                   binascii.hexlify(sentmessage))
 
             else:
                 if code == 0x6a:
                     self.log.info('ALL-Link database dump is complete')
                     self.devices.state = 'loaded'
-                    for da in self.devices:
-                        d = self.devices[da]
-                        if 'cat' in d and d['cat'] > 0:
+                    for address in self.devices:
+                        device = self.devices[address]
+                        if 'cat' in device and device['cat'] > 0:
                             self.log.debug('I know the category for %s (0x%x)',
-                                           da, d['cat'])
+                                           address, device['cat'])
                         else:
-                            self.product_data_request(da)
+                            self.product_data_request(device)
                     self.poll_devices()
                 else:
-                    self.log.warn('Sent command %s UNsuccessful! (acknak 0x%x)',
-                                  binascii.hexlify(sm), acknak)
+                    self.log.warning('Sent command %s UNsuccessful! (acknak 0x%x)',
+                                     binascii.hexlify(sentmessage), acknak)
             self._last_command = None
             self._buffer = buffer
 
@@ -317,8 +326,8 @@ class PLM(asyncio.Protocol):
         code = self._buffer[1]
         self.log.debug('Code is 0x%x', code)
 
-        for c in PP:
-            if c == code or c == bytes([code]):
+        for ppcode in PP:
+            if ppcode == code or ppcode == bytes([code]):
                 ppc = PP.lookup(code, fullmessage=self._buffer)
 
                 self.log.debug('Found a code 0x%x message which is %d bytes',
@@ -388,7 +397,7 @@ class PLM(asyncio.Protocol):
     def _process_message(self, rawmessage):
         self.log.info('Processing message: %s', binascii.hexlify(rawmessage))
         if rawmessage[0] != 2 or len(rawmessage) < 2:
-            self.log.warn('process_message called with a malformed message')
+            self.log.warning('process_message called with a malformed message')
             return
 
         if rawmessage == self._last_message:
@@ -399,9 +408,9 @@ class PLM(asyncio.Protocol):
 
         msg = Message(rawmessage)
 
-        #if hasattr(msg, 'target') and msg.target != self._me:
-        #    self.log.info('Ignoring message that is not for me')
-        #    return
+        # if hasattr(msg, 'target') and msg.target != self._me:
+        #     self.log.info('Ignoring message that is not for me')
+        #     return
 
         if self._message_matches_criteria(msg, self._wait_for):
             if '_callback' in self._wait_for:
@@ -412,23 +421,23 @@ class PLM(asyncio.Protocol):
                 self._clear_wait()
 
         callbacked = False
-        for cb, criteria in self._message_callbacks:
+        for callback, criteria in self._message_callbacks:
             if self._message_matches_criteria(msg, criteria):
-                self.log.debug('message callback %s with criteria %s', cb, criteria)
-                self._loop.call_soon(cb, rawmessage)
+                self.log.debug('message callback %s with criteria %s',
+                               callback, criteria)
+                self._loop.call_soon(callback, rawmessage)
                 callbacked = True
 
         if callbacked is False:
             ppc = PP.lookup(msg.code, fullmessage=rawmessage)
             if hasattr(ppc, 'name') and ppc.name:
                 self.log.warning('Unhandled event: %s (%s)', ppc.name,
-                              binascii.hexlify(rawmessage))
+                                 binascii.hexlify(rawmessage))
             else:
                 self.log.warning('Unrecognized event: UNKNOWN (%s)',
-                              binascii.hexlify(rawmessage))
+                                 binascii.hexlify(rawmessage))
 
         self._process_queue()
-
 
     def _message_matches_criteria(self, msg, criteria):
         match = True
@@ -463,11 +472,11 @@ class PLM(asyncio.Protocol):
         self.log.debug('flags: %r', msg.flags)
         self.log.debug('device: %r', device)
 
-        for cb, criteria in self._insteon_callbacks:
+        for callback, criteria in self._insteon_callbacks:
             if self._message_matches_criteria(msg, criteria):
-                self.log.debug('insteon callback %s with criteria %s', cb, criteria)
-                self._loop.call_soon(cb, msg, device)
-
+                self.log.debug('insteon callback %s with criteria %s',
+                               callback, criteria)
+                self._loop.call_soon(callback, msg, device)
 
     def _parse_insteon_extended(self, rawmessage):
         msg = Message(rawmessage)
@@ -488,7 +497,6 @@ class PLM(asyncio.Protocol):
                       msg.address, hex(onlevel))
         self.devices.setattr(msg.address, 'onlevel', onlevel)
         self._do_update_callback(msg)
-
 
     def _insteon_on(self, msg, device):
         self.log.info('INSTEON on event: %r, %r', msg, device)
@@ -536,10 +544,11 @@ class PLM(asyncio.Protocol):
     def _do_update_callback(self, msg):
         self.log.debug('Evaluating callbacks on message %r', msg)
 
-        for cb, criteria in self._update_callbacks:
+        for callback, criteria in self._update_callbacks:
             if self._message_matches_criteria(msg, criteria):
-                self.log.debug('update callback %s with criteria %s', cb, criteria)
-                self._loop.call_soon(cb, msg.rawmessage)
+                self.log.debug('update callback %s with criteria %s',
+                               callback, criteria)
+                self._loop.call_soon(callback, msg.rawmessage)
 
     def _parse_product_data_response(self, address, userdata):
         category = userdata[4]
@@ -563,7 +572,7 @@ class PLM(asyncio.Protocol):
     def _parse_get_plm_config(self, rawmessage):
         msg = Message(rawmessage)
         self.log.info('PLM Config: flags:%02x spare:%02x spare:%02x',
-                    msg.flagsval, msg.spare1, msg.spare2)
+                      msg.flagsval, msg.spare1, msg.spare2)
 
     def _parse_all_link_record(self, rawmessage):
         msg = Message(rawmessage)
@@ -572,23 +581,30 @@ class PLM(asyncio.Protocol):
                       msg.address, msg.flagsval, msg.group,
                       msg.linkdata1, msg.linkdata2, msg.linkdata3)
 
-        self.devices[msg.address.hex] = dict(cat=msg.linkdata1, subcat=msg.linkdata2, firmware=msg.linkdata3)
+        self.devices[msg.address.hex] = dict(cat=msg.linkdata1,
+                                             subcat=msg.linkdata2,
+                                             firmware=msg.linkdata3)
 
         if self.devices.state == 'loading':
             self.get_next_all_link_record()
 
-    def _parse_all_link_completed(self, message):
+    def _parse_all_link_completed(self, rawmessage):
         msg = Message(rawmessage)
-        self.log.info('ALL-Link Completed for %s: group:%s cat:%s subcat:%s firmware:%s linkcode:%s',
-                      device_addr.human, hex(group),
-                      hex(category), hex(subcategory), hex(firmware),
-                      hex(linkcode))
+        self.log.info('ALL-Link Completed %r: group:%d cat:%02x subcat:%02x firmware:%02x linkcode: %02x',
+                      msg.address, msg.group, msg.category, msg.subcategory,
+                      msg.firmware, msg.linkcode)
 
-    def _queue_hex(self, message, wait_for={}):
+    def _queue_hex(self, message, wait_for=None):
+        if wait_for is None:
+            wait_for = {}
+
         self.log.debug('Adding command to queue: %s', message)
         self._send_queue.append([message, wait_for])
 
-    def _send_hex(self, message, wait_for={}):
+    def _send_hex(self, message, wait_for=None):
+        if wait_for is None:
+            wait_for = {}
+
         if self._last_command or self._wait_for:
             self.log.debug('Still waiting on last_command.')
             self._queue_hex(message, wait_for)
@@ -602,28 +618,40 @@ class PLM(asyncio.Protocol):
         self._last_command = message
 
     def add_message_callback(self, callback, criteria):
+        """Register a callback to be invoked whenever a matching message is seen."""
         self._message_callbacks.append([callback, criteria])
         self.log.debug('Added message callback to %s on %s', callback, criteria)
 
     def add_insteon_callback(self, callback, criteria):
+        """Register a callback to be invoked whenever a matching INSTEON command is seen."""
         self._insteon_callbacks.append([callback, criteria])
         self.log.debug('Added INSTEON callback to %s on %s', callback, criteria)
 
     def add_update_callback(self, callback, criteria):
+        """Register as callback to be invoked whenever a matching device attribute changes."""
         self._update_callbacks.append([callback, criteria])
         self.log.debug('Added update callback to %s on %s', callback, criteria)
 
     def add_device_callback(self, callback, criteria):
+        """Register a callback to be invoked whenever a matching new device is seen."""
         self.devices.add_device_callback(callback, criteria)
 
-    def send_insteon_standard(self, device, cmd1, cmd2, wait_for={}):
+    def send_insteon_standard(self, device, cmd1, cmd2, wait_for=None):
         """Send an INSTEON Standard message to the PLM."""
+        if wait_for is None:
+            wait_for = {}
+
         device = Address(device)
         rawstr = '0262'+device.hex+'00'+cmd1+cmd2
         self._send_hex(rawstr, wait_for)
 
-    def send_insteon_extended(self, device, cmd1, cmd2, userdata='0000000000000000000000000000', wait_for={}):
+    def send_insteon_extended(self, device, cmd1, cmd2,
+                              userdata='0000000000000000000000000000',
+                              wait_for=None):
         """Send an INSTEON Extended message to the PLM."""
+        if wait_for is None:
+            wait_for = {}
+
         device = Address(device)
         rawstr = '0262'+device.hex+'10'+cmd1+cmd2+userdata
         self._send_hex(rawstr, wait_for)
@@ -669,7 +697,7 @@ class PLM(asyncio.Protocol):
             device, '03', '02',
             wait_for={'code': 0x51, 'cmd1': 0x03, 'cmd2': 0x02})
 
-    def status_request(self, addr, type='main'):
+    def status_request(self, addr):
         """Request Device Status."""
         device = Address(addr)
         self.log.info('Requesting status for %r', device)
@@ -694,6 +722,7 @@ class PLM(asyncio.Protocol):
             wait_for={'code': 0x51, '_callback': self._parse_extended_status_response})
 
     def update_setlevel(self, addr, level):
+        """Currently non-functional."""
         device = Address(addr)
         self.log.info('Changing setlevel on %s to %02x', device.human, level)
         self.send_insteon_extended(
@@ -702,6 +731,7 @@ class PLM(asyncio.Protocol):
             wait_for={'code': 0x50})
 
     def update_ramprate(self, addr, level):
+        """Currently non-functional."""
         device = Address(addr)
         self.log.info('Changing setlevel on %s to %02x', device.human, level)
         self.send_insteon_extended(
@@ -710,32 +740,29 @@ class PLM(asyncio.Protocol):
             wait_for={'code': 0x50})
 
     def get_device_attr(self, addr, attr):
-        address = Address(addr)
-        device = self.devices[address.hex]
-        if attr in device:
-            self.log.debug('Device attr %s from %r: %r', attr, address, device[attr])
-            return device[attr]
-        else:
-            self.log.debug('Device attr %s from %r: NOTFOUND (%r)', attr, address, device)
+        """Return attribute on specified device."""
+        return self.devices.getattr(addr, attr)
 
     def turn_off(self, addr):
+        """Send command to device to turn off."""
         address = Address(addr)
         device = self.devices[address.hex]
 
         wait_for = {}
         if device.get('model') == '2450':
-            wait_for={'code': 0x50, '_callback': self._parse_relay_response}
+            wait_for = {'code': 0x50, '_callback': self._parse_relay_response}
 
         self.send_insteon_standard(address, '13', '00', wait_for)
 
     def turn_on(self, addr, brightness=255, ramprate=None):
+        """Send command to device to turn on."""
         address = Address(addr)
         device = self.devices[address.hex]
         self.log.debug('turn_on %r %s', addr, device.get('model'))
 
         wait_for = {}
         if device.get('model') == '2450':
-            wait_for={'code': 0x50, '_callback': self._parse_relay_response}
+            wait_for = {'code': 0x50, '_callback': self._parse_relay_response}
             self._loop.call_later(1, self.relay_request, addr)
 
         if isinstance(ramprate, int):
@@ -746,16 +773,18 @@ class PLM(asyncio.Protocol):
             self.send_insteon_standard(address, '11', bhex, wait_for)
 
     def poll_devices(self):
+        """Walk through ALDB and populate device information for each device."""
         self.log.info('Polling all devices in ALDB')
-        for d in self.devices:
-            device = self.devices[d]
-            self.status_request(d)
+        for address in self.devices:
+            device = self.devices[address]
+            self.status_request(address)
             # self.extended_status_request(d)
             if 'relay' in device['capabilities']:
                 self.log.info('this is a relay device making supplemental request')
-                self.relay_request(d)
+                self.relay_request(address)
 
     def list_devices(self):
-        for d in self.devices:
-            dev = self.devices[d]
-            print(d,':',dev)
+        """Debugging command to expose ALDB."""
+        for address in self.devices:
+            device = self.devices[address]
+            print(address, ':', device)
