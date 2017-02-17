@@ -31,15 +31,6 @@ block for each of your INSTEON devices.
     insteon_plm:
         port: /dev/ttyUSB0
 
-    light:
-        - platform: insteon_plm
-
-    switch:
-         - platform: insteon_plm
-
-    binary_sensor:
-         - platform: insteon_plm
-
     logger:
         default: info
         logs:
