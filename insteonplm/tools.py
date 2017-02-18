@@ -46,6 +46,8 @@ def console(loop, log):
     criteria = dict()
     conn.protocol.add_device_callback(async_insteonplm_light_callback, criteria)
 
+    plm = conn.protocol
+
     # yield from asyncio.sleep(5, loop=loop)
     #  Successfully turns off the light in my computer room (yay)
     #  conn.protocol._send_raw(binascii.unhexlify('02624095e6001300'))
@@ -54,7 +56,7 @@ def console(loop, log):
     # conn.protocol.product_data_request('15c3ab')
     # yield from asyncio.sleep(10, loop=loop)
 
-    yield from asyncio.sleep(10, loop=loop)
+    yield from asyncio.sleep(20, loop=loop)
 
     if 1 == 0:
         # conn.protocol.send_insteon_extended('4095e6', '2e', '00', '0000000000000000000000000000')
@@ -105,15 +107,35 @@ def console(loop, log):
         conn.protocol.turn_on('395ecb', 1)
         yield from asyncio.sleep(5, loop=loop)
 
-    if 1 == 1:
-        conn.protocol.status_request('395fa4')
-        conn.protocol.status_request('395ecb')
-
     if 1 == 0:
         yield from asyncio.sleep(5, loop=loop)
         conn.protocol.dump_all_link_database()
         yield from asyncio.sleep(5, loop=loop)
 
+    if 1 == 0:
+        addr = '395fa4'
+        addr = '424356'
+        addr = '395ecb'
+        log.info('Are you ready to rumble?')
+        yield from asyncio.sleep(2, loop=loop)
+        plm.status_request(addr)
+        yield from asyncio.sleep(5, loop=loop)
+        plm.turn_on(addr)
+        yield from asyncio.sleep(5, loop=loop)
+        plm.status_request(addr)
+        yield from asyncio.sleep(5, loop=loop)
+        plm.status_request(addr)
+
+    if 1 == 1:
+        for addr in ['395ecb', '395fa4']:
+            log.info('Are you ready to rumble?')
+            yield from asyncio.sleep(2, loop=loop)
+            log.info('Relay Status')
+            plm.status_request(addr)
+            yield from asyncio.sleep(2, loop=loop)
+            log.info('Sensor Status')
+            plm.status_request(addr, '01')
+            yield from asyncio.sleep(10, loop=loop)
 
 def monitor():
     """Wrapper to call console with a loop."""

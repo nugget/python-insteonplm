@@ -425,7 +425,7 @@ class PLM(asyncio.Protocol):
             if self._message_matches_criteria(msg, criteria):
                 self.log.debug('message callback %s with criteria %s',
                                callback, criteria)
-                self._loop.call_soon(callback, rawmessage)
+                self._loop.call_soon(callback, msg)
                 callbacked = True
 
         if callbacked is False:
@@ -461,12 +461,11 @@ class PLM(asyncio.Protocol):
         if match is True:
             if '_callback' in criteria:
                 self.log.debug('Calback invoked from mmc criteria')
-                criteria['_callback'](msg.rawmessage)
+                criteria['_callback'](msg)
 
         return match
 
-    def _parse_insteon_standard(self, rawmessage):
-        msg = Message(rawmessage)
+    def _parse_insteon_standard(self, msg):
         device = self.devices[msg.address.hex]
 
         self.log.info('INSTEON standard %r->%r: cmd1:%02x cmd2:%02x flags:%02x',
@@ -481,9 +480,7 @@ class PLM(asyncio.Protocol):
                                callback, criteria)
                 self._loop.call_soon(callback, msg, device)
 
-    def _parse_insteon_extended(self, rawmessage):
-        msg = Message(rawmessage)
-
+    def _parse_insteon_extended(self, msg):
         self.log.info('INSTEON extended %r->%r: cmd1:%02x cmd2:%02x flags:%02x data:%s',
                       msg.address, msg.target, msg.cmd1, msg.cmd2, msg.flagsval,
                       binascii.hexlify(msg.userdata))
@@ -492,13 +489,30 @@ class PLM(asyncio.Protocol):
         if msg.cmd1 == 0x03 and msg.cmd2 == 0x00:
             self._parse_product_data_response(msg.address, msg.userdata)
 
-    def _parse_status_response(self, rawmessage):
-        msg = Message(rawmessage)
+    def _parse_status_response(self, msg):
         onlevel = msg.cmd2
 
         self.log.info('INSTEON device status %r is at level %s',
                       msg.address, hex(onlevel))
         self.devices.setattr(msg.address, 'onlevel', onlevel)
+        self._do_update_callback(msg)
+
+    def _parse_sensor_response(self, msg):
+        device = self.devices[msg.address.hex]
+
+        sensorstate = msg.cmd2
+
+        if device.get('model') == '2450':
+            # Swap the values for a 2450 because it's opposite
+            self.log.debug('Reversing sensorstate %s because 2450', sensorstate)
+            if sensorstate:
+                sensorstate = 0
+            else:
+                sensorstate = 1
+
+        self.log.info('INSTEON sensor status %r is at level %s',
+                      msg.address, hex(sensorstate))
+        self.devices.setattr(msg.address, 'sensorstate', sensorstate)
         self._do_update_callback(msg)
 
     def _insteon_on(self, msg, device):
@@ -559,8 +573,7 @@ class PLM(asyncio.Protocol):
         self.log.info('Light Stop Manual Change')
         self.status_request(msg.address)
 
-    def _parse_extended_status_response(self, rawmessage):
-        msg = Message(rawmessage)
+    def _parse_extended_status_response(self, msg):
         device = self.devices[msg.address.hex]
 
         self.log.info('INSTEON extended device status %r',
@@ -576,7 +589,7 @@ class PLM(asyncio.Protocol):
             if self._message_matches_criteria(msg, criteria):
                 self.log.debug('update callback %s with criteria %s',
                                callback, criteria)
-                self._loop.call_soon(callback, msg.rawmessage)
+                self._loop.call_soon(callback, msg)
 
     def _parse_product_data_response(self, address, userdata):
         category = userdata[4]
@@ -587,24 +600,20 @@ class PLM(asyncio.Protocol):
 
         self.devices[address.hex] = dict(cat=category, subcat=subcategory, firmware=firmware)
 
-    def _parse_button_event(self, rawmessage):
-        msg = Message(rawmessage)
+    def _parse_button_event(self, msg):
         self.log.info('PLM button event: %02x (%s)', msg.event, msg.description)
 
-    def _parse_get_plm_info(self, rawmessage):
-        msg = Message(rawmessage)
+    def _parse_get_plm_info(self, msg):
+        print(msg)
         self.log.info('PLM Info from %r: category:%02x subcat:%02x firmware:%02x',
                       msg.address, msg.category, msg.subcategory, msg.firmware)
         self._me = msg.address
 
-    def _parse_get_plm_config(self, rawmessage):
-        msg = Message(rawmessage)
+    def _parse_get_plm_config(self, msg):
         self.log.info('PLM Config: flags:%02x spare:%02x spare:%02x',
                       msg.flagsval, msg.spare1, msg.spare2)
 
-    def _parse_all_link_record(self, rawmessage):
-        msg = Message(rawmessage)
-
+    def _parse_all_link_record(self, msg):
         self.log.info('ALL-Link Record for %r: flags:%02x group:%02x data:%02x/%02x/%02x',
                       msg.address, msg.flagsval, msg.group,
                       msg.linkdata1, msg.linkdata2, msg.linkdata3)
@@ -616,8 +625,7 @@ class PLM(asyncio.Protocol):
         if self.devices.state == 'loading':
             self.get_next_all_link_record()
 
-    def _parse_all_link_completed(self, rawmessage):
-        msg = Message(rawmessage)
+    def _parse_all_link_completed(self, msg):
         self.log.info('ALL-Link Completed %r: group:%d cat:%02x subcat:%02x firmware:%02x linkcode: %02x',
                       msg.address, msg.group, msg.category, msg.subcategory,
                       msg.firmware, msg.linkcode)
@@ -729,13 +737,32 @@ class PLM(asyncio.Protocol):
             device, '03', '02',
             wait_for={'code': 0x51, 'cmd1': 0x03, 'cmd2': 0x02})
 
-    def status_request(self, addr):
+    def status_request(self, addr, cmd2='00'):
         """Request Device Status."""
-        device = Address(addr)
-        self.log.info('Requesting status for %r', device)
+        address = Address(addr)
+        device = self.devices[address.hex]
+
+        if 'no_requests' in device.get('capabilities'):
+            self.log.debug('Skipping status_request for no_requests device %r (%s)',
+                           address, device.get('model', 'Unknown Model'))
+            return
+
+        self.log.info('Requesting status for %r', address)
+
+        callback = self._parse_status_response
+        if device.get('model') == '2450':
+            if cmd2 == '00':
+                self._loop.call_later(1, self.status_request, address, '01')
+            else:
+                callback = self._parse_sensor_response
+
+        elif 'binary_sensor' in device.get('capabilities'):
+            callback = self._parse_sensor_response
+
         self.send_insteon_standard(
-            device, '19', '00',
-            wait_for={'code': 0x50, '_callback': self._parse_status_response})
+            address, '19', cmd2,
+            wait_for={'code': 0x50, '_callback': callback})
+
 
     def extended_status_request(self, addr):
         """Request Operating Flags for device."""

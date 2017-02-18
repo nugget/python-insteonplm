@@ -63,7 +63,7 @@ class IPDB(object):
         Product(0x10, 0x01, None, 'Motion Sensor', '2842-222', ['binary_sensor']),
         Product(0x10, 0x02, None, 'TriggerLinc', '2421', ['binary_sensor']),
         Product(0x10, 0x08, None, 'Water Leak Sensor', '2852-222', ['binary_sensor']),
-        Product(0x10, 0x11, None, 'Hidden Door Sensor', '2845-222', ['binary_sensor']),
+        Product(0x10, 0x11, None, 'Hidden Door Sensor', '2845-222', ['binary_sensor', 'no_requests']),
 
         Product(0x0f, 0x06, None, 'MorningLinc', '2458A1', ['switch']),
     ]
