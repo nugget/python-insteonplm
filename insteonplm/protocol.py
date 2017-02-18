@@ -594,6 +594,10 @@ class PLM(asyncio.Protocol):
                       msg.address, msg.group, msg.category, msg.subcategory,
                       msg.firmware, msg.linkcode)
 
+        self.devices[msg.address.hex] = dict(cat=msg.category,
+                                             subcat=msg.subcategory,
+                                             firmware=msg.firmware)
+
     def _queue_hex(self, message, wait_for=None):
         if wait_for is None:
             wait_for = {}
