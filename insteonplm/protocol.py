@@ -442,6 +442,9 @@ class PLM(asyncio.Protocol):
     def _message_matches_criteria(self, msg, criteria):
         match = True
 
+        if criteria is None or criteria == {}:
+            return True
+
         if 'address' in criteria:
             criteria['address'] = Address(criteria['address'])
 
@@ -500,9 +503,10 @@ class PLM(asyncio.Protocol):
 
     def _insteon_on(self, msg, device):
         self.log.info('INSTEON on event: %r, %r', msg, device)
-        value = 1
 
-        if device.get('cat') == 0x01:
+        if msg.cmd2 == 0x00:
+            value = 255
+        else:
             value = msg.cmd2
 
         if device.get('model') == '2477D':
@@ -532,14 +536,6 @@ class PLM(asyncio.Protocol):
         if device.get('cat') == 0x01:
             self.devices.setattr(msg.address, 'ramprate', msg.userdata[6])
             self.devices.setattr(msg.address, 'setlevel', msg.userdata[7])
-
-    def _parse_relay_response(self, rawmessage):
-        msg = Message(rawmessage)
-        onlevel = msg.cmd2
-        self.log.info('INSTEON device relay %r is at level %s',
-                      msg.address, hex(onlevel))
-        self.devices.setattr(msg.address, 'switchstate', onlevel)
-        self._do_update_callback(msg)
 
     def _do_update_callback(self, msg):
         self.log.debug('Evaluating callbacks on message %r', msg)
@@ -617,7 +613,7 @@ class PLM(asyncio.Protocol):
             self._schedule_wait(wait_for)
 
     def _send_raw(self, message):
-        self.log.debug('Sending %d byte message: %s', len(message), binascii.hexlify(message))
+        self.log.info('Sending %d byte message: %s', len(message), binascii.hexlify(message))
         self.transport.write(message)
         self._last_command = message
 
@@ -709,14 +705,6 @@ class PLM(asyncio.Protocol):
             device, '19', '00',
             wait_for={'code': 0x50, '_callback': self._parse_status_response})
 
-    def relay_request(self, addr):
-        """Request Device Status."""
-        device = Address(addr)
-        self.log.info('Requesting relay status for %s', device.human)
-        self.send_insteon_standard(
-            device, '19', '01',
-            wait_for={'code': 0x50, '_callback': self._parse_relay_response})
-
     def extended_status_request(self, addr):
         """Request Operating Flags for device."""
         device = Address(addr)
@@ -751,30 +739,36 @@ class PLM(asyncio.Protocol):
         """Send command to device to turn off."""
         address = Address(addr)
         device = self.devices[address.hex]
-
-        wait_for = {}
-        if device.get('model') == '2450':
-            wait_for = {'code': 0x50, '_callback': self._parse_relay_response}
-
-        self.send_insteon_standard(address, '13', '00', wait_for)
+        self.send_insteon_standard(address, '13', '00', {})
 
     def turn_on(self, addr, brightness=255, ramprate=None):
         """Send command to device to turn on."""
         address = Address(addr)
         device = self.devices[address.hex]
-        self.log.debug('turn_on %r %s', addr, device.get('model'))
-
-        wait_for = {}
-        if device.get('model') == '2450':
-            wait_for = {'code': 0x50, '_callback': self._parse_relay_response}
-            self._loop.call_later(1, self.relay_request, addr)
+        self.log.info('turn_on %r %s', addr, device.get('model'))
 
         if isinstance(ramprate, int):
+            #
+            # The specs say this should work, but I couldn't get my 2477D
+            # switches to respond.  Leaving the code in place for future
+            # hacking.  If you try to use ramprate it probably won't work.
+            #
             bhex = 'fc'
-            self.send_insteon_standard(address, '2e', bhex, wait_for)
+            self.send_insteon_standard(address, '2e', bhex, {})
         else:
             bhex = str.format('{:02X}', int(brightness)).lower()
-            self.send_insteon_standard(address, '11', bhex, wait_for)
+            self.send_insteon_standard(address, '11', bhex, {})
+
+
+        if device.get('model') == '2450':
+            #
+            # Request status after two seconds so we can detect if the I/OLinc
+            # is configured in 'momentary contact' mode and turned off right
+            # after we sent the on.  We can't rely on regular INSTEON state
+            # broadcasts with this device because the state broadcasts come
+            # from the sensor and not the relay.
+            #
+            self._loop.call_later(2, self.status_request, address)
 
     def poll_devices(self):
         """Walk through ALDB and populate device information for each device."""
@@ -782,10 +776,6 @@ class PLM(asyncio.Protocol):
         for address in self.devices:
             device = self.devices[address]
             self.status_request(address)
-            # self.extended_status_request(d)
-            if 'relay' in device['capabilities']:
-                self.log.info('this is a relay device making supplemental request')
-                self.relay_request(address)
 
     def list_devices(self):
         """Debugging command to expose ALDB."""
