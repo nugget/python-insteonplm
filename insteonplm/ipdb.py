@@ -46,6 +46,7 @@ class IPDB(object):
         Product(0x02, 0x0a, None, 'SwitchLinc Relay', '2476S', ['light']),
         Product(0x02, 0x0b, None, 'Icon Relay On-Off', '2876SB', ['light']),
         Product(0x02, 0x0c, None, 'Icon Appliance Module 3-pin', '2856SB', ['switch']),
+        Product(0x02, 0x0d, None, 'ToggleLinc Relay', '2466S', ['light']),
         Product(0x02, 0x0e, None, 'SwitchLinc Relay Timer', '2476ST', ['switch']),
         Product(0x02, 0x16, None, 'Icon Relay On-Off', '2876SB', ['light']),
         Product(0x02, 0x17, None, 'Icon Appliance Module', '2856SB', ['switch']),
