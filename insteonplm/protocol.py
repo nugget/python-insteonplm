@@ -504,6 +504,22 @@ class PLM(asyncio.Protocol):
     def _insteon_on(self, msg, device):
         self.log.info('INSTEON on event: %r, %r', msg, device)
 
+        attribute = 'onlevel'
+
+        if 'binary_sensor' in device.get('capabilities'):
+            if msg.flags.get('group', False):
+                #
+                # If this is a group message from a sensor device, then we
+                # treat it as sensorstate instead of onlevel.  This is vital
+                # for I/O Linc 2450 devices, because it's the cleanest way
+                # to differntiate between the sensor on/off notifications and
+                # the relay on/off notifications that come in response to a
+                # turn_on or turn_off command.  Those on/off messages are
+                # direct (not group, not broadcast) and reflect the relay's
+                # status and not the sensor's status.
+                #
+                attribute = 'sensorstate'
+
         if msg.cmd2 == 0x00:
             value = 255
         else:
@@ -514,13 +530,29 @@ class PLM(asyncio.Protocol):
                 value = device.get('setlevel', 255)
                 self.log.info('Saw an ON report with no onlevel, assuming %02x', value)
 
-        if self.devices.setattr(msg.address, 'onlevel', value):
+        if self.devices.setattr(msg.address, attribute, value):
             self._do_update_callback(msg)
 
     def _insteon_off(self, msg, device):
         self.log.info('INSTEON off event: %r, %r', msg, device)
 
-        if self.devices.setattr(msg.address, 'onlevel', 0):
+        attribute = 'onlevel'
+
+        if 'binary_sensor' in device.get('capabilities'):
+            if msg.flags.get('group', False):
+                #
+                # If this is a group message from a sensor device, then we
+                # treat it as sensorstate instead of onlevel.  This is vital
+                # for I/O Linc 2450 devices, because it's the cleanest way
+                # to differntiate between the sensor on/off notifications and
+                # the relay on/off notifications that come in response to a
+                # turn_on or turn_off command.  Those on/off messages are
+                # direct (not group, not broadcast) and reflect the relay's
+                # status and not the sensor's status.
+                #
+                attribute = 'sensorstate'
+
+        if self.devices.setattr(msg.address, attribute, 0):
             self._do_update_callback(msg)
 
     def _insteon_manual_change_stop(self, msg, device):
