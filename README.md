@@ -37,7 +37,8 @@ general-purpose and should be usable for other applications as well.
 
 ## Known Issues
 
-- This does not actually exist yet.
+- There's basically no documentation.
+- 2412S support is untested and strictly theoretical.
 
 ## Installation
 
@@ -89,12 +90,16 @@ number that matches your receiver and its configured port:
 ## Interesting Links
 
 - [Project Home](https://github.com/nugget/python-insteonplm)
+- [Why Nikola Tesla was the greatest geek who ever lived](http://theoatmeal.com/comics/tesla)
 
 ## Credits
 
 - This package was written by David McNett.
   - https://github.com/nugget
   - https://keybase.io/nugget
+
+- Many thanks to [Ryan Stanley](https://github.com/rstanley75) for his
+  invaluable help with debugging and development.
 
 ## How can you help?
 
