@@ -18,10 +18,11 @@ class ALDB(object):
 
     def __init__(self):
         """Instantiate the ALL-Link Database object."""
+        self.log = logging.getLogger(__name__)
+        self.state = 'empty'
         self._devices = {}
         self._cb_new_device = []
-        self.state = 'empty'
-        self.log = logging.getLogger(__name__)
+        self._overrides = {}
 
     def __len__(self):
         """Return the number of devices in the ALDB."""
@@ -58,6 +59,8 @@ class ALDB(object):
             self.log.info('New INSTEON Device %r: %s (%02x:%02x)',
                           Address(key), value['description'], value['cat'], value['subcat'])
 
+            self._apply_overrides(key)
+
             for callback, criteria in self._cb_new_device:
                 if self._device_matches_criteria(value, criteria):
                     callback(value)
@@ -85,6 +88,26 @@ class ALDB(object):
                 self.log.info('retroactive callback device %s matching %s',
                               value['address'], criteria)
                 callback(value)
+
+    def add_override(self, addr, key, value):
+        address = Address(addr).hex
+        self.log.warning('Woo an override for %s %s is %s', address, key, value)
+        device_override = self._overrides.get(address, {})
+        device_override[key] = value
+        self._overrides[address] = device_override
+
+        if address in self._devices:
+            self._apply_overrides(address)
+
+    def _apply_overrides(self, address):
+        device_override = self._overrides.get(address, {})
+        for key in device_override:
+            oldval = self._devices[address].get(key,None)
+            value = device_override[key]
+            if value != oldval:
+                self.log.info('Override %s for %s: %s -> %s',
+                              key, address, oldval, value)
+                self._devices[address][key] = value
 
     def getattr(self, key, attr):
         """Return the requested attribute for device with address 'key'."""
@@ -604,7 +627,6 @@ class PLM(asyncio.Protocol):
         self.log.info('PLM button event: %02x (%s)', msg.event, msg.description)
 
     def _parse_get_plm_info(self, msg):
-        print(msg)
         self.log.info('PLM Info from %r: category:%02x subcat:%02x firmware:%02x',
                       msg.address, msg.category, msg.subcategory, msg.firmware)
         self._me = msg.address
