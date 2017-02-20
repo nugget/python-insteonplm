@@ -39,6 +39,7 @@ general-purpose and should be usable for other applications as well.
 
 - There's basically no documentation.
 - 2412S support is untested and strictly theoretical.
+- X10 protocol support is not implented yet.
 
 ## Installation
 
