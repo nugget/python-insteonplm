@@ -312,16 +312,16 @@ class PLM(asyncio.Protocol):
             queue_ack = False
 
             if sentmessage != mla:
-                self.log.info('sent command and ACK response differ')
+                self.log.debug('sent command and ACK response differ')
                 queue_ack = True
 
             if hasattr(msg, 'cmd1') and msg.cmd1 in data_in_ack:
-                self.log.info('sent cmd1 is on queue_ack list')
+                self.log.debug('sent cmd1 is on queue_ack list')
                 queue_ack = True
 
             if acknak == 0x06:
                 if len(response) > 0 or queue_ack is True:
-                    self.log.info('Sent command %s OK with response %s',
+                    self.log.debug('Sent command %s OK with response %s',
                                   binascii.hexlify(sentmessage), response)
                     self._recv_queue.append(mla)
                 else:
@@ -417,7 +417,7 @@ class PLM(asyncio.Protocol):
                         return True
 
     def _process_message(self, rawmessage):
-        self.log.info('Processing message: %s', binascii.hexlify(rawmessage))
+        self.log.debug('Processing message: %s', binascii.hexlify(rawmessage))
         if rawmessage[0] != 2 or len(rawmessage) < 2:
             self.log.warning('process_message called with a malformed message')
             return
@@ -677,7 +677,7 @@ class PLM(asyncio.Protocol):
             self._schedule_wait(wait_for)
 
     def _send_raw(self, message):
-        self.log.info('Sending %d byte message: %s',
+        self.log.debug('Sending %d byte message: %s',
                       len(message), binascii.hexlify(message))
         self.transport.write(message)
         self._last_command = message
@@ -828,7 +828,7 @@ class PLM(asyncio.Protocol):
         """Send command to device to turn on."""
         address = Address(addr)
         device = self.devices[address.hex]
-        self.log.info('turn_on %r %s', addr, device.get('model'))
+        self.log.debug('turn_on %r %s', addr, device.get('model'))
 
         if isinstance(ramprate, int):
             #
