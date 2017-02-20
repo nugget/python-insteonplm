@@ -1,11 +1,16 @@
-import asyncio
+"""Embodies the INSTEON Product Database static data and access methods."""
 import logging
-import binascii
 import collections
+
+# pylint: disable=line-too-long
+# pylint: disable=too-few-public-methods
 
 Product = collections.namedtuple('Product', 'cat subcat product_key description model capabilities')
 
+
 class IPDB(object):
+    """Embodies the INSTEON Product Database static data and access methods."""
+
     products = [
         Product(0x01, 0x00, None, 'LampLinc 3-pin', '2456D3', ['light', 'dimmer']),
         Product(0x01, 0x01, None, 'SwitchLinc Dimmer (600W)', '2476D', ['light', 'dimmer']),

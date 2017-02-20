@@ -90,6 +90,7 @@ class ALDB(object):
                 callback(value)
 
     def add_override(self, addr, key, value):
+        """Register an attribute override for a device."""
         address = Address(addr).hex
         self.log.warning('Woo an override for %s %s is %s', address, key, value)
         device_override = self._overrides.get(address, {})
@@ -102,7 +103,7 @@ class ALDB(object):
     def _apply_overrides(self, address):
         device_override = self._overrides.get(address, {})
         for key in device_override:
-            oldval = self._devices[address].get(key,None)
+            oldval = self._devices[address].get(key, None)
             value = device_override[key]
             if value != oldval:
                 self.log.info('Override %s for %s: %s -> %s',
@@ -134,7 +135,8 @@ class ALDB(object):
         else:
             raise KeyError
 
-    def _device_matches_criteria(self, device, criteria):
+    @staticmethod
+    def _device_matches_criteria(device, criteria):
         match = True
 
         if 'address' in criteria:
@@ -207,7 +209,7 @@ class PLM(asyncio.Protocol):
         self.add_insteon_callback(self._insteon_on, {'cmd1': 0x12})
         self.add_insteon_callback(self._insteon_off, {'cmd1': 0x13})
         self.add_insteon_callback(self._insteon_off, {'cmd1': 0x14})
-        self.add_insteon_callback(self._insteon_manual_change_stop, {'cmd1': =0x18)
+        self.add_insteon_callback(self._insteon_manual_change_stop, {'cmd1': 0x18})
 
     #
     # asyncio network functions
@@ -230,7 +232,7 @@ class PLM(asyncio.Protocol):
                        len(data), binascii.hexlify(data))
 
         self._buffer.extend(data)
-        self._strip_messages_off_front_of_buffer()
+        self._peel_messages_from_buffer()
 
         for message in self._recv_queue:
             self._process_message(message)
@@ -365,7 +367,7 @@ class PLM(asyncio.Protocol):
                 else:
                     self.log.debug('Need more bytes to process message.')
 
-    def _strip_messages_off_front_of_buffer(self):
+    def _peel_messages_from_buffer(self):
         lastlooplen = 0
         worktodo = True
 
@@ -592,6 +594,7 @@ class PLM(asyncio.Protocol):
         if self.devices.setattr(msg.address, attribute, 0):
             self._do_update_callback(msg)
 
+    # pylint: disable=unused-argument
     def _insteon_manual_change_stop(self, msg, device):
         self.log.info('Light Stop Manual Change')
         self.status_request(msg.address)
@@ -649,7 +652,8 @@ class PLM(asyncio.Protocol):
             self.get_next_all_link_record()
 
     def _parse_all_link_completed(self, msg):
-        self.log.info('ALL-Link Completed %r: group:%d cat:%02x subcat:%02x firmware:%02x linkcode: %02x',
+        self.log.info('ALL-Link Completed %r: group:%d cat:%02x subcat:%02x '
+                      'firmware:%02x linkcode: %02x',
                       msg.address, msg.group, msg.category, msg.subcategory,
                       msg.firmware, msg.linkcode)
 
@@ -708,6 +712,7 @@ class PLM(asyncio.Protocol):
         rawstr = '0262'+device.hex+'00'+cmd1+cmd2
         self._send_hex(rawstr, wait_for)
 
+    # pylint: disable=too-many-arguments
     def send_insteon_extended(self, device, cmd1, cmd2,
                               userdata='0000000000000000000000000000',
                               wait_for=None):
@@ -786,7 +791,6 @@ class PLM(asyncio.Protocol):
             address, '19', cmd2,
             wait_for={'code': 0x50, '_callback': callback})
 
-
     def extended_status_request(self, addr):
         """Request Operating Flags for device."""
         device = Address(addr)
@@ -820,7 +824,6 @@ class PLM(asyncio.Protocol):
     def turn_off(self, addr):
         """Send command to device to turn off."""
         address = Address(addr)
-        device = self.devices[address.hex]
         self.send_insteon_standard(address, '13', '00', {})
 
     def turn_on(self, addr, brightness=255, ramprate=None):
@@ -841,7 +844,6 @@ class PLM(asyncio.Protocol):
             bhex = str.format('{:02X}', int(brightness)).lower()
             self.send_insteon_standard(address, '11', bhex, {})
 
-
         if device.get('model') == '2450':
             #
             # Request status after two seconds so we can detect if the I/OLinc
@@ -856,7 +858,6 @@ class PLM(asyncio.Protocol):
         """Walk through ALDB and populate device information for each device."""
         self.log.info('Polling all devices in ALDB')
         for address in self.devices:
-            device = self.devices[address]
             self.status_request(address)
 
     def list_devices(self):
