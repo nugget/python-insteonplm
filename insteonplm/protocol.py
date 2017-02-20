@@ -57,7 +57,8 @@ class ALDB(object):
             self._devices[key] = value
 
             self.log.info('New INSTEON Device %r: %s (%02x:%02x)',
-                          Address(key), value['description'], value['cat'], value['subcat'])
+                          Address(key), value['description'], value['cat'],
+                          value['subcat'])
 
             self._apply_overrides(key)
 
@@ -72,8 +73,8 @@ class ALDB(object):
 
     def add_device_callback(self, callback, criteria):
         """Register a callback to be invoked when a new device appears."""
-        self.log.warning('New callback %s with %s (%d items already in list)',
-                         callback, criteria, len(self._devices.keys()))
+        self.log.info('New callback %s with %s (%d items already in list)',
+                      callback, criteria, len(self._devices.keys()))
         self._cb_new_device.append([callback, criteria])
 
         #
@@ -92,7 +93,7 @@ class ALDB(object):
     def add_override(self, addr, key, value):
         """Register an attribute override for a device."""
         address = Address(addr).hex
-        self.log.warning('Woo an override for %s %s is %s', address, key, value)
+        self.log.info('New override for %s %s is %s', address, key, value)
         device_override = self._overrides.get(address, {})
         device_override[key] = value
         self._overrides[address] = device_override
@@ -106,8 +107,8 @@ class ALDB(object):
             oldval = self._devices[address].get(key, None)
             value = device_override[key]
             if value != oldval:
-                self.log.info('Override %s for %s: %s -> %s',
-                              key, address, oldval, value)
+                self.log.debug('Override %s for %s: %s -> %s',
+                               key, address, oldval, value)
                 self._devices[address][key] = value
 
     def getattr(self, key, attr):
@@ -129,8 +130,8 @@ class ALDB(object):
                               key, attr, oldvalue, value)
                 return True
             else:
-                self.log.info('Device %s.%s unchanged: %s->%s"',
-                              key, attr, oldvalue, value)
+                self.log.debug('Device %s.%s unchanged: %s->%s"',
+                               key, attr, oldvalue, value)
                 return False
         else:
             raise KeyError
@@ -263,25 +264,23 @@ class PLM(asyncio.Protocol):
             return len(message) + 1
 
     def _timeout_reached(self):
-        self.log.debug('timeout_reached invoked')
+        self.log.debug('_timeout_reached invoked')
         self._clear_wait()
         self._process_queue()
 
     def _clear_wait(self):
-        self.log.debug('clear_wait invoked')
+        self.log.debug('_clear_wait invoked')
         if '_thandle' in self._wait_for:
-            self.log.debug('Cancelling wait_for timeout callback')
             self._wait_for['_thandle'].cancel()
         self._wait_for = {}
 
     def _schedule_wait(self, keys, timeout=1):
-        self.log.debug('setting wait_for to %s timeout %d', keys, timeout)
         if self._wait_for != {}:
             self.log.warning('Overwriting stale wait_for: %s', self._wait_for)
             self._clear_wait()
 
+        self.log.debug('Waiting for %s timeout in %d seconds', keys, timeout)
         if timeout > 0:
-            self.log.debug('Set timeout on wait_for at %d seconds', timeout)
             keys['_thandle'] = self._loop.call_later(timeout,
                                                      self._timeout_reached)
 
@@ -342,20 +341,19 @@ class PLM(asyncio.Protocol):
                             self.product_data_request(device)
                     self.poll_devices()
                 else:
-                    self.log.warning('Sent command %s UNsuccessful! (acknak 0x%x)',
+                    self.log.warning('Sent command %s UNsuccessful! (%02x)',
                                      binascii.hexlify(sentmessage), acknak)
             self._last_command = None
             self._buffer = buffer
 
     def _wait_for_recognized_message(self):
         code = self._buffer[1]
-        self.log.debug('Code is 0x%x', code)
 
         for ppcode in PP:
             if ppcode == code or ppcode == bytes([code]):
                 ppc = PP.lookup(code, fullmessage=self._buffer)
 
-                self.log.debug('Found a code 0x%x message which is %d bytes',
+                self.log.debug('Found a code %02x message which is %d bytes',
                                code, ppc.size)
 
                 if len(self._buffer) == ppc.size:
@@ -405,9 +403,8 @@ class PLM(asyncio.Protocol):
         self._process_queue()
 
     def _process_queue(self):
-        self.log.debug('processing queue with %d items', len(self._send_queue))
+        self.log.debug('Send queue contains %d items', len(self._send_queue))
         if self._clear_to_send() is True:
-            self.log.debug('Clear to send next command in send_queue')
             command, wait_for = self._send_queue[0]
             self._send_hex(command, wait_for=wait_for)
             self._send_queue.remove([command, wait_for])
@@ -456,11 +453,11 @@ class PLM(asyncio.Protocol):
         if callbacked is False:
             ppc = PP.lookup(msg.code, fullmessage=rawmessage)
             if hasattr(ppc, 'name') and ppc.name:
-                self.log.warning('Unhandled event: %s (%s)', ppc.name,
-                                 binascii.hexlify(rawmessage))
+                self.log.info('Unhandled event: %s (%s)', ppc.name,
+                              binascii.hexlify(rawmessage))
             else:
-                self.log.warning('Unrecognized event: UNKNOWN (%s)',
-                                 binascii.hexlify(rawmessage))
+                self.log.info('Unrecognized event: UNKNOWN (%s)',
+                              binascii.hexlify(rawmessage))
 
         self._process_queue()
 
@@ -506,10 +503,13 @@ class PLM(asyncio.Protocol):
                 self._loop.call_soon(callback, msg, device)
 
     def _parse_insteon_extended(self, msg):
+        device = self.devices[msg.address.hex]
+
         self.log.info('INSTEON extended %r->%r: cmd1:%02x cmd2:%02x flags:%02x data:%s',
                       msg.address, msg.target, msg.cmd1, msg.cmd2, msg.flagsval,
                       binascii.hexlify(msg.userdata))
         self.log.debug('flags: %r', msg.flags)
+        self.log.debug('device: %r', device)
 
         if msg.cmd1 == 0x03 and msg.cmd2 == 0x00:
             self._parse_product_data_response(msg.address, msg.userdata)
@@ -567,7 +567,7 @@ class PLM(asyncio.Protocol):
         if device.get('model') == '2477D':
             if msg.cmd2 == 0x00 or msg.cmd2 == 0x01:
                 value = device.get('setlevel', 255)
-                self.log.info('Saw an ON report with no onlevel, assuming %02x', value)
+                self.log.debug('ON report with no onlevel, using %02x', value)
 
         if self.devices.setattr(msg.address, attribute, value):
             self._do_update_callback(msg)
@@ -602,15 +602,12 @@ class PLM(asyncio.Protocol):
     def _parse_extended_status_response(self, msg):
         device = self.devices[msg.address.hex]
 
-        self.log.info('INSTEON extended device status %r',
-                      msg.address)
+        self.log.info('INSTEON extended device status %r', msg.address)
         if device.get('cat') == 0x01:
             self.devices.setattr(msg.address, 'ramprate', msg.userdata[6])
             self.devices.setattr(msg.address, 'setlevel', msg.userdata[7])
 
     def _do_update_callback(self, msg):
-        self.log.debug('Evaluating callbacks on message %r', msg)
-
         for callback, criteria in self._update_callbacks:
             if self._message_matches_criteria(msg, criteria):
                 self.log.debug('update callback %s with criteria %s',
@@ -680,27 +677,28 @@ class PLM(asyncio.Protocol):
             self._schedule_wait(wait_for)
 
     def _send_raw(self, message):
-        self.log.info('Sending %d byte message: %s', len(message), binascii.hexlify(message))
+        self.log.info('Sending %d byte message: %s',
+                      len(message), binascii.hexlify(message))
         self.transport.write(message)
         self._last_command = message
 
     def add_message_callback(self, callback, criteria):
-        """Register a callback to be invoked whenever a matching message is seen."""
+        """Register a callback for when a matching message is seen."""
         self._message_callbacks.append([callback, criteria])
         self.log.debug('Added message callback to %s on %s', callback, criteria)
 
     def add_insteon_callback(self, callback, criteria):
-        """Register a callback to be invoked whenever a matching INSTEON command is seen."""
+        """Register a callback for when a matching INSTEON command is seen."""
         self._insteon_callbacks.append([callback, criteria])
         self.log.debug('Added INSTEON callback to %s on %s', callback, criteria)
 
     def add_update_callback(self, callback, criteria):
-        """Register as callback to be invoked whenever a matching device attribute changes."""
+        """Register as callback for when a matching device attribute changes."""
         self._update_callbacks.append([callback, criteria])
         self.log.debug('Added update callback to %s on %s', callback, criteria)
 
     def add_device_callback(self, callback, criteria):
-        """Register a callback to be invoked whenever a matching new device is seen."""
+        """Register a callback for when a matching new device is seen."""
         self.devices.add_device_callback(callback, criteria)
 
     def send_insteon_standard(self, device, cmd1, cmd2, wait_for=None):

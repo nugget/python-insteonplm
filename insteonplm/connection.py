@@ -94,8 +94,7 @@ class Connection:
                 if self._halted:
                     yield from asyncio.sleep(2, loop=self._loop)
                 else:
-                    self.log.info('Connecting to PLM on %s',
-                                  self.device)
+                    self.log.info('Connecting to PLM on %s', self.device)
                     yield from serial.aio.create_serial_connection(
                         self._loop, lambda: self.protocol,
                         self.device, baudrate=19200)
