@@ -43,7 +43,7 @@ def console(loop, log):
         """Log that our new device callback worked."""
         log.warn('New Device: %s', device)
 
-    criteria = dict()
+    criteria = {}
     conn.protocol.add_device_callback(async_insteonplm_light_callback, criteria)
 
     plm = conn.protocol

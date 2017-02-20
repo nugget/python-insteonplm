@@ -195,19 +195,19 @@ class PLM(asyncio.Protocol):
         self.log = logging.getLogger(__name__)
         self.transport = None
 
-        self.add_message_callback(self._parse_insteon_standard, dict(code=0x50))
-        self.add_message_callback(self._parse_insteon_extended, dict(code=0x51))
-        self.add_message_callback(self._parse_all_link_completed, dict(code=0x53))
-        self.add_message_callback(self._parse_button_event, dict(code=0x54))
-        self.add_message_callback(self._parse_all_link_record, dict(code=0x57))
-        self.add_message_callback(self._parse_get_plm_info, dict(code=0x60))
-        self.add_message_callback(self._parse_get_plm_config, dict(code=0x73))
+        self.add_message_callback(self._parse_insteon_standard, {'code': 0x50})
+        self.add_message_callback(self._parse_insteon_extended, {'code': 0x51})
+        self.add_message_callback(self._parse_all_link_completed, {'code': 0x53})
+        self.add_message_callback(self._parse_button_event, {'code': 0x54})
+        self.add_message_callback(self._parse_all_link_record, {'code': 0x57})
+        self.add_message_callback(self._parse_get_plm_info, {'code': 0x60})
+        self.add_message_callback(self._parse_get_plm_config, {'code': 0x73})
 
-        self.add_insteon_callback(self._insteon_on, dict(cmd1=0x11))
-        self.add_insteon_callback(self._insteon_on, dict(cmd1=0x12))
-        self.add_insteon_callback(self._insteon_off, dict(cmd1=0x13))
-        self.add_insteon_callback(self._insteon_off, dict(cmd1=0x14))
-        self.add_insteon_callback(self._insteon_manual_change_stop, dict(cmd1=0x18))
+        self.add_insteon_callback(self._insteon_on, {'cmd1': 0x11})
+        self.add_insteon_callback(self._insteon_on, {'cmd1': 0x12})
+        self.add_insteon_callback(self._insteon_off, {'cmd1': 0x13})
+        self.add_insteon_callback(self._insteon_off, {'cmd1': 0x14})
+        self.add_insteon_callback(self._insteon_manual_change_stop, {'cmd1': =0x18)
 
     #
     # asyncio network functions
@@ -621,7 +621,8 @@ class PLM(asyncio.Protocol):
         self.log.info('INSTEON Product Data Response from %r: cat:%s, subcat:%s',
                       address, hex(category), hex(subcategory))
 
-        self.devices[address.hex] = dict(cat=category, subcat=subcategory, firmware=firmware)
+        self.devices[address.hex] = {'cat': category, 'subcat': subcategory,
+                                     'firmware': firmware}
 
     def _parse_button_event(self, msg):
         self.log.info('PLM button event: %02x (%s)', msg.event, msg.description)
@@ -640,9 +641,9 @@ class PLM(asyncio.Protocol):
                       msg.address, msg.flagsval, msg.group,
                       msg.linkdata1, msg.linkdata2, msg.linkdata3)
 
-        self.devices[msg.address.hex] = dict(cat=msg.linkdata1,
-                                             subcat=msg.linkdata2,
-                                             firmware=msg.linkdata3)
+        self.devices[msg.address.hex] = {'cat': msg.linkdata1,
+                                         'subcat': msg.linkdata2,
+                                         'firmware': msg.linkdata3}
 
         if self.devices.state == 'loading':
             self.get_next_all_link_record()
@@ -652,9 +653,9 @@ class PLM(asyncio.Protocol):
                       msg.address, msg.group, msg.category, msg.subcategory,
                       msg.firmware, msg.linkcode)
 
-        self.devices[msg.address.hex] = dict(cat=msg.category,
-                                             subcat=msg.subcategory,
-                                             firmware=msg.firmware)
+        self.devices[msg.address.hex] = {'cat': msg.category,
+                                         'subcat': msg.subcategory,
+                                         'firmware': msg.firmware}
 
     def _queue_hex(self, message, wait_for=None):
         if wait_for is None:
