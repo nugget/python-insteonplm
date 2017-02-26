@@ -5,7 +5,7 @@
 [![PyPI](https://img.shields.io/pypi/v/insteonplm.svg)](https://pypi.python.org/pypi/insteonplm)
 
 This is a Python package to interface with an Insteon Powerline Modem (formerly
-called "PowerLinc").  It should work with either the USB or RS-252 serial based
+called "PowerLinc").  It should work with either the USB or RS-232 serial based
 devices such as the [2413U] and [2412S].  Other models have not been tested but
 the underlying protocol is dusty and ancient and I wouldn't be surprised to
 learned that this package works fine on some Bakelite X10 oddity from the
