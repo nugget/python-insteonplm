@@ -25,6 +25,8 @@ class IPDB(object):
         Product(0x01, 0x17, None, 'ToggleLinc Dimmer', '2466D', ['light', 'dimmer']),
         Product(0x01, 0x18, 0x00003F, 'Icon SwitchLinc Dimmer Inline Companiion', '2474D', ['light', 'dimmer']),
         Product(0x01, 0x1a, 0x00004F, 'In-LineLinc Dimmer', '2475DA1', ['light', 'dimmable']),
+        Product(0x01, 0x1b, 0x000050, 'KeypadLinc Dimmer, 6-button', '2486DWH6', ['light', 'dimmable']),
+        Product(0x01, 0x1b, 0x000051, 'KeypadLinc Dimmer, 8-button', '2486DWH8', ['light', 'dimmable']),
         Product(0x01, 0x1d, None, 'SwitchLinc Dimmer (1200W)', '2476D', ['light', 'dimmable']),
         Product(0x01, 0x1e, None, 'Icon Switch Dimmer i2', '2476DB', ['light', 'dimmer']),
         Product(0x01, 0x1f, None, 'ToggleLinc Dimmer', '2466D', ['light', 'dimmer']),
@@ -39,6 +41,8 @@ class IPDB(object):
         Product(0x01, 0x34, None, 'DIN Rail Dimmer', '2542-222', ['light', 'dimmable']),
         Product(0x01, 0x35, None, 'Micro Dimmer', '2442-222', ['light', 'dimmable']),
         Product(0x01, 0x3a, None, 'LED Bulb', '2672-222', ['light', 'dimmable']),
+        Product(0x01, 0x41, None, 'KeypadLinc Dimmer, 8 button', '2334-222', ['light', 'dimmable']),
+        Product(0x01, 0x42, None, 'KeypadLinc Dimmer, 6 button', '2334-232', ['light', 'dimmable']),
         Product(0x01, 0x49, None, 'Recessed LED Bulb', '2674-222', ['light', 'dimmable']),
 
         Product(0x02, 0x06, None, 'ApplianceLinc Outdoor 3-pin', '2456S3E', ['switch']),
