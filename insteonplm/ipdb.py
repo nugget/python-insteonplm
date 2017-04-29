@@ -69,6 +69,8 @@ class IPDB(object):
 
         Product(0x07, 0x00, None, 'I/O Linc', '2450', ['switch', 'binary_sensor', 'relay']),
 
+        Product(0x09, 0x0a, None, '240v Load Controler', '2477SA1', ['switch']),
+
         Product(0x10, 0x01, None, 'Motion Sensor', '2842-222', ['binary_sensor']),
         Product(0x10, 0x02, None, 'TriggerLinc', '2421', ['binary_sensor']),
         Product(0x10, 0x08, None, 'Water Leak Sensor', '2852-222', ['binary_sensor']),
