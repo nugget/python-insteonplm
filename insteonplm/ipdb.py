@@ -59,6 +59,7 @@ class IPDB(object):
         Product(0x02, 0x0e, None, 'SwitchLinc Relay Timer', '2476ST', ['switch']),
         Product(0x02, 0x16, None, 'Icon Relay On-Off', '2876SB', ['light']),
         Product(0x02, 0x17, None, 'Icon Appliance Module', '2856SB', ['switch']),
+        Product(0x02, 0x1a, None, 'ToggleLinc Relay', '2466SW', ['switch']),
         Product(0x02, 0x1f, None, 'In-LineLinc Relay', '2475SDB', ['switch']),
         Product(0x02, 0x2a, None, 'SwitchLinc Switch', '2477S', ['light']),
         Product(0x02, 0x2e, None, 'DIN Rail On/Off', '2453-222', ['switch']),
@@ -66,6 +67,8 @@ class IPDB(object):
         Product(0x02, 0x37, None, 'On/Off Module', '2635-222', ['switch']),
         Product(0x02, 0x38, None, 'On/Off Outdoor Module', '2634-222', ['switch']),
         Product(0x02, 0x39, None, 'On/Off Outlet', '2663-222', ['switch']),
+
+        #Product(0x05, 0x0b, None, 'Thermostat', '2441TH', ['climate']), <- Coming Soon!
 
         Product(0x07, 0x00, None, 'I/O Linc', '2450', ['switch', 'binary_sensor', 'relay']),
 
