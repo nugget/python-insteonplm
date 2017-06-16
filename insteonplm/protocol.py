@@ -162,7 +162,7 @@ class ALDB(object):
 class PLM(asyncio.Protocol):
     """The Insteon PLM IP control protocol handler."""
 
-    def __init__(self, loop=None, connection_lost_callback=None):
+    def __init__(self, loop=None, connection_lost_callback=None, userdefineddevices=()):
         """Protocol handler that handles all status and changes on PLM.
 
         This class is expected to be wrapped inside a Connection class object
@@ -197,6 +197,20 @@ class PLM(asyncio.Protocol):
 
         self.log = logging.getLogger(__name__)
         self.transport = None
+
+        self._userdefineddevices = {}
+
+        for userdevice in userdefineddevices:
+            if 'cat' in userdevice and 'subcat' in userdevice and 'firmware' in userdevice:
+                self._userdefineddevices[userdevice["address"]] = {
+                    "cat": userdevice["cat"],
+                    "subcat": userdevice["subcat"],
+                    "firmware": userdevice["firmware"],
+                    "status": "notfound"
+                }
+                self.devices[userdevice["address"]] = {'cat': userdevice["cat"],
+                                            'subcat': userdevice["subcat"],
+                                            'firmware': userdevice["firmware"]}
 
         self.add_message_callback(self._parse_insteon_standard, {'code': 0x50})
         self.add_message_callback(self._parse_insteon_extended, {'code': 0x51})
@@ -640,8 +654,14 @@ class PLM(asyncio.Protocol):
         self.log.info('ALL-Link Record for %r: flags:%02x group:%02x data:%02x/%02x/%02x',
                       msg.address, msg.flagsval, msg.group,
                       msg.linkdata1, msg.linkdata2, msg.linkdata3)
-
-        self.devices[msg.address.hex] = {'cat': msg.linkdata1,
+        
+        if msg.address.hex in self.devices:
+            self.log.info("Device %r is already added manually.", msg.address.hex)
+            if msg.address.hex in self._userdefineddevices:
+                self._userdefineddevices[msg.address.hex]["status"] = "found"
+        else:
+            self.log.info("Auto Discovering device %r.", msg.address.hex)
+            self.devices[msg.address.hex] = {'cat': msg.linkdata1,
                                          'subcat': msg.linkdata2,
                                          'firmware': msg.linkdata3}
 
@@ -654,9 +674,18 @@ class PLM(asyncio.Protocol):
                       msg.address, msg.group, msg.category, msg.subcategory,
                       msg.firmware, msg.linkcode)
 
-        self.devices[msg.address.hex] = {'cat': msg.category,
+        if msg.address.hex in self.devices:
+            self.log.info("Device %r is already added manually.", msg.address.hex)
+            if msg.address.hex in self._userdefineddevices:
+                self._userdefineddevices[msg.address.hex]["status"] = "found"
+        else:
+            self.log.info("Auto Discovering device %r.", msg.address.hex)
+            self.devices[msg.address.hex] = {'cat': msg.category,
                                          'subcat': msg.subcategory,
                                          'firmware': msg.firmware}
+        for userdevice in self._userdefineddevices:
+            if userdevice["status"] == "notfound":
+                self.log.info("Failed to discover device %r.", userdevice["address"])
 
     def _queue_hex(self, message, wait_for=None):
         if wait_for is None:
