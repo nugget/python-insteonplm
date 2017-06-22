@@ -353,6 +353,9 @@ class PLM(asyncio.Protocol):
                                            address, device['cat'])
                         else:
                             self.product_data_request(device)
+                    for userdevice in self._userdefineddevices:
+                        if self._userdefineddevices[userdevice]["status"] == "notfound":
+                            self.log.info("Failed to discover device %r.", userdevice)
                     self.poll_devices()
                 else:
                     self.log.warning('Sent command %s UNsuccessful! (%02x)',
@@ -684,8 +687,8 @@ class PLM(asyncio.Protocol):
                                          'subcat': msg.subcategory,
                                          'firmware': msg.firmware}
         for userdevice in self._userdefineddevices:
-            if userdevice["status"] == "notfound":
-                self.log.info("Failed to discover device %r.", userdevice["address"])
+            if self._userdefineddevices[userdevice]["status"] == "notfound":
+                self.log.info("Finished all link, and failed to discover device %r.", userdevice)
 
     def _queue_hex(self, message, wait_for=None):
         if wait_for is None:
