@@ -1,6 +1,6 @@
 # insteonplm
 
-[![Build Status](https://travis-ci.org/nugget/python-insteonplm.svg?branch=master)](https://travis-ci.org/nugget/python-insteonusb)
+[![Build Status](https://travis-ci.org/nugget/python-insteonplm.svg?branch=master)](https://travis-ci.org/nugget/python-insteonplm)
 [![GitHub release](https://img.shields.io/github/release/nugget/python-insteonplm.svg)](https://github.com/nugget/python-insteonplm/releases)
 [![PyPI](https://img.shields.io/pypi/v/insteonplm.svg)](https://pypi.python.org/pypi/insteonplm)
 
