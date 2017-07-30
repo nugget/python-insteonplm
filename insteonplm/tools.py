@@ -9,7 +9,7 @@ __all__ = ('console', 'monitor')
 
 
 @asyncio.coroutine
-def console(loop, log):
+def console(loop, log, devicelist):
     """Connect to receiver and show events as they occur.
 
     Pulls the following arguments from the command line (not method arguments):
@@ -37,7 +37,7 @@ def console(loop, log):
     log.info('Connecting to Insteon PLM at %s', device)
 
     conn = yield from insteonplm.Connection.create(
-        device=device, loop=loop)
+        device=device, loop=loop, userdefined=devicelist)
 
     def async_insteonplm_light_callback(device):
         """Log that our new device callback worked."""
@@ -139,7 +139,21 @@ def console(loop, log):
 
 def monitor():
     """Wrapper to call console with a loop."""
+    devicelist = (
+        {
+            "address": "3c4fc5",
+            "cat": 0x05,
+            "subcat": 0x0b,
+            "firmware": 0x00
+        },
+        {
+            "address": "43af9b",
+            "cat": 0x02,
+            "subcat": 0x1a,
+            "firmware": 0x00
+        }
+    )
     log = logging.getLogger(__name__)
     loop = asyncio.get_event_loop()
-    asyncio.async(console(loop, log))
+    asyncio.async(console(loop, log, devicelist))
     loop.run_forever()
