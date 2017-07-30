@@ -221,9 +221,9 @@ class PLM(asyncio.Protocol):
         self.log.info('Connection established to PLM')
         self.transport = transport
 
-        self.transport.set_write_buffer_limits(128)
-        limit = self.transport.get_write_buffer_size()
-        self.log.debug('Write buffer size is %d', limit)
+        # self.transport.set_write_buffer_limits(128)
+        # limit = self.transport.get_write_buffer_size()
+        # self.log.debug('Write buffer size is %d', limit)
         self.get_plm_info()
         self.load_all_link_database()
 
