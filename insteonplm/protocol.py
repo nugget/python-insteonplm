@@ -185,7 +185,6 @@ class PLM(asyncio.Protocol):
         self._message_callbacks = []
         self._insteon_callbacks = []
 
-        self._me = None
         self._buffer = bytearray()
         self._last_message = None
         self._last_command = None
@@ -197,6 +196,8 @@ class PLM(asyncio.Protocol):
 
         self.log = logging.getLogger(__name__)
         self.transport = None
+
+        self._me = {}
 
         self._userdefineddevices = {}
 
@@ -651,7 +652,11 @@ class PLM(asyncio.Protocol):
     def _parse_get_plm_info(self, msg):
         self.log.info('PLM Info from %r: category:%02x subcat:%02x firmware:%02x',
                       msg.address, msg.category, msg.subcategory, msg.firmware)
-        self._me = msg.address
+
+        self._me['address'] = msg.address
+        self._me['category'] = msg.category
+        self._me['subcategory'] = msg.subcategory
+        self._me['firmware'] = msg.firmware
 
     def _parse_get_plm_config(self, msg):
         self.log.info('PLM Config: flags:%02x spare:%02x spare:%02x',
@@ -662,15 +667,29 @@ class PLM(asyncio.Protocol):
                       msg.address, msg.flagsval, msg.group,
                       msg.linkdata1, msg.linkdata2, msg.linkdata3)
 
+        if self._me['subcategory'] == 0x20:
+            # USB Stick has a different ALDB message format.  I don't actually
+            # think that linkdata1 is firmware, but whatever.  Shouldn't have
+            # any effect storing the value there anyway.
+            category = msg.linkdata2
+            subcategory = msg.linkdata3
+            firmware = msg.linkdata1
+        else:
+            # Regular PLM format
+            category = msg.linkdata1
+            subcategory = msg.linkdata2
+            firmware = msg.linkdata3
+
+
         if msg.address.hex in self.devices:
             self.log.info("Device %r is already added manually.", msg.address.hex)
             if msg.address.hex in self._userdefineddevices:
                 self._userdefineddevices[msg.address.hex]["status"] = "found"
         else:
             self.log.info("Auto Discovering device %r.", msg.address.hex)
-            self.devices[msg.address.hex] = {'cat': msg.linkdata1,
-                                         'subcat': msg.linkdata2,
-                                         'firmware': msg.linkdata3}
+            self.devices[msg.address.hex] = {'cat': category,
+                                         'subcat': subcategory,
+                                         'firmware': firmware}
 
         if self.devices.state == 'loading':
             self.get_next_all_link_record()
