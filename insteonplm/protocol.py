@@ -185,7 +185,6 @@ class PLM(asyncio.Protocol):
         self._message_callbacks = []
         self._insteon_callbacks = []
 
-        self._me = None
         self._buffer = bytearray()
         self._last_message = None
         self._last_command = None
@@ -197,6 +196,8 @@ class PLM(asyncio.Protocol):
 
         self.log = logging.getLogger(__name__)
         self.transport = None
+
+        self._me = {}
 
         self._userdefineddevices = {}
 
@@ -351,8 +352,9 @@ class PLM(asyncio.Protocol):
                         if 'cat' in device and device['cat'] > 0:
                             self.log.debug('I know the category for %s (0x%x)',
                                            address, device['cat'])
+                            self.product_data_request(address)
                         else:
-                            self.product_data_request(device)
+                            self.product_data_request(address)
                     for userdevice in self._userdefineddevices:
                         if self._userdefineddevices[userdevice]["status"] == "notfound":
                             self.log.info("Failed to discover device %r.", userdevice)
@@ -447,7 +449,7 @@ class PLM(asyncio.Protocol):
 
         msg = Message(rawmessage)
 
-        # if hasattr(msg, 'target') and msg.target != self._me:
+        # if hasattr(msg, 'target') and msg.target != self._me['address']:
         #     self.log.info('Ignoring message that is not for me')
         #     return
 
@@ -518,6 +520,9 @@ class PLM(asyncio.Protocol):
                 self.log.debug('insteon callback %s with criteria %s',
                                callback, criteria)
                 self._loop.call_soon(callback, msg, device)
+
+        if msg.cmd1 == 0x03 and msg.cmd2 == 0x00:
+            self._parse_product_data_response(msg.address, msg.userdata)
 
     def _parse_insteon_extended(self, msg):
         device = self.devices[msg.address.hex]
@@ -647,7 +652,11 @@ class PLM(asyncio.Protocol):
     def _parse_get_plm_info(self, msg):
         self.log.info('PLM Info from %r: category:%02x subcat:%02x firmware:%02x',
                       msg.address, msg.category, msg.subcategory, msg.firmware)
-        self._me = msg.address
+
+        self._me['address'] = msg.address
+        self._me['category'] = msg.category
+        self._me['subcategory'] = msg.subcategory
+        self._me['firmware'] = msg.firmware
 
     def _parse_get_plm_config(self, msg):
         self.log.info('PLM Config: flags:%02x spare:%02x spare:%02x',
@@ -657,16 +666,30 @@ class PLM(asyncio.Protocol):
         self.log.info('ALL-Link Record for %r: flags:%02x group:%02x data:%02x/%02x/%02x',
                       msg.address, msg.flagsval, msg.group,
                       msg.linkdata1, msg.linkdata2, msg.linkdata3)
-        
+
+        if self._me['subcategory'] == 0x20:
+            # USB Stick has a different ALDB message format.  I don't actually
+            # think that linkdata1 is firmware, but whatever.  Shouldn't have
+            # any effect storing the value there anyway.
+            category = msg.linkdata2
+            subcategory = msg.linkdata3
+            firmware = msg.linkdata1
+        else:
+            # Regular PLM format
+            category = msg.linkdata1
+            subcategory = msg.linkdata2
+            firmware = msg.linkdata3
+
+
         if msg.address.hex in self.devices:
             self.log.info("Device %r is already added manually.", msg.address.hex)
             if msg.address.hex in self._userdefineddevices:
                 self._userdefineddevices[msg.address.hex]["status"] = "found"
         else:
             self.log.info("Auto Discovering device %r.", msg.address.hex)
-            self.devices[msg.address.hex] = {'cat': msg.linkdata1,
-                                         'subcat': msg.linkdata2,
-                                         'firmware': msg.linkdata3}
+            self.devices[msg.address.hex] = {'cat': category,
+                                         'subcat': subcategory,
+                                         'firmware': firmware}
 
         if self.devices.state == 'loading':
             self.get_next_all_link_record()
@@ -763,6 +786,21 @@ class PLM(asyncio.Protocol):
         """Request PLM Config."""
         self.log.info('Requesting PLM Config')
         self._send_hex('0273')
+
+    def factory_reset(self):
+        """Reset the IM and clear the All-Link Database."""
+        self.log.info('Nuking from orbit')
+        self._send_hex('0267')
+
+    def start_all_linking(self):
+        """Puts the IM into ALL-Linking mode without using the SET Button."""
+        self.log.info('Start ALL-Linking')
+        self._send_hex('02640101')
+
+    def cancel_all_linking(self):
+        """Cancels the ALL-Linking started previously."""
+        self.log.info('Cancel ALL-Linking')
+        self._send_hex('0265')
 
     def get_first_all_link_record(self):
         """Request first ALL-Link record."""

@@ -6,10 +6,10 @@
 
 This is a Python package to interface with an Insteon Powerline Modem (formerly
 called "PowerLinc").  It should work with either the USB or RS-232 serial based
-devices such as the [2413U] and [2412S].  Other models have not been tested but
-the underlying protocol is dusty and ancient and I wouldn't be surprised to
-learned that this package works fine on some Bakelite X10 oddity from the
-1980s.  If you find success with something, please let me know.
+devices such as the [2413U], [2412S], and [2448A7].  Other models have not been
+tested but the underlying protocol is dusty and ancient and I wouldn't be
+surprised to learned that this package works fine on some Bakelite X10 oddity
+from the 1980s.  If you find success with something, please let me know.
 
 PowerLinc Modems are not telephony devices, they provide a Serial or USB
 interface to an on-premisis Insteon IoT device network.  This is either
@@ -26,13 +26,14 @@ general-purpose and should be usable for other applications as well.
 [Home Assistant]: https://home-assistant.io/
 [2413U]: https://www.insteon.com/powerlinc-modem-usb
 [2412S]: https://www.insteon.com/powerlinc-modem-serial
+[2448A7]: http://www.insteon.com/usb-wireless-adapter
 [Hub]: https://www.insteon.com/which-hub-are-you
 [insteonlocal]: https://github.com/phareous/insteonlocal
 
 ## Requirements
 
 - Python 3.4 or 3.5 with asyncio
-- Some form of Insteon PLM
+- Some form of Insteon PLM or INSTEON USB Stick
 - At least one Insteon device
 
 ## Known Issues
