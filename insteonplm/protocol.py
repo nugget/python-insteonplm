@@ -351,8 +351,9 @@ class PLM(asyncio.Protocol):
                         if 'cat' in device and device['cat'] > 0:
                             self.log.debug('I know the category for %s (0x%x)',
                                            address, device['cat'])
+                            self.product_data_request(address)
                         else:
-                            self.product_data_request(device)
+                            self.product_data_request(address)
                     for userdevice in self._userdefineddevices:
                         if self._userdefineddevices[userdevice]["status"] == "notfound":
                             self.log.info("Failed to discover device %r.", userdevice)
@@ -519,6 +520,9 @@ class PLM(asyncio.Protocol):
                                callback, criteria)
                 self._loop.call_soon(callback, msg, device)
 
+        if msg.cmd1 == 0x03 and msg.cmd2 == 0x00:
+            self._parse_product_data_response(msg.address, msg.userdata)
+
     def _parse_insteon_extended(self, msg):
         device = self.devices[msg.address.hex]
 
@@ -657,7 +661,7 @@ class PLM(asyncio.Protocol):
         self.log.info('ALL-Link Record for %r: flags:%02x group:%02x data:%02x/%02x/%02x',
                       msg.address, msg.flagsval, msg.group,
                       msg.linkdata1, msg.linkdata2, msg.linkdata3)
-        
+
         if msg.address.hex in self.devices:
             self.log.info("Device %r is already added manually.", msg.address.hex)
             if msg.address.hex in self._userdefineddevices:
@@ -763,6 +767,21 @@ class PLM(asyncio.Protocol):
         """Request PLM Config."""
         self.log.info('Requesting PLM Config')
         self._send_hex('0273')
+
+    def factory_reset(self):
+        """Reset the IM and clear the All-Link Database."""
+        self.log.info('Nuking from orbit')
+        self._send_hex('0267')
+
+    def start_all_linking(self):
+        """Puts the IM into ALL-Linking mode without using the SET Button."""
+        self.log.info('Start ALL-Linking')
+        self._send_hex('02640101')
+
+    def cancel_all_linking(self):
+        """Cancels the ALL-Linking started previously."""
+        self.log.info('Cancel ALL-Linking')
+        self._send_hex('0265')
 
     def get_first_all_link_record(self):
         """Request first ALL-Link record."""
