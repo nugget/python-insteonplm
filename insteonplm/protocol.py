@@ -449,7 +449,7 @@ class PLM(asyncio.Protocol):
 
         msg = Message(rawmessage)
 
-        # if hasattr(msg, 'target') and msg.target != self._me:
+        # if hasattr(msg, 'target') and msg.target != self._me['address']:
         #     self.log.info('Ignoring message that is not for me')
         #     return
 
