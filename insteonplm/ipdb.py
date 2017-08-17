@@ -69,6 +69,9 @@ class IPDB(object):
         Product(0x02, 0x38, None, 'On/Off Outdoor Module', '2634-222', ['switch']),
         Product(0x02, 0x39, None, 'On/Off Outlet', '2663-222', ['switch']),
 
+        Product(0x03, 0x15, None, 'PowerLinc Modem (USB)', '2413U', ['plm']),
+        Product(0x03, 0x20, None, 'USB Adapter', '2448A7', ['plm']),
+
         Product(0x05, 0x0b, None, 'Thermostat', '2441TH', ['climate']), #<- Coming Soon!
 
         Product(0x07, 0x00, None, 'I/O Linc', '2450', ['switch', 'binary_sensor', 'relay']),
