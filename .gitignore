@@ -87,3 +87,6 @@ ENV/
 
 # Rope project settings
 .ropeproject
+/python-insteonplm.pyproj
+/.vs/python-insteonplm/v14
+/python-insteonplm.sln
