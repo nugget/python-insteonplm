@@ -12,32 +12,32 @@ class IPDB(object):
     """Embodies the INSTEON Product Database static data and access methods."""
 
     products = [
-        Product(0x01, 0x00, None, 'LampLinc 3-pin', '2456D3', ['light', 'dimmer']),
-        Product(0x01, 0x01, None, 'SwitchLinc Dimmer (600W)', '2476D', ['light', 'dimmer']),
-        Product(0x01, 0x02, None, 'In-LineLinc Dimmer', '2475D', ['light', 'dimmer']),
-        Product(0x01, 0x03, None, 'Icon Switch Dimmer', '2476D', ['light', 'dimmer']),
+        Product(0x01, 0x00, None, 'LampLinc 3-pin', '2456D3', ['light', 'dimmable']),
+        Product(0x01, 0x01, None, 'SwitchLinc Dimmer (600W)', '2476D', ['light', 'dimmable']),
+        Product(0x01, 0x02, None, 'In-LineLinc Dimmer', '2475D', ['light', 'dimmable']),
+        Product(0x01, 0x03, None, 'Icon Switch Dimmer', '2476D', ['light', 'dimmable']),
         Product(0x01, 0x04, None, 'SwitchLinc Dimmer (1000W)', '2476DH', ['light', 'dimmable']),
-        Product(0x01, 0x06, None, 'LampLinc 2-pin', '2456D2', ['light', 'dimmer']),
+        Product(0x01, 0x06, None, 'LampLinc 2-pin', '2456D2', ['light', 'dimmable']),
         Product(0x01, 0x07, None, 'LampLinc Dimmer V2 2-pin', '2856D2', ['light', 'dimmable']),
         Product(0x01, 0x0d, None, 'SocketLinc Dimmer', '2454D', ['light', 'dimmable']),
         Product(0x01, 0x0e, None, 'LampLinc Dual Band 2-pin', '2457D2', ['light', 'dimmable']),
-        Product(0x01, 0x13, 0x000032, 'SwitchLinc Dimmer (Lixar)', '2676D-B', ['light', 'dimmer']),
-        Product(0x01, 0x17, None, 'ToggleLinc Dimmer', '2466D', ['light', 'dimmer']),
-        Product(0x01, 0x18, 0x00003F, 'Icon SwitchLinc Dimmer Inline Companiion', '2474D', ['light', 'dimmer']),
+        Product(0x01, 0x13, 0x000032, 'SwitchLinc Dimmer (Lixar)', '2676D-B', ['light', 'dimmable']),
+        Product(0x01, 0x17, None, 'ToggleLinc Dimmer', '2466D', ['light', 'dimmable']),
+        Product(0x01, 0x18, 0x00003F, 'Icon SwitchLinc Dimmer Inline Companiion', '2474D', ['light', 'dimmable']),
         Product(0x01, 0x1a, 0x00004F, 'In-LineLinc Dimmer', '2475DA1', ['light', 'dimmable']),
         Product(0x01, 0x1b, 0x000050, 'KeypadLinc Dimmer, 6-button', '2486DWH6', ['light', 'dimmable']),
         Product(0x01, 0x1b, 0x000051, 'KeypadLinc Dimmer, 8-button', '2486DWH8', ['light', 'dimmable']),
         Product(0x01, 0x1d, None, 'SwitchLinc Dimmer (1200W)', '2476D', ['light', 'dimmable']),
-        Product(0x01, 0x1e, None, 'Icon Switch Dimmer i2', '2476DB', ['light', 'dimmer']),
-        Product(0x01, 0x1f, None, 'ToggleLinc Dimmer', '2466D', ['light', 'dimmer']),
+        Product(0x01, 0x1e, None, 'Icon Switch Dimmer i2', '2476DB', ['light', 'dimmable']),
+        Product(0x01, 0x1f, None, 'ToggleLinc Dimmer', '2466D', ['light', 'dimmable']),
         Product(0x01, 0x20, None, 'SwitchLinc Dimmer (600W)', '2477D', ['light', 'dimmable']),
         Product(0x01, 0x21, None, 'OutletLinc Dimmer', '2472D', ['light', 'dimmable']),
-        Product(0x01, 0x22, None, 'LampLinc 2-pin', '2457D2X', ['light', 'dimmer']),
-        Product(0x01, 0x23, None, 'LampLinc EZ', '2457D2', ['light', 'dimmer']),
-        Product(0x01, 0x24, None, 'SwitchLinc 2-wire Dimmer', '2474D', ['light', 'dimmer']),
+        Product(0x01, 0x22, None, 'LampLinc 2-pin', '2457D2X', ['light', 'dimmable']),
+        Product(0x01, 0x23, None, 'LampLinc EZ', '2457D2', ['light', 'dimmable']),
+        Product(0x01, 0x24, None, 'SwitchLinc 2-wire Dimmer', '2474D', ['light', 'dimmable']),
         Product(0x01, 0x25, None, 'Ballast Dimmer', '2475DA2', ['light', 'dimmable']),
         Product(0x01, 0x2e, None, 'FanLinc Dual Band', '2475F', ['light', 'dimmable']),
-        Product(0x01, 0x31, None, 'SwitchLinc Dimmer 240V', '2478D', ['light', 'dimmer']),
+        Product(0x01, 0x31, None, 'SwitchLinc Dimmer 240V', '2478D', ['light', 'dimmable']),
         Product(0x01, 0x32, None, 'In-LineLinc Dimmer', '2457D2', ['light', 'dimmable']),
         Product(0x01, 0x34, None, 'DIN Rail Dimmer', '2542-222', ['light', 'dimmable']),
         Product(0x01, 0x35, None, 'Micro Dimmer', '2442-222', ['light', 'dimmable']),
@@ -113,7 +113,7 @@ class IPDB(object):
         if cat == 0x01:
             name = 'Unknown Dimmer'
             capabilities.append('light')
-            capabilities.append('dimmer')
+            capabilities.append('dimmable')
 
         if cat == 0x02:
             name = 'Unknown Device'
