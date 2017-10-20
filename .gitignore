@@ -90,3 +90,5 @@ ENV/
 /python-insteonplm.pyproj
 /.vs/python-insteonplm/v14
 /python-insteonplm.sln
+/.vs/python-insteonplm/v15
+/.vs
