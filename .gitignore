@@ -87,3 +87,9 @@ ENV/
 
 # Rope project settings
 .ropeproject
+/.vs/python-insteonplm/v15/.suo
+/.vs/ProjectSettings.json
+/.vs/slnx.sqlite
+/.vs
+/python-insteonplm.pyproj
+/python-insteonplm.sln
