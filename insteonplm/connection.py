@@ -4,7 +4,7 @@ import logging
 import serial
 import serial.aio
 
-from .protocol import PLM
+from .plm import PLM
 
 __all__ = ('Connection')
 

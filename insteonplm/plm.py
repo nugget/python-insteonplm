@@ -1,209 +1,893 @@
-"""Helper objects for maintaining PLM state and interfaces."""
+"""Module to maintain PLM state information and network interface."""
+import asyncio
 import logging
 import binascii
+import time
 
-__all__ = ('Address', 'PLMProtocol')
+from .ipdb import IPDB
+from .address import Address
+from .plmprotocol import PLMProtocol
+from .message import Message
 
-class Address(object):
-    """Datatype definition for INSTEON device address handling."""
+__all__ = ('PLM')
 
-    def __init__(self, addr):
-        """Create an Address object."""
+PP = PLMProtocol()
+
+# pylint: disable=too-many-instance-attributes, too-many-public-methods
+class PLM(asyncio.Protocol):
+    """The Insteon PLM IP control protocol handler."""
+
+    def __init__(self, loop=None, connection_lost_callback=None, userdefineddevices=()):
+        """Protocol handler that handles all status and changes on PLM.
+
+        This class is expected to be wrapped inside a Connection class object
+        which will maintain the socket and handle auto-reconnects.
+
+            :param connection_lost_callback:
+                called when connection is lost to device (optional)
+            :param loop:
+                asyncio event loop (optional)
+
+            :type: connection_lost_callback:
+                callable
+            :type loop:
+                asyncio.loop
+        """
+        self._loop = loop
+
+        self._connection_lost_callback = connection_lost_callback
+        self._update_callbacks = []
+        self._message_callbacks = []
+        self._insteon_callbacks = []
+
+        self._buffer = bytearray()
+        self._last_message = None
+        self._last_command = None
+        self._wait_for = {}
+        self._recv_queue = []
+        self._send_queue = []
+
+        self._device_queue = []
+
+        self.devices = ALDB()
+
         self.log = logging.getLogger(__name__)
-        self.addr = self.normalize(addr)
+        self.transport = None
 
-    def __repr__(self):
-        return self.human
+        self._me = {}
 
-    def __str__(self):
-        return self.hex
+        self._userdefineddevices = {}
 
-    def __eq__(self, other):
-        return self.hex == other.hex
+        for userdevice in userdefineddevices:
+            if 'cat' in userdevice and 'subcat' in userdevice and 'firmware' in userdevice:
+                self._userdefineddevices[userdevice["address"]] = {
+                    "cat": userdevice["cat"],
+                    "subcat": userdevice["subcat"],
+                    "firmware": userdevice["firmware"],
+                    "status": "notfound"
+                }
+                self.devices[userdevice["address"]] = {'cat': userdevice["cat"],
+                                            'subcat': userdevice["subcat"],
+                                            'firmware': userdevice["firmware"]}
 
-    def __ne__(self, other):
-        return self.hex != other.hex
+        self.add_message_callback(self._parse_insteon_standard, {'code': 0x50})
+        self.add_message_callback(self._parse_insteon_extended, {'code': 0x51})
+        self.add_message_callback(self._parse_all_link_completed, {'code': 0x53})
+        self.add_message_callback(self._parse_button_event, {'code': 0x54})
+        self.add_message_callback(self._parse_all_link_record, {'code': 0x57})
+        self.add_message_callback(self._parse_get_plm_info, {'code': 0x60})
+        self.add_message_callback(self._parse_get_plm_config, {'code': 0x73})
 
-    def normalize(self, addr):
-        """Take any format of address and turn it into a hex string."""
-        if isinstance(addr, Address):
-            return addr.hex
-        if isinstance(addr, bytearray):
-            return binascii.hexlify(addr).decode()
-        if isinstance(addr, bytes):
-            return binascii.hexlify(addr).decode()
-        if isinstance(addr, str):
-            addr.replace('.', '')
-            addr = addr[0:6]
-            return addr.lower()
+        self.add_insteon_callback(self._parse_device_info_response, {'cmd1': 0x01})
+        self.add_insteon_callback(self._parse_product_data_response, {'cmd1': 0x03, 'cmd2': 0x00})
+        self.add_insteon_callback(self._insteon_on, {'cmd1': 0x11})
+        self.add_insteon_callback(self._insteon_on, {'cmd1': 0x12})
+        self.add_insteon_callback(self._insteon_off, {'cmd1': 0x13})
+        self.add_insteon_callback(self._insteon_off, {'cmd1': 0x14})
+        self.add_insteon_callback(self._insteon_manual_change_stop, {'cmd1': 0x18})
+
+    #
+    # asyncio network functions
+    #
+
+    def connection_made(self, transport):
+        """Called when asyncio.Protocol establishes the network connection."""
+        self.log.info('Connection established to PLM')
+        self.transport = transport
+
+        # self.transport.set_write_buffer_limits(128)
+        # limit = self.transport.get_write_buffer_size()
+        # self.log.debug('Write buffer size is %d', limit)
+        self.get_plm_info()
+        self.load_all_link_database()
+
+    def data_received(self, data):
+        self.log.debug("Starting: data_received")
+        """Called when asyncio.Protocol detects received data from network."""
+        self.log.debug('Received %d bytes from PLM: %s',
+                       len(data), binascii.hexlify(data))
+
+        self._buffer.extend(data)
+        self._peel_messages_from_buffer()
+
+        for message in self._recv_queue:
+            self._process_message(message)
+            self._recv_queue.remove(message)
+        self.log.debug("Finishing: data_received")
+
+    def connection_lost(self, exc):
+        """Called when asyncio.Protocol loses the network connection."""
+        if exc is None:
+            self.log.warning('eof from modem?')
         else:
-            self.log.warning('Address class init with unknown type %s: %r',
-                             type(addr), addr)
-            return '000000'
+            self.log.warning('Lost connection to modem: %s', exc)
 
-    @property
-    def human(self):
-        """Emit the address in human-readible format (AA.BB.CC)."""
-        addrstr = self.addr[0:2]+'.'+self.addr[2:4]+'.'+self.addr[4:6]
-        return addrstr.upper()
+        self.transport = None
 
-    @property
-    def hex(self):
-        """Emit the address in bare hex format (aabbcc)."""
-        return self.addr
+        if self._connection_lost_callback:
+            self._connection_lost_callback()
 
-    @property
-    def bytes(self):
-        r"""Emit the address in bytes format (b'\xaabbcc')."""
-        return binascii.hexlify(self.addr)
+    def _returnsize(self, message):
+        code = message[1]
+        ppc = PP.lookup(code, fullmessage=message)
 
+        if hasattr(ppc, 'returnsize') and ppc.returnsize:
+            self.log.debug('Found a code 0x%x message which returns %d bytes',
+                           code, ppc.returnsize)
+            return ppc.returnsize
+        else:
+            self.log.debug('Unable to find an returnsize for code 0x%x', code)
+            return len(message) + 1
 
-class PLMCode(object):
-    """Class to store PLM code definitions and attributes."""
+    def _timeout_reached(self):
+        self.log.debug('_timeout_reached invoked')
+        self._clear_wait()
+        self._process_queue()
 
-    def __init__(self, code, name=None, size=None, rsize=None):
-        """Create a new PLM code object."""
-        self.code = code
-        self.size = size
-        self.rsize = rsize
-        self.name = name
+    def _clear_wait(self):
+        self.log.debug('Starting: _clear_wait')
+        if '_thandle' in self._wait_for:
+            self._wait_for['_thandle'].cancel()
+        self._wait_for = {}
+        self.log.debug("Finishing: _clear_wait")
+        
+    def _schedule_wait(self, keys, timeout=1):
+        self.log.debug("Starting: _schedule_wait")
+        if self._wait_for != {}:
+            self.log.warning('Overwriting stale wait_for: %s', self._wait_for)
+            self._clear_wait()
 
+        self.log.debug('Waiting for %s timeout in %d seconds', keys, timeout)
+        if timeout > 0:
+            keys['_thandle'] = self._loop.call_later(timeout,
+                                                     self._timeout_reached)
 
-class PLMProtocol(object):
-    """Class container to store PLMCode objects as a Protocol."""
+        self._wait_for = keys
+        self.log.debug("Finishing: _schedule_wait")
 
-    def __init__(self):
-        """Create the Protocol object."""
-        self.log = logging.getLogger(__name__)
-        self._codelist = []
-        self.add(0x50, name='INSTEON Standard Message Received', size=11)
-        self.add(0x51, name='INSTEON Extended Message Received', size=25)
-        self.add(0x52, name='X10 Message Received', size=4)
-        self.add(0x53, name='ALL-Linking Completed', size=10)
-        self.add(0x54, name='Button Event Report', size=3)
-        self.add(0x55, name='User Reset Detected', size=2)
-        self.add(0x56, name='ALL-Link CLeanup Failure Report', size=2)
-        self.add(0x57, name='ALL-Link Record Response', size=10)
-        self.add(0x58, name='ALL-Link Cleanup Status Report', size=3)
-        self.add(0x60, name='Get IM Info', size=2, rsize=9)
-        self.add(0x61, name='Send ALL-Link Command', size=5, rsize=6)
-        self.add(0x62, name='INSTEON Fragmented Message', size=8, rsize=9)
-        self.add(0x64, name='Start ALL-Linking', size=4, rsize=5)
-        self.add(0x65, name='Cancel ALL-Linking', size=4)
-        self.add(0x67, name='Reset the IM', size=2, rsize=3)
-        self.add(0x69, name='Get First ALL-Link Record', size=2)
-        self.add(0x6a, name='Get Next ALL-Link Record', size=2)
-        self.add(0x73, name='Get IM Configuration', size=2, rsize=6)
+    def _wait_for_last_command(self):
+        self.log.debug("Starting: _wait_for_last_command")
+        sentmessage = self._last_command
+        returnsize = self._returnsize(sentmessage)
+        self.log.debug('Wait for ACK/NAK on sent: %s expecting return size of %d',
+                       binascii.hexlify(sentmessage), returnsize)
+        self.log.debug('Find result: %d', binascii.hexlify(self._buffer).find(binascii.hexlify(sentmessage)) )
+        if binascii.hexlify(self._buffer).find(binascii.hexlify(sentmessage)) == 0: 
+            if len(self._buffer) < returnsize:
+                self.log.debug('Waiting for all of message to arrive, %d/%d',
+                               len(self._buffer), returnsize)
+                return
 
+            code = self._buffer[1]
+            message_length = len(sentmessage)
+            response_length = returnsize - message_length
+            response = self._buffer[message_length:response_length]
+            acknak = self._buffer[returnsize-1]
 
-    def __len__(self):
-        """Return the number of PLMCodes in the Protocol."""
-        return len(self._codelist)
+            mla = self._buffer[:returnsize-1]
+            buffer = self._buffer[returnsize:]
 
-    def __iter__(self):
-        for x in self._codelist:
-            yield x.code
+            data_in_ack = [0x19, 0x2e]
+            msg = Message(mla)
 
-    def add(self, code, name=None, size=None, rsize=None):
-        """Add a new PLMCode to the Protocol."""
-        self._codelist.append(PLMCode(code, name=name, size=size, rsize=rsize))
+            queue_ack = False
 
-    def lookup(self, code, fullmessage=None):
-        """Return the PLMCode from a byte and optional stream buffer."""
-        for x in self._codelist:
-            if x.code == code:
-                if code == 0x62 and fullmessage:
-                    x.name = 'INSTEON Fragmented Message'
-                    x.size = 8
-                    x.rsize = 9
-                    if len(fullmessage) >= 6:
-                        flags = fullmessage[5]
-                        if flags == 0x00:
-                            x.name = 'INSTEON Standard Message'
-                        else:
-                            x.name = 'INSTEON Extended Message'
-                            x.size = 22
-                            x.rsize = 23
+            if sentmessage != mla:
+                self.log.debug('sent command and ACK response differ')
+                queue_ack = True
 
-                return x
+            if hasattr(msg, 'cmd1') and msg.cmd1 in data_in_ack:
+                self.log.debug('sent cmd1 is on queue_ack list')
+                queue_ack = True
 
-class Message(object):
-    """Unroll a raw message string into a class with attributes."""
-    def __init__(self, rawmessage):
-        self.log = logging.getLogger(__name__)
-        self.code = rawmessage[1]
-        self.rawmessage = rawmessage
+            if acknak == 0x06:
+                if len(response) > 0 or queue_ack is True:
+                    self.log.debug('Sent command %s OK with response %s',
+                                  binascii.hexlify(sentmessage), response)
+                    self._recv_queue.append(mla)
+                else:
+                    self.log.debug('Sent command %s OK',
+                                   binascii.hexlify(sentmessage))
 
-        if self.code == 0x50 or self.code == 0x51:
-            # INSTEON Standard and Extended Message
-            self.address = Address(rawmessage[2:5])
-            self.target = Address(rawmessage[5:8])
-            self.flagsval = rawmessage[8]
-            self.cmd1 = rawmessage[9]
-            self.cmd2 = rawmessage[10]
-            self.flags = self.decode_flags(self.flagsval)
-            self.userdata = rawmessage[11:25]
+            else:
+                if code == 0x6a:
+                    self.log.info('ALL-Link database dump is complete')
+                    self.devices.state = 'loaded'
+                    for address in self._device_queue:
+                        #self.get_device_info(address)
+                        self.product_data_request(address)
 
-        elif self.code == 0x53:
-            # ALL-Linking Complete
-            self.linkcode = rawmessage[2]
-            self.group = rawmessage[3]
-            self.address = Address(rawmessage[4:7])
-            self.category = rawmessage[7]
-            self.subcategory = rawmessage[8]
-            self.firmware = rawmessage[9]
+                    for userdevice in self._userdefineddevices:
+                        if self._userdefineddevices[userdevice]["status"] == "notfound":
+                            self.log.info("Failed to discover device %r.", userdevice)
+                    self.poll_devices()
+                else:
+                    self.log.warning('Sent command %s UNsuccessful! (%02x)',
+                                     binascii.hexlify(sentmessage), acknak)
+            self._last_command = None
+            self._buffer = buffer
+#        else:
+#            self.log.debug('Could not find last message %s in buffer %s.', binascii.hexlify(sentmessage), binascii.hexlify(self._buffer))
+#            self._wait_for_recognized_message()
+        self.log.debug("Finishing: _wait_for_last_command")
 
-        elif self.code == 0x54:
-            events = {0x02: 'SET button tapped',
-                      0x03: 'SET button press and hold',
-                      0x04: 'SET button released',
-                      0x12: 'Button 2 tapped',
-                      0x13: 'Button 2 press and hold',
-                      0x14: 'Button 2 released',
-                      0x22: 'Button 3 tapped',
-                      0x23: 'Button 3 press and hold',
-                      0x24: 'Button 3 released'}
+    def _wait_for_recognized_message(self):
+        self.log.debug("Starting: _wait_for_recognized_message")
+        code = self._buffer[1]
 
-            self.event = rawmessage[2]
-            self.description = events.get(self.event, None)
+        for ppcode in PP:
+            if ppcode == code or ppcode == bytes([code]):
+                ppc = PP.lookup(code, fullmessage=self._buffer)
 
-        elif self.code == 0x57:
-            # ALL-Link Record Response
-            self.flagsval = rawmessage[2]
-            self.group = rawmessage[3]
-            self.address = Address(rawmessage[4:7])
-            self.linkdata1 = rawmessage[7]
-            self.linkdata2 = rawmessage[8]
-            self.linkdata3 = rawmessage[9]
+                self.log.debug('Found a code %02x message which is %d bytes',
+                               code, ppc.size)
+                self.log.debug(binascii.hexlify(self._buffer))
+                if len(self._buffer) >= ppc.size:
+                    new_message = self._buffer[0:ppc.size]
+                    self.log.debug('new message is: %s',
+                                   binascii.hexlify(new_message))
+                    self._recv_queue.append(new_message)
+                    self._buffer = self._buffer[ppc.size:]
+                else:
+                    self.log.debug('Expected %r bytes but received %r bytes. Need more bytes to process message.', ppc.size, len(self._buffer))
+        self.log.debug("Finishing: _wait_for_recognized_message")
 
-        elif self.code == 0x60:
-            self.address = Address(rawmessage[2:5])
-            self.category = rawmessage[5]
-            self.subcategory = rawmessage[6]
-            self.firmware = rawmessage[7]
+    def _peel_messages_from_buffer(self):
+        self.log.debug("Starting: _peel_messages_from_buffer")
+        lastlooplen = 0
+        worktodo = True
 
-        elif self.code == 0x62:
-            # 0262395fa4001900
-            self.address = Address(rawmessage[2:5])
-            self.flagsval = rawmessage[5]
+        while worktodo:
+            if len(self._buffer) == 0:
+                self.log.debug('Clean break!  There is no buffer left')
+                worktodo = False
+                break
 
-        elif self.code == 0x73:
-            self.flagsval = rawmessage[2]
-            self.spare1 = rawmessage[3]
-            self.spare2 = rawmessage[4]
+            if len(self._buffer) < 2:
+                worktodo = False
+                break
 
-    def __repr__(self):
-        attrs = vars(self)
-        return ', '.join("%s: %r" % item for item in attrs.items())
+            if self._buffer[0] != 2:
+                self._buffer = self._buffer[1:]
+                self.log.debug('Trimming leading buffer garbage')
 
-    def decode_flags(self, flags):
-        """Turn INSTEON message flags into a dict."""
-        retval = {}
-        if flags is not None:
-            retval['broadcast'] = (flags & 128) > 0
-            retval['group'] = (flags & 64) > 0
-            retval['ack'] = (flags & 32) > 0
-            retval['extended'] = (flags & 16) > 0
-            retval['hops'] = (flags & 12 >> 2)
-            retval['maxhops'] = (flags & 3)
-        return retval
+            if len(self._buffer) == lastlooplen:
+                # Buffer size did not change so we should wait for more data
+                worktodo = False
+                break
+
+            lastlooplen = len(self._buffer)
+
+            if self._buffer.find(2) < 0:
+                self.log.debug('Buffer does not contain a 2, we should bail')
+                worktodo = False
+                break
+
+#            if self._last_command:
+#                self._wait_for_last_command()
+#            else:
+            self._wait_for_recognized_message()
+
+        self._process_queue()
+        self.log.debug("Finishing: _peel_messages_from_buffer")
+
+    def _process_queue(self):
+        self.log.debug("Starting: _process_queue")
+        self.log.debug('Send queue contains %d items', len(self._send_queue))
+
+        if self._clear_to_send() is True:
+            command, wait_for = self._send_queue[0]
+            self._send_hex(command, wait_for=wait_for)
+            self._send_queue.remove([command, wait_for])
+        self.log.debug("Finishing: _process_queue")
+
+    def _clear_to_send(self):
+        self.log.debug("Starting: _clear_to_send")
+        if len(self._buffer) == 0:
+            if len(self._send_queue) > 0:
+                if self._last_command is None:
+                    if self._wait_for == {}:
+                        return True
+        self.log.debug("Finishing: _clear_to_send")
+
+    def _process_message(self, rawmessage):
+        self.log.debug("Starting: _process_message")
+        self.log.debug('Processing message: %s', binascii.hexlify(rawmessage))
+        if rawmessage[0] != 2 or len(rawmessage) < 2:
+            self.log.warning('process_message called with a malformed message')
+            return
+
+        if rawmessage == self._last_message:
+            self.log.debug('ignoring duplicate message')
+            return
+
+        self._last_message = rawmessage
+
+        msg = Message(rawmessage)
+
+        # if hasattr(msg, 'target') and msg.target != self._me['address']:
+        #     self.log.info('Ignoring message that is not for me')
+        #     return
+
+        if self._message_matches_criteria(msg, self._wait_for):
+            if '_callback' in self._wait_for:
+                self._clear_wait()
+                self._process_queue()
+                return
+            else:
+                self._clear_wait()
+
+        callbacked = False
+        for callback, criteria in self._message_callbacks:
+            if self._message_matches_criteria(msg, criteria):
+                self.log.debug('message callback %s with criteria %s',
+                               callback, criteria)
+                self._loop.call_soon(callback, msg)
+                callbacked = True
+
+        if callbacked is False:
+            ppc = PP.lookup(msg.code, fullmessage=rawmessage)
+            if hasattr(ppc, 'name') and ppc.name:
+                self.log.info('Unhandled event: %s (%s)', ppc.name,
+                              binascii.hexlify(rawmessage))
+            else:
+                self.log.info('Unrecognized event: UNKNOWN (%s)',
+                              binascii.hexlify(rawmessage))
+
+        self._process_queue()
+        self.log.debug("Finishing: _process_message")
+
+    def _message_matches_criteria(self, msg, criteria):
+        self.log.debug("Starting: _message_matches_criteria")
+        match = True
+
+        if criteria is None or criteria == {}:
+            return True
+
+        if 'address' in criteria:
+            criteria['address'] = Address(criteria['address'])
+
+        for key in criteria.keys():
+            if key[0] != '_':
+                mattr = getattr(msg, key, None)
+                if mattr is None:
+                    match = False
+                    break
+                elif criteria[key] != mattr:
+                    match = False
+                    break
+
+        if match is True:
+            if '_callback' in criteria:
+                self.log.debug('Calback invoked from mmc criteria')
+                criteria['_callback'](msg)
+
+        self.log.debug("Finishing: _message_matches_criteria")
+        return match
+
+    def _parse_insteon_standard(self, msg):
+        self.log.debug("Starting: _parse_insteon_standard")
+        try:
+            device = self.devices[msg.address.hex]
+        except:
+            device = None
+
+        self.log.info('INSTEON standard %r->%r: cmd1:%02x cmd2:%02x flags:%02x',
+                      msg.address, msg.target,
+                      msg.cmd1, msg.cmd2, msg.flagsval)
+        self.log.debug('flags: %r', msg.flags)
+        self.log.debug('device: %r', device)
+
+        for callback, criteria in self._insteon_callbacks:
+            if self._message_matches_criteria(msg, criteria):
+                self.log.debug('insteon callback %s with criteria %s',
+                               callback, criteria)
+                self._loop.call_soon(callback, msg, device)
+
+        if msg.cmd1 == 0x03 and msg.cmd2 == 0x00:
+#            self._parse_product_data_response(msg.address, msg.userdata)
+            self.get_device_info(msg.address.hex)
+        self.log.debug("Finish: _parse_insteon_standard")
+
+    def _parse_insteon_extended(self, msg):
+        self.log.debug("Starting: _parse_insteon_extended")
+        try:
+            device = self.devices[msg.address.hex]
+        except:
+            device = None
+
+        self.log.info('INSTEON extended %r->%r: cmd1:%02x cmd2:%02x flags:%02x data:%s',
+                      msg.address, msg.target, msg.cmd1, msg.cmd2, msg.flagsval,
+                      binascii.hexlify(msg.userdata))
+        self.log.debug('flags: %r', msg.flags)
+        self.log.debug('device: %r', device)
+
+        for callback, criteria in self._insteon_callbacks:
+            if self._message_matches_criteria(msg, criteria):
+                self.log.debug('insteon callback %s with criteria %s',
+                               callback, criteria)
+                self._loop.call_soon(callback, msg, device)
+
+#        if msg.cmd1 == 0x03 and msg.cmd2 == 0x00:
+#            self._parse_product_data_response(msg.address, msg.userdata)
+#            self._parse_product_data_response(msg, device)
+        self.log.debug("Finishing: _parse_insteon_extended")
+
+    def _parse_status_response(self, msg):
+        self.log.debug("Starting: _parse_status_response")
+        onlevel = msg.cmd2
+
+        self.log.info('INSTEON device status %r is at level %s',
+                      msg.address, hex(onlevel))
+        self.devices.setattr(msg.address, 'onlevel', onlevel)
+        self._do_update_callback(msg)
+        self.log.debug("Finishing: _parse_status_response")
+
+    def _parse_sensor_response(self, msg):
+        device = self.devices[msg.address.hex]
+
+        sensorstate = msg.cmd2
+
+        if device.get('model') == '2450':
+            # Swap the values for a 2450 because it's opposite
+            self.log.debug('Reversing sensorstate %s because 2450', sensorstate)
+            if sensorstate:
+                sensorstate = 0
+            else:
+                sensorstate = 1
+
+        self.log.info('INSTEON sensor status %r is at level %s',
+                      msg.address, hex(sensorstate))
+        self.devices.setattr(msg.address, 'sensorstate', sensorstate)
+        self._do_update_callback(msg)
+
+    def _insteon_on(self, msg, device):
+        self.log.info('INSTEON on event: %r, %r', msg, device)
+
+        attribute = 'onlevel'
+
+        if 'binary_sensor' in device.get('capabilities'):
+            if msg.flags.get('group', False):
+                #
+                # If this is a group message from a sensor device, then we
+                # treat it as sensorstate instead of onlevel.  This is vital
+                # for I/O Linc 2450 devices, because it's the cleanest way
+                # to differntiate between the sensor on/off notifications and
+                # the relay on/off notifications that come in response to a
+                # turn_on or turn_off command.  Those on/off messages are
+                # direct (not group, not broadcast) and reflect the relay's
+                # status and not the sensor's status.
+                #
+                attribute = 'sensorstate'
+
+        if msg.cmd2 == 0x00:
+            value = 255
+        else:
+            value = msg.cmd2
+
+        if device.get('model') == '2477D':
+            if msg.cmd2 == 0x00 or msg.cmd2 == 0x01:
+                value = device.get('setlevel', 255)
+                self.log.debug('ON report with no onlevel, using %02x', value)
+
+        if self.devices.setattr(msg.address, attribute, value):
+            self._do_update_callback(msg)
+
+    def _insteon_off(self, msg, device):
+        self.log.info('INSTEON off event: %r, %r', msg, device)
+
+        attribute = 'onlevel'
+
+        if 'binary_sensor' in device.get('capabilities'):
+            if msg.flags.get('group', False):
+                #
+                # If this is a group message from a sensor device, then we
+                # treat it as sensorstate instead of onlevel.  This is vital
+                # for I/O Linc 2450 devices, because it's the cleanest way
+                # to differntiate between the sensor on/off notifications and
+                # the relay on/off notifications that come in response to a
+                # turn_on or turn_off command.  Those on/off messages are
+                # direct (not group, not broadcast) and reflect the relay's
+                # status and not the sensor's status.
+                #
+                attribute = 'sensorstate'
+
+        if self.devices.setattr(msg.address, attribute, 0):
+            self._do_update_callback(msg)
+
+    # pylint: disable=unused-argument
+    def _insteon_manual_change_stop(self, msg, device):
+        self.log.info('Light Stop Manual Change')
+        self.status_request(msg.address)
+
+    def _parse_extended_status_response(self, msg):
+        device = self.devices[msg.address.hex]
+
+        self.log.info('INSTEON extended device status %r', msg.address)
+        if device.get('cat') == 0x01:
+            self.devices.setattr(msg.address, 'ramprate', msg.userdata[6])
+            self.devices.setattr(msg.address, 'setlevel', msg.userdata[7])
+
+    def _do_update_callback(self, msg):
+        for callback, criteria in self._update_callbacks:
+            if self._message_matches_criteria(msg, criteria):
+                self.log.debug('update callback %s with criteria %s',
+                               callback, criteria)
+                self._loop.call_soon(callback, msg)
+
+    def _parse_product_data_response(self, msg, device):
+        self.log.debug("Starting: _parse_product_data_response")
+        self.log.info("message:")
+        self.log.info(msg)
+        
+        if msg.code == binascii.a2b_hex('51'):
+            category = msg.userdata[4]
+            subcategory = msg.userdata[5]
+            firmware = msg.userdata[6]
+            #self.log.info('INSTEON Product Data Response from %r: cat:%r, subcat:%r',
+            #              msg.address.hex, hex(category), hex(subcategory))
+            self.log.info('INSTEON Product Data Response from %r: cat:%02x, subcat:%02x',
+                      msg.address.hex, 
+                      category, 
+                      subcategory)
+        
+            self.devices[msg.address.hex] = {'cat': category, 'subcat': subcategory,
+                                            'firmware': firmware}
+        else:
+            self.log.debug('_parse_product_data_response was not an extended message. Defaulting to get_device_info')
+            self.get_device_info(msg.address.hex)
+
+        self.log.debug("Finishing: _parse_device_info_response")
+
+    def _parse_device_info_response(self, msg, device):
+        self.log.debug("Starting: _parse_device_info_response")
+        self.log.info("message:")
+        self.log.info(msg)
+        productdata = binascii.unhexlify(msg.target.hex)
+        category = productdata[0]
+        self.log.info("category: %02x", category)
+        subcategory = productdata[1]
+        firmware = productdata[2]
+        #self.log.info('INSTEON Product Data Response from %r: cat:%r, subcat:%r',
+        #              msg.address.hex, hex(category), hex(subcategory))
+        self.log.info('INSTEON Product Data Response from %r: cat:%02x, subcat:%02x',
+                      msg.address.hex, 
+                      category, 
+                      subcategory)
+
+        
+        self.devices[msg.address.hex] = {'cat': category, 'subcat': subcategory,
+                                     'firmware': firmware}
+
+#        if self.devices.state == 'loading':
+#            time.sleep(1)
+#            self.get_next_all_link_record()
+        self.log.debug("Finishing: _parse_device_info_response")
+
+    def _parse_button_event(self, msg):
+        self.log.info('PLM button event: %02x (%s)', msg.event, msg.description)
+
+    def _parse_get_plm_info(self, msg):
+        self.log.debug("Starting: _parse_get_plm_info")
+        self.log.info('PLM Info from %r: category:%02x subcat:%02x firmware:%02x',
+                      msg.address, msg.category, msg.subcategory, msg.firmware)
+
+        self._me['address'] = msg.address
+        self._me['category'] = msg.category
+        self._me['subcategory'] = msg.subcategory
+        self._me['firmware'] = msg.firmware
+        self.log.debug("Finishing: _parse_get_plm_info")
+
+    def _parse_get_plm_config(self, msg):
+        self.log.info('PLM Config: flags:%02x spare:%02x spare:%02x',
+                      msg.flagsval, msg.spare1, msg.spare2)
+
+    def _parse_all_link_record(self, msg):
+        self.log.debug("Starting: _parse_all_link_record")
+        self.log.info('ALL-Link Record for %r: flags:%02x group:%02x data:%02x/%02x/%02x',
+                      msg.address, msg.flagsval, msg.group,
+                      msg.linkdata1, msg.linkdata2, msg.linkdata3)
+        
+        if self._me['subcategory'] == 0x20:
+            # USB Stick has a different ALDB message format.  I don't actually
+            # think that linkdata1 is firmware, but whatever.  Shouldn't have
+            # any effect storing the value there anyway.
+            category = msg.linkdata2
+            subcategory = msg.linkdata3
+            firmware = msg.linkdata1
+        else:
+            # Regular PLM format
+            category = msg.linkdata1
+            subcategory = msg.linkdata2
+            firmware = msg.linkdata3
+
+        if (category > 0x01):
+            if (msg.address.hex in self.devices):
+                self.log.info("Device %r is already added manually.", msg.address.hex)
+                if msg.address.hex in self._userdefineddevices:
+                    self._userdefineddevices[msg.address.hex]["status"] = "found"
+            else: 
+                self.log.info("All-Link Record returned device %r cat %s subcat %s firmware %s.", msg.address.hex, msg.linkdata1, msg.linkdata2, msg.linkdata3)
+                self.devices[msg.address.hex] = {'cat': msg.linkdata1,
+                                         'subcat': msg.linkdata2,
+                                         'firmware': msg.linkdata3}
+        else:
+            self._device_queue.append(msg.address.hex)
+        
+        if self.devices.state == 'loading':
+            self.get_next_all_link_record()
+        self.log.debug("Finishing: _parse_all_link_record")
+
+    def _parse_all_link_completed(self, msg):
+        self.log.debug("Starting: _parse_all_link_completed")
+        self.log.info('ALL-Link Completed %r: group:%d cat:%02x subcat:%02x '
+                      'firmware:%02x linkcode: %02x',
+                      msg.address, msg.group, msg.category, msg.subcategory,
+                      msg.firmware, msg.linkcode)
+
+        if msg.address.hex in self.devices:
+            self.log.info("Device %r is already added manually.", msg.address.hex)
+            if msg.address.hex in self._userdefineddevices:
+                self._userdefineddevices[msg.address.hex]["status"] = "found"
+        else:
+            self.log.info("Auto Discovering device %r.", msg.address.hex)
+            self.devices[msg.address.hex] = {'cat': msg.category,
+                                         'subcat': msg.subcategory,
+                                         'firmware': msg.firmware}
+        for userdevice in self._userdefineddevices:
+            if self._userdefineddevices[userdevice]["status"] == "notfound":
+                self.log.info("Finished all link, and failed to discover device %r.", userdevice)
+        self.log.debug("Finishing: _parse_all_link_completed")
+
+    def _queue_hex(self, message, wait_for=None):
+        if wait_for is None:
+            wait_for = {}
+
+        self.log.debug('Adding command to queue: %s', message)
+        self._send_queue.append([message, wait_for])
+
+    def _send_hex(self, message, wait_for=None):
+        if wait_for is None:
+            wait_for = {}
+
+        if self._last_command or self._wait_for:
+            self.log.debug('Still waiting on last_command.')
+            self._queue_hex(message, wait_for)
+        else:
+            self._send_raw(binascii.unhexlify(message))
+            self._schedule_wait(wait_for, 3)
+
+    def _send_raw(self, message):
+        self.log.debug('Sending %d byte message: %s',
+                      len(message), binascii.hexlify(message))
+        time.sleep(1)
+        self.transport.write(message)
+        self._last_command = message
+
+    def add_message_callback(self, callback, criteria):
+        """Register a callback for when a matching message is seen."""
+        self._message_callbacks.append([callback, criteria])
+        self.log.debug('Added message callback to %s on %s', callback, criteria)
+
+    def add_insteon_callback(self, callback, criteria):
+        """Register a callback for when a matching INSTEON command is seen."""
+        self._insteon_callbacks.append([callback, criteria])
+        self.log.debug('Added INSTEON callback to %s on %s', callback, criteria)
+
+    def add_update_callback(self, callback, criteria):
+        """Register as callback for when a matching device attribute changes."""
+        self._update_callbacks.append([callback, criteria])
+        self.log.debug('Added update callback to %s on %s', callback, criteria)
+
+    def add_device_callback(self, callback, criteria):
+        """Register a callback for when a matching new device is seen."""
+        self.devices.add_device_callback(callback, criteria)
+
+    def send_insteon_standard(self, device, cmd1, cmd2, wait_for=None):
+        """Send an INSTEON Standard message to the PLM."""
+        if wait_for is None:
+            wait_for = {}
+
+        device = Address(device)
+        rawstr = '0262'+device.hex+'00'+cmd1+cmd2
+        self._send_hex(rawstr, wait_for)
+
+    # pylint: disable=too-many-arguments
+    def send_insteon_extended(self, device, cmd1, cmd2,
+                              userdata='0000000000000000000000000000',
+                              wait_for=None):
+        """Send an INSTEON Extended message to the PLM."""
+        if wait_for is None:
+            wait_for = {}
+
+        device = Address(device)
+        rawstr = '0262'+device.hex+'10'+cmd1+cmd2+userdata
+        self._send_hex(rawstr, wait_for)
+
+    def get_plm_info(self):
+        """Request PLM Info."""
+        self.log.info('Requesting PLM Info')
+        self._send_hex('0260')
+
+    def get_plm_config(self):
+        """Request PLM Config."""
+        self.log.info('Requesting PLM Config')
+        self._send_hex('0273')
+
+    def factory_reset(self):
+        """Reset the IM and clear the All-Link Database."""
+        self.log.info('Nuking from orbit')
+        self._send_hex('0267')
+
+    def start_all_linking(self):
+        """Puts the IM into ALL-Linking mode without using the SET Button."""
+        self.log.info('Start ALL-Linking')
+        self._send_hex('02640101')
+
+    def cancel_all_linking(self):
+        """Cancels the ALL-Linking started previously."""
+        self.log.info('Cancel ALL-Linking')
+        self._send_hex('0265')
+
+    def get_first_all_link_record(self):
+        """Request first ALL-Link record."""
+        self.log.info('Requesting First ALL-Link Record')
+        self._send_hex('0269') #, wait_for={'code': 0x57})
+
+    def get_next_all_link_record(self):
+        """Request next ALL-Link record."""
+        self.log.info('Requesting Next ALL-Link Record')
+        self._send_hex('026a') #, wait_for={'code': 0x57})
+
+    def load_all_link_database(self):
+        """Load the ALL-Link Database into object."""
+        self.devices.state = 'loading'
+        self.get_first_all_link_record()
+
+    def product_data_request(self, addr):
+        """Request Product Data Record for device."""
+        device = Address(addr)
+        self.log.info('Requesting product data for %s', device.human)
+        #time.sleep(2)
+        self.send_insteon_standard(
+            device, '03', '00') 
+
+    def get_device_info(self, addr):
+        self.log.debug("Starting: get_device_info")
+        """Request Product Data Record for device."""
+        device = Address(addr)
+        self.log.info('Requesting device info for %s', device.human)
+        #time.sleep(1)
+        self.send_insteon_standard(
+            device, '10', '00') #,
+#            wait_for={'code': 0x50, 'cmd1': 0x01})
+        self.log.debug("Finishing: get_device_info")
+
+    def text_string_request(self, addr):
+        """Request Device Text String."""
+        device = Address(addr)
+        self.log.info('Requesting text string for %s', device.human)
+        self.send_insteon_standard(
+            device, '03', '02',
+            wait_for={'code': 0x51, 'cmd1': 0x03, 'cmd2': 0x02})
+
+    def status_request(self, addr, cmd2='00'):
+        """Request Device Status."""
+        address = Address(addr)
+        device = self.devices[address.hex]
+
+        if 'no_requests' in device.get('capabilities'):
+            self.log.debug('Skipping status_request for no_requests device %r (%s)',
+                           address, device.get('model', 'Unknown Model'))
+            return
+
+        self.log.info('Requesting status for %r', address)
+
+        callback = self._parse_status_response
+        if device.get('model') == '2450':
+            if cmd2 == '00':
+                self._loop.call_later(1, self.status_request, address, '01')
+            else:
+                callback = self._parse_sensor_response
+
+        elif 'binary_sensor' in device.get('capabilities'):
+            callback = self._parse_sensor_response
+
+        self.send_insteon_standard(
+            address, '19', cmd2,
+            wait_for={'code': 0x50, '_callback': callback})
+
+    def extended_status_request(self, addr):
+        """Request Operating Flags for device."""
+        device = Address(addr)
+        self.log.info('Requesting extended status for %s', device.human)
+        self.send_insteon_extended(
+            device, '2e', '00',
+            wait_for={'code': 0x51, '_callback': self._parse_extended_status_response})
+
+    def update_setlevel(self, addr, level):
+        """Currently non-functional."""
+        device = Address(addr)
+        self.log.info('Changing setlevel on %s to %02x', device.human, level)
+        self.send_insteon_extended(
+            device, '2e', '00',
+            userdata='00067f0000000000000000000000',
+            wait_for={'code': 0x50})
+
+    def update_ramprate(self, addr, level):
+        """Currently non-functional."""
+        device = Address(addr)
+        self.log.info('Changing setlevel on %s to %02x', device.human, level)
+        self.send_insteon_extended(
+            device, '2e', '00',
+            userdata='00051b0000000000000000000000',
+            wait_for={'code': 0x50})
+
+    def get_device_attr(self, addr, attr):
+        """Return attribute on specified device."""
+        return self.devices.getattr(addr, attr)
+
+    def turn_off(self, addr):
+        """Send command to device to turn off."""
+        address = Address(addr)
+        self.send_insteon_standard(address, '13', '00', {})
+
+    def turn_on(self, addr, brightness=255, ramprate=None):
+        """Send command to device to turn on."""
+        address = Address(addr)
+        device = self.devices[address.hex]
+        self.log.debug('turn_on %r %s', addr, device.get('model'))
+
+        if isinstance(ramprate, int):
+            #
+            # The specs say this should work, but I couldn't get my 2477D
+            # switches to respond.  Leaving the code in place for future
+            # hacking.  If you try to use ramprate it probably won't work.
+            #
+            bhex = 'fc'
+            self.send_insteon_standard(address, '2e', bhex, {})
+        else:
+            bhex = str.format('{:02X}', int(brightness)).lower()
+            self.send_insteon_standard(address, '11', bhex, {})
+
+        if device.get('model') == '2450':
+            #
+            # Request status after two seconds so we can detect if the I/OLinc
+            # is configured in 'momentary contact' mode and turned off right
+            # after we sent the on.  We can't rely on regular INSTEON state
+            # broadcasts with this device because the state broadcasts come
+            # from the sensor and not the relay.
+            #
+            self._loop.call_later(2, self.status_request, address)
+
+    def poll_devices(self):
+        """Walk through ALDB and populate device information for each device."""
+        self.log.info('Polling all devices in ALDB')
+        for address in self.devices:
+            self.status_request(address)
+
+    def list_devices(self):
+        """Debugging command to expose ALDB."""
+        for address in self.devices:
+            device = self.devices[address]
+            print(address, ':', device)
