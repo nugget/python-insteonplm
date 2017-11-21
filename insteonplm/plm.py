@@ -7,7 +7,7 @@ import time
 from .ipdb import IPDB
 from .address import Address
 from .plmprotocol import PLMProtocol
-from .message import Message
+from .messages.message import Message
 
 __all__ = ('PLM')
 
@@ -127,16 +127,16 @@ class PLM(asyncio.Protocol):
         if self._connection_lost_callback:
             self._connection_lost_callback()
 
-    def _returnsize(self, message):
+    def _receivedSize(self, message):
         code = message[1]
         ppc = PP.lookup(code, fullmessage=message)
 
-        if hasattr(ppc, 'returnsize') and ppc.returnsize:
+        if hasattr(ppc, 'receivedSize') and ppc.receivedSize:
             self.log.debug('Found a code 0x%x message which returns %d bytes',
-                           code, ppc.returnsize)
-            return ppc.returnsize
+                           code, ppc.receivedSize)
+            return ppc.receivedSize
         else:
-            self.log.debug('Unable to find an returnsize for code 0x%x', code)
+            self.log.debug('Unable to find an receivedSize for code 0x%x', code)
             return len(message) + 1
 
     def _timeout_reached(self):
@@ -168,24 +168,27 @@ class PLM(asyncio.Protocol):
     def _wait_for_last_command(self):
         self.log.debug("Starting: _wait_for_last_command")
         sentmessage = self._last_command
-        returnsize = self._returnsize(sentmessage)
+        receivedSize = self._receivedSize(sentmessage)
+
         self.log.debug('Wait for ACK/NAK on sent: %s expecting return size of %d',
-                       binascii.hexlify(sentmessage), returnsize)
+                       binascii.hexlify(sentmessage), receivedSize)
         self.log.debug('Find result: %d', binascii.hexlify(self._buffer).find(binascii.hexlify(sentmessage)) )
+
+
         if binascii.hexlify(self._buffer).find(binascii.hexlify(sentmessage)) == 0: 
-            if len(self._buffer) < returnsize:
+            if len(self._buffer) < receivedSize:
                 self.log.debug('Waiting for all of message to arrive, %d/%d',
-                               len(self._buffer), returnsize)
+                               len(self._buffer), receivedSize)
                 return
 
             code = self._buffer[1]
             message_length = len(sentmessage)
-            response_length = returnsize - message_length
+            response_length = receivedSize - message_length
             response = self._buffer[message_length:response_length]
-            acknak = self._buffer[returnsize-1]
+            acknak = self._buffer[receivedSize-1]
 
-            mla = self._buffer[:returnsize-1]
-            buffer = self._buffer[returnsize:]
+            mla = self._buffer[:receivedSize-1]
+            buffer = self._buffer[receivedSize:]
 
             data_in_ack = [0x19, 0x2e]
             msg = Message(mla)
@@ -233,23 +236,15 @@ class PLM(asyncio.Protocol):
 
     def _wait_for_recognized_message(self):
         self.log.debug("Starting: _wait_for_recognized_message")
-        code = self._buffer[1]
 
-        for ppcode in PP:
-            if ppcode == code or ppcode == bytes([code]):
-                ppc = PP.lookup(code, fullmessage=self._buffer)
-
-                self.log.debug('Found a code %02x message which is %d bytes',
-                               code, ppc.size)
-                self.log.debug(binascii.hexlify(self._buffer))
-                if len(self._buffer) >= ppc.size:
-                    new_message = self._buffer[0:ppc.size]
-                    self.log.debug('new message is: %s',
-                                   binascii.hexlify(new_message))
-                    self._recv_queue.append(new_message)
-                    self._buffer = self._buffer[ppc.size:]
-                else:
-                    self.log.debug('Expected %r bytes but received %r bytes. Need more bytes to process message.', ppc.size, len(self._buffer))
+        iscomplete = Message.iscomplete(self._buffer)
+        if iscomplete:
+            self.log.debug('new message is: %s',
+                           binascii.hexlify(new_message))
+            self._recv_queue.append(new_message)
+            self._buffer = self._buffer[ppc.size:]
+        else:
+            self.log.debug('Expected %r bytes but received %r bytes. Need more bytes to process message.', ppc.size, len(self._buffer))
         self.log.debug("Finishing: _wait_for_recognized_message")
 
     def _peel_messages_from_buffer(self):
@@ -329,13 +324,13 @@ class PLM(asyncio.Protocol):
         #     self.log.info('Ignoring message that is not for me')
         #     return
 
-        if self._message_matches_criteria(msg, self._wait_for):
-            if '_callback' in self._wait_for:
-                self._clear_wait()
-                self._process_queue()
-                return
-            else:
-                self._clear_wait()
+        #if self._message_matches_criteria(msg, self._wait_for):
+        #    if '_callback' in self._wait_for:
+        #        self._clear_wait()
+        #        self._process_queue()
+        #        return
+        #    else:
+        #        self._clear_wait()
 
         callbacked = False
         for callback, criteria in self._message_callbacks:
@@ -394,7 +389,7 @@ class PLM(asyncio.Protocol):
 
         self.log.info('INSTEON standard %r->%r: cmd1:%02x cmd2:%02x flags:%02x',
                       msg.address, msg.target,
-                      msg.cmd1, msg.cmd2, msg.flagsval)
+                      msg.cmd1, msg.cmd2, msg.__messageFlags)
         self.log.debug('flags: %r', msg.flags)
         self.log.debug('device: %r', device)
 
@@ -417,7 +412,7 @@ class PLM(asyncio.Protocol):
             device = None
 
         self.log.info('INSTEON extended %r->%r: cmd1:%02x cmd2:%02x flags:%02x data:%s',
-                      msg.address, msg.target, msg.cmd1, msg.cmd2, msg.flagsval,
+                      msg.address, msg.target, msg.cmd1, msg.cmd2, msg.__messageFlags,
                       binascii.hexlify(msg.userdata))
         self.log.debug('flags: %r', msg.flags)
         self.log.debug('device: %r', device)
@@ -600,12 +595,12 @@ class PLM(asyncio.Protocol):
 
     def _parse_get_plm_config(self, msg):
         self.log.info('PLM Config: flags:%02x spare:%02x spare:%02x',
-                      msg.flagsval, msg.spare1, msg.spare2)
+                      msg.__messageFlags, msg.spare1, msg.spare2)
 
     def _parse_all_link_record(self, msg):
         self.log.debug("Starting: _parse_all_link_record")
         self.log.info('ALL-Link Record for %r: flags:%02x group:%02x data:%02x/%02x/%02x',
-                      msg.address, msg.flagsval, msg.group,
+                      msg.address, msg.__messageFlags, msg.group,
                       msg.linkdata1, msg.linkdata2, msg.linkdata3)
         
         if self._me['subcategory'] == 0x20:

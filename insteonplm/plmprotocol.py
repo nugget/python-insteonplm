@@ -1,7 +1,7 @@
 """Helper objects for maintaining PLM state and interfaces."""
 import logging
 import insteonplm
-import plmcode
+from .plmcode import PLMCode
 import binascii
 
 __all__ = ('PLMProtocol')
@@ -22,15 +22,15 @@ class PLMProtocol(object):
         self.add(0x56, name='ALL-Link CLeanup Failure Report', size=2)
         self.add(0x57, name='ALL-Link Record Response', size=10)
         self.add(0x58, name='ALL-Link Cleanup Status Report', size=3)
-        self.add(0x60, name='Get IM Info', size=2, returnsize=9)
-        self.add(0x61, name='Send ALL-Link Command', size=5, returnsize=6)
-        self.add(0x62, name='INSTEON Fragmented Message', size=8, returnsize=9)
-        self.add(0x64, name='Start ALL-Linking', size=4, returnsize=5)
+        self.add(0x60, name='Get IM Info', size=2, receivedSize=9)
+        self.add(0x61, name='Send ALL-Link Command', size=5, receivedSize=6)
+        self.add(0x62, name='INSTEON Fragmented Message', size=8, receivedSize=9)
+        self.add(0x64, name='Start ALL-Linking', size=4, receivedSize=5)
         self.add(0x65, name='Cancel ALL-Linking', size=4)
-        self.add(0x67, name='Reset the IM', size=2, returnsize=3)
+        self.add(0x67, name='Reset the IM', size=2, receivedSize=3)
         self.add(0x69, name='Get First ALL-Link Record', size=2)
         self.add(0x6a, name='Get Next ALL-Link Record', size=2)
-        self.add(0x73, name='Get IM Configuration', size=2, returnsize=6)
+        self.add(0x73, name='Get IM Configuration', size=2, receivedSize=6)
 
 
     def __len__(self):
@@ -41,9 +41,9 @@ class PLMProtocol(object):
         for x in self._codelist:
             yield x.code
 
-    def add(self, code, name=None, size=None, returnsize=None):
+    def add(self, code, name=None, size=None, receivedSize=None):
         """Add a new PLMCode to the Protocol."""
-        self._codelist.append(PLMCode(code, name=name, size=size, returnsize=returnsize))
+        self._codelist.append(PLMCode(code, name=name, size=size, receivedSize=receivedSize))
 
     def lookup(self, code, fullmessage=None):
         """Return the PLMCode from a byte and optional stream buffer."""
@@ -52,7 +52,7 @@ class PLMProtocol(object):
                 if code == 0x62 and fullmessage:
                     x.name = 'INSTEON Fragmented Message'
                     x.size = 8
-                    x.returnsize = 9
+                    x.receivedSize = 9
                     if len(fullmessage) >= 6:
                         flags = fullmessage[5]
                         if flags == 0x00:
@@ -60,6 +60,6 @@ class PLMProtocol(object):
                         else:
                             x.name = 'INSTEON Extended Message'
                             x.size = 22
-                            x.returnsize = 23
+                            x.receivedSize = 23
 
                 return x
