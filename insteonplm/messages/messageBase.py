@@ -11,6 +11,7 @@ class MessageBase(object):
         self.sendSize = None
         self.receivedSize = None
         self.description = "Empty message"
+        self.__messageFlags = 0x00
 
 #    def __repr__(self):
 #        attrs = vars(self)
@@ -51,14 +52,14 @@ class MessageBase(object):
 
     @property
     def isextendedflag(self):
-        return (self.__messageFlags & MESSAGE_FLAG_EXTENDED) == MESSAGE_FLAG_EXTENDED
+        return (self._messageFlags & MESSAGE_FLAG_EXTENDED) == MESSAGE_FLAG_EXTENDED
 
     @isextendedflag.setter
     def isextendedflag(self, value):
         if value:
-            self.__messageFlags = self.__messageFlags | MESSAGE_FLAG_EXTENDED
+            self._messageFlags = self._messageFlags | MESSAGE_FLAG_EXTENDED
         else:
-            self.__messageFlags = self.__messageFlags | MESSAGE_FLAG_EXTENDED
+            self._messageFlags = self._messageFlags | MESSAGE_FLAG_EXTENDED
 
     @property
     def hopsflag(self):

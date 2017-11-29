@@ -10,7 +10,7 @@ class ButtonEventReport(MessageBase):
         self.returnSize = MESSAGE_BUTTON_EVENT_REPORT_SIZE
         self.name = 'INSTEON Standard Message Received'
 
-        self.__events = {0x02: 'SET button tapped',
+        self._events = {0x02: 'SET button tapped',
                          0x03: 'SET button press and hold',
                          0x04: 'SET button released',
                          0x12: 'Button 2 tapped',
@@ -24,7 +24,7 @@ class ButtonEventReport(MessageBase):
         
     @property
     def description(self):
-        return self.events.get(self.event, None)
+        return self._events.get(self.event, None)
 
     @property
     def message(self):

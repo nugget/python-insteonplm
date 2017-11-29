@@ -5,7 +5,7 @@ from insteonplm.address import Address
 class StandardReceive(MessageBase):
     """Insteon Standard Length Message Received 0x50"""
 
-    def __init__(self, address, target, __messageFlags, cmd1, cmd2):
+    def __init__(self, address, target, flags, cmd1, cmd2):
         self.code = MESSAGE_STANDARD_MESSAGE_RECEIVED
         self.sendSize = MESSAGE_STANDARD_MESSAGE_RECIEVED_SIZE
         self.returnSize = MESSAGE_STANDARD_MESSAGE_RECIEVED_SIZE
@@ -21,7 +21,7 @@ class StandardReceive(MessageBase):
         else:
             self.target = Address(target)
 
-        self.__messageFlags = __messageFlags
+        self.__messageFlags = flags
         self.cmd1 = cmd1
         self.cmd2 = cmd2
 

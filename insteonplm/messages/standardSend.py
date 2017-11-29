@@ -18,17 +18,24 @@ class StandardSend(MessageBase):
         else:
             self.address = Address(target)
 
-        self.__messageFlags = flags
+        self._messageFlags = flags
         self.cmd1 = cmd1
         self.cmd2 = cmd2
-        self.acknak = acknak
+
+        if (acknak is not None and len(acknak) > 0):
+            if (isinstance(acknak, bytearray)):
+                self._acknak = acknak[0]
+            else:
+                self._acknak = acknak
+        else:
+            self._acknak = None
 
     @property
     def message(self):
         msg = bytearray([0x02,
                          self.code,
                          self.target.hex,
-                         self.__messageFlags,
+                         self._messageFlags,
                          self.cmd1,
                          self.cmd2])
         if self.isack or self.isnak:
@@ -38,14 +45,14 @@ class StandardSend(MessageBase):
 
     @property
     def isack(self):
-        if (self.acknak is not None and self.acknak == MESSAGE_ACK):
+        if (self._acknak is not None and self._acknak == MESSAGE_ACK):
             return True
         else:
             return False
 
     @property
     def isnak(self):
-        if (self.acknak is not None and self.acknak == MESSAGE_NAK):
+        if (self._acknak is not None and self._acknak == MESSAGE_NAK):
             return True
         else:
             return False

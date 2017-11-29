@@ -6,6 +6,13 @@ from .messageConstants import *
 from insteonplm.address import Address
 
 from .standardReceive import StandardReceive
+from .extendedReceive import ExtendedReceive
+from .allLinkComplete import AllLinkComplete
+from .buttonEventReport import ButtonEventReport
+from .allLinkRecordResponse import AllLinkRecordResponse
+from .getIMInfo import GetImInfo 
+from .standardSend import StandardSend
+from .extendedSend import ExtendedSend
 
 
 class Message(object):
@@ -75,14 +82,14 @@ class Message(object):
                                rawmessage[5],
                                rawmessage[6],
                                rawmessage[7],
-                               rawmessage[8])
+                               rawmessage[8:9])
             if msg.isextendedflag:
                 msg = ExtendedSend(rawmessage[2:5],
                                    rawmessage[5],
                                    rawmessage[6],
                                    rawmessage[7],
                                    rawmessage[8:22],
-                                   rawmessage[22])
+                                   rawmessage[22:23])
             return msg
 
         elif self.code == MESSAGE_GET_IM_CONFIGURATION:
