@@ -56,4 +56,4 @@ class Address(object):
     @property
     def bytes(self):
         r"""Emit the address in bytes format (b'\xaabbcc')."""
-        return binascii.hexlify(self.addr)
+        return binascii.unhexlify(self.addr)

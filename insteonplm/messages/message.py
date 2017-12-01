@@ -28,11 +28,11 @@ class Message(object):
 
         if len(rawmessage) < 2:
             raise ValueError('Message is less than 2 bytes.')
-        elif rawmessage[0] != 0x02: 
+        elif rawmessage[0] != MESSAGE_START_CODE: 
             raise ValueError('Message does not start with 0x02 and therefore is not a valid message.')
             
         code = rawmessage[1]
-        __messageFlags = 0x00
+        _messageFlags = 0x00
 
         if code == MESSAGE_STANDARD_MESSAGE_RECEIVED:
             return StandardReceive(rawmessage[2:5], 
@@ -129,3 +129,4 @@ class Message(object):
         else:
             log.debug('Expected %r bytes but received %r bytes. Need more bytes to process message.', expectedSize, len(rawmessage))
             return False
+

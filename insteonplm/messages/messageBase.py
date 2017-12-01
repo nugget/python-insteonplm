@@ -1,6 +1,6 @@
 import logging
 import binascii
-
+from insteonplm.address import Address
 from .messageConstants import *
 #from .message import Message
 
@@ -11,7 +11,7 @@ class MessageBase(object):
         self.sendSize = None
         self.receivedSize = None
         self.description = "Empty message"
-        self.__messageFlags = 0x00
+        self._messageFlags = 0x00
 
 #    def __repr__(self):
 #        attrs = vars(self)
@@ -19,36 +19,36 @@ class MessageBase(object):
 
     @property
     def isbroadcastflag(self):
-        return (self.__messageFlags & MESSAGE_FLAG_BROADCAST) == MESSAGE_FLAG_BROADCAST
+        return (self._messageFlags & MESSAGE_FLAG_BROADCAST) == MESSAGE_FLAG_BROADCAST
 
     @isbroadcastflag.setter
     def isbroadcastflag(self, value):
         if value:
-            self.__messageFlags = self.__messageFlags | MESSAGE_FLAG_BROADCAST
+            self._messageFlags = self._messageFlags | MESSAGE_FLAG_BROADCAST
         else:
-            self.__messageFlags = self.__messageFlags & ~MESSAGE_FLAG_BROADCAST
+            self._messageFlags = self._messageFlags & ~MESSAGE_FLAG_BROADCAST
 
     @property
     def isgroupflag(self):
-        return (self.__messageFlags & MESSAGE_FLAG_GROUP) == MESSAGE_FLAG_GROUP
+        return (self._messageFlags & MESSAGE_FLAG_GROUP) == MESSAGE_FLAG_GROUP
 
     @isgroupflag.setter
     def isgroupflag(self, value):
         if value:
-            self.__messageFlags = self.__messageFlags | MESSAGE_FLAG_GROUP
+            self._messageFlags = self._messageFlags | MESSAGE_FLAG_GROUP
         else:
-            self.__messageFlags = self.__messageFlags & ~MESSAGE_FLAG_GROUP
+            self._messageFlags = self._messageFlags & ~MESSAGE_FLAG_GROUP
 
     @property
     def isnakflag(self):
-        return (self.__messageFlags & MESSAGE_FLAG_NAK) == MESSAGE_FLAG_NAK
+        return (self._messageFlags & MESSAGE_FLAG_NAK) == MESSAGE_FLAG_NAK
 
     @isnakflag.setter
     def isnakflag(self, value):
         if value:
-            self.__messageFlags = self.__messageFlags | MESSAGE_FLAG_NAK
+            self._messageFlags = self._messageFlags | MESSAGE_FLAG_NAK
         else:
-            self.__messageFlags = self.__messageFlags & ~MESSAGE_FLAG_NAK
+            self._messageFlags = self._messageFlags & ~MESSAGE_FLAG_NAK
 
     @property
     def isextendedflag(self):
@@ -63,11 +63,11 @@ class MessageBase(object):
 
     @property
     def hopsflag(self):
-        return (self.__messageFlags & MESSAGE_FLAG_HOPS_LEFT) >> 2
+        return (self._messageFlags & MESSAGE_FLAG_HOPS_LEFT) >> 2
 
     @property
     def maxhopsflag(self):
-        return (self.__messageFlags & MESSAGE_FLAG_MAX_HOPS)
+        return (self._messageFlags & MESSAGE_FLAG_MAX_HOPS)
 
     
     def fromDevice(self, devices):
@@ -84,3 +84,20 @@ class MessageBase(object):
             device = None
         return device
 
+    def _setacknak(self, acknak):
+        if isinstance(acknak, bytearray) and len(acknak) > 0:
+            return acknak[0]
+        else:
+            return acknak
+
+    def _messageToHex(self, *arg):
+        msg = bytearray([MESSAGE_START_CODE, self.code])
+        for b in arg:
+            if b is None:
+                pass
+            elif isinstance(b,int):
+                msg.append(b)
+            elif isinstance(b, Address):
+                msg.extend(b.bytes)
+            
+        return binascii.hexlify(msg).decode()

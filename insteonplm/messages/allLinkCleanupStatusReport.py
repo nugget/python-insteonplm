@@ -1,5 +1,6 @@
 from .messageBase import MessageBase
 from .messageConstants import *
+import binascii
 
 class AllLinkCleanupStatusReport(MessageBase):
     """INSTEON All-Link Cleanup Status Report Message 0x58"""
@@ -13,11 +14,12 @@ class AllLinkCleanupStatusReport(MessageBase):
         self.status = status
 
     @property
-    def message(self):
-        msg = bytearray([0x02,
-                         self.code,
-                         self.status])
-        return msg
+    def hex(self):
+        return self._messageToHex(self.status)
+
+    @property
+    def bytes(self):
+        return binascii.unhexlify(self.hex)
 
     @property
     def isack(self):

@@ -389,7 +389,7 @@ class PLM(asyncio.Protocol):
 
         self.log.info('INSTEON standard %r->%r: cmd1:%02x cmd2:%02x flags:%02x',
                       msg.address, msg.target,
-                      msg.cmd1, msg.cmd2, msg.__messageFlags)
+                      msg.cmd1, msg.cmd2, msg._messageFlags)
         self.log.debug('flags: %r', msg.flags)
         self.log.debug('device: %r', device)
 
@@ -412,7 +412,7 @@ class PLM(asyncio.Protocol):
             device = None
 
         self.log.info('INSTEON extended %r->%r: cmd1:%02x cmd2:%02x flags:%02x data:%s',
-                      msg.address, msg.target, msg.cmd1, msg.cmd2, msg.__messageFlags,
+                      msg.address, msg.target, msg.cmd1, msg.cmd2, msg._messageFlags,
                       binascii.hexlify(msg.userdata))
         self.log.debug('flags: %r', msg.flags)
         self.log.debug('device: %r', device)
@@ -595,12 +595,12 @@ class PLM(asyncio.Protocol):
 
     def _parse_get_plm_config(self, msg):
         self.log.info('PLM Config: flags:%02x spare:%02x spare:%02x',
-                      msg.__messageFlags, msg.spare1, msg.spare2)
+                      msg._messageFlags, msg.spare1, msg.spare2)
 
     def _parse_all_link_record(self, msg):
         self.log.debug("Starting: _parse_all_link_record")
         self.log.info('ALL-Link Record for %r: flags:%02x group:%02x data:%02x/%02x/%02x',
-                      msg.address, msg.__messageFlags, msg.group,
+                      msg.address, msg._messageFlags, msg.group,
                       msg.linkdata1, msg.linkdata2, msg.linkdata3)
         
         if self._me['subcategory'] == 0x20:

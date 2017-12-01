@@ -1,25 +1,23 @@
 from .messageBase import MessageBase
 from .messageConstants import *
 
-class GetImConfiguration(MessageBase):
-    """Insteon Get IM Configuration Message 0x62"""
+class X10Send(MessageBase):
+    """Insteon Get Next All Link Record Message 0x6A"""
 
-    def __init__(self, flags, acknak = None):
-        self.code = MESSAGE_GET_IM_CONFIGURATION
-        self.sendSize = MESSAGE_GET_IM_CONFIGURATION_SIZE
-        self.returnSize = MESSAGE_GET_IM_CONFIGURATION_RECEIVED_SIZE
-        self.name = 'Insteon Get IM Configuration Message'
-        
-        self._messageFlags = flags
-        self.spare1 = 0x00
-        self.spare2 = 0x00
+    def __init__(self, rawX10, flag, acknak=None):
+        self.code = MESSAGE_X10_MESSAGE_RECEIVED
+        self.sendSize = MESSAGE_X10_MESSAGE_RECEIVED_SIZE
+        self.returnSize = MESSAGE_GET_NEXT_ALL_LINK_RECORD_RECEIVED_RECEIVED_SIZE
+        self.name = 'Insteon Get Next All Link Record Message'
+
+        self.rawX10 = rawX10
+        self.flag = flag
         self._acknak = self._setacknak(acknak)
 
     @property
     def hex(self):
-        return self._messageToHex(self._messageFlags,
-                                  self.spare1,
-                                  self.spare2,
+        return self._messageToHex(self.rawX10,
+                                  self.flag,
                                   self._acknak)
 
     @property
@@ -39,3 +37,6 @@ class GetImConfiguration(MessageBase):
             return True
         else:
             return False
+
+
+

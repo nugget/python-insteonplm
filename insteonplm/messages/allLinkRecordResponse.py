@@ -12,37 +12,33 @@ class AllLinkRecordResponse(MessageBase):
         self.name = 'INSTEON ALL-Link Record Response'
 
         # ALL-Link Record Response
-        self.__controlFlags = flags
+        self._controlFlags = flags
         self.group = group
-
-        if isinstance(address, Address):
-            self.address = address
-        else:
-            #self.address = Address(rawmessage[2:5])
-            self.address = Address(address)
-
+        self.address = Address(address)
         self.linkdata1 = linkdata1
         self.linkdata2 = linkdata2
         self.linkdata3 = linkdata3
 
     @property
-    def message(self):
-        return bytearray([0x02,
-                          self.code,
-                          self.__allLinkFlags,
-                          self.group,
-                          self.address.hex,
-                          self.linkdata1,
-                          self.linkdata2,
-                          self.linkdata3])
+    def hex(self):
+        return self._messageToHex(self._controlFlags,
+                                  self.group,
+                                  self.address,
+                                  self.linkdata1,
+                                  self.linkdata2,
+                                  self.linkdata3)
+
+    @property
+    def bytes(self):
+        return binascii.unhexlify(self.hex)
 
     @property
     def isrecordinuse(self):
-        return (self.__controlFlags & self.CONTROL_FLAG_RECORD_IN_USE) == self.CONTROL_FLAG_RECORD_IN_USE
+        return (self._controlFlags & self.CONTROL_FLAG_RECORD_IN_USE) == self.CONTROL_FLAG_RECORD_IN_USE
 
     @property
     def iscontroller(self):
-        return (self.__controlFlags & self.CONTROL_FLAG_CONTROLLER) == self.CONTROL_FLAG_CONTROLER
+        return (self._controlFlags & self.CONTROL_FLAG_CONTROLLER) == self.CONTROL_FLAG_CONTROLER
 
     @property
     def isslave(self):

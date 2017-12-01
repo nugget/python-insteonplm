@@ -4,36 +4,42 @@ from insteonplm.address import Address
 
 class ExtendedReceive(MessageBase):
     """Insteon Extended Length Message Received 0x51"""
+
     def __init__(self, address, target, flags, cmd1, cmd2, userdata):
-        self.code = 0x51
-        self.sendSize = 25
-        self.returnSize = 25
+        self.code = MESSAGE_EXTENDED_MESSAGE_RECEIVED
+        self.sendSize = MESSAGE_EXTENDED_MESSAGE_RECEIVED_SIZE
+        self.returnSize = MESSAGE_EXTENDED_MESSAGE_RECEIVED_SIZE
         self.name = 'INSTEON Extended Message Received'
 
-        if isinstance(address, Address):
-            self.address = address
-        else:
-            self.address = Address(address)
-
-        if isinstance(target, Address):
-            self.target = target
-        else:
-            self.target = Address(target)
-
-        self.__messageFlags = flags
+        self.address = Address(address)
+        self.target = Address(target)
+        self._messageFlags = flags
         self.cmd1 = cmd1
         self.cmd2 = cmd2
         self.userdata = userdata
 
     @property
-    def rawmessage(self):
-        message = bytearray([0x02, 
-                             self.code, 
-                             self.address, 
-                             self.target, 
-                             self.__messageFlags, 
-                             self.cmd1, 
-                             self.cmd2,
-                             self.userdata])
-        return message
+    def hex(self):
+        return self._messageToHex(self.address, 
+                                  self.target, 
+                                  self._messageFlags, 
+                                  self.cmd1, 
+                                  self.cmd2,
+                                  self.userdata)
 
+    @property
+    def bytes(self):
+        return binascii.unhexlify(self.hex)
+    
+    @property
+    def hex(self):
+        return self._messageToBytes(self.address.bytes, 
+                                    self.target.bytes, 
+                                    self._messageFlags, 
+                                    self.cmd1, 
+                                    self.cmd2,
+                                    self.userdata)
+
+    @property
+    def bytes(self):
+        return binascii.unhexlify(self.hex)

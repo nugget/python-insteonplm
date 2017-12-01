@@ -12,37 +12,25 @@ class ExtendedSend(MessageBase):
         self.name = 'INSTEON Standard Message Send'
 
         self.address = Address(bytes([0x00,0x00,0x00]))
-
-        if isinstance(target, Address):
-            self.address = target
-        else:
-            self.address = Address(target)
-
+        self.target = Address(target)
         self._messageFlags = flags
         self.cmd1 = cmd1
         self.cmd2 = cmd2
         self.userdata = userdata
 
-        if (acknak is not None and len(acknak) > 0):
-            if (isinstance(acknak, bytearray)):
-                self._acknak = acknak[0]
-            else:
-                self._acknak = acknak
-        else:
-            self._acknak = None
+        self._acknak = self._setacknak(acknak)
+    
+    @property
+    def hex(self):
+        return self._messageToHex(self.target,
+                                  self._messageFlags,
+                                  self.cmd1,
+                                  self.cmd2,
+                                  self._acknak)
 
     @property
-    def message(self):
-        msg = bytearray([0x02,
-                         self.code,
-                         self.target.hex,
-                         self._messageFlags,
-                         self.cmd1,
-                         self.cmd2])
-        if self.isack or self.isnak:
-            msg.append(self.acknak)
-
-        return msg
+    def bytes(self):
+        return binascii.unhexlify(self.hex)
 
     @property
     def isack(self):

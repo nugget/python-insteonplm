@@ -11,27 +11,20 @@ class StandardReceive(MessageBase):
         self.returnSize = MESSAGE_STANDARD_MESSAGE_RECIEVED_SIZE
         self.name = 'INSTEON Standard Message Received'
 
-        if isinstance(address, Address):
-            self.address = address
-        else:
-            self.address = Address(address)
-
-        if isinstance(target, Address):
-            self.target = target
-        else:
-            self.target = Address(target)
-
-        self.__messageFlags = flags
+        self.address = Address(address)
+        self.target = Address(target)
+        self._messageFlags = flags
         self.cmd1 = cmd1
         self.cmd2 = cmd2
 
     @property
-    def message(self):
-        msg = bytearray([0x02,
-                         self.code,
-                         self.address.hex, 
-                         self.target.hex, 
-                         self.__messageFlags, 
-                         self.cmd1, 
-                         self.cmd2])
-        return msg
+    def hex(self):
+        return self._messageToHex(self.address, 
+                                  self.target,
+                                  self._messageFlags,
+                                  self.cmd1,
+                                  self.cmd2)
+
+    @property
+    def bytes(self):
+        return binascii.unhexlify(self.hex)
