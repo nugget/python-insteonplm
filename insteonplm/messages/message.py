@@ -72,7 +72,8 @@ class Message(object):
             return GetImInfo(rawmessage[2:5],
                              rawmessage[5],
                              rawmessage[6],
-                             rawmessage[7])
+                             rawmessage[7],
+                             rawmessage[8])
 
 
         elif code == MESSAGE_SEND_STANDARD_MESSAGE:

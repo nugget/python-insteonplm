@@ -8,7 +8,7 @@ class StandardReceive(MessageBase):
     def __init__(self, address, target, flags, cmd1, cmd2):
         self.code = MESSAGE_STANDARD_MESSAGE_RECEIVED
         self.sendSize = MESSAGE_STANDARD_MESSAGE_RECIEVED_SIZE
-        self.returnSize = MESSAGE_STANDARD_MESSAGE_RECIEVED_SIZE
+        self.receivedSize = MESSAGE_STANDARD_MESSAGE_RECIEVED_SIZE
         self.name = 'INSTEON Standard Message Received'
 
         self.address = Address(address)

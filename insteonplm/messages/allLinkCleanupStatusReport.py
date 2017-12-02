@@ -8,7 +8,7 @@ class AllLinkCleanupStatusReport(MessageBase):
     def __init__(self, status):
         self.code = MESSAGE_ALL_LINK_CLEANUP_STATUS_REPORT
         self.sendSize = MESSAGE_ALL_LINK_CLEANUP_STATUS_REPORT_SIZE
-        self.returnSize = MESSAGE_ALL_LINK_CLEANUP_STATUS_REPORT_SIZE
+        self.receivedSize = MESSAGE_ALL_LINK_CLEANUP_STATUS_REPORT_SIZE
         self.name = 'INSTEON All-Link Cleanup Status Report Message Received'
 
         self.status = status

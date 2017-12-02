@@ -8,10 +8,10 @@ class ExtendedSend(MessageBase):
     def __init__(self, target, flags, cmd1, cmd2, userdata, acknak = None):
         self.code = MESSAGE_SEND_EXTENDED_MESSAGE
         self.sendSize = MESSAGE_SEND_EXTENDED_MESSAGE_SIZE
-        self.returnSize = MESSAGE_SEND_EXTENDED_MESSAGE_RECEIVED_SIZE
+        self.receivedSize = MESSAGE_SEND_EXTENDED_MESSAGE_RECEIVED_SIZE
         self.name = 'INSTEON Standard Message Send'
 
-        self.address = Address(bytes([0x00,0x00,0x00]))
+        #self.address = Address(bytes([0x00,0x00,0x00]))
         self.target = Address(target)
         self._messageFlags = flags
         self.cmd1 = cmd1
@@ -26,6 +26,7 @@ class ExtendedSend(MessageBase):
                                   self._messageFlags,
                                   self.cmd1,
                                   self.cmd2,
+                                  self.userdata,
                                   self._acknak)
 
     @property

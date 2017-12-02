@@ -10,7 +10,7 @@ class AllLinkComplete(MessageBase):
 
         self.code = MESSAGE_ALL_LINKING_COMPLETED
         self.sendSize = MESSAGE_ALL_LINKING_COMPLETED_SIZE
-        self.returnSize = MESSAGE_ALL_LINKING_COMPLETED_SIZE
+        self.receivedSize = MESSAGE_ALL_LINKING_COMPLETED_SIZE
         self.name = 'INSTEON ALL-Linking Completed Message Received'
 
         # ALL-Linking Complete

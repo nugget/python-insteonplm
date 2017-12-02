@@ -17,7 +17,7 @@ class ButtonEventReport(MessageBase):
     def __init__(self, event):
         self.code = MESSAGE_BUTTON_EVENT_REPORT
         self.sendSize = MESSAGE_BUTTON_EVENT_REPORT_SIZE
-        self.returnSize = MESSAGE_BUTTON_EVENT_REPORT_SIZE
+        self.receivedSize = MESSAGE_BUTTON_EVENT_REPORT_SIZE
         self.name = 'INSTEON Standard Message Received'
 
         self.event = event

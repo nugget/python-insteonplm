@@ -8,7 +8,7 @@ class CancelAllLinking(MessageBase):
     def __init__(self, acknak = None):
         self.code = MESSAGE_CANCEL_ALL_LINKING
         self.sendSize = MESSAGE_CANCEL_ALL_LINKING_SIZE
-        self.returnSize = MESSAGE_CANCEL_ALL_LINKING_RECEIVED_SIZE
+        self.receivedSize = MESSAGE_CANCEL_ALL_LINKING_RECEIVED_SIZE
         self.name = 'INSTEON Cancel All-Linking'
 
         self._acknak = self._setacknak(acknak)

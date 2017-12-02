@@ -7,7 +7,7 @@ class X10Received(MessageBase):
     def __init__(self, rawX10, flag):
         self.code = MESSAGE_X10_MESSAGE_RECEIVED
         self.sendSize = MESSAGE_X10_MESSAGE_RECEIVED_SIZE
-        self.returnSize = MESSAGE_GET_NEXT_ALL_LINK_RECORD_RECEIVED_RECEIVED_SIZE
+        self.receivedSize = MESSAGE_X10_MESSAGE_RECEIVED_SIZE
         self.name = 'Insteon Get Next All Link Record Message'
 
         self.rawX10 = rawX10

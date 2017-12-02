@@ -6,17 +6,17 @@ class StandardSend(MessageBase):
     """Insteon Standard Length Message Received 0x62"""
 
     def __init__(self, target, flags, cmd1, cmd2, acknak = None):
-        self.code = MESSAGE_STANDARD_MESSAGE_RECEIVED
+        self.code = MESSAGE_SEND_STANDARD_MESSAGE
         self.sendSize = MESSAGE_SEND_STANDARD_MESSAGE_SIZE
-        self.returnSize = MESSAGE_SEND_STANDARD_MESSAGE_RECEIVED_SIZE
+        self.receivedSize = MESSAGE_SEND_STANDARD_MESSAGE_RECEIVED_SIZE
         self.name = 'INSTEON Standard Message Send'
 
         self.address = Address(bytes([0x00,0x00,0x00]))
 
         if isinstance(target, Address):
-            self.address = target
+            self.target = target
         else:
-            self.address = Address(target)
+            self.target = Address(target)
 
         self._messageFlags = flags
         self.cmd1 = cmd1

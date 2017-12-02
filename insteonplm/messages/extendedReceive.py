@@ -8,7 +8,7 @@ class ExtendedReceive(MessageBase):
     def __init__(self, address, target, flags, cmd1, cmd2, userdata):
         self.code = MESSAGE_EXTENDED_MESSAGE_RECEIVED
         self.sendSize = MESSAGE_EXTENDED_MESSAGE_RECEIVED_SIZE
-        self.returnSize = MESSAGE_EXTENDED_MESSAGE_RECEIVED_SIZE
+        self.receivedSize = MESSAGE_EXTENDED_MESSAGE_RECEIVED_SIZE
         self.name = 'INSTEON Extended Message Received'
 
         self.address = Address(address)
@@ -26,19 +26,6 @@ class ExtendedReceive(MessageBase):
                                   self.cmd1, 
                                   self.cmd2,
                                   self.userdata)
-
-    @property
-    def bytes(self):
-        return binascii.unhexlify(self.hex)
-    
-    @property
-    def hex(self):
-        return self._messageToBytes(self.address.bytes, 
-                                    self.target.bytes, 
-                                    self._messageFlags, 
-                                    self.cmd1, 
-                                    self.cmd2,
-                                    self.userdata)
 
     @property
     def bytes(self):

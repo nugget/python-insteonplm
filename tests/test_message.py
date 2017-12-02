@@ -101,7 +101,8 @@ def test_GetImInfo_message():
     cat = 0x44
     subcat = 0x55
     firmware = 0x66
-    rawmessage = bytearray([0x02, 0x60, address1, address2, address3, cat, subcat, firmware])
+    acknak = 0x77
+    rawmessage = bytearray([0x02, 0x60, address1, address2, address3, cat, subcat, firmware, acknak])
     msg = Message.create(rawmessage)
     assert isinstance(msg, GetImInfo)
     assert msg.address == Address(bytearray([address1, address2, address3]))

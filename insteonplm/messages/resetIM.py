@@ -7,7 +7,7 @@ class ResetIM(MessageBase):
     def __init__(self, acknak=None):
         self.code = MESSAGE_RESET_IM
         self.sendSize = MESSAGE_RESET_IM_SIZE
-        self.returnSize = MESSAGE_RESET_IM_RECEIVED_SIZE
+        self.receivedSize = MESSAGE_RESET_IM_RECEIVED_SIZE
         self.name = 'Insteon Reset IM Message'
 
         self._acknak = self._setacknak(acknak)

@@ -8,7 +8,7 @@ class AllLinkRecordResponse(MessageBase):
     def __init__(self, flags, group, address, linkdata1, linkdata2, linkdata3):
         self.code = MESSAGE_ALL_LINK_RECORD_RESPONSE
         self.sendSize = MESSAGE_ALL_LINK_RECORD_RESPONSE_SIZE
-        self.returnSize = MESSAGE_ALL_LINK_RECORD_RESPONSE_SIZE
+        self.receivedSize = MESSAGE_ALL_LINK_RECORD_RESPONSE_SIZE
         self.name = 'INSTEON ALL-Link Record Response'
 
         # ALL-Link Record Response

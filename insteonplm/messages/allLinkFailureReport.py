@@ -8,7 +8,7 @@ class AllLinkFailureReport(MessageBase):
     def __init__(self, group, address):
         self.code = MESSAGE_ALL_LINK_CEANUP_FAILURE_REPORT
         self.sendSize = MESSAGE_ALL_LINK_CEANUP_FAILURE_REPORT_SIZE
-        self.returnSize = MESSAGE_ALL_LINK_CEANUP_FAILURE_REPORT_SIZE
+        self.receivedSize = MESSAGE_ALL_LINK_CEANUP_FAILURE_REPORT_SIZE
         self.name = 'INSTEON All-Link Failure Report Message'
 
         self.group = group

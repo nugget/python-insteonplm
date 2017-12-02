@@ -92,6 +92,7 @@ class MessageBase(object):
 
     def _messageToHex(self, *arg):
         msg = bytearray([MESSAGE_START_CODE, self.code])
+        i = 0
         for b in arg:
             if b is None:
                 pass
@@ -99,5 +100,9 @@ class MessageBase(object):
                 msg.append(b)
             elif isinstance(b, Address):
                 msg.extend(b.bytes)
+            elif isinstance(b, bytearray):
+                msg.extend(b)
+            elif isinstance(b, bytes):
+                msg.extend(b)
             
         return binascii.hexlify(msg).decode()

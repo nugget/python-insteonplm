@@ -7,7 +7,7 @@ class StartAllLinking(MessageBase):
     def __init__(self, linkCode, group, acknak=None):
         self.code =    MESSAGE_START_ALL_LINKING
         self.sendSize = MESSAGE_START_ALL_LINKING_SIZE
-        self.returnSize = MESSAGE_START_ALL_LINKING_RECEIVED_SIZE
+        self.receivedSize = MESSAGE_START_ALL_LINKING_RECEIVED_SIZE
         self.name = 'Insteon Start All Linking Message'
 
         self.linkCode = linkCode

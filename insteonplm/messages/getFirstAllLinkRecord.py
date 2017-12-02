@@ -7,7 +7,7 @@ class GetFirstAllLinkRecord(MessageBase):
     def __init__(self, acknak=None):
         self.code = MESSAGE_GET_FIRST_ALL_LINK_RECORD
         self.sendSize = MESSAGE_GET_FIRST_ALL_LINK_RECORD_SIZE
-        self.returnSize = MESSAGE_GET_FIRST_ALL_LINK_RECORD_SIZE
+        self.receivedSize = MESSAGE_GET_FIRST_ALL_LINK_RECORD_RECEIVED_SIZE
         self.name = 'Insteon Get First All Link Record Message'
 
         self._acknak = self._setacknak(acknak)

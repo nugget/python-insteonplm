@@ -6,8 +6,8 @@ class SendAllLinkCommand(MessageBase):
 
     def __init__(self,group, allLinkCommand, broadcastCommand, acknak=None):
         self.code = MESSAGE_SEND_ALL_LINK_COMMAND
-        self.sendSize = MESSAGE_GET_NEXT_ALL_LINK_RECORD_SIZE
-        self.returnSize = MESSAGE_GET_NEXT_ALL_LINK_RECORD_RECEIVED_SIZE
+        self.sendSize = MESSAGE_SEND_ALL_LINK_COMMAND_SIZE
+        self.receivedSize = MESSAGE_SEND_ALL_LINK_COMMAND_RECEIVED_SIZE
         self.name = 'Insteon Get Next All Link Record Message'
 
         self.group = group
@@ -19,7 +19,7 @@ class SendAllLinkCommand(MessageBase):
     @property
     def hex(self):
         return self._messageToHex(self.group,
-                                  self.allLinkCommand,
+                                  self.allLinkCommmand,
                                   self.broadcastCommand,
                                   self._acknak)
 
