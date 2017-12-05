@@ -8,6 +8,8 @@ from .ipdb import IPDB
 from .address import Address
 from .plmprotocol import PLMProtocol
 from .messages.message import Message
+from .messages.getIMInfo import GetImInfo
+from .messages.getFirstAllLinkRecord import GetFirstAllLinkRecord
 
 __all__ = ('PLM')
 
@@ -721,8 +723,10 @@ class PLM(asyncio.Protocol):
 
     def get_plm_info(self):
         """Request PLM Info."""
+        msg = GetImInfo()
+
         self.log.info('Requesting PLM Info')
-        self._send_hex('0260')
+        self._send_hex(msg.hex)
 
     def get_plm_config(self):
         """Request PLM Config."""
@@ -747,7 +751,8 @@ class PLM(asyncio.Protocol):
     def get_first_all_link_record(self):
         """Request first ALL-Link record."""
         self.log.info('Requesting First ALL-Link Record')
-        self._send_hex('0269') #, wait_for={'code': 0x57})
+        msg = GetFirstAllLinkRecord()
+        self._send_hex(msg.hex) #, wait_for={'code': 0x57})
 
     def get_next_all_link_record(self):
         """Request next ALL-Link record."""
