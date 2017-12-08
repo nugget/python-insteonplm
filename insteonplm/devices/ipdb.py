@@ -1,6 +1,7 @@
 """Embodies the INSTEON Product Database static data and access methods."""
 import logging
 import collections
+from generalController import GeneralControler
 
 # pylint: disable=line-too-long
 # pylint: disable=too-few-public-methods
@@ -12,6 +13,16 @@ class IPDB(object):
     """Embodies the INSTEON Product Database static data and access methods."""
 
     products = [
+        
+        Product(0x00, 0x04, None, 'ControLinc', '2430', GeneralController),
+        Product(0x00, 0x05, None, 'RemoteLink', '2440', GeneralController),
+        Product(0x00, 0x06, None, 'Icon Tabletop Controlle', '2830', GeneralController),
+        Product(0x00, 0x08, None, 'EZBridge/EZServer', '', GeneralController),
+        Product(0x00, 0x09, None, 'SignaLinc RF Signal Enhancer', '2442', GeneralController),
+        Product(0x00, 0x0b, 0x000007, 'Balboa Instrument’s Poolux LCD Controller', '', GeneralController),
+        Product(0x00, 0x0b, 0x000022, 'Access Point', '2443', GeneralController),
+        Product(0x00, 0x0c, 0x000028, 'IES Color Touchscreen','', GeneralController),
+
         Product(0x01, 0x00, None, 'LampLinc 3-pin', '2456D3', ['light', 'dimmable']),
         Product(0x01, 0x01, None, 'SwitchLinc Dimmer (600W)', '2476D', ['light', 'dimmable']),
         Product(0x01, 0x02, None, 'In-LineLinc Dimmer', '2475D', ['light', 'dimmable']),
