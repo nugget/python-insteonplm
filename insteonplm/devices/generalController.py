@@ -1,5 +1,5 @@
 
-from basedevice import BaseDevice
+from .basedevice import BaseDevice
 
 class GeneralController(BaseDevice):
     """General Controller Device 0x00
