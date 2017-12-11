@@ -1,15 +1,18 @@
 from .messageBase import MessageBase
+from .extendedSend import ExtendedSend
 from .messageConstants import *
 from insteonplm.address import Address
+import binascii
 
 class StandardSend(MessageBase):
     """Insteon Standard Length Message Received 0x62"""
 
+    code = MESSAGE_SEND_STANDARD_MESSAGE
+    sendSize = MESSAGE_SEND_STANDARD_MESSAGE_SIZE
+    receivedSize = MESSAGE_SEND_STANDARD_MESSAGE_RECEIVED_SIZE
+    description = 'INSTEON Standard Message Send'
+
     def __init__(self, target, flags, cmd1, cmd2, acknak = None):
-        self.code = MESSAGE_SEND_STANDARD_MESSAGE
-        self.sendSize = MESSAGE_SEND_STANDARD_MESSAGE_SIZE
-        self.receivedSize = MESSAGE_SEND_STANDARD_MESSAGE_RECEIVED_SIZE
-        self.name = 'INSTEON Standard Message Send'
 
         self.address = Address(bytes([0x00,0x00,0x00]))
 
@@ -23,6 +26,22 @@ class StandardSend(MessageBase):
         self.cmd2 = cmd2
 
         self._acknak = self._setacknak(acknak)
+
+    @classmethod
+    def from_raw_message(cls, rawmessage):
+        msg = StandardSend(rawmessage[2:5],
+                            rawmessage[5],
+                            rawmessage[6],
+                            rawmessage[7],
+                            rawmessage[8:9])
+        if msg.isextendedflag:
+            msg = ExtendedSend(rawmessage[2:5],
+                               rawmessage[5],
+                               rawmessage[6],
+                               rawmessage[7],
+                               rawmessage[8:22],
+                               rawmessage[22:23])
+        return msg
 
     @property
     def hex(self):

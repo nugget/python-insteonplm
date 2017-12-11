@@ -1,15 +1,17 @@
 from .messageBase import MessageBase
 from .messageConstants import *
 from insteonplm.address import Address
+import binascii
 
 class ExtendedSend(MessageBase):
     """Insteon Standard Length Message Received 0x62"""
 
+    code = MESSAGE_SEND_EXTENDED_MESSAGE
+    sendSize = MESSAGE_SEND_EXTENDED_MESSAGE_SIZE
+    receivedSize = MESSAGE_SEND_EXTENDED_MESSAGE_RECEIVED_SIZE
+    description = 'INSTEON Standard Message Send'
+
     def __init__(self, target, flags, cmd1, cmd2, userdata, acknak = None):
-        self.code = MESSAGE_SEND_EXTENDED_MESSAGE
-        self.sendSize = MESSAGE_SEND_EXTENDED_MESSAGE_SIZE
-        self.receivedSize = MESSAGE_SEND_EXTENDED_MESSAGE_RECEIVED_SIZE
-        self.name = 'INSTEON Standard Message Send'
 
         #self.address = Address(bytes([0x00,0x00,0x00]))
         self.target = Address(target)

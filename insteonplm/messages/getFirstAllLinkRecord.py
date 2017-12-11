@@ -4,11 +4,12 @@ from .messageConstants import *
 class GetFirstAllLinkRecord(MessageBase):
     """Insteon Get First All Link Record Message 0x69"""
 
+    code = MESSAGE_GET_FIRST_ALL_LINK_RECORD
+    sendSize = MESSAGE_GET_FIRST_ALL_LINK_RECORD_SIZE
+    receivedSize = MESSAGE_GET_FIRST_ALL_LINK_RECORD_RECEIVED_SIZE
+    description = 'Insteon Get First All Link Record Message'
+
     def __init__(self, acknak=None):
-        self.code = MESSAGE_GET_FIRST_ALL_LINK_RECORD
-        self.sendSize = MESSAGE_GET_FIRST_ALL_LINK_RECORD_SIZE
-        self.receivedSize = MESSAGE_GET_FIRST_ALL_LINK_RECORD_RECEIVED_SIZE
-        self.name = 'Insteon Get First All Link Record Message'
 
         self._acknak = self._setacknak(acknak)
 

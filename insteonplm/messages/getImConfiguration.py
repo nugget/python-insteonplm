@@ -4,16 +4,22 @@ from .messageConstants import *
 class GetImConfiguration(MessageBase):
     """Insteon Get IM Configuration Message 0x62"""
 
+    code = MESSAGE_GET_IM_CONFIGURATION
+    sendSize = MESSAGE_GET_IM_CONFIGURATION_SIZE
+    receivedSize = MESSAGE_GET_IM_CONFIGURATION_RECEIVED_SIZE
+    description = 'Insteon Get IM Configuration Message'
+
     def __init__(self, flags = None, acknak = None):
-        self.code = MESSAGE_GET_IM_CONFIGURATION
-        self.sendSize = MESSAGE_GET_IM_CONFIGURATION_SIZE
-        self.receivedSize = MESSAGE_GET_IM_CONFIGURATION_RECEIVED_SIZE
-        self.name = 'Insteon Get IM Configuration Message'
         
         self._messageFlags = flags
         self._spare1 = None
         self._spare2 = None
         self._acknak = self._setacknak(acknak)
+
+    @classmethod
+    def from_raw_message(cls, rawmesssage):
+        return GetImConfiguration(rawmessage[2],
+                                  rawmessage[5])
 
     @property
     def hex(self):

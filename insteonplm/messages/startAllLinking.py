@@ -4,11 +4,12 @@ from .messageConstants import *
 class StartAllLinking(MessageBase):
     """Insteon Start All Linking Message 0x64"""
 
+    code =    MESSAGE_START_ALL_LINKING
+    sendSize = MESSAGE_START_ALL_LINKING_SIZE
+    receivedSize = MESSAGE_START_ALL_LINKING_RECEIVED_SIZE
+    description = 'Insteon Start All Linking Message'
+
     def __init__(self, linkCode, group, acknak=None):
-        self.code =    MESSAGE_START_ALL_LINKING
-        self.sendSize = MESSAGE_START_ALL_LINKING_SIZE
-        self.receivedSize = MESSAGE_START_ALL_LINKING_RECEIVED_SIZE
-        self.name = 'Insteon Start All Linking Message'
 
         self.linkCode = linkCode
         self.group = group

@@ -1,15 +1,17 @@
 from .messageBase import MessageBase
 from .messageConstants import *
 from insteonplm.address import Address
+import binascii
 
 class GetImInfo(MessageBase):
     """INSTEON Get Insteon Modem Info Message 0x60"""
 
+    code = MESSAGE_GET_IM_INFO
+    sendSize = MESSAGE_GET_IM_INFO_SIZE
+    receivedSize = MESSAGE_GET_IM_INFO_RECEIVED_SIZE
+    description = 'INSTEON Get Insteon Modem Info Message Received'
+
     def __init__(self, address=None, cat=None, subcat=None, firmware=None, acknak = None):
-        self.code = MESSAGE_GET_IM_INFO
-        self.sendSize = MESSAGE_GET_IM_INFO_SIZE
-        self.receivedSize = MESSAGE_GET_IM_INFO_RECEIVED_SIZE
-        self.name = 'INSTEON Get Insteon Modem Info Message Received'
         
         if address is None:
             self.address = None
@@ -19,6 +21,14 @@ class GetImInfo(MessageBase):
         self.subcategory = subcat
         self.firmware = firmware
         self._acknak = self._setacknak(acknak)
+
+    @classmethod
+    def from_raw_message(cls, rawmessage):
+        return GetImInfo(rawmessage[2:5],
+                         rawmessage[5],
+                         rawmessage[6],
+                         rawmessage[7],
+                         rawmessage[8])
 
     @property
     def hex(self):

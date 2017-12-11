@@ -4,13 +4,13 @@ import binascii
 
 class AllLinkCleanupStatusReport(MessageBase):
     """INSTEON All-Link Cleanup Status Report Message 0x58"""
+    
+    code = MESSAGE_ALL_LINK_CLEANUP_STATUS_REPORT
+    sendSize = MESSAGE_ALL_LINK_CLEANUP_STATUS_REPORT_SIZE
+    receivedSize = MESSAGE_ALL_LINK_CLEANUP_STATUS_REPORT_SIZE
+    description = 'INSTEON All-Link Cleanup Status Report Message Received'
 
     def __init__(self, status):
-        self.code = MESSAGE_ALL_LINK_CLEANUP_STATUS_REPORT
-        self.sendSize = MESSAGE_ALL_LINK_CLEANUP_STATUS_REPORT_SIZE
-        self.receivedSize = MESSAGE_ALL_LINK_CLEANUP_STATUS_REPORT_SIZE
-        self.name = 'INSTEON All-Link Cleanup Status Report Message Received'
-
         self.status = status
 
     @property

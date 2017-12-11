@@ -4,11 +4,12 @@ from .messageConstants import *
 class ResetIM(MessageBase):
     """Insteon Reset IM Message 0x67"""
 
+    code = MESSAGE_RESET_IM
+    sendSize = MESSAGE_RESET_IM_SIZE
+    receivedSize = MESSAGE_RESET_IM_RECEIVED_SIZE
+    description = 'Insteon Reset IM Message'
+
     def __init__(self, acknak=None):
-        self.code = MESSAGE_RESET_IM
-        self.sendSize = MESSAGE_RESET_IM_SIZE
-        self.receivedSize = MESSAGE_RESET_IM_RECEIVED_SIZE
-        self.name = 'Insteon Reset IM Message'
 
         self._acknak = self._setacknak(acknak)
 

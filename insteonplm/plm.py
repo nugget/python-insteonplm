@@ -4,19 +4,174 @@ import logging
 import binascii
 import time
 
-from .ipdb import IPDB
+from .constants import *
+from .devices.ipdb import IPDB
+from .aldb import ALDB
 from .address import Address
 from .plmprotocol import PLMProtocol
 from .messages.message import Message
+from .messages.messageConstants import *
 from .messages.getIMInfo import GetImInfo
 from .messages.getFirstAllLinkRecord import GetFirstAllLinkRecord
+from .messages.getNextAllLinkRecord import GetNextAllLinkRecord 
+from .messages.standardSend import StandardSend
+
 
 __all__ = ('PLM')
 
+
 PP = PLMProtocol()
 
-# pylint: disable=too-many-instance-attributes, too-many-public-methods
 class PLM(asyncio.Protocol):
+    """The Insteon PLM IP control protocol handler."""
+
+    def _init(self, loop=None, connection_lost_callback=None, userdefineddevices=()):
+        """Protocol handler that handles all status and changes on PLM.
+
+        This class is expected to be wrapped inside a Connection class object
+        which will maintain the socket and handle auto-reconnects.
+
+            :param connection_lost_callback:
+                called when connection is lost to device (optional)
+            :param loop:
+                asyncio event loop (optional)
+
+            :type: connection_lost_callback:
+                callable
+            :type loop:
+                asyncio.loop
+        """
+        self._loop = loop
+
+        self._connection_lost_callback = connection_lost_callback
+        self._message_callbacks = []
+
+        self._buffer = bytearray()
+        self._recv_queue = []
+        self._send_queue = []
+        self._wait_acknack_queue = []
+        self._device_queue = ALDB()
+        self.devices = ALDB()
+
+        self.address = None
+        self.category = None
+        self.subcategory = None
+        self.firmware = None
+
+        self.log = logging.getLogger(__name__)
+        self.transport = None
+
+        self._add_message_callback(MESSAGE_ALL_LINK_RECORD_RESPONSE, self._handle_all_link_record_response)
+        self._add_message_callback(MESSAGE_GET_IM_INFO, self._handle_get_plm_info)
+#        self._add_message_callback(MESSAGE_ALL_LINKING_COMPLETED, self._handle_all_link_completed)
+#        self._add_message_callback(MESSAGE_GET_IM_CONFIGURATION, self._handle_get_plm_config)
+#        self._add_message_callback(MESSAGE_STANDARD_MESSAGE_RECEIVED, self._handle_insteon_standard)
+#        self._add_message_callback(MESSAGE_EXTENDED_MESSAGE_RECEIVED ,self._handle_insteon_extended)
+#        self._add_message_callback(MESSAGE_BUTTON_EVENT_REPORT, self._handle_button_event)
+
+
+    def connection_made(self, transport):
+        """Called when asyncio.Protocol establishes the network connection."""
+        self.log.info('Connection established to PLM')
+        self.transport = transport
+
+        # self.transport.set_write_buffer_limits(128)
+        # limit = self.transport.get_write_buffer_size()
+        # self.log.debug('Write buffer size is %d', limit)
+        self._get_plm_info()
+        self._load_all_link_database()
+
+    def data_received(self, data):
+        self.log.debug("Starting: data_received")
+        """Called when asyncio.Protocol detects received data from network."""
+        self.log.debug('Received %d bytes from PLM: %s',
+                       len(data), binascii.hexlify(data))
+
+        self._buffer.extend(data)
+        self._peel_messages_from_buffer()
+
+        for msg in self._recv_queue:
+            self._process_message(message)
+            callback = self._message_callbacks[msg.code]
+            if callback is not None
+                self._loop.call_soon(callback, msg)
+            self._recv_queue.remove(msg)
+        self.log.debug("Finishing: data_received")
+
+    def connection_lost(self, exc):
+        """Called when asyncio.Protocol loses the network connection."""
+        if exc is None:
+            self.log.warning('eof from modem?')
+        else:
+            self.log.warning('Lost connection to modem: %s', exc)
+
+        self.transport = None
+
+        if self._connection_lost_callback:
+            self._connection_lost_callback()
+
+
+    def _add_message_callback(self, code, callback):
+        """Register a callback for when a matching message is seen."""
+
+        self._message_callbacks[code] = callback
+        self.log.debug('Added message callback to %s on %s', callback, criteria)
+
+    def _get_plm_info(self):
+        """Request PLM Info."""
+        self.log.info('Requesting PLM Info')
+        msg = GetImInfo()
+        self._send_msg(msg)
+
+
+    def _handle_all_link_record_response(self, msg):
+        self.log.debug('Starting _handle_all_link_record_response')
+        if msg.isnak:
+            self.devices.state = 'loaded'
+        else:
+            self._device_queue.append(msg.address)
+        self.log.debug('Ending _handle_all_link_record_response')
+
+    def _handle_get_plm_info(self, msg):
+        self.log.debug('Starting _handle_get_plm_info')
+        self.address = msg.address
+        self.category = msg.category
+        self.subcategory = msg.subcategory
+        self.firmware = msg.firmware
+        self.log.debug('Ending _handle_get_plm_info')
+
+    def _load_all_link_database(self):
+        """Load the ALL-Link Database into object."""
+        self.devices.state = 'loading'
+        self.get_first_all_link_record()
+
+    def _get_first_all_link_record(self):
+        """Request first ALL-Link record."""
+        self.log.info('Requesting First ALL-Link Record')
+        msg = GetFirstAllLinkRecord()
+        self._send_msg(msg)
+
+    def _get_next_all_link_record(self):
+        """Request next ALL-Link record."""
+        self.log.info('Requesting Next ALL-Link Record')
+        msg = GetNextAllLinkRecord()
+        self._send_msg(msg)
+
+    def _device_id_request(self, addr):
+        """Request a device ID from a device"""
+        device = Address(addr)
+        self.log.info('Requesting product data for %s', device.human)
+        msg = StandardSend(device, 0x00, COMMAND_ID_REQUEST, 0x00)
+
+    def _product_data_request(self, addr):
+        """Request Product Data Record for device."""
+        device = Address(addr)
+        self.log.info('Requesting product data for %s', device.human)
+        msg = StandardSend(device, 0x00, COMMAND_PRODUCT_DATA_REQUEST, 0x00)
+
+
+# pylint: disable=too-many-instance-attributes, too-many-public-methods
+class PLMOld(asyncio.Protocol):
     """The Insteon PLM IP control protocol handler."""
 
     def __init__(self, loop=None, connection_lost_callback=None, userdefineddevices=()):
@@ -129,16 +284,16 @@ class PLM(asyncio.Protocol):
         if self._connection_lost_callback:
             self._connection_lost_callback()
 
-    def _receivedSize(self, message):
+    def _returnsize(self, message):
         code = message[1]
         ppc = PP.lookup(code, fullmessage=message)
 
-        if hasattr(ppc, 'receivedSize') and ppc.receivedSize:
+        if hasattr(ppc, 'returnsize') and ppc.returnsize:
             self.log.debug('Found a code 0x%x message which returns %d bytes',
-                           code, ppc.receivedSize)
-            return ppc.receivedSize
+                           code, ppc.returnsize)
+            return ppc.returnsize
         else:
-            self.log.debug('Unable to find an receivedSize for code 0x%x', code)
+            self.log.debug('Unable to find an returnsize for code 0x%x', code)
             return len(message) + 1
 
     def _timeout_reached(self):
@@ -170,27 +325,24 @@ class PLM(asyncio.Protocol):
     def _wait_for_last_command(self):
         self.log.debug("Starting: _wait_for_last_command")
         sentmessage = self._last_command
-        receivedSize = self._receivedSize(sentmessage)
-
+        returnsize = self._returnsize(sentmessage)
         self.log.debug('Wait for ACK/NAK on sent: %s expecting return size of %d',
-                       binascii.hexlify(sentmessage), receivedSize)
+                       binascii.hexlify(sentmessage), returnsize)
         self.log.debug('Find result: %d', binascii.hexlify(self._buffer).find(binascii.hexlify(sentmessage)) )
-
-
         if binascii.hexlify(self._buffer).find(binascii.hexlify(sentmessage)) == 0: 
-            if len(self._buffer) < receivedSize:
+            if len(self._buffer) < returnsize:
                 self.log.debug('Waiting for all of message to arrive, %d/%d',
-                               len(self._buffer), receivedSize)
+                               len(self._buffer), returnsize)
                 return
 
             code = self._buffer[1]
             message_length = len(sentmessage)
-            response_length = receivedSize - message_length
+            response_length = returnsize - message_length
             response = self._buffer[message_length:response_length]
-            acknak = self._buffer[receivedSize-1]
+            acknak = self._buffer[returnsize-1]
 
-            mla = self._buffer[:receivedSize-1]
-            buffer = self._buffer[receivedSize:]
+            mla = self._buffer[:returnsize-1]
+            buffer = self._buffer[returnsize:]
 
             data_in_ack = [0x19, 0x2e]
             msg = Message(mla)
@@ -238,15 +390,23 @@ class PLM(asyncio.Protocol):
 
     def _wait_for_recognized_message(self):
         self.log.debug("Starting: _wait_for_recognized_message")
+        code = self._buffer[1]
 
-        iscomplete = Message.iscomplete(self._buffer)
-        if iscomplete:
-            self.log.debug('new message is: %s',
-                           binascii.hexlify(new_message))
-            self._recv_queue.append(new_message)
-            self._buffer = self._buffer[ppc.size:]
-        else:
-            self.log.debug('Expected %r bytes but received %r bytes. Need more bytes to process message.', ppc.size, len(self._buffer))
+        for ppcode in PP:
+            if ppcode == code or ppcode == bytes([code]):
+                ppc = PP.lookup(code, fullmessage=self._buffer)
+
+                self.log.debug('Found a code %02x message which is %d bytes',
+                               code, ppc.size)
+                self.log.debug(binascii.hexlify(self._buffer))
+                if len(self._buffer) >= ppc.size:
+                    new_message = self._buffer[0:ppc.size]
+                    self.log.debug('new message is: %s',
+                                   binascii.hexlify(new_message))
+                    self._recv_queue.append(new_message)
+                    self._buffer = self._buffer[ppc.size:]
+                else:
+                    self.log.debug('Expected %r bytes but received %r bytes. Need more bytes to process message.', ppc.size, len(self._buffer))
         self.log.debug("Finishing: _wait_for_recognized_message")
 
     def _peel_messages_from_buffer(self):
@@ -326,13 +486,13 @@ class PLM(asyncio.Protocol):
         #     self.log.info('Ignoring message that is not for me')
         #     return
 
-        #if self._message_matches_criteria(msg, self._wait_for):
-        #    if '_callback' in self._wait_for:
-        #        self._clear_wait()
-        #        self._process_queue()
-        #        return
-        #    else:
-        #        self._clear_wait()
+        if self._message_matches_criteria(msg, self._wait_for):
+            if '_callback' in self._wait_for:
+                self._clear_wait()
+                self._process_queue()
+                return
+            else:
+                self._clear_wait()
 
         callbacked = False
         for callback, criteria in self._message_callbacks:
@@ -391,7 +551,7 @@ class PLM(asyncio.Protocol):
 
         self.log.info('INSTEON standard %r->%r: cmd1:%02x cmd2:%02x flags:%02x',
                       msg.address, msg.target,
-                      msg.cmd1, msg.cmd2, msg._messageFlags)
+                      msg.cmd1, msg.cmd2, msg.flagsval)
         self.log.debug('flags: %r', msg.flags)
         self.log.debug('device: %r', device)
 
@@ -414,7 +574,7 @@ class PLM(asyncio.Protocol):
             device = None
 
         self.log.info('INSTEON extended %r->%r: cmd1:%02x cmd2:%02x flags:%02x data:%s',
-                      msg.address, msg.target, msg.cmd1, msg.cmd2, msg._messageFlags,
+                      msg.address, msg.target, msg.cmd1, msg.cmd2, msg.flagsval,
                       binascii.hexlify(msg.userdata))
         self.log.debug('flags: %r', msg.flags)
         self.log.debug('device: %r', device)
@@ -597,12 +757,12 @@ class PLM(asyncio.Protocol):
 
     def _parse_get_plm_config(self, msg):
         self.log.info('PLM Config: flags:%02x spare:%02x spare:%02x',
-                      msg._messageFlags, msg.spare1, msg.spare2)
+                      msg.flagsval, msg.spare1, msg.spare2)
 
     def _parse_all_link_record(self, msg):
         self.log.debug("Starting: _parse_all_link_record")
         self.log.info('ALL-Link Record for %r: flags:%02x group:%02x data:%02x/%02x/%02x',
-                      msg.address, msg._messageFlags, msg.group,
+                      msg.address, msg.flagsval, msg.group,
                       msg.linkdata1, msg.linkdata2, msg.linkdata3)
         
         if self._me['subcategory'] == 0x20:
@@ -723,10 +883,8 @@ class PLM(asyncio.Protocol):
 
     def get_plm_info(self):
         """Request PLM Info."""
-        msg = GetImInfo()
-
         self.log.info('Requesting PLM Info')
-        self._send_hex(msg.hex)
+        self._send_hex('0260')
 
     def get_plm_config(self):
         """Request PLM Config."""
@@ -751,8 +909,7 @@ class PLM(asyncio.Protocol):
     def get_first_all_link_record(self):
         """Request first ALL-Link record."""
         self.log.info('Requesting First ALL-Link Record')
-        msg = GetFirstAllLinkRecord()
-        self._send_hex(msg.hex) #, wait_for={'code': 0x57})
+        self._send_hex('0269') #, wait_for={'code': 0x57})
 
     def get_next_all_link_record(self):
         """Request next ALL-Link record."""

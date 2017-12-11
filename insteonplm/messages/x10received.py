@@ -4,11 +4,12 @@ from .messageConstants import *
 class X10Received(MessageBase):
     """Insteon Get Next All Link Record Message 0x6A"""
 
+    code = MESSAGE_X10_MESSAGE_RECEIVED
+    sendSize = MESSAGE_X10_MESSAGE_RECEIVED_SIZE
+    receivedSize = MESSAGE_X10_MESSAGE_RECEIVED_SIZE
+    description = 'Insteon Get Next All Link Record Message'
+
     def __init__(self, rawX10, flag):
-        self.code = MESSAGE_X10_MESSAGE_RECEIVED
-        self.sendSize = MESSAGE_X10_MESSAGE_RECEIVED_SIZE
-        self.receivedSize = MESSAGE_X10_MESSAGE_RECEIVED_SIZE
-        self.name = 'Insteon Get Next All Link Record Message'
 
         self.rawX10 = rawX10
         self.flag = flag

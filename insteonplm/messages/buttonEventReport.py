@@ -1,8 +1,14 @@
 from .messageBase import MessageBase
 from .messageConstants import *
+import binascii
 
 class ButtonEventReport(MessageBase):
     """Insteon Button Event Report Message Received 0x54"""
+
+    code = MESSAGE_BUTTON_EVENT_REPORT
+    sendSize = MESSAGE_BUTTON_EVENT_REPORT_SIZE
+    receivedSize = MESSAGE_BUTTON_EVENT_REPORT_SIZE
+    description = 'INSTEON Standard Message Received'
 
     _events = {0x02: 'SET button tapped',
                0x03: 'SET button press and hold',
@@ -15,13 +21,13 @@ class ButtonEventReport(MessageBase):
                0x24: 'Button 3 released'}
 
     def __init__(self, event):
-        self.code = MESSAGE_BUTTON_EVENT_REPORT
-        self.sendSize = MESSAGE_BUTTON_EVENT_REPORT_SIZE
-        self.receivedSize = MESSAGE_BUTTON_EVENT_REPORT_SIZE
-        self.name = 'INSTEON Standard Message Received'
 
         self.event = event
         
+    @classmethod
+    def from_raw_message(cls, rawmessage):
+            return ButtonEventReport(rawmessage[2])
+
     @property
     def hex(self):
         return self._messageToHex(self.event)

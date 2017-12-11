@@ -4,12 +4,13 @@ from .messageConstants import *
 class GetNextAllLinkRecord(MessageBase):
     """Insteon Get Next All Link Record Message 0x6A"""
 
-    def __init__(self, acknak=None):
-        self.code = MESSAGE_GET_NEXT_ALL_LINK_RECORD
-        self.sendSize = MESSAGE_GET_NEXT_ALL_LINK_RECORD_SIZE
-        self.receivedSize = MESSAGE_GET_NEXT_ALL_LINK_RECORD_RECEIVED_SIZE
-        self.name = 'Insteon Get Next All Link Record Message'
+    code = MESSAGE_GET_NEXT_ALL_LINK_RECORD
+    sendSize = MESSAGE_GET_NEXT_ALL_LINK_RECORD_SIZE
+    receivedSize = MESSAGE_GET_NEXT_ALL_LINK_RECORD_RECEIVED_SIZE
+    description = 'Insteon Get Next All Link Record Message'
 
+
+    def __init__(self, acknak=None):
         self._acknak = self._setacknak(acknak)
 
     @property

@@ -1,15 +1,17 @@
 from .messageBase import MessageBase
 from .messageConstants import *
 from insteonplm.address import Address
+import binascii
 
 class AllLinkRecordResponse(MessageBase):
     """INSTEON ALL-Link Record Response 0x57"""
 
+    code = MESSAGE_ALL_LINK_RECORD_RESPONSE
+    sendSize = MESSAGE_ALL_LINK_RECORD_RESPONSE_SIZE
+    receivedSize = MESSAGE_ALL_LINK_RECORD_RESPONSE_SIZE
+    description = 'INSTEON ALL-Link Record Response'
+
     def __init__(self, flags, group, address, linkdata1, linkdata2, linkdata3):
-        self.code = MESSAGE_ALL_LINK_RECORD_RESPONSE
-        self.sendSize = MESSAGE_ALL_LINK_RECORD_RESPONSE_SIZE
-        self.receivedSize = MESSAGE_ALL_LINK_RECORD_RESPONSE_SIZE
-        self.name = 'INSTEON ALL-Link Record Response'
 
         # ALL-Link Record Response
         self._controlFlags = flags
@@ -19,6 +21,14 @@ class AllLinkRecordResponse(MessageBase):
         self.linkdata2 = linkdata2
         self.linkdata3 = linkdata3
 
+    @classmethod
+    def from_raw_message(cls, rawmessage):
+        return AllLinkRecordResponse(rawmessage[2],
+                                     rawmessage[3],
+                                     rawmessage[4:7],
+                                     rawmessage[7],
+                                     rawmessage[8],
+                                     rawmessage[9])
     @property
     def hex(self):
         return self._messageToHex(self._controlFlags,

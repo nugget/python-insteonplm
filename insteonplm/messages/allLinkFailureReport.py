@@ -5,11 +5,12 @@ from insteonplm.address import Address
 class AllLinkFailureReport(MessageBase):
     """INSTEON All-Link Failure Report Message 0x56"""
 
+    code = MESSAGE_ALL_LINK_CEANUP_FAILURE_REPORT
+    sendSize = MESSAGE_ALL_LINK_CEANUP_FAILURE_REPORT_SIZE
+    receivedSize = MESSAGE_ALL_LINK_CEANUP_FAILURE_REPORT_SIZE
+    description = 'INSTEON All-Link Failure Report Message'
+
     def __init__(self, group, address):
-        self.code = MESSAGE_ALL_LINK_CEANUP_FAILURE_REPORT
-        self.sendSize = MESSAGE_ALL_LINK_CEANUP_FAILURE_REPORT_SIZE
-        self.receivedSize = MESSAGE_ALL_LINK_CEANUP_FAILURE_REPORT_SIZE
-        self.name = 'INSTEON All-Link Failure Report Message'
 
         self.group = group
         self.address = Address(address)

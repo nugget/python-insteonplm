@@ -6,16 +6,25 @@ from .messageConstants import *
 
 class MessageBase(object):
 
+    code = None
+    sendSize = None
+    receivedSize = None
+    description = "Empty message"
+
     def __init__(self):
-        self.code = None
-        self.sendSize = None
-        self.receivedSize = None
-        self.description = "Empty message"
         self._messageFlags = 0x00
 
 #    def __repr__(self):
 #        attrs = vars(self)
 #        return ', '.join("%s: %r" % item for item in attrs.items())
+   
+    @property
+    def hex(self):
+        return NotImplemented
+
+    @property
+    def bytes(self):
+        return NotImplemented
 
     @property
     def isbroadcastflag(self):

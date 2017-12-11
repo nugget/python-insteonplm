@@ -5,11 +5,12 @@ from insteonplm.address import Address
 class CancelAllLinking(MessageBase):
     """INSTEON Cancel All-Linking 0x65"""
 
+    code = MESSAGE_CANCEL_ALL_LINKING
+    sendSize = MESSAGE_CANCEL_ALL_LINKING_SIZE
+    receivedSize = MESSAGE_CANCEL_ALL_LINKING_RECEIVED_SIZE
+    description = 'INSTEON Cancel All-Linking'
+
     def __init__(self, acknak = None):
-        self.code = MESSAGE_CANCEL_ALL_LINKING
-        self.sendSize = MESSAGE_CANCEL_ALL_LINKING_SIZE
-        self.receivedSize = MESSAGE_CANCEL_ALL_LINKING_RECEIVED_SIZE
-        self.name = 'INSTEON Cancel All-Linking'
 
         self._acknak = self._setacknak(acknak)
 

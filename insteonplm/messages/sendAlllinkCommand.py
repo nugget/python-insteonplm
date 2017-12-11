@@ -4,11 +4,12 @@ from .messageConstants import *
 class SendAllLinkCommand(MessageBase):
     """Insteon Send All Link Command Message 0x6A"""
 
+    code = MESSAGE_SEND_ALL_LINK_COMMAND
+    sendSize = MESSAGE_SEND_ALL_LINK_COMMAND_SIZE
+    receivedSize = MESSAGE_SEND_ALL_LINK_COMMAND_RECEIVED_SIZE
+    description = 'Insteon Get Next All Link Record Message'
+
     def __init__(self,group, allLinkCommand, broadcastCommand, acknak=None):
-        self.code = MESSAGE_SEND_ALL_LINK_COMMAND
-        self.sendSize = MESSAGE_SEND_ALL_LINK_COMMAND_SIZE
-        self.receivedSize = MESSAGE_SEND_ALL_LINK_COMMAND_RECEIVED_SIZE
-        self.name = 'Insteon Get Next All Link Record Message'
 
         self.group = group
         self.allLinkCommmand = allLinkCommand

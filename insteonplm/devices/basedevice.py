@@ -2,13 +2,50 @@ from insteonplm.address import Address
 from .ipdb import IPDB
 from insteonplm.messages.messagebase import MessageBase
 
-class insteonDevice(object):
+class BaseDevice(object):
     """INSTEON Device"""
     ipdb = IPDB()
 
-    def __init__(self, address, cat, subcat, firmware):
+    def __init__(self, plm, address, cat, subcat, firmware):
         self.address = Address(address)
         self.product = self.ipdb[cat, subcat]
 
     def processMessage(self, message):
         return NotImplemented
+
+    def AssignToALLLinkGroup(self, group):
+        return NotImplemented
+
+    def DeleteFromALLLinkGroup(self, group):
+        return NotImplemented
+
+    def ProductDataRequest(self):
+        return NotImplemented
+
+    def FxUsername(self):
+        return NotImplemented
+
+    def DeviceTextStringRequest(self):
+        return NotImplemented
+
+    def EnterLinkingMode(self, group):
+        return NotImplemented
+
+    def EnterUnlinkingMode(self, group):
+        return NotImplemented
+
+    def GetEngineVersion(self):
+        return NotImplemented
+
+    def Ping(self):
+        return NotImplemented
+
+    def IdRequest(self):
+        return NotImplemented
+
+    def ReadALDB(self):
+        return NotImplemented
+
+    def WriteALDB(self):
+        return NotImplemented
+

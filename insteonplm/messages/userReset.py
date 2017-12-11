@@ -3,11 +3,12 @@ from .messageConstants import *
 
 class UserReset(MessageBase):
     """Insteon User Reset Message Received 0x55"""
-    def __init__(self):
-        self.code = MESSAGE_USER_RESET_DETECTED
-        self.sendSize = MESSAGE_USER_RESET_DETECTED_SIZE
-        self.receivedSize = MESSAGE_USER_RESET_DETECTED_SIZE
-        self.name = 'INSTEON User Reset Message Received'
+
+    code = MESSAGE_USER_RESET_DETECTED
+    sendSize = MESSAGE_USER_RESET_DETECTED_SIZE
+    receivedSize = MESSAGE_USER_RESET_DETECTED_SIZE
+    name = 'INSTEON User Reset Message Received'
+
 
     @property
     def message(self):
