@@ -110,7 +110,6 @@ class PLM(asyncio.Protocol):
         if self._connection_lost_callback:
             self._connection_lost_callback()
 
-
     def _add_message_callback(self, code, callback):
         """Register a callback for when a matching message is seen."""
 
@@ -122,7 +121,6 @@ class PLM(asyncio.Protocol):
         self.log.info('Requesting PLM Info')
         msg = GetImInfo()
         self._send_msg(msg)
-
 
     def _handle_all_link_record_response(self, msg):
         self.log.debug('Starting _handle_all_link_record_response')
@@ -167,7 +165,38 @@ class PLM(asyncio.Protocol):
         """Request Product Data Record for device."""
         device = Address(addr)
         self.log.info('Requesting product data for %s', device.human)
-        msg = StandardSend(device, 0x00, COMMAND_PRODUCT_DATA_REQUEST, 0x00)
+        msg = StandardSend(device, 0x00, COMMAND_PRODUCT_DATA_REQUEST, 0x00)    
+    
+    def _peel_messages_from_buffer(self):
+        self.log.debug("Starting: _peel_messages_from_buffer")
+        lastlooplen = 0
+        worktodo = True
+
+        while worktodo:
+            if len(self._buffer) == 0:
+                self.log.debug('Clean break!  There is no buffer left')
+                worktodo = False
+                break
+            msg = Message.create(self._buffer)
+
+            if msg is not None:
+                self._recv_queue.append(msg)
+                self._buffer = self._buffer[len(msg.bytes):]
+
+            if len(self._buffer) < 2:
+                worktodo = False
+                break
+
+            if len(self._buffer) == lastlooplen:
+                # Buffer size did not change so we should wait for more data
+                worktodo = False
+                break
+
+            lastlooplen = len(self._buffer)
+
+        self.log.debug("Finishing: _peel_messages_from_buffer")
+
+
 
 
 # pylint: disable=too-many-instance-attributes, too-many-public-methods
