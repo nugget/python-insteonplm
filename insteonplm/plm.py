@@ -43,6 +43,7 @@ class PLM(asyncio.Protocol):
 
         self._connection_lost_callback = connection_lost_callback
         self._message_callbacks = []
+        self._device_callbacks = []
 
         self._buffer = bytearray()
         self._recv_queue = []
@@ -219,6 +220,11 @@ class PLM(asyncio.Protocol):
         if len(self._buffer) == 0:
             return True
         self.log.debug("Finishing: _clear_to_send")
+
+    def add_device_callback(self, callback, criteria):
+        """Register a callback for when a matching new device is seen."""
+        self.devices.add_device_callback(callback, criteria)
+
 
 # pylint: disable=too-many-instance-attributes, too-many-public-methods
 class PLMOld(asyncio.Protocol):
