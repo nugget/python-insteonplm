@@ -62,7 +62,7 @@ class Connection:
             if conn._auto_reconnect and not conn._closing:
                 ensure_future(conn._reconnect(), loop=conn._loop)
 
-        conn.protocol = protocol_class(connection_lost_callback=connection_lost, loop=conn._loop, userdefineddevices=userdefined)
+        conn.protocol = protocol_class() #connection_lost_callback=connection_lost, loop=conn._loop, userdefineddevices=userdefined)
 
         yield from conn._reconnect()
 
