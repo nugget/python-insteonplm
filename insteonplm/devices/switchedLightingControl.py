@@ -1,4 +1,4 @@
-from basedevice import BaseDevice
+from .basedevice import BaseDevice
 
 class SwitchedLightingControl(BaseDevice):
     """Switched Lighting Control 0x02"""
