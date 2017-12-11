@@ -1,14 +1,18 @@
 from insteonplm.address import Address
-from .ipdb import IPDB
-from insteonplm.messages.messagebase import MessageBase
+#from .ipdb import IPDB
+from insteonplm.messages.messageBase import MessageBase
 
 class BaseDevice(object):
     """INSTEON Device"""
-    ipdb = IPDB()
 
-    def __init__(self, plm, address, cat, subcat, firmware):
+    def __init__(self, plm, address, cat, subcat, firmware, description, model):
+        self.plm = plm
         self.address = Address(address)
-        self.product = self.ipdb[cat, subcat]
+        self.cat = cat
+        self.subcat = subcat
+        self.firmware = firmware
+        self.description = description
+        self.model = model  
 
     def processMessage(self, message):
         return NotImplemented

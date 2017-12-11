@@ -4,7 +4,7 @@ import logging
 import binascii
 import time
 
-from .devices.ipdb import IPDB
+#from .devices.ipdb import IPDB
 from .address import Address
 
 __all__ = ('ALDB')
@@ -13,7 +13,7 @@ __all__ = ('ALDB')
 class ALDB(object):
     """Class holds and maintains the ALL-Link Database from the PLM device."""
 
-    ipdb = IPDB()
+    #ipdb = IPDB()
 
     def __init__(self):
         """Instantiate the ALL-Link Database object."""
@@ -48,7 +48,8 @@ class ALDB(object):
             if 'firmware' in value and value['firmware'] < 255:
                 self._devices[key].update(value)
         else:
-            productdata = self.ipdb[value['cat'], value['subcat']]
+            #productdata = self.ipdb[value['cat'], value['subcat']]
+            productdata = {'a':1, 'b':2}
             value.update(productdata._asdict())
             address = Address(key)
             value['address_hex'] = address.hex

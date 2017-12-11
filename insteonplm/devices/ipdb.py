@@ -8,7 +8,7 @@ from .switchedLightingControl import SwitchedLightingControl
 # pylint: disable=line-too-long
 # pylint: disable=too-few-public-methods
 
-Product = collections.namedtuple('Product', 'cat subcat product_key description model capabilities')
+Product = collections.namedtuple('Product', 'cat subcat product_key description model deviceclass')
 
 
 class IPDB(object):

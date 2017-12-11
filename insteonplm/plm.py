@@ -132,6 +132,7 @@ class PLM(asyncio.Protocol):
             self.devices.state = 'loaded'
         else:
             self._device_queue.append(msg.address)
+            self._get_next_all_link_record()
         self.log.debug('Ending _handle_all_link_record_response')
 
     def _handle_get_plm_info(self, msg):
