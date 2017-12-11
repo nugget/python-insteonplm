@@ -5,7 +5,7 @@ import binascii
 import time
 
 from .constants import *
-from .devices.ipdb import IPDB
+#from .devices.ipdb import IPDB
 from .aldb import ALDB
 from .address import Address
 from .plmprotocol import PLMProtocol
