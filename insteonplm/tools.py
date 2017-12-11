@@ -36,8 +36,7 @@ def console(loop, log, devicelist):
 
     log.info('Connecting to Insteon PLM at %s', device)
 
-    conn = yield from insteonplm.Connection.create(
-        device=device, loop=loop, userdefined=devicelist)
+    conn = yield from insteonplm.Connection.create(device=device, loop=loop, userdefined=devicelist)
 
     def async_insteonplm_light_callback(device):
         """Log that our new device callback worked."""
