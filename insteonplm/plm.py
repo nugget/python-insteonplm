@@ -16,9 +16,7 @@ from .messages.getFirstAllLinkRecord import GetFirstAllLinkRecord
 from .messages.getNextAllLinkRecord import GetNextAllLinkRecord 
 from .messages.standardSend import StandardSend
 
-
 __all__ = ('PLM')
-
 
 PP = PLMProtocol()
 
@@ -61,14 +59,20 @@ class PLM(asyncio.Protocol):
         self.log = logging.getLogger(__name__)
         self.transport = None
 
-        self._add_message_callback(MESSAGE_ALL_LINK_RECORD_RESPONSE, self._handle_all_link_record_response)
-        self._add_message_callback(MESSAGE_GET_IM_INFO, self._handle_get_plm_info)
+        # TODO: Define a method for handling Insteon commands received via StandardMessageRecieved
+        #       or ExtendedMessageReceived
+        #       This will also define the device class' capabilities (i.e. device class can handle a
+        #       COMMAND_LIGHT_ON request)
+        #       It feels like a good idea to build this into the PLMProtocol class so that every 
+        #       device (including the PLM) handle command registration the same way.
+
 #        self._add_message_callback(MESSAGE_ALL_LINKING_COMPLETED, self._handle_all_link_completed)
 #        self._add_message_callback(MESSAGE_GET_IM_CONFIGURATION, self._handle_get_plm_config)
 #        self._add_message_callback(MESSAGE_STANDARD_MESSAGE_RECEIVED, self._handle_insteon_standard)
 #        self._add_message_callback(MESSAGE_EXTENDED_MESSAGE_RECEIVED ,self._handle_insteon_extended)
 #        self._add_message_callback(MESSAGE_BUTTON_EVENT_REPORT, self._handle_button_event)
-
+        self._add_message_callback(MESSAGE_ALL_LINK_RECORD_RESPONSE, self._handle_all_link_record_response)
+        self._add_message_callback(MESSAGE_GET_IM_INFO, self._handle_get_plm_info)
 
     def connection_made(self, transport):
         """Called when asyncio.Protocol establishes the network connection."""
@@ -93,7 +97,7 @@ class PLM(asyncio.Protocol):
         for msg in self._recv_queue:
             self._process_message(message)
             callback = self._message_callbacks[msg.code]
-            if callback is not None
+            if callback is not None:
                 self._loop.call_soon(callback, msg)
             self._recv_queue.remove(msg)
         self.log.debug("Finishing: data_received")
@@ -159,13 +163,15 @@ class PLM(asyncio.Protocol):
         """Request a device ID from a device"""
         device = Address(addr)
         self.log.info('Requesting product data for %s', device.human)
-        msg = StandardSend(device, 0x00, COMMAND_ID_REQUEST, 0x00)
+        msg = StandardSend(device, 0x00, COMMAND_ID_REQUEST['cmd1'], COMMAND_ID_REQUEST['cmd1'])
+        self._send_msg(msg)
 
     def _product_data_request(self, addr):
         """Request Product Data Record for device."""
         device = Address(addr)
         self.log.info('Requesting product data for %s', device.human)
-        msg = StandardSend(device, 0x00, COMMAND_PRODUCT_DATA_REQUEST, 0x00)    
+        msg = StandardSend(device, 0x00, COMMAND_PRODUCT_DATA_REQUEST['cmd1'], COMMAND_PRODUCT_DATA_REQUEST['cmd2'])    
+        self._send_msg(msg)
     
     def _peel_messages_from_buffer(self):
         self.log.debug("Starting: _peel_messages_from_buffer")
@@ -196,8 +202,22 @@ class PLM(asyncio.Protocol):
 
         self.log.debug("Finishing: _peel_messages_from_buffer")
 
+    def _send_msg(self, msg):
+        # TODO: implement an ACK/NAK review of sent commands
+        # Purpose of the function is to capture sent commands and compare them to ACK/NAK messages
+        # A callback can then be defined in the event of a NAK (i.e. retry or do something else)
+        # self._sent_queue.append(msg)
+        self.log.debug('Sending %d byte message: %s',
+                len(msg.bytes), msg.hex)
+        while not self._clear_to_send():
+            time.sleep(1)
+        self.transport.write(msg.bytes)
 
-
+    def _clear_to_send(self):
+        self.log.debug("Starting: _clear_to_send")
+        if len(self._buffer) == 0:
+            return True
+        self.log.debug("Finishing: _clear_to_send")
 
 # pylint: disable=too-many-instance-attributes, too-many-public-methods
 class PLMOld(asyncio.Protocol):
