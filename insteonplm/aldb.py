@@ -4,7 +4,7 @@ import logging
 import binascii
 import time
 
-from .ipdb import IPDB
+from .devices.ipdb import IPDB
 from .address import Address
 
 __all__ = ('ALDB')
