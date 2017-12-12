@@ -1,5 +1,6 @@
 from .messageBase import MessageBase
 from .messageConstants import *
+import binascii
 
 class StartAllLinking(MessageBase):
     """Insteon Start All Linking Message 0x64"""

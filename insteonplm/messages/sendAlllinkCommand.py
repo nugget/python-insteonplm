@@ -1,5 +1,6 @@
 from .messageBase import MessageBase
 from .messageConstants import *
+import binascii
 
 class SendAllLinkCommand(MessageBase):
     """Insteon Send All Link Command Message 0x6A"""

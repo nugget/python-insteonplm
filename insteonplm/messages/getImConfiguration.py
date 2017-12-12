@@ -1,5 +1,6 @@
 from .messageBase import MessageBase
 from .messageConstants import *
+import binascii
 
 class GetImConfiguration(MessageBase):
     """Insteon Get IM Configuration Message 0x62"""

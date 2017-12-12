@@ -1,5 +1,6 @@
 from .messageBase import MessageBase
 from .messageConstants import *
+import binascii
 
 class ResetIM(MessageBase):
     """Insteon Reset IM Message 0x67"""

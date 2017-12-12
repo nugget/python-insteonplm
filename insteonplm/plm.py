@@ -213,6 +213,7 @@ class PLM(asyncio.Protocol):
         while not self._clear_to_send():
             time.sleep(1)
         self.transport.write(msg.bytes)
+        self.log.debug("Sent message: %s", msg.hex)
 
     def _clear_to_send(self):
         self.log.debug("Starting: _clear_to_send")

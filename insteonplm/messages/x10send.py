@@ -1,5 +1,6 @@
 from .messageBase import MessageBase
 from .messageConstants import *
+import binascii
 
 class X10Send(MessageBase):
     """Insteon Get Next All Link Record Message 0x6A"""

@@ -1,5 +1,6 @@
 from .messageBase import MessageBase
 from .messageConstants import *
+import binascii
 
 class GetFirstAllLinkRecord(MessageBase):
     """Insteon Get First All Link Record Message 0x69"""

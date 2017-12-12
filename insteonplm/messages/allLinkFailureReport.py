@@ -1,6 +1,7 @@
 from .messageBase import MessageBase
 from .messageConstants import *
 from insteonplm.address import Address
+import binascii
 
 class AllLinkCleanupFailureReport(MessageBase):
     """INSTEON All-Link Failure Report Message 0x56"""

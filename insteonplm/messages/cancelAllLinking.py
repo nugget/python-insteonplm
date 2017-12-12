@@ -1,6 +1,7 @@
 from .messageBase import MessageBase
 from .messageConstants import *
 from insteonplm.address import Address
+import binascii
 
 class CancelAllLinking(MessageBase):
     """INSTEON Cancel All-Linking 0x65"""
