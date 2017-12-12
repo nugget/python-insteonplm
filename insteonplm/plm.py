@@ -117,6 +117,8 @@ class PLM(asyncio.Protocol):
             callback = self._message_callbacks[msg.code]
             if callback is not None:
                 self._loop.call_soon(callback, msg)
+            else: 
+                self.log.debug("Did not find a message callback for code %x", msg.code)
             self._recv_queue.remove(msg)
         self.log.debug("Finishing: data_received")
 
