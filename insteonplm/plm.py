@@ -67,12 +67,6 @@ class PLM(asyncio.Protocol):
         #       It feels like a good idea to build this into the PLMProtocol class so that every 
         #       device (including the PLM) handle command registration the same way.
 
-#        self._add_message_callback(MESSAGE_ALL_LINKING_COMPLETED, self._handle_all_link_completed)
-#        self._add_message_callback(MESSAGE_GET_IM_CONFIGURATION, self._handle_get_plm_config)
-#        self._add_message_callback(MESSAGE_STANDARD_MESSAGE_RECEIVED, self._handle_insteon_standard)
-#        self._add_message_callback(MESSAGE_EXTENDED_MESSAGE_RECEIVED ,self._handle_insteon_extended)
-#        self._add_message_callback(MESSAGE_BUTTON_EVENT_REPORT, self._handle_button_event)
-
         self._add_message_callback(MESSAGE_STANDARD_MESSAGE_RECEIVED, None)
         self._add_message_callback(MESSAGE_EXTENDED_MESSAGE_RECEIVED, None)
         self._add_message_callback(MESSAGE_X10_MESSAGE_RECEIVED, None)
@@ -90,7 +84,7 @@ class PLM(asyncio.Protocol):
         self._add_message_callback(MESSAGE_CANCEL_ALL_LINKING, None)
         self._add_message_callback(MESSAGE_RESET_IM, None)
         self._add_message_callback(MESSAGE_GET_FIRST_ALL_LINK_RECORD, None)
-        self._add_message_callback(MESSAGE_GET_NEXT_ALL_LINK_RECORD, None)
+        self._add_message_callback(MESSAGE_GET_NEXT_ALL_LINK_RECORD, self._handle_get_next_all_link_record_acknak)
         self._add_message_callback(MESSAGE_GET_IM_CONFIGURATION, None)
 
     def connection_made(self, transport):
@@ -148,12 +142,19 @@ class PLM(asyncio.Protocol):
 
     def _handle_all_link_record_response(self, msg):
         self.log.debug('Starting _handle_all_link_record_response')
-        if msg.isnak:
-            self.devices.state = 'loaded'
-        else:
-            self._device_queue.append(msg.address)
-            self._get_next_all_link_record()
+
+        self._device_queue.append(msg.address)
+        self._get_next_all_link_record()
+        
         self.log.debug('Ending _handle_all_link_record_response')
+
+    def _handle_get_next_all_link_record_acknak(self, msg):
+        self.log.debug('Starting _handle_get_next_all_link_record_acknak')
+        if msg.isnak:
+            self.devices.status = 'loaded'
+            for address in self._device_queue:
+                self.log.debug('Found device %s', address.hex)
+        self.log.debug('Ending _handle_get_next_all_link_record_acknak')
 
     def _handle_get_plm_info(self, msg):
         self.log.debug('Starting _handle_get_plm_info')
