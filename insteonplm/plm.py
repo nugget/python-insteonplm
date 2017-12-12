@@ -72,8 +72,26 @@ class PLM(asyncio.Protocol):
 #        self._add_message_callback(MESSAGE_STANDARD_MESSAGE_RECEIVED, self._handle_insteon_standard)
 #        self._add_message_callback(MESSAGE_EXTENDED_MESSAGE_RECEIVED ,self._handle_insteon_extended)
 #        self._add_message_callback(MESSAGE_BUTTON_EVENT_REPORT, self._handle_button_event)
+
+        self._add_message_callback(MESSAGE_STANDARD_MESSAGE_RECEIVED, None)
+        self._add_message_callback(MESSAGE_EXTENDED_MESSAGE_RECEIVED, None)
+        self._add_message_callback(MESSAGE_X10_MESSAGE_RECEIVED, None)
+        self._add_message_callback(MESSAGE_ALL_LINKING_COMPLETED, None)
+        self._add_message_callback(MESSAGE_BUTTON_EVENT_REPORT, None)
+        self._add_message_callback(MESSAGE_USER_RESET_DETECTED, None)
+        self._add_message_callback(MESSAGE_ALL_LINK_CEANUP_FAILURE_REPORT, None)
         self._add_message_callback(MESSAGE_ALL_LINK_RECORD_RESPONSE, self._handle_all_link_record_response)
+        self._add_message_callback(MESSAGE_ALL_LINK_CLEANUP_STATUS_REPORT, None)
         self._add_message_callback(MESSAGE_GET_IM_INFO, self._handle_get_plm_info)
+        self._add_message_callback(MESSAGE_SEND_ALL_LINK_COMMAND, None)
+        self._add_message_callback(MESSAGE_SEND_STANDARD_MESSAGE, None)
+        self._add_message_callback(MESSAGE_X10_MESSAGE_SEND, None)
+        self._add_message_callback(MESSAGE_START_ALL_LINKING, None)
+        self._add_message_callback(MESSAGE_CANCEL_ALL_LINKING, None)
+        self._add_message_callback(MESSAGE_RESET_IM, None)
+        self._add_message_callback(MESSAGE_GET_FIRST_ALL_LINK_RECORD, None)
+        self._add_message_callback(MESSAGE_GET_NEXT_ALL_LINK_RECORD, None)
+        self._add_message_callback(MESSAGE_GET_IM_CONFIGURATION, None)
 
     def connection_made(self, transport):
         """Called when asyncio.Protocol establishes the network connection."""
