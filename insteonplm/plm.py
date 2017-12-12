@@ -23,7 +23,7 @@ PP = PLMProtocol()
 class PLM(asyncio.Protocol):
     """The Insteon PLM IP control protocol handler."""
 
-    def _init(self, loop=None, connection_lost_callback=None, userdefineddevices=()):
+    def __init__(self, loop=None, connection_lost_callback=None, userdefineddevices=()):
         """Protocol handler that handles all status and changes on PLM.
 
         This class is expected to be wrapped inside a Connection class object
