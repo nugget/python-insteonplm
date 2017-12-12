@@ -42,7 +42,7 @@ class PLM(asyncio.Protocol):
         self._loop = loop
 
         self._connection_lost_callback = connection_lost_callback
-        self._message_callbacks = []
+        self._message_callbacks = {}
         self._device_callbacks = []
 
         self._buffer = bytearray()
