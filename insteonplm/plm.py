@@ -119,7 +119,7 @@ class PLM(asyncio.Protocol):
         """Register a callback for when a matching message is seen."""
 
         self._message_callbacks[code] = callback
-        self.log.debug('Added message callback to %s on %s', callback, criteria)
+        self.log.debug('Added message callback to %s on %s', callback, code)
 
     def _get_plm_info(self):
         """Request PLM Info."""
