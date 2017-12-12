@@ -146,7 +146,7 @@ class PLM(asyncio.Protocol):
     def _load_all_link_database(self):
         """Load the ALL-Link Database into object."""
         self.devices.state = 'loading'
-        self.get_first_all_link_record()
+        self._get_first_all_link_record()
 
     def _get_first_all_link_record(self):
         """Request first ALL-Link record."""
