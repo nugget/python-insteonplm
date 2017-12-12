@@ -10,6 +10,10 @@ class UserReset(MessageBase):
     name = 'INSTEON User Reset Message Received'
 
 
+    @classmethod
+    def from_raw_messsage(cls, rawmessage):
+        return UserReset()
+
     @property
     def message(self):
         return bytearray([MESSAGE_START_CODE,

@@ -13,6 +13,10 @@ class AllLinkCleanupStatusReport(MessageBase):
     def __init__(self, status):
         self.status = status
 
+    @classmethod
+    def from_raw_message(cls, rawmessage):
+        return AllLinkCleanupStatusReport(rawmessage[2])
+
     @property
     def hex(self):
         return self._messageToHex(self.status)

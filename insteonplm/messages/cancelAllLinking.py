@@ -14,6 +14,10 @@ class CancelAllLinking(MessageBase):
 
         self._acknak = self._setacknak(acknak)
 
+    @classmethod
+    def from_raw_message(cls, rawmessage):
+        return CancelAllLinking(rawmessage[2:3])
+
     @property
     def hex(self):
         return self._messageToHex(self._acknak)

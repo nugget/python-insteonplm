@@ -14,6 +14,10 @@ class X10Send(MessageBase):
         self.rawX10 = rawX10
         self.flag = flag
         self._acknak = self._setacknak(acknak)
+    
+    @classmethod
+    def from_raw_message(cls, rawmessage):
+        return X10Send(rawmessage[2], rawmessage[3], rawmessage[4:5])
 
     @property
     def hex(self):

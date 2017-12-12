@@ -7,12 +7,24 @@ from insteonplm.address import Address
 
 from .standardReceive import StandardReceive
 from .extendedReceive import ExtendedReceive
+from .x10received import X10Received 
 from .allLinkComplete import AllLinkComplete
 from .buttonEventReport import ButtonEventReport
+from .userReset import UserReset
+from .allLinkFailureReport import AllLinkCleanupFailureReport 
 from .allLinkRecordResponse import AllLinkRecordResponse
+from .allLinkCleanupStatusReport import AllLinkCleanupStatusReport
 from .getIMInfo import GetImInfo 
+from .sendAlllinkCommand import SendAllLinkCommand
 from .standardSend import StandardSend
 from .extendedSend import ExtendedSend
+from .x10send import X10Send 
+from .startAllLinking import StartAllLinking
+from .cancelAllLinking import CancelAllLinking
+from .resetIM import ResetIM
+from .getFirstAllLinkRecord import GetFirstAllLinkRecord
+from .getNextAllLinkRecord import GetNextAllLinkRecord
+from .getImConfiguration import GetImConfiguration
 
 
 class Message(object):
@@ -79,31 +91,25 @@ class Message(object):
 
     @classmethod
     def get_message_class(cls, code):
+        messageclasses = {}
+        messageclasses[MESSAGE_STANDARD_MESSAGE_RECEIVED] = StandardReceive
+        messageclasses[MESSAGE_EXTENDED_MESSAGE_RECEIVED] = ExtendedReceive
+        messageclasses[MESSAGE_X10_MESSAGE_RECEIVED] = X10Received
+        messageclasses[MESSAGE_ALL_LINKING_COMPLETED] = AllLinkComplete
+        messageclasses[MESSAGE_BUTTON_EVENT_REPORT] = ButtonEventReport
+        messageclasses[MESSAGE_USER_RESET_DETECTED] = UserReset
+        messageclasses[MESSAGE_ALL_LINK_CEANUP_FAILURE_REPORT] = AllLinkCleanupFailureReport
+        messageclasses[MESSAGE_ALL_LINK_RECORD_RESPONSE] = AllLinkRecordResponse
+        messageclasses[MESSAGE_ALL_LINK_CLEANUP_STATUS_REPORT] = AllLinkCleanupStatusReport
+        messageclasses[MESSAGE_GET_IM_INFO] = GetImInfo
+        messageclasses[MESSAGE_SEND_ALL_LINK_COMMAND] = SendAllLinkCommand
+        messageclasses[MESSAGE_SEND_STANDARD_MESSAGE] = StandardSend
+        messageclasses[MESSAGE_X10_MESSAGE_SEND] = X10Send
+        messageclasses[MESSAGE_START_ALL_LINKING] = StartAllLinking
+        messageclasses[MESSAGE_CANCEL_ALL_LINKING] = CancelAllLinking
+        messageclasses[MESSAGE_RESET_IM] = ResetIM
+        messageclasses[MESSAGE_GET_FIRST_ALL_LINK_RECORD] = GetFirstAllLinkRecord
+        messageclasses[MESSAGE_GET_NEXT_ALL_LINK_RECORD] = GetNextAllLinkRecord
+        messageclasses[MESSAGE_GET_IM_CONFIGURATION] = GetImConfiguration
 
-        if code == MESSAGE_STANDARD_MESSAGE_RECEIVED:
-            return StandardReceive
-
-        elif code == MESSAGE_EXTENDED_MESSAGE_RECEIVED:
-            return ExtendedReceive
-
-        elif code == MESSAGE_ALL_LINKING_COMPLETED:
-            return AllLinkComplete
-
-        elif code == MESSAGE_BUTTON_EVENT_REPORT:
-            return ButtonEventReport
-
-        elif code == MESSAGE_ALL_LINK_RECORD_RESPONSE:
-            return AllLinkRecordResponse
-
-        elif code == MESSAGE_GET_IM_INFO:
-            return GetImInfo
-
-        elif code == MESSAGE_SEND_STANDARD_MESSAGE:
-            print('Found standard send message')
-            return StandardSend
-
-        elif self.code == MESSAGE_GET_IM_CONFIGURATION:
-            return MESSAGE_GET_IM_CONFIGURATION
-
-        else:
-            return None
+        return messageclasses[code]

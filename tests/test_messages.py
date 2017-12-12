@@ -2,7 +2,7 @@ from insteonplm.address import Address
 
 from insteonplm.messages.allLinkCleanupStatusReport import AllLinkCleanupStatusReport
 from insteonplm.messages.allLinkComplete import AllLinkComplete
-from insteonplm.messages.allLinkFailureReport import AllLinkFailureReport
+from insteonplm.messages.allLinkFailureReport import AllLinkCleanupFailureReport
 from insteonplm.messages.allLinkRecordResponse import AllLinkRecordResponse
 from insteonplm.messages.buttonEventReport import ButtonEventReport
 from insteonplm.messages.cancelAllLinking import CancelAllLinking
@@ -49,7 +49,7 @@ def test_allLinkComplete():
 def test_allLinkFailureReport():
     group = 0x11
     addr = bytearray([0x22,0x33,0x44])
-    msg = AllLinkFailureReport(group, addr)
+    msg = AllLinkCleanupFailureReport(group, addr)
 
     assert msg.address == Address(addr)
     assert msg.group == group

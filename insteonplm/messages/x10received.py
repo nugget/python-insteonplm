@@ -14,6 +14,10 @@ class X10Received(MessageBase):
         self.rawX10 = rawX10
         self.flag = flag
 
+    @classmethod
+    def from_raw_message(cls, rawmessage):
+        return X10Received(rawmessage[2], rawmessage[3])
+
     @property
     def hex(self):
         return self._messageToHex(self.rawX10,

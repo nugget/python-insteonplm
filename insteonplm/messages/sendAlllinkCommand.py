@@ -17,6 +17,10 @@ class SendAllLinkCommand(MessageBase):
 
         self._acknak = self._setacknak(acknak)
 
+    @classmethod
+    def from_raw_message(cls, rawmessage):
+        return SendAllLinkCommand(rawmessage[2], rawmessage[3], rawmessage[4], rawmessage[5:6])
+
     @property
     def hex(self):
         return self._messageToHex(self.group,

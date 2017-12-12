@@ -16,6 +16,10 @@ class StartAllLinking(MessageBase):
 
         self._acknak = self._setacknak(acknak)
 
+    @classmethod
+    def from_raw_message(cls, rawmessage):
+        return StartAllLinking(rawmessage[2], rawmessage[3], rawmessage[4:5])
+
     @property
     def hex(self):
         return self._messageToHex(self.linkCode,

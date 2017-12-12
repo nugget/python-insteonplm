@@ -13,6 +13,10 @@ class GetNextAllLinkRecord(MessageBase):
     def __init__(self, acknak=None):
         self._acknak = self._setacknak(acknak)
 
+    @classmethod
+    def from_raw_message(cls, rawmessage):
+        return GetNextAllLinkRecord(rawmessage[2:3])
+
     @property
     def hex(self):
         return self._messageToHex(self._acknak)
