@@ -96,7 +96,6 @@ class PLM(asyncio.Protocol):
         self._peel_messages_from_buffer()
 
         for msg in self._recv_queue:
-            self._process_message(message)
             callback = self._message_callbacks[msg.code]
             if callback is not None:
                 self._loop.call_soon(callback, msg)
