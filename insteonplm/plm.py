@@ -110,6 +110,7 @@ class PLM(asyncio.Protocol):
         for msg in self._recv_queue:
             callback = self._message_callbacks[msg.code]
             if callback is not None:
+                self.log.debug('Scheduling callback %s for message %s', callback, msg.hex)
                 self._loop.call_soon(callback, msg)
             else: 
                 self.log.debug("Did not find a message callback for code %x", msg.code)
