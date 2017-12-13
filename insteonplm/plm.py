@@ -149,7 +149,12 @@ class PLM(asyncio.Protocol):
         self._send_msg(msg)
 
     def _handle_standard_message_received(self, msg):
-        command = {'cmd1': msg.cmd1, 'cmd2': msg.cmd2}
+        if msg.isbroadcastflag:
+            if msg.cmd1 == COMMAND_ASSIGN_TO_ALL_LINK_GROUP['cmd1']:
+                cat = msg.target.bytes[0:1]
+                subcat = msg.target.bytes[2:3]
+                firmware = msg.target.bytes[4:5]
+                self.log.debug('Found device address: %s  cat: %x  subcat: %x  firmware: %x', msg.address.hex, cat, subcat, firmware)
 
     def _handle_all_link_record_response(self, msg):
         self.log.debug('Starting _handle_all_link_record_response')
@@ -165,10 +170,12 @@ class PLM(asyncio.Protocol):
             self.log.debug('Devices found: %d', len(self._aldb_response_queue))
             for addr in self._aldb_response_queue:
                 device = self._aldb_response_queue[addr]
-                self.log.debug('Found device with address: %s linkdata1: %x linkdata2: %x linkdata1: %x', 
-                               device.address.hex, device.linkdata1, device.linkdata2, device.linkdata3)
+                cat = msg.linkdata1
+                subcat = msg.linkdata2
+                firmware = msg.linkdata3
+                dev = self.devices.get_device_from_categories(self, msg.address, cat, subcat, firmware)
                 self._device_id_request(addr)
-                # self._product_data_request(addr)
+
         self.log.debug('Ending _handle_get_next_all_link_record_acknak')
 
     def _handle_get_plm_info(self, msg):

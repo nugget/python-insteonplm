@@ -1,3 +1,5 @@
+import logging
+
 from .ipdb import IPDB
 from insteonplm.address import Address
 from .dimmableLightingControl import DimmableLightingControl
@@ -10,10 +12,11 @@ class Device(object):
 
     @classmethod
     def create(cls, plm, address, cat, subcat, firmware=None):
+        log = logging.getLogger(__name__)
+
         ipdb = IPDB()
         product = ipdb[[cat, subcat]]
-        print(product)
         deviceclass = product[5]
-        print(deviceclass)
+        log.debug('Device cat: %x  subcat: %x returns deviceclass: %s', cat, subcat, deviceclass)
         return deviceclass(plm, address, cat, subcat, product[2], product[3], product[4])
 

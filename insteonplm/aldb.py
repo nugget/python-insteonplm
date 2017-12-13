@@ -4,8 +4,8 @@ import logging
 import binascii
 import time
 
-#from .devices.ipdb import IPDB
 from .address import Address
+from .devices.device import Device
 
 __all__ = ('ALDB')
 
@@ -13,7 +13,6 @@ __all__ = ('ALDB')
 class ALDB(object):
     """Class holds and maintains the ALL-Link Database from the PLM device."""
 
-    #ipdb = IPDB()
 
     def __init__(self):
         """Instantiate the ALL-Link Database object."""
@@ -135,6 +134,9 @@ class ALDB(object):
                 return False
         else:
             raise KeyError
+
+    def get_device_from_categories(self, plm, addr, cat, subcat, firmware=None):
+        return Device.create(plm, addr, cat, subcat, firmware)
 
     @staticmethod
     def _device_matches_criteria(device, criteria):

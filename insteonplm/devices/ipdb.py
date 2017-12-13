@@ -1,6 +1,7 @@
 """Embodies the INSTEON Product Database static data and access methods."""
 import logging
 import collections
+
 from .generalController import GeneralController
 from .dimmableLightingControl import DimmableLightingControl
 from .switchedLightingControl import SwitchedLightingControl
@@ -16,6 +17,7 @@ class IPDB(object):
 
     products = [
         
+        Product(0x00, None, None, 'Generic General Controller', '', GeneralController),
         Product(0x00, 0x04, None, 'ControLinc', '2430', GeneralController),
         Product(0x00, 0x05, None, 'RemoteLink', '2440', GeneralController),
         Product(0x00, 0x06, None, 'Icon Tabletop Controlle', '2830', GeneralController),
@@ -25,6 +27,7 @@ class IPDB(object):
         Product(0x00, 0x0b, 0x000022, 'Access Point', '2443', GeneralController),
         Product(0x00, 0x0c, 0x000028, 'IES Color Touchscreen','', GeneralController),
 
+        Product(0x01, None, None, 'Generic Dimmable Lighting', '', DimmableLightingControl),
         Product(0x01, 0x00, None, 'LampLinc 3-pin', '2456D3', DimmableLightingControl),
         Product(0x01, 0x01, None, 'SwitchLinc Dimmer (600W)', '2476D', DimmableLightingControl),
         Product(0x01, 0x02, None, 'In-LineLinc Dimmer', '2475D', DimmableLightingControl),
@@ -59,6 +62,7 @@ class IPDB(object):
         Product(0x01, 0x42, None, 'KeypadLinc Dimmer, 6 button', '2334-232', DimmableLightingControl),
         Product(0x01, 0x49, None, 'Recessed LED Bulb', '2674-222', DimmableLightingControl),
 
+        Product(0x02, None, None, 'Generic Switched Lighting', '', SwitchedLightingControl),
         Product(0x02, 0x06, None, 'ApplianceLinc Outdoor 3-pin', '2456S3E', SwitchedLightingControl),
         Product(0x02, 0x08, None, 'OutletLinc', '2473S', SwitchedLightingControl),
         Product(0x02, 0x09, None, 'ApplianceLinc 3-pin', '2456S3', SwitchedLightingControl),
@@ -82,22 +86,23 @@ class IPDB(object):
         Product(0x02, 0x38, None, 'On/Off Outdoor Module', '2634-222', SwitchedLightingControl),
         Product(0x02, 0x39, None, 'On/Off Outlet', '2663-222', SwitchedLightingControl),
 
-        Product(0x03, 0x15, None, 'PowerLinc Modem (USB)', '2413U', ['plm']),
-        Product(0x03, 0x20, None, 'USB Adapter', '2448A7', ['plm']),
+        Product(0x03, None, None, 'Generic PLM', '', None),
+        Product(0x03, 0x15, None, 'PowerLinc Modem (USB)', '2413U', None),  # PLM
+        Product(0x03, 0x20, None, 'USB Adapter', '2448A7', None), # PLM
 
-        Product(0x05, 0x0b, None, 'Thermostat', '2441TH', ['climate']), #<- Coming Soon!
+        Product(0x05, 0x0b, None, 'Thermostat', '2441TH', None), #<- Coming Soon!
 
-        Product(0x07, 0x00, None, 'I/O Linc', '2450', ['switch', 'binary_sensor', 'relay']),
+        Product(0x07, 0x00, None, 'I/O Linc', '2450', None),
 
-        Product(0x09, 0x0a, None, '220/240V 30A Load Controller NO', '2477SA1', ['switch']),
-        Product(0x09, 0x0b, None, '220/240V 30A Load Controller NC', '2477SA2', ['switch']),
+        Product(0x09, 0x0a, None, '220/240V 30A Load Controller NO', '2477SA1', None),
+        Product(0x09, 0x0b, None, '220/240V 30A Load Controller NC', '2477SA2', None),
 
-        Product(0x10, 0x01, None, 'Motion Sensor', '2842-222', ['binary_sensor']),
-        Product(0x10, 0x02, None, 'TriggerLinc', '2421', ['binary_sensor']),
-        Product(0x10, 0x08, None, 'Water Leak Sensor', '2852-222', ['binary_sensor']),
-        Product(0x10, 0x11, None, 'Hidden Door Sensor', '2845-222', ['binary_sensor', 'no_requests']),
+        Product(0x10, 0x01, None, 'Motion Sensor', '2842-222', None),
+        Product(0x10, 0x02, None, 'TriggerLinc', '2421', None),
+        Product(0x10, 0x08, None, 'Water Leak Sensor', '2852-222', None),
+        Product(0x10, 0x11, None, 'Hidden Door Sensor', '2845-222', None),
 
-        Product(0x0f, 0x06, None, 'MorningLinc', '2458A1', ['switch']),
+        Product(0x0f, 0x06, None, 'MorningLinc', '2458A1', None),
     ]
 
     def __init__(self):
@@ -118,22 +123,12 @@ class IPDB(object):
                 return product
 
         # We failed to find a device in the database, so we will make a best
-        # guess from the cat/subcat.
+        # guess from the cat and return the generic class
         #
-        name = 'Unknown Device'
-        capabilities = []
+        
+        for product in self.products:
+            if cat == product.cat and product.subcat == None:
+                return product
 
-        if cat == 0x01:
-            name = 'Unknown Dimmer'
-            capabilities.append('light')
-            capabilities.append('dimmable')
-
-        if cat == 0x02:
-            name = 'Unknown Device'
-            capabilities.append('switch')
-
-        if cat == 0x10:
-            name = 'Unknown Sensor'
-            capabilities.append('binary_sensor')
-
-        return Product(cat, subcat, None, name, None, capabilities)
+        # We did not find the device or even a generic device of that category
+        return Product(cat, subcat, None, None, None, None) 
