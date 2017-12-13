@@ -3,6 +3,7 @@ import asyncio
 import logging
 import binascii
 import time
+from collections import deque
 
 from .constants import *
 #from .devices.ipdb import IPDB
@@ -46,7 +47,7 @@ class PLM(asyncio.Protocol):
         self._device_callbacks = []
 
         self._buffer = bytearray()
-        self._recv_queue = []
+        self._recv_queue = deque([])
         self._send_queue = []
         self._wait_acknack_queue = []
         self._device_queue = []
@@ -107,14 +108,20 @@ class PLM(asyncio.Protocol):
         self._buffer.extend(data)
         self._peel_messages_from_buffer()
 
-        for msg in self._recv_queue:
-            callback = self._message_callbacks[msg.code]
-            if callback is not None:
-                self.log.debug('Scheduling callback %s for message %s', callback, msg.hex)
-                self._loop.call_soon(callback, msg)
-            else: 
-                self.log.debug("Did not find a message callback for code %x", msg.code)
-            self._recv_queue.remove(msg)
+        self.log.debug('Messages in queue: %d', len(self._recv_queue))
+        worktodo = True
+        while worktodo:
+            try:
+                msg = self._recv_queue.pop()
+                callback = self._message_callbacks[msg.code]
+                if callback is not None:
+                    self.log.debug('Scheduling callback %s for message %s', callback, msg.hex)
+                    callback(msg)
+                else: 
+                    self.log.debug("Did not find a message callback for code %x", msg.code)
+            except:
+                worktodo = False
+
         self.log.debug("Finishing: data_received")
 
     def connection_lost(self, exc):
@@ -144,7 +151,7 @@ class PLM(asyncio.Protocol):
     def _handle_all_link_record_response(self, msg):
         self.log.debug('Starting _handle_all_link_record_response')
 
-        self._device_queue.append(msg.address)
+        self._device_queue.append(msg)
         self._get_next_all_link_record()
         
         self.log.debug('Ending _handle_all_link_record_response')
@@ -153,8 +160,13 @@ class PLM(asyncio.Protocol):
         self.log.debug('Starting _handle_get_next_all_link_record_acknak')
         if msg.isnak:
             self.devices.status = 'loaded'
-            for address in self._device_queue:
-                self.log.debug('Found device %s', address.hex)
+            self.log.debug('Devices found: %d', len(self._device_queue))
+            for device in self._device_queue:
+                linkdata1 = binascii.hexlify(device.linkdata1)
+                linkdata2 = binascii.hexlify(device.linkdata2)
+                linkdata3 = binascii.hexlify(device.linkdata3)
+                self.log.debug('Found device with address: %s linkdata1: %s linkdata2: %s linkdata1: %s', 
+                               device.address.hex, linkdata1, linkdata2, linkdata3)
         self.log.debug('Ending _handle_get_next_all_link_record_acknak')
 
     def _handle_get_plm_info(self, msg):
@@ -209,7 +221,7 @@ class PLM(asyncio.Protocol):
             msg = Message.create(self._buffer)
 
             if msg is not None:
-                self._recv_queue.append(msg)
+                self._recv_queue.appendleft(msg)
                 self._buffer = self._buffer[len(msg.bytes):]
 
             if len(self._buffer) < 2:
@@ -232,16 +244,9 @@ class PLM(asyncio.Protocol):
         # self._sent_queue.append(msg)
         self.log.debug('Sending %d byte message: %s',
                 len(msg.bytes), msg.hex)
-        while not self._clear_to_send():
-            time.sleep(1)
+        time.sleep(.5)
         self.transport.write(msg.bytes)
         self.log.debug("Sent message: %s", msg.hex)
-
-    def _clear_to_send(self):
-        self.log.debug("Starting: _clear_to_send")
-        if len(self._buffer) == 0:
-            return True
-        self.log.debug("Finishing: _clear_to_send")
 
     def add_device_callback(self, callback, criteria):
         """Register a callback for when a matching new device is seen."""
