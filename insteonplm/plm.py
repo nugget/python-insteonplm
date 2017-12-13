@@ -50,7 +50,7 @@ class PLM(asyncio.Protocol):
         self._recv_queue = deque([])
         self._send_queue = []
         self._wait_acknack_queue = []
-        self._device_queue = []
+        self._aldb_response_queue = {}
         self.devices = ALDB()
 
         self.address = None
@@ -151,7 +151,7 @@ class PLM(asyncio.Protocol):
     def _handle_all_link_record_response(self, msg):
         self.log.debug('Starting _handle_all_link_record_response')
 
-        self._device_queue.append(msg)
+        self._aldb_response_queue[msg.address] = msg
         self._get_next_all_link_record()
         
         self.log.debug('Ending _handle_all_link_record_response')
@@ -162,11 +162,9 @@ class PLM(asyncio.Protocol):
             self.devices.status = 'loaded'
             self.log.debug('Devices found: %d', len(self._device_queue))
             for device in self._device_queue:
-                linkdata1 = binascii.hexlify(device.linkdata1)
-                linkdata2 = binascii.hexlify(device.linkdata2)
-                linkdata3 = binascii.hexlify(device.linkdata3)
-                self.log.debug('Found device with address: %s linkdata1: %s linkdata2: %s linkdata1: %s', 
-                               device.address.hex, linkdata1, linkdata2, linkdata3)
+                self.log.debug('Found device with address: %s linkdata1: %x linkdata2: %x linkdata1: %x', 
+                               device.address.hex, device.linkdata1, device.linkdata2, device.linkdata3)
+                self._device_id_request(device.address)
         self.log.debug('Ending _handle_get_next_all_link_record_acknak')
 
     def _handle_get_plm_info(self, msg):
@@ -196,7 +194,10 @@ class PLM(asyncio.Protocol):
 
     def _device_id_request(self, addr):
         """Request a device ID from a device"""
-        device = Address(addr)
+        if isinstance(addr, Address):
+            device = addr
+        else:
+            device = Address(addr)
         self.log.info('Requesting product data for %s', device.human)
         msg = StandardSend(device, 0x00, COMMAND_ID_REQUEST['cmd1'], COMMAND_ID_REQUEST['cmd1'])
         self._send_msg(msg)
