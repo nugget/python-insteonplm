@@ -50,7 +50,7 @@ class PLM(asyncio.Protocol):
         self._recv_queue = deque([])
         self._send_queue = []
         self._wait_acknack_queue = []
-        self._aldb_response_queue = []
+        self._aldb_response_queue = {}
         self.devices = ALDB()
 
         self.address = None
@@ -151,7 +151,7 @@ class PLM(asyncio.Protocol):
     def _handle_all_link_record_response(self, msg):
         self.log.debug('Starting _handle_all_link_record_response')
 
-        self._aldb_response_queue.append(msg)
+        self._aldb_response_queue[msg.address] = msg
         self._get_next_all_link_record()
         
         self.log.debug('Ending _handle_all_link_record_response')
