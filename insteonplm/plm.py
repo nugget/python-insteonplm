@@ -116,7 +116,7 @@ class PLM(asyncio.Protocol):
                 callback = self._message_callbacks[msg.code]
                 if callback is not None:
                     self.log.debug('Scheduling callback %s for message %s', callback, msg.hex)
-                    callback(msg)
+                    self._loop.call_soon(callback, msg)
                 else: 
                     self.log.debug("Did not find a message callback for code %x", msg.code)
             except:
@@ -139,22 +139,29 @@ class PLM(asyncio.Protocol):
     def _add_message_callback(self, code, callback):
         """Register a callback for when a matching message is seen."""
 
+        self.log.debug("Starting: _add_message_callback")
+
         self._message_callbacks[code] = callback
         self.log.debug('Added message callback to %s on %s', callback, code)
+        self.log.debug("Ending: _add_message_callback")
 
     def _get_plm_info(self):
         """Request PLM Info."""
+        self.log.debug("Starting: _get_plm_info")
         self.log.info('Requesting PLM Info')
         msg = GetImInfo()
         self._send_msg(msg)
+        self.log.debug("Ending: _get_plm_info")
 
     def _handle_standard_message_received(self, msg):
+        self.log.debug("Starting: _handle_standard_message_received")
         if msg.isbroadcastflag:
             if msg.cmd1 == COMMAND_ASSIGN_TO_ALL_LINK_GROUP['cmd1']:
                 cat = msg.target.bytes[0:1]
                 subcat = msg.target.bytes[2:3]
                 firmware = msg.target.bytes[4:5]
                 self.log.debug('Found device address: %s  cat: %x  subcat: %x  firmware: %x', msg.address.hex, cat, subcat, firmware)
+        self.log.debug("Ending: _handle_standard_message_received")
 
     def _handle_all_link_record_response(self, msg):
         self.log.debug('Starting _handle_all_link_record_response')
@@ -188,23 +195,30 @@ class PLM(asyncio.Protocol):
 
     def _load_all_link_database(self):
         """Load the ALL-Link Database into object."""
+        self.log.debug("Starting: _load_all_link_database")
         self.devices.state = 'loading'
         self._get_first_all_link_record()
+        self.log.debug("Ending: _load_all_link_database")
 
     def _get_first_all_link_record(self):
         """Request first ALL-Link record."""
+        self.log.debug("Starting: _get_first_all_link_record")
         self.log.info('Requesting First ALL-Link Record')
         msg = GetFirstAllLinkRecord()
         self._send_msg(msg)
+        self.log.debug("Ending: _get_first_all_link_record")
 
     def _get_next_all_link_record(self):
         """Request next ALL-Link record."""
+        self.log.debug("Starting: _get_next_all_link_recor")
         self.log.info('Requesting Next ALL-Link Record')
         msg = GetNextAllLinkRecord()
         self._send_msg(msg)
+        self.log.debug("Ending: _get_next_all_link_recor")
 
     def _device_id_request(self, addr):
         """Request a device ID from a device"""
+        self.log.debug("Starting: _device_id_request")
         if isinstance(addr, Address):
             device = addr
         else:
@@ -212,13 +226,16 @@ class PLM(asyncio.Protocol):
         self.log.info('Requesting product data for %s', device.human)
         msg = StandardSend(device, 0x00, COMMAND_ID_REQUEST['cmd1'], COMMAND_ID_REQUEST['cmd1'])
         self._send_msg(msg)
+        self.log.debug("Starting: _device_id_request")
 
     def _product_data_request(self, addr):
         """Request Product Data Record for device."""
+        self.log.debug("Starting: _product_data_request")
         device = Address(addr)
         self.log.info('Requesting product data for %s', device.human)
         msg = StandardSend(device, 0x00, COMMAND_PRODUCT_DATA_REQUEST['cmd1'], COMMAND_PRODUCT_DATA_REQUEST['cmd2'])    
         self._send_msg(msg)
+        self.log.debug("Starting: _product_data_request")
     
     def _peel_messages_from_buffer(self):
         self.log.debug("Starting: _peel_messages_from_buffer")
@@ -254,15 +271,19 @@ class PLM(asyncio.Protocol):
         # Purpose of the function is to capture sent commands and compare them to ACK/NAK messages
         # A callback can then be defined in the event of a NAK (i.e. retry or do something else)
         # self._sent_queue.append(msg)
+        self.log.debug("Starting: _send_msg")
         self.log.debug('Sending %d byte message: %s',
                 len(msg.bytes), msg.hex)
-        time.sleep(.5)
-        self.transport.write(msg.bytes)
+        yield from asyncio.sleep(1)
+        self._loop.call_soon(self.transport.write, msg.bytes)
         self.log.debug("Sent message: %s", msg.hex)
+        self.log.debug("Ending: _send_msg")
 
     def add_device_callback(self, callback, criteria):
         """Register a callback for when a matching new device is seen."""
+        self.log.debug("Starting: add_device_callback")
         self.devices.add_device_callback(callback, criteria)
+        self.log.debug("Ending: add_device_callback")
 
 
 # pylint: disable=too-many-instance-attributes, too-many-public-methods

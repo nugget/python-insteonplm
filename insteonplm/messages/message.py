@@ -54,7 +54,6 @@ class Message(object):
 
         if msgclass is not None:
             if Message.iscomplete(rawmessage):
-                print('Message is complete')
                 msg = msgclass.from_raw_message(rawmessage)
 
         return msg
