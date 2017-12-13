@@ -68,7 +68,7 @@ class PLM(asyncio.Protocol):
         #       It feels like a good idea to build this into the PLMProtocol class so that every 
         #       device (including the PLM) handle command registration the same way.
 
-        self._add_message_callback(MESSAGE_STANDARD_MESSAGE_RECEIVED, None)
+        self._add_message_callback(MESSAGE_STANDARD_MESSAGE_RECEIVED, self._handle_standard_message_received)
         self._add_message_callback(MESSAGE_EXTENDED_MESSAGE_RECEIVED, None)
         self._add_message_callback(MESSAGE_X10_MESSAGE_RECEIVED, None)
         self._add_message_callback(MESSAGE_ALL_LINKING_COMPLETED, None)
@@ -148,10 +148,13 @@ class PLM(asyncio.Protocol):
         msg = GetImInfo()
         self._send_msg(msg)
 
+    def _handle_standard_message_received(self, msg):
+        command = {'cmd1': msg.cmd1, 'cmd2': msg.cmd2}
+
     def _handle_all_link_record_response(self, msg):
         self.log.debug('Starting _handle_all_link_record_response')
 
-        self._aldb_response_queue[msg.address] = msg
+        self._aldb_response_queue[msg.address.hex] = msg
         self._get_next_all_link_record()
         
         self.log.debug('Ending _handle_all_link_record_response')
@@ -159,12 +162,13 @@ class PLM(asyncio.Protocol):
     def _handle_get_next_all_link_record_acknak(self, msg):
         self.log.debug('Starting _handle_get_next_all_link_record_acknak')
         if msg.isnak:
-            self.devices.status = 'loaded'
             self.log.debug('Devices found: %d', len(self._aldb_response_queue))
-            for device in self._aldb_response_queue:
+            for addr in self._aldb_response_queue:
+                device = self._aldb_response_queue[addr]
                 self.log.debug('Found device with address: %s linkdata1: %x linkdata2: %x linkdata1: %x', 
                                device.address.hex, device.linkdata1, device.linkdata2, device.linkdata3)
-                self._device_id_request(device.address)
+                self._device_id_request(addr)
+                # self._product_data_request(addr)
         self.log.debug('Ending _handle_get_next_all_link_record_acknak')
 
     def _handle_get_plm_info(self, msg):
