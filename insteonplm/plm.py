@@ -50,7 +50,7 @@ class PLM(asyncio.Protocol):
         self._recv_queue = deque([])
         self._send_queue = []
         self._wait_acknack_queue = []
-        self._aldb_response_queue = {}
+        self._aldb_response_queue = []
         self.devices = ALDB()
 
         self.address = None
@@ -151,7 +151,7 @@ class PLM(asyncio.Protocol):
     def _handle_all_link_record_response(self, msg):
         self.log.debug('Starting _handle_all_link_record_response')
 
-        self._aldb_response_queue[msg.address] = msg
+        self._aldb_response_queue.append(msg)
         self._get_next_all_link_record()
         
         self.log.debug('Ending _handle_all_link_record_response')
@@ -160,8 +160,8 @@ class PLM(asyncio.Protocol):
         self.log.debug('Starting _handle_get_next_all_link_record_acknak')
         if msg.isnak:
             self.devices.status = 'loaded'
-            self.log.debug('Devices found: %d', len(self._device_queue))
-            for device in self._device_queue:
+            self.log.debug('Devices found: %d', len(self._aldb_response_queue))
+            for device in self._aldb_response_queue:
                 self.log.debug('Found device with address: %s linkdata1: %x linkdata2: %x linkdata1: %x', 
                                device.address.hex, device.linkdata1, device.linkdata2, device.linkdata3)
                 self._device_id_request(device.address)
