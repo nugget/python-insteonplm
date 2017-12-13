@@ -153,35 +153,70 @@ class PLM(asyncio.Protocol):
         self._send_msg(msg)
         self.log.debug("Ending: _get_plm_info")
 
+    def _handle_send_standard_message_acknak(self, msg):
+        if msg.cmd1 == COMMAND_ID_REQUEST['cmd1']:
+            if msg.isnak:
+                retries = self._aldb_response_queue[msg.address.hex]['retries']
+                if retries < 5:
+                    self._aldb_response_queue[msg.address.hex]['retries'] = retries + 1
+                    self._device_id_request(msg.address.hex)
+                else:
+                    # If we have tried 5 times and did not get a device ID and
+                    # the ALDB record did not return a device type either
+                    # we remove the device from the list of devices assuming it is offline
+                    # If it is online it can be added manually via the device overrides
+                    if self._aldb_response_queue[msg.address.hex]['device'] is None:
+                        self.log.debug("Device with address %s did not respond to a request for a device ID.", msg.address.hex)
+                        self.log.debug("Device with address %s is being removed from the list.", msg.address.hex)
+                        self._aldb_response_queue.pop(msg.address.hex)
+
     def _handle_standard_message_received(self, msg):
         self.log.debug("Starting: _handle_standard_message_received")
+
         if msg.isbroadcastflag:
             if msg.cmd1 == COMMAND_ASSIGN_TO_ALL_LINK_GROUP['cmd1']:
                 cat = msg.target.bytes[0:1]
                 subcat = msg.target.bytes[2:3]
-                firmware = msg.target.bytes[4:5]
-                self.log.debug('Found device address: %s  cat: %x  subcat: %x  firmware: %x', msg.address.hex, cat, subcat, firmware)
+                product_key = msg.target.bytes[4:5]
+                self.log.debug('Found device address: %s  cat: 0x%s  subcat: 0x%s  firmware: 0x%s', 
+                               binascii.hexlify(msg.address.hex), binascii.hexlify(cat), binascii.hexlify(subcat), binascii.hexlify(product_key))
+                device = self.devices.get_device_from_categories(self, msg.address, cat, subcat, product_key)
+                if device is not None:
+                    self.devices[msg.address.hex] = {'cat':cat, 'subcat':subcat, 'firmware':product_key, 'device':device}
         self.log.debug("Ending: _handle_standard_message_received")
 
     def _handle_all_link_record_response(self, msg):
         self.log.debug('Starting _handle_all_link_record_response')
 
-        self._aldb_response_queue[msg.address.hex] = msg
+        self._aldb_response_queue[msg.address.hex] = {'msg':msg, 'retries':0}
         self._get_next_all_link_record()
         
         self.log.debug('Ending _handle_all_link_record_response')
 
     def _handle_get_next_all_link_record_acknak(self, msg):
         self.log.debug('Starting _handle_get_next_all_link_record_acknak')
+
+        # When the last All-Link record is reached the PLM sends a NAK
         if msg.isnak:
             self.log.debug('Devices found: %d', len(self._aldb_response_queue))
             for addr in self._aldb_response_queue:
-                device = self._aldb_response_queue[addr]
-                cat = msg.linkdata1
-                subcat = msg.linkdata2
-                firmware = msg.linkdata3
-                dev = self.devices.get_device_from_categories(self, msg.address, cat, subcat, firmware)
-                self._device_id_request(addr)
+                aldbRecordMessage = self._aldb_response_queue[addr]['msg']
+                cat = aldbRecordMessage.linkdata1
+                subcat = aldbRecordMessage.linkdata2
+                product_key = aldbRecordMessage.linkdata3
+                # Get a device from the ALDB based on cat, subcat and product_key
+                dev = self.devices.get_device_from_categories(self, aldbRecordMessage.address, cat, subcat, product_key)
+                # If a device is returned and that device is of a type tha stores the product data in the ALDB record
+                # we can use that as the device type for this record
+                # Otherwise we need to request the device ID.
+                if dev is not None:
+                    if dev.prod_data_in_aldb:
+                        record = self._aldb_response_queue[addr]
+                        self.devices[msg.address.hex] = {'cat':cat, 'subcat':subcat, 'firmware':product_key, 'device':device}
+                    else:
+                        self._device_id_request(addr)
+                else:
+                    self._device_id_request(addr)
 
         self.log.debug('Ending _handle_get_next_all_link_record_acknak')
 
@@ -226,7 +261,7 @@ class PLM(asyncio.Protocol):
         self.log.info('Requesting product data for %s', device.human)
         msg = StandardSend(device, 0x00, COMMAND_ID_REQUEST['cmd1'], COMMAND_ID_REQUEST['cmd1'])
         self._send_msg(msg)
-        self.log.debug("Starting: _device_id_request")
+        self.log.debug("Ending: _device_id_request")
 
     def _product_data_request(self, addr):
         """Request Product Data Record for device."""
@@ -274,7 +309,7 @@ class PLM(asyncio.Protocol):
         self.log.debug("Starting: _send_msg")
         self.log.debug('Sending %d byte message: %s',
                 len(msg.bytes), msg.hex)
-        yield from asyncio.sleep(1)
+        time.sleep(1)
         self._loop.call_soon(self.transport.write, msg.bytes)
         self.log.debug("Sent message: %s", msg.hex)
         self.log.debug("Ending: _send_msg")

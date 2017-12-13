@@ -53,3 +53,15 @@ class BaseDevice(object):
     def WriteALDB(self):
         return NotImplemented
 
+    @classmethod
+    def prod_data_in_aldb(self):
+        """True if Product data (cat, subcat, product_key) is stored in the PLM ALDB.
+           False if product data must be aquired via a Device ID message or from a Product Data Request command.
+           
+           Very few devices store their product data in the ALDB, therefore False is the default.
+           The common reason to store product data in the ALDB is for one way devices or battery opperated devices where 
+           the ability to send a command request is limited.
+           
+           To override this setting create a device specific class and override this class method."""
+        return False
+
