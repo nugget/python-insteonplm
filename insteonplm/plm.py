@@ -148,7 +148,7 @@ class PLM(asyncio.Protocol):
             flags: Message flags
 
             """
-        self.log.debug('Command 1: %s  Command 2: %s  cmd2', binascii.hexlify(command['cmd1']), binascii.hexlify(command['cmd2'], binascii.hexlify(cmd2)))
+        self.log.debug('Command 1: %x  Command 2: %x  cmd2: %x', command['cmd1'], command['cmd2'], cmd2)
         addr = Address(device)
         command1 = command['cmd1']
         command2 = command['cmd2']
@@ -160,7 +160,7 @@ class PLM(asyncio.Protocol):
                 return ValueError
             else:
                 command2 = cmd2
-        self.log.debug('Command 1: %s  Command 2: %s', binascii.hexlify(command1), binascii.hexlify(command2))
+        self.log.debug('Command 1: %x  Command 2: %x', command1, command2)
         self._send_msg(StandardSend(addr, flags, command1, command2))
 
     def send_extended(self, device, command, *arg, **kwarg):
