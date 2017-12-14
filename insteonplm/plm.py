@@ -115,7 +115,6 @@ class PLM(asyncio.Protocol):
                 msg = self._recv_queue.pop()
                 callback = self._message_callbacks[msg.code]
                 if callback is not None:
-                    self.log.debug('Scheduling callback %s for message %s', callback, msg.hex)
                     self._loop.call_soon(callback, msg)
                 else: 
                     self.log.debug("Did not find a message callback for code %x", msg.code)
@@ -182,7 +181,9 @@ class PLM(asyncio.Protocol):
                                binascii.hexlify(msg.address.hex), binascii.hexlify(cat), binascii.hexlify(subcat), binascii.hexlify(product_key))
                 device = self.devices.get_device_from_categories(self, msg.address, cat, subcat, product_key)
                 if device is not None:
-                    self.devices[msg.address.hex] = {'cat':cat, 'subcat':subcat, 'firmware':product_key, 'device':device}
+                    self.devices[device.address.hex] = {'cat':cat, 'subcat':subcat, 'firmware':product_key, 'device':device}
+                    self.log.debug('Device with address %s added to device list.', device.address.hex)
+
         self.log.debug("Ending: _handle_standard_message_received")
 
     def _handle_all_link_record_response(self, msg):
@@ -204,15 +205,18 @@ class PLM(asyncio.Protocol):
                 cat = aldbRecordMessage.linkdata1
                 subcat = aldbRecordMessage.linkdata2
                 product_key = aldbRecordMessage.linkdata3
+
                 # Get a device from the ALDB based on cat, subcat and product_key
-                dev = self.devices.get_device_from_categories(self, aldbRecordMessage.address, cat, subcat, product_key)
+                device = self.devices.get_device_from_categories(self, aldbRecordMessage.address, cat, subcat, product_key)
+
                 # If a device is returned and that device is of a type tha stores the product data in the ALDB record
                 # we can use that as the device type for this record
                 # Otherwise we need to request the device ID.
-                if dev is not None:
-                    if dev.prod_data_in_aldb:
+                if device is not None:
+                    if device.prod_data_in_aldb:
                         record = self._aldb_response_queue[addr]
-                        self.devices[msg.address.hex] = {'cat':cat, 'subcat':subcat, 'firmware':product_key, 'device':device}
+                        self.devices[device.address.hex] = {'cat':cat, 'subcat':subcat, 'firmware':product_key, 'device':device}
+                        self.log.debug('Device with address %s added to device list.', device.address.hex)
                     else:
                         self._device_id_request(addr)
                 else:

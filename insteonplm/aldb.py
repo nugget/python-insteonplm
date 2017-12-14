@@ -39,20 +39,23 @@ class ALDB(object):
 
     def __setitem__(self, key, value):
         """Add or Update a device in the ALDB."""
-        if 'cat' not in value or value['cat'] == 0:
-            self.log.debug('Ignoring device setitem with no cat: %s', value)
-            return
+        # TEH - Removing this since 0x00 is a valid device category
+        #if 'cat' not in value or value['cat'] == 0:
+        #    self.log.debug('Ignoring device setitem with no cat: %s', value)
+        #    return
 
         if key in self._devices:
             if 'firmware' in value and value['firmware'] < 255:
                 self._devices[key].update(value)
         else:
             #productdata = self.ipdb[value['cat'], value['subcat']]
-            productdata = {'a':1, 'b':2}
-            value.update(productdata._asdict())
+            #value.update(productdata._asdict())
+            device = value['device']
             address = Address(key)
-            value['address_hex'] = address.hex
-            value['address'] = address.human
+            value['address_hex'] = device.address.hex
+            value['address'] = device.address.human
+            value['description'] = device.description
+            value['model'] = device.model
             self._devices[key] = value
 
             self.log.info('New INSTEON Device %r: %s (%02x:%02x)',
