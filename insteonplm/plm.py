@@ -152,6 +152,8 @@ class PLM(asyncio.Protocol):
         addr = Address(device)
         command1 = command['cmd1']
         command2 = command['cmd2']
+        if flags is None:
+            flags = 0x00
 
         if command2 is None:
             if cmd2 is None:
