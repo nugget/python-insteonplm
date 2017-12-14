@@ -16,6 +16,7 @@ from .messages.getIMInfo import GetImInfo
 from .messages.getFirstAllLinkRecord import GetFirstAllLinkRecord
 from .messages.getNextAllLinkRecord import GetNextAllLinkRecord 
 from .messages.standardSend import StandardSend
+from .messages.extendedSend import ExtendedSend 
 
 __all__ = ('PLM')
 
@@ -134,6 +135,81 @@ class PLM(asyncio.Protocol):
 
         if self._connection_lost_callback:
             self._connection_lost_callback()
+
+    def send_standard(self, device, command, cmd2=None, flags=None):
+        """Send an INSTEON Standard message to the PLM.
+        
+           device: A device hex address in any form.
+           command: An insteon command tuple {'cmd1':value, 'cmd2': value'}
+                    Found in insteonplm.constants
+                    if 'cmd2' is None then 'cmd2' must be passed as an argument
+            cmd2: Ignored if command['cmd2'] has a value. 
+                  Required if command['cmd2'] is None
+            flags: Message flags
+
+            """
+
+        addr = Address(device)
+        command1 = command['cmd1']
+        command2 = command['cmd2']
+
+        if command2 is None:
+            if cmd2 is None:
+                return ValueError
+            else:
+                command2 = cmd2
+        self._send_msg(StandardSend(addr, flags, command1, command2))
+
+    def send_extended(self, device, command, *arg, **kwarg):
+        """Send an INSTEON Extended message to the PLM.
+        
+           device: A device hex address in any form.
+           command: An insteon command tuple {'cmd1':value, 'cmd2': value'}
+                    Found in insteonplm.constants
+                    if 'cmd2' is None then 'cmd2' must be an argument passed in *arg, *kwarg
+           **kwarg: dictionary with the following optons:
+                    'cmd2' - As byte or int If command['cmd2'] is None this is required or an error will be thrown.
+                             This will be ignored if command['cmd2'] is any value other than None
+                    'flags' - Message flags as byte or int
+                    'd0' - User data byte 0 as byte or int
+                    'd1' - user data byte 1 as byte or int
+                    ...
+                    'd13' - user data byte 14 as byte or int
+                    'd0' to 'd13' are assumed to equal 0x00 unless explicitly set
+        """
+
+        addr = Address(device)
+        cmd1 = command['cmd1']
+        cmd2 = command['cmd2']
+        flags = 0x00
+        userdata = []
+        userdata['d0'] = 0x00 
+        userdata['d1'] = 0x00 
+        userdata['d3'] = 0x00 
+        userdata['d4'] = 0x00 
+        userdata['d5'] = 0x00 
+        userdata['d6'] = 0x00 
+        userdata['d7'] = 0x00 
+        userdata['d8'] = 0x00 
+        userdata['d9'] = 0x00 
+        userdata['d10'] = 0x00 
+        userdata['d11'] = 0x00 
+        userdata['d12'] = 0x00 
+        userdata['d13'] = 0x00
+
+        for key,val in kwarg:
+            if key == 'cmd2':
+                cmd2 = val
+            if key in ['d0', 'd1', 'd3', 'd4', 'd5', 'd6', 'd7', 'd8', 'd9','d10', 'd11','d12','d13']:
+                userdata[key] = val
+            if key == 'flags':
+                flags = val
+
+        userdata_bytes = bytearray()
+        for dkey, dval in userdata:
+            userdata_bytes.extend(dval)
+
+        self._send_msg(ExtendedSend(addr, flags, cmd1, cmd2, userdata_bytes))
 
     def _add_message_callback(self, code, callback):
         """Register a callback for when a matching message is seen."""

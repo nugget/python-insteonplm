@@ -1,6 +1,6 @@
 from insteonplm.address import Address
-#from .ipdb import IPDB
 from insteonplm.messages.messageBase import MessageBase
+from insteonplm.constants import *
 
 class BaseDevice(object):
     """INSTEON Device"""
