@@ -148,7 +148,7 @@ class PLM(asyncio.Protocol):
             flags: Message flags
 
             """
-        self.log.debug('Command 1: %s  Command 2: %s  cmd2', binascii.hexlify(command['cmd1']), binascii.hexlify(command['cmd2'], binascii.hexlify(cmd2))
+        self.log.debug('Command 1: %s  Command 2: %s  cmd2', binascii.hexlify(command['cmd1']), binascii.hexlify(command['cmd2'], binascii.hexlify(cmd2)))
         addr = Address(device)
         command1 = command['cmd1']
         command2 = command['cmd2']
