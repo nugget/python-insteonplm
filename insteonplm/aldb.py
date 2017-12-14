@@ -141,6 +141,11 @@ class ALDB(object):
     def get_device_from_categories(self, plm, addr, cat, subcat, firmware=None):
         return Device.create(plm, addr, cat, subcat, firmware)
 
+    def get_device(self, addr):
+        devicerecord = self._devices.get(addr, None)
+        if devicerecord is not None:
+            return devicerecord['device']
+
     @staticmethod
     def _device_matches_criteria(device, criteria):
         match = True
