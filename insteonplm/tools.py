@@ -60,8 +60,12 @@ def console(loop, log, devicelist):
     if 1 == 1:
         device = conn.protocol.devices.get_device('14627a')
         device.Light_On()
+        log.debug('Sent light on request')
+        log.debug('----------------------')
         yield from asyncio.sleep(5, loop=loop)
         device.Light_Off()
+        log.debug('Sent light on request')
+        log.debug('----------------------')
 
     if 1 == 0:
         conn.protocol.turn_on('4095e6', ramprate=2)
