@@ -17,10 +17,10 @@ class BaseDevice(object):
         self._messageHandlers = {}
         self._commandHandlers = {}
 
-        self.register_message_handler(MESSAGE_STANDARD_MESSAGE_RECEIVED_0X50, _standard_or_extended_message_received)
-        self.register_message_handler(MESSAGE_EXTENDED_MESSAGE_RECEIVED_0X51, _standard_or_extended_message_received)
-        self.register_message_handler(MESSAGE_SEND_STANDARD_MESSAGE_0X62, _send_standard_or_extended_message_acknak)
-        self.register_message_handler(MESSAGE_SEND_EXTENDED_MESSAGE_0X62, _send_standard_or_extended_message_acknak)
+        self.register_message_handler(MESSAGE_STANDARD_MESSAGE_RECEIVED_0X50, self._standard_or_extended_message_received)
+        self.register_message_handler(MESSAGE_EXTENDED_MESSAGE_RECEIVED_0X51, self._standard_or_extended_message_received)
+        self.register_message_handler(MESSAGE_SEND_STANDARD_MESSAGE_0X62, self._send_standard_or_extended_message_acknak)
+        self.register_message_handler(MESSAGE_SEND_EXTENDED_MESSAGE_0X62, self._send_standard_or_extended_message_acknak)
 
     def register_message_handler(self, messagecode, callback):
         self._messageHanlders[code] =  callback
