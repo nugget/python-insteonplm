@@ -1,6 +1,7 @@
 from insteonplm.address import Address
 from insteonplm.messages.messageBase import MessageBase
 from insteonplm.constants import *
+import json
 
 class BaseDevice(object):
     """INSTEON Device"""
@@ -26,7 +27,7 @@ class BaseDevice(object):
         self._messageHandlers[messagecode] =  callback
 
     def register_command_handler(self, commandtuple, callback):
-        self._commandHandlers[commandtuple] = callback
+        self._commandHandlers[json.dumps(commandtuple)] = callback
 
     def receive_message(self, msg):
         callback = self._messageHandlers[msg.code]
@@ -86,11 +87,11 @@ class BaseDevice(object):
     def _standard_or_extended_message_received(self, msg):
         commandtuple = {'cmd1':msg.cmd1, 'cmd2':msg.cmd2}
         try:
-            callback = self._commandHandlers[commandtuple]
+            callback = self._commandHandlers[json.dumps(commandtuple)]
         except KeyError:
             try:
                 commandtuple = {'cmd1':msg.cmd1, 'cmd2':None}
-                callback = self._commandHandlers[commandtuple]
+                callback = self._commandHandlers[json.dumps(commandtuple)]
             except KeyError:
                 raise KeyError
         callback(msg)
@@ -98,11 +99,11 @@ class BaseDevice(object):
     def _send_standard_or_extended_message_acknak(self, msg):
         commandtuple = {'cmd1': msg.cmd1, 'cmd2': msg.cmd2}
         try:
-            callback = self._commandHandlers[commandtuple]
+            callback = self._commandHandlers[json.dumps(commandtuple)]
         except KeyError:
             try:
                 commandtuple = {'cmd1':msg.cmd1, 'cmd2':None}
-                callback = self._commandHandlers[commandtuple]
+                callback = self._commandHandlers[json.dumps(commandtuple)]
             except KeyError:
                 raise KeyError
         callback(msg)
