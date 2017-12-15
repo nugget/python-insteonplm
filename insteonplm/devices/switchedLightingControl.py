@@ -41,5 +41,5 @@ class SwitchedLightingControl(BaseDevice):
     def light_manually_turned_On(self):
         return NotImplemented
 
-    def _light_on_command_recieved(msg):
+    def _light_on_command_received(self, msg):
         self.lightOnLevel.update(msg.address.hex, msg.cmd2)
