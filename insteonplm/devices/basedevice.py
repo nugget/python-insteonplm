@@ -1,7 +1,6 @@
 from insteonplm.address import Address
 from insteonplm.messages.messageBase import MessageBase
 from insteonplm.constants import *
-import json
 
 class BaseDevice(object):
     """INSTEON Device"""
@@ -27,7 +26,7 @@ class BaseDevice(object):
         self._messageHandlers[messagecode] =  callback
 
     def register_command_handler(self, commandtuple, callback):
-        self._commandHandlers[json.dumps(commandtuple)] = callback
+        self._commandHandlers[self._command_tuple_to_string(**commandtuple)] = callback
 
     def receive_message(self, msg):
         callback = self._messageHandlers[msg.code]
@@ -87,11 +86,11 @@ class BaseDevice(object):
     def _standard_or_extended_message_received(self, msg):
         commandtuple = {'cmd1':msg.cmd1, 'cmd2':msg.cmd2}
         try:
-            callback = self._commandHandlers[json.dumps(commandtuple)]
+            callback = self._commandHandlers[self._command_tuple_to_string(commandtuple)]
         except KeyError:
             try:
                 commandtuple = {'cmd1':msg.cmd1, 'cmd2':None}
-                callback = self._commandHandlers[json.dumps(commandtuple)]
+                callback = self._commandHandlers[self._command_tuple_to_string(commandtuple)]
             except KeyError:
                 raise KeyError
         callback(msg)
@@ -99,11 +98,23 @@ class BaseDevice(object):
     def _send_standard_or_extended_message_acknak(self, msg):
         commandtuple = {'cmd1': msg.cmd1, 'cmd2': msg.cmd2}
         try:
-            callback = self._commandHandlers[json.dumps(commandtuple)]
+            callback = self._commandHandlers[self._command_tuple_to_string(commandtuple)]
         except KeyError:
             try:
                 commandtuple = {'cmd1':msg.cmd1, 'cmd2':None}
-                callback = self._commandHandlers[json.dumps(commandtuple)]
+                callback = self._commandHandlers[self._command_tuple_to_string(commandtuple)]
             except KeyError:
                 raise KeyError
         callback(msg)
+
+    def _command_tuple_to_string(self, **kwarg):
+        for key in kwarg:
+            if key == 'cmd1':
+                cmd1 = kwarg[key]
+            else:
+                cmd2 = kwarg[key]
+        txtcmd2 = 'None'
+        if cmd2 is not None:
+            txtcmd2 = '{:02x}'.format(cmd2)
+        
+        return 'cmd1: {0:02x}, cmd2: {1}'.format(cmd1, txtcmd2)

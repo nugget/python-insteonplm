@@ -44,3 +44,6 @@ class SwitchedLightingControl(BaseDevice):
 
     def _light_on_command_received(self, msg):
         self.lightOnLevel.update(msg.address.hex, msg.cmd2)
+
+    def _light_off_command_received(self, msg):
+        self.lightOnLevel.update(msg.address.hex, 0)
