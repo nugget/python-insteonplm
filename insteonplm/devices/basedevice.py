@@ -23,7 +23,7 @@ class BaseDevice(object):
         self.register_message_handler(MESSAGE_SEND_EXTENDED_MESSAGE_0X62, self._send_standard_or_extended_message_acknak)
 
     def register_message_handler(self, messagecode, callback):
-        self._messageHandlers[code] =  callback
+        self._messageHandlers[messagecode] =  callback
 
     def register_command_handler(self, commandtuple, callback):
         self._commandHandlers[commandtuple] = callback
