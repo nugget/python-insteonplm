@@ -244,7 +244,7 @@ class PLM(asyncio.Protocol):
         self.log.debug("Ending: _get_plm_info")
 
     def _handle_send_standard_message_acknak(self, msg):
-        if msg.cmd1 == COMMAND_ID_REQUEST['cmd1']:
+        if msg.cmd1 == COMMAND_ID_REQUEST_0X10_0X00['cmd1']:
             if msg.isnak:
                 retries = self._aldb_response_queue[msg.address.hex]['retries']
                 if retries < 5:
@@ -264,7 +264,7 @@ class PLM(asyncio.Protocol):
         self.log.debug("Starting: _handle_standard_message_received")
 
         if msg.isbroadcastflag:
-            if msg.cmd1 == COMMAND_ASSIGN_TO_ALL_LINK_GROUP['cmd1']:
+            if msg.cmd1 == COMMAND_ASSIGN_TO_ALL_LINK_GROUP_0X01_NONE['cmd1']:
                 cat = msg.target.bytes[0:1]
                 subcat = msg.target.bytes[2:3]
                 product_key = msg.target.bytes[4:5]
@@ -363,7 +363,7 @@ class PLM(asyncio.Protocol):
         else:
             device = Address(addr)
         self.log.info('Requesting product data for %s', device.human)
-        msg = StandardSend(device, 0x00, COMMAND_ID_REQUEST['cmd1'], COMMAND_ID_REQUEST['cmd1'])
+        msg = StandardSend(device, 0x00, COMMAND_ID_REQUEST_0X10_0X00['cmd1'], COMMAND_ID_REQUEST_0X10_0X00['cmd1'])
         self._send_msg(msg)
         self.log.debug("Ending: _device_id_request")
 
@@ -372,7 +372,7 @@ class PLM(asyncio.Protocol):
         self.log.debug("Starting: _product_data_request")
         device = Address(addr)
         self.log.info('Requesting product data for %s', device.human)
-        msg = StandardSend(device, 0x00, COMMAND_PRODUCT_DATA_REQUEST['cmd1'], COMMAND_PRODUCT_DATA_REQUEST['cmd2'])    
+        msg = StandardSend(device, 0x00, COMMAND_PRODUCT_DATA_REQUEST_0X03_0X00['cmd1'], COMMAND_PRODUCT_DATA_REQUEST_0X03_0X00['cmd2'])    
         self._send_msg(msg)
         self.log.debug("Starting: _product_data_request")
     
