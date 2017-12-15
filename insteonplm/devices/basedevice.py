@@ -5,7 +5,7 @@ from insteonplm.constants import *
 class BaseDevice(object):
     """INSTEON Device"""
 
-    def __init__(self, plm, address, cat, subcat, firmware, description, model):
+    def __init__(self, plm, address, cat, subcat, firmware=None, description=None, model=None):
         self.plm = plm
         self.address = Address(address)
         self.cat = cat
