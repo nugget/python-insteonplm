@@ -86,11 +86,11 @@ class BaseDevice(object):
     def _standard_or_extended_message_received(self, msg):
         commandtuple = {'cmd1':msg.cmd1, 'cmd2':msg.cmd2}
         try:
-            callback = self._commandHandlers[self._command_tuple_to_string(commandtuple)]
+            callback = self._commandHandlers[self._command_tuple_to_string(**commandtuple)]
         except KeyError:
             try:
                 commandtuple = {'cmd1':msg.cmd1, 'cmd2':None}
-                callback = self._commandHandlers[self._command_tuple_to_string(commandtuple)]
+                callback = self._commandHandlers[self._command_tuple_to_string(**commandtuple)]
             except KeyError:
                 raise KeyError
         callback(msg)
@@ -98,11 +98,11 @@ class BaseDevice(object):
     def _send_standard_or_extended_message_acknak(self, msg):
         commandtuple = {'cmd1': msg.cmd1, 'cmd2': msg.cmd2}
         try:
-            callback = self._commandHandlers[self._command_tuple_to_string(commandtuple)]
+            callback = self._commandHandlers[self._command_tuple_to_string(**commandtuple)]
         except KeyError:
             try:
                 commandtuple = {'cmd1':msg.cmd1, 'cmd2':None}
-                callback = self._commandHandlers[self._command_tuple_to_string(commandtuple)]
+                callback = self._commandHandlers[self._command_tuple_to_string(**commandtuple)]
             except KeyError:
                 raise KeyError
         callback(msg)
