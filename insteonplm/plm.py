@@ -160,7 +160,7 @@ class PLM(asyncio.Protocol):
         if cmd2 is not None:
             txtcmd2 = '{:02x}'.format(cmd2)
 
-        self.log.debug('Command 1: %x  Command 2: %x  cmd2: ', command['cmd1'], txtcommand2, txtcmd2)
+        self.log.debug('Command 1: %x  Command 2: %s  cmd2: %s', command['cmd1'], txtcommand2, txtcmd2)
         addr = Address(device)
         command1 = command['cmd1']
         command2 = command['cmd2']
