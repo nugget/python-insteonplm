@@ -9,6 +9,7 @@ class SwitchedLightingControl(BaseDevice):
         BaseDevice.__init__(self, plm, address, cat, subcat, firmware, description, model)
         self.lightOnLevel = StateChangeSignal()
         self.register_command_handler(COMMAND_LIGHT_ON_0X11_NONE, self._light_on_command_received)
+        self.register_command_handler(COMMAND_LIGHT_OFF_0X13_0X00, self._light_off_command_received)
 
     def light_on(self, onlevel=0xff):
         if onlevel <= 0:
