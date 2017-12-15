@@ -135,6 +135,12 @@ class PLM(asyncio.Protocol):
         if self._connection_lost_callback:
             self._connection_lost_callback()
 
+    def add_device_callback(self, callback, criteria):
+        """Register a callback for when a matching new device is seen."""
+        self.log.debug("Starting: add_device_callback")
+        self.devices.add_device_callback(callback, criteria)
+        self.log.debug("Ending: add_device_callback")
+
     def send_standard(self, device, command, cmd2=None, flags=None):
         """Send an INSTEON Standard message to the PLM.
         
@@ -268,6 +274,15 @@ class PLM(asyncio.Protocol):
                 if device is not None:
                     self.devices[device.address.hex] = {'cat':cat, 'subcat':subcat, 'firmware':product_key, 'device':device}
                     self.log.debug('Device with address %s added to device list.', device.address.hex)
+            else:
+                # TODO: what do we do with other broadcast messages?
+                pass
+
+        # If it is not a broadcast message then it is device specific and we call the device's receive_message method
+        # TODO: Is there a situation where the PLM is the device? If this is the case the PLM device will not be in the ALDB
+        devicerecord = self._devices[msg.address.hex]
+        device = devicerecord['device']
+        device.receive_message(msg)
 
         self.log.debug("Ending: _handle_standard_message_received")
 
@@ -402,12 +417,6 @@ class PLM(asyncio.Protocol):
         self._loop.call_soon(self.transport.write, msg.bytes)
         self.log.debug("Sent message: %s", msg.hex)
         self.log.debug("Ending: _send_msg")
-
-    def add_device_callback(self, callback, criteria):
-        """Register a callback for when a matching new device is seen."""
-        self.log.debug("Starting: add_device_callback")
-        self.devices.add_device_callback(callback, criteria)
-        self.log.debug("Ending: add_device_callback")
 
 
 # pylint: disable=too-many-instance-attributes, too-many-public-methods
