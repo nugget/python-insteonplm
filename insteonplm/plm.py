@@ -280,7 +280,7 @@ class PLM(asyncio.Protocol):
 
         # If it is not a broadcast message then it is device specific and we call the device's receive_message method
         # TODO: Is there a situation where the PLM is the device? If this is the case the PLM device will not be in the ALDB
-        devicerecord = self._devices[msg.address.hex]
+        devicerecord = self.devices[msg.address.hex]
         device = devicerecord['device']
         device.receive_message(msg)
 
