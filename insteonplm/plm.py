@@ -147,7 +147,14 @@ class PLM(asyncio.Protocol):
             flags: Message flags
 
             """
-        self.log.debug('Command 1: %x  Command 2: %x  cmd2: %x', command['cmd1'], command['cmd2'], cmd2)
+        txtcommand2 = 'None'
+        txtcmd2 = 'None'
+        if command['cmd2'] is not None:
+            txtcmd2 = '{:02x}'.format(command['cmd2'])
+        if cmd2 is not None:
+            txtcmd2 = '{:02x}'.format(cmd2)
+
+        self.log.debug('Command 1: %x  Command 2: %x  cmd2: ', command['cmd1'], txtcommand2, txtcmd2)
         addr = Address(device)
         command1 = command['cmd1']
         command2 = command['cmd2']
