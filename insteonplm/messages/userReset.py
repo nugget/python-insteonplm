@@ -17,7 +17,7 @@ class UserReset(MessageBase):
 
     @property
     def message(self):
-        return bytearray([MESSAGE_START_CODE,
+        return bytearray([MESSAGE_START_CODE_0X02,
                           self.code])
 
     @property
