@@ -5,7 +5,7 @@ from insteonplm.constants import *
 class SwitchedLightingControl(BaseDevice):
     """Switched Lighting Control Device Class 0x02"""
 
-    def __init__(selfplm, address, cat, subcat, firmware=None, description=None, model=None):
+    def __init__(self,plm, address, cat, subcat, firmware=None, description=None, model=None):
         BaseDevice.__init__(self, plm, address, cat, subcat, firmware, description, model)
         self.lightOnLevel = StateChangeSignal()
         self.register_command_handler(COMMAND_LIGHT_ON, self._light_on_command_received)
