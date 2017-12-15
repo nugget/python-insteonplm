@@ -62,7 +62,7 @@ def console(loop, log, devicelist):
 
     if 1 == 1:
         device = conn.protocol.devices.get_device('14627a')
-        device.lightOnLevel.connect(self.async_light_on_level_callback)
+        device.lightOnLevel.connect(async_light_on_level_callback)
         device.light_on()
 
         log.debug('Sent light on request')
