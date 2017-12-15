@@ -79,7 +79,7 @@ class PLM(asyncio.Protocol):
         self._add_message_callback(MESSAGE_ALL_LINK_CLEANUP_STATUS_REPORT_0X58, None)
         self._add_message_callback(MESSAGE_GET_IM_INFO_0X60, self._handle_get_plm_info)
         self._add_message_callback(MESSAGE_SEND_ALL_LINK_COMMAND_0X61, None)
-        self._add_message_callback(MESSAGE_SEND_STANDARD_MESSAGE, None)
+        self._add_message_callback(MESSAGE_SEND_STANDARD_MESSAGE_0X62, None)
         self._add_message_callback(MESSAGE_X10_MESSAGE_SEND_0X63, None)
         self._add_message_callback(MESSAGE_START_ALL_LINKING_0X64, None)
         self._add_message_callback(MESSAGE_CANCEL_ALL_LINKING_0X65, None)
