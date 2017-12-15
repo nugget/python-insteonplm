@@ -42,6 +42,9 @@ def console(loop, log, devicelist):
         """Log that our new device callback worked."""
         log.warn('New Device: %s', device)
 
+    def async_light_on_level_callback(addr, onlevel):
+        log.info('Light %s turn on to level %02x', addr, onlevel)
+
     criteria = {}
     conn.protocol.add_device_callback(async_insteonplm_light_callback, criteria)
 
@@ -59,11 +62,13 @@ def console(loop, log, devicelist):
 
     if 1 == 1:
         device = conn.protocol.devices.get_device('14627a')
-        device.Light_On()
+        device.lightOnLevel.connect(self.async_light_on_level_callback)
+        device.light_on()
+
         log.debug('Sent light on request')
         log.debug('----------------------')
         yield from asyncio.sleep(5, loop=loop)
-        device.Light_Off()
+        device.light_off()
         log.debug('Sent light on request')
         log.debug('----------------------')
 

@@ -14,44 +14,62 @@ class BaseDevice(object):
         self.description = description
         self.model = model  
 
+        self._messageHandlers = {}
+        self._commandHandlers = {}
+
+        self.register_message_handler(MESSAGE_STANDARD_MESSAGE_RECEIVED_0X50, _standard_or_extended_message_received)
+        self.register_message_handler(MESSAGE_EXTENDED_MESSAGE_RECEIVED_0X51, _standard_or_extended_message_received)
+        self.register_message_handler(MESSAGE_SEND_STANDARD_MESSAGE_0X62, _send_standard_or_extended_message_acknak)
+        self.register_message_handler(MESSAGE_SEND_EXTENDED_MESSAGE_0X62, _send_standard_or_extended_message_acknak)
+
+    def register_message_handler(self, messagecode, callback):
+        self._messageHanlders[code] =  callback
+
+    def register_command_handler(self, commandtuple, callback):
+        self._commandHandlers[commandtuple] = callback
+
+    def receive_message(self, msg):
+        callback = self._messageHandlers[msg.code]
+        callback(msg)
+
     def processMessage(self, message):
-        return NotImplemented
+        raise NotImplemented
 
     def AssignToALLLinkGroup(self, group):
-        return NotImplemented
+        raise NotImplemented
 
     def DeleteFromALLLinkGroup(self, group):
-        return NotImplemented
+        raise NotImplemented
 
     def ProductDataRequest(self):
-        return NotImplemented
+        raise NotImplemented
 
     def FxUsername(self):
-        return NotImplemented
+        raise NotImplemented
 
     def DeviceTextStringRequest(self):
-        return NotImplemented
+        raise NotImplemented
 
     def EnterLinkingMode(self, group):
-        return NotImplemented
+        raise NotImplemented
 
     def EnterUnlinkingMode(self, group):
-        return NotImplemented
+        raise NotImplemented
 
     def GetEngineVersion(self):
-        return NotImplemented
+        raise NotImplemented
 
     def Ping(self):
-        return NotImplemented
+        raise NotImplemented
 
     def IdRequest(self):
-        return NotImplemented
+        raise NotImplemented
 
     def ReadALDB(self):
-        return NotImplemented
+        raise NotImplemented
 
     def WriteALDB(self):
-        return NotImplemented
+        raise NotImplemented
 
     @classmethod
     def prod_data_in_aldb(self):
@@ -65,3 +83,26 @@ class BaseDevice(object):
            To override this setting create a device specific class and override this class method."""
         return False
 
+    def _standard_or_extended_message_received(self, msg):
+        commandtuple = {'cmd1':msg.cmd1, 'cmd2':msg.cmd2}
+        try:
+            callback = self._commandHandlers[commandtuple]
+        except KeyError:
+            try:
+                commandtuple = {'cmd1':msg.cmd1, 'cmd2':None}
+                callback = self._commandHandlers[commandtuple]
+            except KeyError:
+                raise KeyError
+        callback(msg)
+
+    def _send_standard_or_extended_message_acknak(self, msg):
+        commandtuple = {'cmd1': msg.cmd1, 'cmd2': msg.cmd2}
+        try:
+            callback = self._commandHandlers[commandtuple]
+        except KeyError:
+            try:
+                commandtuple = {'cmd1':msg.cmd1, 'cmd2':None}
+                callback = self._commandHandlers[commandtuple]
+            except KeyError:
+                raise KeyError
+        callback(msg)
