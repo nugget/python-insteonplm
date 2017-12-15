@@ -1,11 +1,11 @@
 from .messageBase import MessageBase
-from .messageConstants import *
+from insteonplm.constants import *
 import binascii
 
 class GetFirstAllLinkRecord(MessageBase):
     """Insteon Get First All Link Record Message 0x69"""
 
-    code = MESSAGE_GET_FIRST_ALL_LINK_RECORD
+    code = MESSAGE_GET_FIRST_ALL_LINK_RECORD_0X69
     sendSize = MESSAGE_GET_FIRST_ALL_LINK_RECORD_SIZE
     receivedSize = MESSAGE_GET_FIRST_ALL_LINK_RECORD_RECEIVED_SIZE
     description = 'Insteon Get First All Link Record Message'

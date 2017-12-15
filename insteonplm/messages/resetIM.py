@@ -1,11 +1,11 @@
 from .messageBase import MessageBase
-from .messageConstants import *
+from insteonplm.constants import *
 import binascii
 
 class ResetIM(MessageBase):
     """Insteon Reset IM Message 0x67"""
 
-    code = MESSAGE_RESET_IM
+    code = MESSAGE_RESET_IM_0X67
     sendSize = MESSAGE_RESET_IM_SIZE
     receivedSize = MESSAGE_RESET_IM_RECEIVED_SIZE
     description = 'Insteon Reset IM Message'

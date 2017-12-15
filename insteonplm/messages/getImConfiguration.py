@@ -1,11 +1,11 @@
 from .messageBase import MessageBase
-from .messageConstants import *
+from insteonplm.constants import *
 import binascii
 
 class GetImConfiguration(MessageBase):
     """Insteon Get IM Configuration Message 0x62"""
 
-    code = MESSAGE_GET_IM_CONFIGURATION
+    code = MESSAGE_GET_IM_CONFIGURATION_0X73
     sendSize = MESSAGE_GET_IM_CONFIGURATION_SIZE
     receivedSize = MESSAGE_GET_IM_CONFIGURATION_RECEIVED_SIZE
     description = 'Insteon Get IM Configuration Message'

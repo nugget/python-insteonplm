@@ -1,12 +1,12 @@
 from .messageBase import MessageBase
-from .messageConstants import *
+from insteonplm.constants import *
 from insteonplm.address import Address
 import binascii
 
 class AllLinkRecordResponse(MessageBase):
     """INSTEON ALL-Link Record Response 0x57"""
 
-    code = MESSAGE_ALL_LINK_RECORD_RESPONSE
+    code = MESSAGE_ALL_LINK_RECORD_RESPONSE_0X57
     sendSize = MESSAGE_ALL_LINK_RECORD_RESPONSE_SIZE
     receivedSize = MESSAGE_ALL_LINK_RECORD_RESPONSE_SIZE
     description = 'INSTEON ALL-Link Record Response'

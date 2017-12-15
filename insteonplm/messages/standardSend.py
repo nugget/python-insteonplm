@@ -1,13 +1,13 @@
 from .messageBase import MessageBase
 from .extendedSend import ExtendedSend
-from .messageConstants import *
+from insteonplm.constants import *
 from insteonplm.address import Address
 import binascii
 
 class StandardSend(MessageBase):
     """Insteon Standard Length Message Received 0x62"""
 
-    code = MESSAGE_SEND_STANDARD_MESSAGE
+    code = MESSAGE_SEND_STANDARD_MESSAGE_0X62
     sendSize = MESSAGE_SEND_STANDARD_MESSAGE_SIZE
     receivedSize = MESSAGE_SEND_STANDARD_MESSAGE_RECEIVED_SIZE
     description = 'INSTEON Standard Message Send'

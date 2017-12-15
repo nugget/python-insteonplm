@@ -11,7 +11,6 @@ from .aldb import ALDB
 from .address import Address
 from .plmprotocol import PLMProtocol
 from .messages.message import Message
-from .messages.messageConstants import *
 from .messages.getIMInfo import GetImInfo
 from .messages.getFirstAllLinkRecord import GetFirstAllLinkRecord
 from .messages.getNextAllLinkRecord import GetNextAllLinkRecord 

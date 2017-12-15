@@ -1,12 +1,12 @@
 from .messageBase import MessageBase
-from .messageConstants import *
+from insteonplm.constants import *
 from insteonplm.address import Address
 import binascii
 
 class AllLinkComplete(MessageBase):
     """INSTEON ALL-Linking Completed Message 0x53"""
 
-    code = MESSAGE_ALL_LINKING_COMPLETED
+    code = MESSAGE_ALL_LINKING_COMPLETED_0X53
     sendSize = MESSAGE_ALL_LINKING_COMPLETED_SIZE
     receivedSize = MESSAGE_ALL_LINKING_COMPLETED_SIZE
     description = 'INSTEON ALL-Linking Completed Message Received'

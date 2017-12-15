@@ -1,11 +1,11 @@
 from .messageBase import MessageBase
-from .messageConstants import *
+from insteonplm.constants import *
 import binascii
 
 class SendAllLinkCommand(MessageBase):
     """Insteon Send All Link Command Message 0x6A"""
 
-    code = MESSAGE_SEND_ALL_LINK_COMMAND
+    code = MESSAGE_SEND_ALL_LINK_COMMAND_0X61
     sendSize = MESSAGE_SEND_ALL_LINK_COMMAND_SIZE
     receivedSize = MESSAGE_SEND_ALL_LINK_COMMAND_RECEIVED_SIZE
     description = 'Insteon Get Next All Link Record Message'

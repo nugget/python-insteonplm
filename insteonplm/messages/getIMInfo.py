@@ -1,12 +1,12 @@
 from .messageBase import MessageBase
-from .messageConstants import *
+from insteonplm.constants import *
 from insteonplm.address import Address
 import binascii
 
 class GetImInfo(MessageBase):
     """INSTEON Get Insteon Modem Info Message 0x60"""
 
-    code = MESSAGE_GET_IM_INFO
+    code = MESSAGE_GET_IM_INFO_0X60
     sendSize = MESSAGE_GET_IM_INFO_SIZE
     receivedSize = MESSAGE_GET_IM_INFO_RECEIVED_SIZE
     description = 'INSTEON Get Insteon Modem Info Message Received'

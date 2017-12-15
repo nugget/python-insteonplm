@@ -2,7 +2,7 @@ import logging
 import binascii
 
 from .messageBase import MessageBase
-from .messageConstants import *
+from insteonplm.constants import *
 from insteonplm.address import Address
 
 from .standardReceive import StandardReceive
@@ -38,7 +38,7 @@ class Message(object):
     def create(rawmessage):
         log = logging.getLogger(__name__)
 
-        while len(rawmessage) > 0 and rawmessage[0] != MESSAGE_START_CODE: 
+        while len(rawmessage) > 0 and rawmessage[0] != MESSAGE_START_CODE_0X02: 
             rawmessage = rawmessage[1:]
             self.log.debug('Trimming leading buffer garbage')
 
@@ -91,24 +91,24 @@ class Message(object):
     @classmethod
     def get_message_class(cls, code):
         messageclasses = {}
-        messageclasses[MESSAGE_STANDARD_MESSAGE_RECEIVED] = StandardReceive
-        messageclasses[MESSAGE_EXTENDED_MESSAGE_RECEIVED] = ExtendedReceive
-        messageclasses[MESSAGE_X10_MESSAGE_RECEIVED] = X10Received
-        messageclasses[MESSAGE_ALL_LINKING_COMPLETED] = AllLinkComplete
-        messageclasses[MESSAGE_BUTTON_EVENT_REPORT] = ButtonEventReport
-        messageclasses[MESSAGE_USER_RESET_DETECTED] = UserReset
-        messageclasses[MESSAGE_ALL_LINK_CEANUP_FAILURE_REPORT] = AllLinkCleanupFailureReport
-        messageclasses[MESSAGE_ALL_LINK_RECORD_RESPONSE] = AllLinkRecordResponse
-        messageclasses[MESSAGE_ALL_LINK_CLEANUP_STATUS_REPORT] = AllLinkCleanupStatusReport
-        messageclasses[MESSAGE_GET_IM_INFO] = GetImInfo
-        messageclasses[MESSAGE_SEND_ALL_LINK_COMMAND] = SendAllLinkCommand
-        messageclasses[MESSAGE_SEND_STANDARD_MESSAGE] = StandardSend
-        messageclasses[MESSAGE_X10_MESSAGE_SEND] = X10Send
-        messageclasses[MESSAGE_START_ALL_LINKING] = StartAllLinking
-        messageclasses[MESSAGE_CANCEL_ALL_LINKING] = CancelAllLinking
-        messageclasses[MESSAGE_RESET_IM] = ResetIM
-        messageclasses[MESSAGE_GET_FIRST_ALL_LINK_RECORD] = GetFirstAllLinkRecord
-        messageclasses[MESSAGE_GET_NEXT_ALL_LINK_RECORD] = GetNextAllLinkRecord
-        messageclasses[MESSAGE_GET_IM_CONFIGURATION] = GetImConfiguration
+        messageclasses[MESSAGE_STANDARD_MESSAGE_RECEIVED_0X50] = StandardReceive
+        messageclasses[MESSAGE_EXTENDED_MESSAGE_RECEIVED_0X51] = ExtendedReceive
+        messageclasses[MESSAGE_X10_MESSAGE_RECEIVED_0X52] = X10Received
+        messageclasses[MESSAGE_ALL_LINKING_COMPLETED_0X53] = AllLinkComplete
+        messageclasses[MESSAGE_BUTTON_EVENT_REPORT_0X54] = ButtonEventReport
+        messageclasses[MESSAGE_USER_RESET_DETECTED_0X55] = UserReset
+        messageclasses[MESSAGE_ALL_LINK_CEANUP_FAILURE_REPORT_0X56] = AllLinkCleanupFailureReport
+        messageclasses[MESSAGE_ALL_LINK_RECORD_RESPONSE_0X57] = AllLinkRecordResponse
+        messageclasses[MESSAGE_ALL_LINK_CLEANUP_STATUS_REPORT_0X58] = AllLinkCleanupStatusReport
+        messageclasses[MESSAGE_GET_IM_INFO_0X60] = GetImInfo
+        messageclasses[MESSAGE_SEND_ALL_LINK_COMMAND_0X61] = SendAllLinkCommand
+        messageclasses[MESSAGE_SEND_STANDARD_MESSAGE_0X62] = StandardSend
+        messageclasses[MESSAGE_X10_MESSAGE_SEND_0X63] = X10Send
+        messageclasses[MESSAGE_START_ALL_LINKING_0X64] = StartAllLinking
+        messageclasses[MESSAGE_CANCEL_ALL_LINKING_0X65] = CancelAllLinking
+        messageclasses[MESSAGE_RESET_IM_0X67] = ResetIM
+        messageclasses[MESSAGE_GET_FIRST_ALL_LINK_RECORD_0X69] = GetFirstAllLinkRecord
+        messageclasses[MESSAGE_GET_NEXT_ALL_LINK_RECORD_0X6A] = GetNextAllLinkRecord
+        messageclasses[MESSAGE_GET_IM_CONFIGURATION_0X73] = GetImConfiguration
 
         return messageclasses[code]

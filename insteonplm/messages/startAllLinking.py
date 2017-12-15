@@ -1,11 +1,11 @@
 from .messageBase import MessageBase
-from .messageConstants import *
+from insteonplm.constants import *
 import binascii
 
 class StartAllLinking(MessageBase):
     """Insteon Start All Linking Message 0x64"""
 
-    code =    MESSAGE_START_ALL_LINKING
+    code =    MESSAGE_START_ALL_LINKING_0X64
     sendSize = MESSAGE_START_ALL_LINKING_SIZE
     receivedSize = MESSAGE_START_ALL_LINKING_RECEIVED_SIZE
     description = 'Insteon Start All Linking Message'

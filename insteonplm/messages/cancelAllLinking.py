@@ -1,12 +1,12 @@
 from .messageBase import MessageBase
-from .messageConstants import *
+from insteonplm.constants import *
 from insteonplm.address import Address
 import binascii
 
 class CancelAllLinking(MessageBase):
     """INSTEON Cancel All-Linking 0x65"""
 
-    code = MESSAGE_CANCEL_ALL_LINKING
+    code = MESSAGE_CANCEL_ALL_LINKING_0X65
     sendSize = MESSAGE_CANCEL_ALL_LINKING_SIZE
     receivedSize = MESSAGE_CANCEL_ALL_LINKING_RECEIVED_SIZE
     description = 'INSTEON Cancel All-Linking'

@@ -1,11 +1,11 @@
 from .messageBase import MessageBase
-from .messageConstants import *
+from insteonplm.constants import *
 import binascii
 
 class ButtonEventReport(MessageBase):
     """Insteon Button Event Report Message Received 0x54"""
 
-    code = MESSAGE_BUTTON_EVENT_REPORT
+    code = MESSAGE_BUTTON_EVENT_REPORT_0X54
     sendSize = MESSAGE_BUTTON_EVENT_REPORT_SIZE
     receivedSize = MESSAGE_BUTTON_EVENT_REPORT_SIZE
     description = 'INSTEON Standard Message Received'

@@ -1,12 +1,12 @@
 from .messageBase import MessageBase
-from .messageConstants import *
+from insteonplm.constants import *
 from insteonplm.address import Address
 import binascii
 
 class AllLinkCleanupFailureReport(MessageBase):
     """INSTEON All-Link Failure Report Message 0x56"""
 
-    code = MESSAGE_ALL_LINK_CEANUP_FAILURE_REPORT
+    code = MESSAGE_ALL_LINK_CEANUP_FAILURE_REPORT_0X56
     sendSize = MESSAGE_ALL_LINK_CEANUP_FAILURE_REPORT_SIZE
     receivedSize = MESSAGE_ALL_LINK_CEANUP_FAILURE_REPORT_SIZE
     description = 'INSTEON All-Link Failure Report Message'

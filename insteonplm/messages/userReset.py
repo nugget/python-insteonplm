@@ -1,11 +1,11 @@
 from .messageBase import MessageBase
-from .messageConstants import *
+from insteonplm.constants import *
 import binascii
 
 class UserReset(MessageBase):
     """Insteon User Reset Message Received 0x55"""
 
-    code = MESSAGE_USER_RESET_DETECTED
+    code = MESSAGE_USER_RESET_DETECTED_0X55
     sendSize = MESSAGE_USER_RESET_DETECTED_SIZE
     receivedSize = MESSAGE_USER_RESET_DETECTED_SIZE
     name = 'INSTEON User Reset Message Received'
