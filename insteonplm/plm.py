@@ -272,7 +272,7 @@ class PLM(asyncio.Protocol):
                                binascii.hexlify(msg.address.hex), binascii.hexlify(cat), binascii.hexlify(subcat), binascii.hexlify(product_key))
                 device = self.devices.create_device_from_category(self, msg.address, cat, subcat, product_key)
                 if device is not None:
-                    self.devices[device.address.hex] = {'cat':cat, 'subcat':subcat, 'firmware':product_key, 'device':device}
+                    self.devices[device.id] = device
                     self.log.debug('Device with address %s added to device list.', device.address.hex)
             else:
                 # TODO: what do we do with other broadcast messages?
@@ -280,8 +280,7 @@ class PLM(asyncio.Protocol):
 
         # If it is not a broadcast message then it is device specific and we call the device's receive_message method
         # TODO: Is there a situation where the PLM is the device? If this is the case the PLM device will not be in the ALDB
-        devicerecord = self.devices[msg.address.hex]
-        device = devicerecord['device']
+        device = self.devices[msg.address.hex]
         device.receive_message(msg)
 
         self.log.debug("Ending: _handle_standard_message_received")

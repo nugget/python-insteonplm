@@ -48,11 +48,12 @@ class DeviceBase(object):
     def model(self):
         return self._model
 
+    @property
     def id(self):
         if self._groupbutton == 0x01:
-            return self._address
+            return self._address.hex
         else:
-            return '{}_{:d}'.format(self._address, self._groupbuttons)
+            return '{}_{:d}'.format(self._address.hex, self._groupbuttons)
     
     @property
     def prod_data_in_aldb(self):
