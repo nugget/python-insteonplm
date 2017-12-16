@@ -60,7 +60,7 @@ def console(loop, log, devicelist):
 
     yield from asyncio.sleep(100, loop=loop)
 
-    if 1 == 1:
+    if 1 == 0:
         device = conn.protocol.devices['14627a']
         device.lightOnLevel.connect(async_light_on_level_callback)
         device.light_off()
@@ -72,8 +72,9 @@ def console(loop, log, devicelist):
         log.debug('Sent light off request')
         log.debug('----------------------')
 
-    if 1 == 0:
-        conn.protocol.turn_on('4095e6', ramprate=2)
+    if 1 == 1:
+        for key in conn.protocol.devices:
+            log.debug('Address: %s', key)
         yield from asyncio.sleep(5, loop=loop)
 
 
