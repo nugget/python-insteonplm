@@ -2,18 +2,20 @@ from insteonplm.address import Address
 from insteonplm.messages.messageBase import MessageBase
 from insteonplm.constants import *
 
-class BaseDevice(object):
+class DeviceBase(object):
     """INSTEON Device"""
 
-    def __init__(self, plm, address, cat, subcat, firmware=None, description=None, model=None):
-        self.plm = plm
-        self.address = Address(address)
-        self.cat = cat
-        self.subcat = subcat
-        self.firmware = firmware
-        self.description = description
-        self.model = model  
+    def __init__(self, plm, address, cat, subcat, product_key=None, description=None, model=None, groupbutton=0x01):
+        self._plm = plm
+        self._address = Address(address)
+        self._cat = cat
+        self._subcat = subcat
+        self._product_key = product_key
+        self._description = description
+        self._model = model 
+        self._groupbutton = groupbutton
 
+        self._product_data_in_aldb = False
         self._messageHandlers = {}
         self._commandHandlers = {}
 
@@ -21,6 +23,51 @@ class BaseDevice(object):
         self.register_message_handler(MESSAGE_EXTENDED_MESSAGE_RECEIVED_0X51, self._standard_or_extended_message_received)
         self.register_message_handler(MESSAGE_SEND_STANDARD_MESSAGE_0X62, self._send_standard_or_extended_message_acknak)
         self.register_message_handler(MESSAGE_SEND_EXTENDED_MESSAGE_0X62, self._send_standard_or_extended_message_acknak)
+
+    @property
+    def address(self):
+        return self._address
+
+    @property
+    def cat(self):
+        return self._cat
+
+    @property
+    def subcat(self):
+        return self._subcat
+
+    @property
+    def product_key(self):
+        return self._product_key
+
+    @property
+    def description(self):
+        return self._description
+
+    @property
+    def model(self):
+        return self._model
+
+    def id(self):
+        if self._groupbutton == 0x01:
+            return self._address
+        else:
+            return '{}_{:d}'.format(self._address, self._groupbuttons)
+    
+    @property
+    def prod_data_in_aldb(self):
+        """True if Product data (cat, subcat, product_key) is stored in the PLM ALDB.
+            False if product data must be aquired via a Device ID message or from a Product Data Request command.
+           
+            Very few devices store their product data in the ALDB, therefore False is the default.
+            The common reason to store product data in the ALDB is for one way devices or battery opperated devices where 
+            the ability to send a command request is limited."""
+
+        return self._product_data_in_aldb
+
+    @classmethod
+    def create(cls, plm, address, cat, subcat, product_key=None, description=None, model=None, groupbutton=0x01):
+        return cls(plm, address, cat, subcat, product_key, description, model, groupbutton)
 
     def register_message_handler(self, messagecode, callback):
         self._messageHandlers[messagecode] =  callback
@@ -71,7 +118,6 @@ class BaseDevice(object):
     def WriteALDB(self):
         raise NotImplemented
 
-    @classmethod
     def prod_data_in_aldb(self):
         """True if Product data (cat, subcat, product_key) is stored in the PLM ALDB.
            False if product data must be aquired via a Device ID message or from a Product Data Request command.
@@ -81,7 +127,7 @@ class BaseDevice(object):
            the ability to send a command request is limited.
            
            To override this setting create a device specific class and override this class method."""
-        return False
+        return self._product_data_in_aldb
 
     def _standard_or_extended_message_received(self, msg):
         commandtuple = {'cmd1':msg.cmd1, 'cmd2':msg.cmd2}

@@ -1,12 +1,12 @@
-from .basedevice import BaseDevice
+from .devicebase import DeviceBase
 from insteonplm.statechangesignal import StateChangeSignal
 from insteonplm.constants import *
 
-class SwitchedLightingControl(BaseDevice):
+class SwitchedLightingControl(DeviceBase):
     """Switched Lighting Control Device Class 0x02"""
 
-    def __init__(self,plm, address, cat, subcat, firmware=None, description=None, model=None):
-        BaseDevice.__init__(self, plm, address, cat, subcat, firmware, description, model)
+    def __init__(self, plm, address, cat, subcat, product_key=None, description=None, model=None, groupbutton=0x01):
+        DeviceBase.__init__(self, plm, address, cat, subcat, product_key, description, model, groupbutton)
         self.lightOnLevel = StateChangeSignal()
         self.register_command_handler(COMMAND_LIGHT_ON_0X11_NONE, self._light_on_command_received)
         self.register_command_handler(COMMAND_LIGHT_OFF_0X13_0X00, self._light_off_command_received)

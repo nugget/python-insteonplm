@@ -1,6 +1,6 @@
 
-from .basedevice import BaseDevice
+from .devicebase import DeviceBase
 
-class GeneralController(BaseDevice):
+class GeneralController(DeviceBase):
     """General Controller Device 0x00
        Example: ControLinc, RemoteLinc, SignaLinc, etc."""

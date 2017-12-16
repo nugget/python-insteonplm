@@ -3,7 +3,7 @@ from insteonplm.address import Address
 from insteonplm.aldb import ALDB
 from insteonplm.devices.switchedLightingControl import SwitchedLightingControl
 
-def test_get_device_from_categories():
+def test_create_device_from_category():
     addr = Address('1a2b3c')
     cat = 0x02
     subcat = 0x13
@@ -13,7 +13,7 @@ def test_get_device_from_categories():
     deviceclass = SwitchedLightingControl
 
     aldb = ALDB()
-    dev = aldb.get_device_from_categories(None, addr, cat, subcat)
+    dev = aldb.create_device_from_category(None, addr, cat, subcat)
 
     assert isinstance(dev, SwitchedLightingControl)
     assert dev.cat == cat
@@ -21,7 +21,7 @@ def test_get_device_from_categories():
     assert dev.description == description
     assert dev.model == model
 
-def test_get_device_from_categories_generic_device():
+def test_create_device_from_category_generic_device():
     addr = Address('1a2b3c')
     cat = 0x02
     subcat = 0xff # needs to be a subcat that is not in the IPDB
@@ -31,7 +31,7 @@ def test_get_device_from_categories_generic_device():
     deviceclass = SwitchedLightingControl
 
     aldb = ALDB()
-    dev = aldb.get_device_from_categories(None, addr, cat, subcat)
+    dev = aldb.create_device_from_category(None, addr, cat, subcat)
 
     assert isinstance(dev, SwitchedLightingControl)
     assert dev.cat == cat

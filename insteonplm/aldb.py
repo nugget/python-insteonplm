@@ -6,6 +6,7 @@ import time
 
 from .address import Address
 from .devices.device import Device
+from .devices.devicebase import DeviceBase
 
 __all__ = ('ALDB')
 
@@ -44,29 +45,19 @@ class ALDB(object):
         #    self.log.debug('Ignoring device setitem with no cat: %s', value)
         #    return
 
-        if key in self._devices:
-            if 'firmware' in value and value['firmware'] < 255:
-                self._devices[key].update(value)
-        else:
-            #productdata = self.ipdb[value['cat'], value['subcat']]
-            #value.update(productdata._asdict())
-            device = value['device']
-            address = Address(key)
-            value['address_hex'] = device.address.hex
-            value['address'] = device.address.human
-            value['description'] = device.description
-            value['model'] = device.model
-            self._devices[key] = value
+        if not isinstance(value, DeviceBase):
+            raise ValueError
 
-            self.log.info('New INSTEON Device %r: %s (%02x:%02x)',
-                          Address(key), value['description'], value['cat'],
-                          value['subcat'])
+        self._devices[key] = value
 
-            self._apply_overrides(key)
+        self.log.info('New INSTEON Device %r: %s (%02x:%02x)',
+                        Address(key), value.description, value.cat,
+                        valuesubcat)
 
-            for callback, criteria in self._cb_new_device:
-                if self._device_matches_criteria(value, criteria):
-                    callback(value)
+
+        for callback, criteria in self._cb_new_device:
+            if self._device_matches_criteria(value, criteria):
+                callback(value)
 
     def __repr__(self):
         """Human representation of a device from the ALDB."""
@@ -103,16 +94,6 @@ class ALDB(object):
         if address in self._devices:
             self._apply_overrides(address)
 
-    def _apply_overrides(self, address):
-        device_override = self._overrides.get(address, {})
-        for key in device_override:
-            oldval = self._devices[address].get(key, None)
-            value = device_override[key]
-            if value != oldval:
-                self.log.debug('Override %s for %s: %s -> %s',
-                               key, address, oldval, value)
-                self._devices[address][key] = value
-
     def getattr(self, key, attr):
         """Return the requested attribute for device with address 'key'."""
         key = Address(key).hex
@@ -138,8 +119,17 @@ class ALDB(object):
         else:
             raise KeyError
 
-    def get_device_from_categories(self, plm, addr, cat, subcat, firmware=None):
-        return Device.create(plm, addr, cat, subcat, firmware)
+    def create_device_from_category(self, plm, addr, cat, subcat, product_key=None):
+        device_override = self._overrides.get(Address(addr).hex, {})
+        for key in device_override:
+            if key == 'cat':
+                cat = device_override['cat']
+            elif key == 'subcat':
+                subcat = device_override['subcat']
+            elif key == 'product_key' or key == 'firmware':
+                product_key = device_override['product_key']
+        
+        return Device.create(plm, addr, cat, subcat, product_key)
 
     def get_device(self, addr):
         devicerecord = self._devices.get(addr, None)
