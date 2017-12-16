@@ -52,7 +52,7 @@ class ALDB(object):
 
         self.log.info('New INSTEON Device %r: %s (%02x:%02x)',
                         Address(key), value.description, value.cat,
-                        valuesubcat)
+                        value.subcat)
 
 
         for callback, criteria in self._cb_new_device:
@@ -94,6 +94,42 @@ class ALDB(object):
         if address in self._devices:
             self._apply_overrides(address)
 
+    def create_device_from_category(self, plm, addr, cat, subcat, product_key=None):
+        device_override = self._overrides.get(Address(addr).hex, {})
+        for key in device_override:
+            if key == 'cat':
+                cat = device_override['cat']
+            elif key == 'subcat':
+                subcat = device_override['subcat']
+            elif key == 'product_key' or key == 'firmware':
+                product_key = device_override['product_key']
+        
+        return Device.create(plm, addr, cat, subcat, product_key)
+
+    @staticmethod
+    def _device_matches_criteria(device, criteria):
+        match = True
+
+        if 'address' in criteria:
+            criteria['address'] = Address(criteria['address'])
+
+        for key in criteria.keys():
+            if key == 'capability':
+                if criteria[key] not in device['capabilities']:
+                    match = False
+                    break
+            elif key[0] != '_':
+                if key not in device:
+                    match = False
+                    break
+                elif criteria[key] != device[key]:
+                    match = False
+                    break
+        return match
+
+
+
+
     def getattr(self, key, attr):
         """Return the requested attribute for device with address 'key'."""
         key = Address(key).hex
@@ -118,41 +154,3 @@ class ALDB(object):
                 return False
         else:
             raise KeyError
-
-    def create_device_from_category(self, plm, addr, cat, subcat, product_key=None):
-        device_override = self._overrides.get(Address(addr).hex, {})
-        for key in device_override:
-            if key == 'cat':
-                cat = device_override['cat']
-            elif key == 'subcat':
-                subcat = device_override['subcat']
-            elif key == 'product_key' or key == 'firmware':
-                product_key = device_override['product_key']
-        
-        return Device.create(plm, addr, cat, subcat, product_key)
-
-    def get_device(self, addr):
-        devicerecord = self._devices.get(addr, None)
-        if devicerecord is not None:
-            return devicerecord['device']
-
-    @staticmethod
-    def _device_matches_criteria(device, criteria):
-        match = True
-
-        if 'address' in criteria:
-            criteria['address'] = Address(criteria['address'])
-
-        for key in criteria.keys():
-            if key == 'capability':
-                if criteria[key] not in device['capabilities']:
-                    match = False
-                    break
-            elif key[0] != '_':
-                if key not in device:
-                    match = False
-                    break
-                elif criteria[key] != device[key]:
-                    match = False
-                    break
-        return match
