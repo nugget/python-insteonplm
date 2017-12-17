@@ -38,7 +38,7 @@ class ALDB(object):
             return self._devices.get(address, None)
         return None
 
-    def __setitem__(self, key, value):
+    def __setitem__(self, key, device):
         """Add or Update a device in the ALDB."""
         # TEH - Removing this since 0x00 is a valid device category
         #if 'cat' not in value or value['cat'] == 0:
@@ -51,7 +51,7 @@ class ALDB(object):
         self._devices[key] = value
 
         self.log.info('New INSTEON Device %r: %s (%02x:%02x)',
-                        Address(key), value.description, value.cat,
+                        key, value.description, value.cat,
                         value.subcat)
 
 
