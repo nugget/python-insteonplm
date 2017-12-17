@@ -45,19 +45,19 @@ class ALDB(object):
         #    self.log.debug('Ignoring device setitem with no cat: %s', value)
         #    return
 
-        if not isinstance(value, DeviceBase):
+        if not isinstance(device, DeviceBase):
             raise ValueError
 
-        self._devices[key] = value
+        self._devices[key] = device
 
         self.log.info('New INSTEON Device %r: %s (%02x:%02x)',
-                        key, value.description, value.cat,
-                        value.subcat)
+                        key, device.description, device.cat,
+                        device.subcat)
 
 
         for callback, criteria in self._cb_new_device:
-            if self._device_matches_criteria(value, criteria):
-                callback(value)
+            if self._device_matches_criteria(device, criteria):
+                callback(device)
 
     def __repr__(self):
         """Human representation of a device from the ALDB."""
