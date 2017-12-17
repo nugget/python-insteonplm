@@ -72,9 +72,9 @@ class SwitchedLightingControl(DeviceBase):
         self.lightOnLevel.update(msg.address.hex, 0)
 
 class SwitchedLightingControl_2663_222(SwitchedLightingControl):
-    def create(cls, plm, address, cat, subcat, product_key = None, description = None, model = None, groupbutton = 0x01):
+    @classmethod
+    def create(cls, plm, address, cat, subcat, product_key=None, description=None, model=None, groupbutton = 0x01):
         devices = []
-        devices[0] = super().create(plm, address, cat, subcat, product_key, description, model, groupbutton)
-        devices[1] = super().create(plm, address, cat, subcat, product_key, description, model, 0x02)
-        self.log.info("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! WE GOT HERE !!!!!!!!!!!!!!!!!!!!!!!")
+        devices.append(super().create(plm, address, cat, subcat, product_key, description, model, groupbutton))
+        devices.append(super().create(plm, address, cat, subcat, product_key, description, model, 0x02))
         return devices

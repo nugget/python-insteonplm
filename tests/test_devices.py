@@ -4,6 +4,7 @@ from insteonplm.address import Address
 from insteonplm.messages.standardSend import StandardSend
 from insteonplm.messages.extendedSend import ExtendedSend 
 from insteonplm.devices.switchedLightingControl import SwitchedLightingControl
+from insteonplm.devices.switchedLightingControl import SwitchedLightingControl_2663_222 
 
 class MockPLM(object):
     def __init__(self):
@@ -105,3 +106,15 @@ def test_switchedLightingControl_group():
 
     device.light_on()
     assert plm.sentmessage == '02621a2b3c0011ff0200000000000000000000000000'
+
+def test_switchedLightingControl_2663_222():
+    plm = MockPLM()
+    address = '1a2b3c'
+    cat = 0x02
+    subcat = 0x0d
+    product_key = None
+    description = 'ToggleLinc Relay'
+    model = '2466S'
+    groupbutton = 0x02
+    devices = SwitchedLightingControl_2663_222.create(plm, address, cat, subcat, product_key,description, model)
+    assert isinstance(devices, list)
