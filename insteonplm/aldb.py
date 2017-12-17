@@ -35,8 +35,8 @@ class ALDB(object):
     def __getitem__(self, address):
         """Fetch a device from the ALDB."""
         if address in self._devices:
-            return self._devices[address]
-        raise KeyError
+            return self._devices.get(address, None)
+        return None
 
     def __setitem__(self, key, value):
         """Add or Update a device in the ALDB."""
