@@ -22,16 +22,32 @@ class SwitchedLightingControl(DeviceBase):
             self._plm.send_extended(self._address.hex, COMMAND_LIGHT_ON_0X11_NONE, 0xff, **userdata)
 
     def light_on_fast (self):
-        self._plm.send_standard(self.address.hex, COMMAND_LIGHT_ON_FAST_0X12_NONE, oxff)
+        if self._groupbutton == 0x01:
+            self._plm.send_standard(self.address.hex, COMMAND_LIGHT_ON_FAST_0X12_NONE, oxff)
+        else:
+            userdata = {'d1':self._groupbutton}
+            self._plm.send_extended(self._address.hex, COMMAND_LIGHT_ON_FAST_0X12_NONE, 0xff, **userdata)
 
     def light_off(self):
-        self._plm.send_standard(self.address.hex, COMMAND_LIGHT_OFF_0X13_0X00)
+        if self._groupbutton == 0x01:
+            self._plm.send_standard(self.address.hex, COMMAND_LIGHT_OFF_0X13_0X00)
+        else:
+            userdata = {'d1':self._groupbutton}
+            self._plm.send_extended(self._address.hex, COMMAND_LIGHT_OFF_0X13_0X00, **userdata)
 
     def light_off_fast(self):
-        self._plm.send_standard(self.address.hex, COMMAND_LIGHT_OFF_FAST_0X14_0X00)
+        if self._groupbutton == 0x01:
+            self._plm.send_standard(self.address.hex, COMMAND_LIGHT_OFF_FAST_0X14_0X00)
+        else:
+            userdata = {'d1':self._groupbutton}
+            self._plm.send_extended(self._address.hex, COMMAND_LIGHT_OFF_FAST_0X14_0X00, **userdata)
 
     def light_status_request (self):
-        self._plm.send_standard(self.address.hex, COMMAND_LIGHT_STATUS_REQUEST_0X19_0X00)
+        if self._groupbutton == 0x01:
+            self._plm.send_standard(self.address.hex, COMMAND_LIGHT_STATUS_REQUEST_0X19_0X00)
+        else:
+            userdata = {'d1':self._groupbutton}
+            self._plm.send_extended(self._address.hex, COMMAND_LIGHT_STATUS_REQUEST_0X19_0X00, **userdata)
 
     def get_operating_flags(self):
         return NotImplemented
@@ -60,4 +76,5 @@ class SwitchedLightingControl_2663_222(SwitchedLightingControl):
         devices = []
         devices[0] = super().create(plm, address, cat, subcat, product_key, description, model, groupbutton)
         devices[1] = super().create(plm, address, cat, subcat, product_key, description, model, 0x02)
+        self.log.info("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! WE GOT HERE !!!!!!!!!!!!!!!!!!!!!!!")
         return devices

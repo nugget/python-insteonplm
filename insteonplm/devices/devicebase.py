@@ -23,11 +23,6 @@ class DeviceBase(object):
         self._product_data_in_aldb = False
         self._message_callbacks = MessageCallback()
 
-        #self._message_callbacks.add_message_callback(MESSAGE_STANDARD_MESSAGE_RECEIVED_0X50, None, self._standard_or_extended_message_received)
-        #self._message_callbacks.add_message_callback(MESSAGE_EXTENDED_MESSAGE_RECEIVED_0X51, None, self._standard_or_extended_message_received)
-        #self._message_callbacks.add_message_callback(MESSAGE_SEND_STANDARD_MESSAGE_0X62, None, self._send_standard_or_extended_message_acknak)
-        #self._message_callbacks.add_message_callback(MESSAGE_SEND_EXTENDED_MESSAGE_0X62, None, self._send_standard_or_extended_message_acknak)
-
     @property
     def address(self):
         return self._address

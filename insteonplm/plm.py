@@ -199,10 +199,10 @@ class PLM(asyncio.Protocol):
                 if isinstance(device, list):
                     for dev in device:
                         self.devices[device.id] = device
-                        self.log.debug('Device with address %s added to device list.', device.address.hex)
+                        self.log.debug('Device with address %s added to device list.', device.id)
                 else:
                     self.devices[device.id] = device
-                    self.log.debug('Device with address %s added to device list.', device.address.hex)
+                    self.log.debug('Device with address %s added to device list.', device.id)
         
         self.log.debug("Ending _handle_assign_to_all_link_group")
 
@@ -264,7 +264,7 @@ class PLM(asyncio.Protocol):
                 if device.prod_data_in_aldb:
                     record = self._aldb_response_queue[addr]
                     self.devices[device.id] = device
-                    self.log.debug('Device with address %s added to device list.', device.address.hex)
+                    self.log.debug('Device with address %s added to device list.', device.id)
                 else:
                     self._device_id_request(addr)
             else:
