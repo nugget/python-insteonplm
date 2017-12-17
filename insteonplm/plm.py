@@ -153,7 +153,7 @@ class PLM(asyncio.Protocol):
         self.log.debug("Sent message: %s", msg.hex)
         self.log.debug("Ending: send_msg")
 
-    def send_standard(msg, target, commandtuple, cmd2=None, flags=0x00, acknak=None):
+    def send_standard(self, msg, target, commandtuple, cmd2=None, flags=0x00, acknak=None):
         if commandtuple.get('cmd1', False):
             cmd1 = commandtuple['cmd1']
             cmd2out = commandtuple['cmd2']
