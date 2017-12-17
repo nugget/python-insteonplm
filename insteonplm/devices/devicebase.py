@@ -1,6 +1,7 @@
 from insteonplm.address import Address
 from insteonplm.messages.messageBase import MessageBase
 from insteonplm.constants import *
+from insteonplm.messagecallback import MessageCallback
 
 class DeviceBase(object):
     """INSTEON Device"""
@@ -16,13 +17,12 @@ class DeviceBase(object):
         self._groupbutton = groupbutton
 
         self._product_data_in_aldb = False
-        self._messageHandlers = {}
-        self._commandHandlers = {}
+        self._message_callbacks = MessageCallback()
 
-        self.register_message_handler(MESSAGE_STANDARD_MESSAGE_RECEIVED_0X50, self._standard_or_extended_message_received)
-        self.register_message_handler(MESSAGE_EXTENDED_MESSAGE_RECEIVED_0X51, self._standard_or_extended_message_received)
-        self.register_message_handler(MESSAGE_SEND_STANDARD_MESSAGE_0X62, self._send_standard_or_extended_message_acknak)
-        self.register_message_handler(MESSAGE_SEND_EXTENDED_MESSAGE_0X62, self._send_standard_or_extended_message_acknak)
+        #self._message_callbacks.add_message_callback(MESSAGE_STANDARD_MESSAGE_RECEIVED_0X50, None, self._standard_or_extended_message_received)
+        #self._message_callbacks.add_message_callback(MESSAGE_EXTENDED_MESSAGE_RECEIVED_0X51, None, self._standard_or_extended_message_received)
+        #self._message_callbacks.add_message_callback(MESSAGE_SEND_STANDARD_MESSAGE_0X62, None, self._send_standard_or_extended_message_acknak)
+        #self._message_callbacks.add_message_callback(MESSAGE_SEND_EXTENDED_MESSAGE_0X62, None, self._send_standard_or_extended_message_acknak)
 
     @property
     def address(self):
@@ -70,15 +70,12 @@ class DeviceBase(object):
     def create(cls, plm, address, cat, subcat, product_key=None, description=None, model=None, groupbutton=0x01):
         return cls(plm, address, cat, subcat, product_key, description, model, groupbutton)
 
-    def register_message_handler(self, messagecode, callback):
-        self._messageHandlers[messagecode] =  callback
-
-    def register_command_handler(self, commandtuple, callback):
-        self._commandHandlers[self._command_tuple_to_string(**commandtuple)] = callback
-
     def receive_message(self, msg):
-        callback = self._messageHandlers[msg.code]
-        callback(msg)
+        callback = self._message_callbacks.get_callback_from_message(msg)
+        if callback is None:
+            self.log.debug('No call back found in device %s for message %s', msg.address.hex, msg.hex)
+        else:
+            callback(msg)
 
     def processMessage(self, message):
         raise NotImplemented
@@ -129,39 +126,3 @@ class DeviceBase(object):
            
            To override this setting create a device specific class and override this class method."""
         return self._product_data_in_aldb
-
-    def _standard_or_extended_message_received(self, msg):
-        commandtuple = {'cmd1':msg.cmd1, 'cmd2':msg.cmd2}
-        try:
-            callback = self._commandHandlers[self._command_tuple_to_string(**commandtuple)]
-        except KeyError:
-            try:
-                commandtuple = {'cmd1':msg.cmd1, 'cmd2':None}
-                callback = self._commandHandlers[self._command_tuple_to_string(**commandtuple)]
-            except KeyError:
-                raise KeyError
-        callback(msg)
-
-    def _send_standard_or_extended_message_acknak(self, msg):
-        commandtuple = {'cmd1': msg.cmd1, 'cmd2': msg.cmd2}
-        try:
-            callback = self._commandHandlers[self._command_tuple_to_string(**commandtuple)]
-        except KeyError:
-            try:
-                commandtuple = {'cmd1':msg.cmd1, 'cmd2':None}
-                callback = self._commandHandlers[self._command_tuple_to_string(**commandtuple)]
-            except KeyError:
-                raise KeyError
-        callback(msg)
-
-    def _command_tuple_to_string(self, **kwarg):
-        for key in kwarg:
-            if key == 'cmd1':
-                cmd1 = kwarg[key]
-            else:
-                cmd2 = kwarg[key]
-        txtcmd2 = 'None'
-        if cmd2 is not None:
-            txtcmd2 = '{:02x}'.format(cmd2)
-        
-        return 'cmd1: {0:02x}, cmd2: {1}'.format(cmd1, txtcmd2)

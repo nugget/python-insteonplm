@@ -6,10 +6,10 @@ import time
 from collections import deque
 
 from .constants import *
-#from .devices.ipdb import IPDB
 from .aldb import ALDB
 from .address import Address
 from .plmprotocol import PLMProtocol
+from .messagecallback import MessageCallback 
 from .messages.message import Message
 from .messages.getIMInfo import GetImInfo
 from .messages.getFirstAllLinkRecord import GetFirstAllLinkRecord
@@ -43,8 +43,7 @@ class PLM(asyncio.Protocol):
         self._loop = loop
 
         self._connection_lost_callback = connection_lost_callback
-        self._message_callbacks = {}
-        self._device_callbacks = []
+        self._message_callbacks = MessageCallback()
 
         self._buffer = bytearray()
         self._recv_queue = deque([])
@@ -68,25 +67,25 @@ class PLM(asyncio.Protocol):
         #       It feels like a good idea to build this into the PLMProtocol class so that every 
         #       device (including the PLM) handle command registration the same way.
 
-        self._add_message_callback(MESSAGE_STANDARD_MESSAGE_RECEIVED_0X50, self._handle_standard_message_received)
-        self._add_message_callback(MESSAGE_EXTENDED_MESSAGE_RECEIVED_0X51, None)
-        self._add_message_callback(MESSAGE_X10_MESSAGE_RECEIVED_0X52, None)
-        self._add_message_callback(MESSAGE_ALL_LINKING_COMPLETED_0X53, None)
-        self._add_message_callback(MESSAGE_BUTTON_EVENT_REPORT_0X54, None)
-        self._add_message_callback(MESSAGE_USER_RESET_DETECTED_0X55, None)
-        self._add_message_callback(MESSAGE_ALL_LINK_CEANUP_FAILURE_REPORT_0X56, None)
-        self._add_message_callback(MESSAGE_ALL_LINK_RECORD_RESPONSE_0X57, self._handle_all_link_record_response)
-        self._add_message_callback(MESSAGE_ALL_LINK_CLEANUP_STATUS_REPORT_0X58, None)
-        self._add_message_callback(MESSAGE_GET_IM_INFO_0X60, self._handle_get_plm_info)
-        self._add_message_callback(MESSAGE_SEND_ALL_LINK_COMMAND_0X61, None)
-        self._add_message_callback(MESSAGE_SEND_STANDARD_MESSAGE_0X62, None)
-        self._add_message_callback(MESSAGE_X10_MESSAGE_SEND_0X63, None)
-        self._add_message_callback(MESSAGE_START_ALL_LINKING_0X64, None)
-        self._add_message_callback(MESSAGE_CANCEL_ALL_LINKING_0X65, None)
-        self._add_message_callback(MESSAGE_RESET_IM_0X67, None)
-        self._add_message_callback(MESSAGE_GET_FIRST_ALL_LINK_RECORD_0X69, None)
-        self._add_message_callback(MESSAGE_GET_NEXT_ALL_LINK_RECORD_0X6A, self._handle_get_next_all_link_record_acknak)
-        self._add_message_callback(MESSAGE_GET_IM_CONFIGURATION_0X73, None)
+        self._message_callbacks.add_message_callback(MESSAGE_STANDARD_MESSAGE_RECEIVED_0X50, None, self._handle_standard_message_received)
+        self._message_callbacks.add_message_callback(MESSAGE_EXTENDED_MESSAGE_RECEIVED_0X51, None, None)
+        self._message_callbacks.add_message_callback(MESSAGE_X10_MESSAGE_RECEIVED_0X52, None, None)
+        self._message_callbacks.add_message_callback(MESSAGE_ALL_LINKING_COMPLETED_0X53, None, None)
+        self._message_callbacks.add_message_callback(MESSAGE_BUTTON_EVENT_REPORT_0X54, None, None)
+        self._message_callbacks.add_message_callback(MESSAGE_USER_RESET_DETECTED_0X55, None, None)
+        self._message_callbacks.add_message_callback(MESSAGE_ALL_LINK_CEANUP_FAILURE_REPORT_0X56, None, None)
+        self._message_callbacks.add_message_callback(MESSAGE_ALL_LINK_RECORD_RESPONSE_0X57, None, self._handle_all_link_record_response)
+        self._message_callbacks.add_message_callback(MESSAGE_ALL_LINK_CLEANUP_STATUS_REPORT_0X58, None, None)
+        self._message_callbacks.add_message_callback(MESSAGE_GET_IM_INFO_0X60, None, self._handle_get_plm_info)
+        self._message_callbacks.add_message_callback(MESSAGE_SEND_ALL_LINK_COMMAND_0X61,None,  None)
+        self._message_callbacks.add_message_callback(MESSAGE_SEND_STANDARD_MESSAGE_0X62, None, None)
+        self._message_callbacks.add_message_callback(MESSAGE_X10_MESSAGE_SEND_0X63, None, None)
+        self._message_callbacks.add_message_callback(MESSAGE_START_ALL_LINKING_0X64, None, None)
+        self._message_callbacks.add_message_callback(MESSAGE_CANCEL_ALL_LINKING_0X65, None, None)
+        self._message_callbacks.add_message_callback(MESSAGE_RESET_IM_0X67, None, None)
+        self._message_callbacks.add_message_callback(MESSAGE_GET_FIRST_ALL_LINK_RECORD_0X69, None, None)
+        self._message_callbacks.add_message_callback(MESSAGE_GET_NEXT_ALL_LINK_RECORD_0X6A, None, self._handle_get_next_all_link_record_nak, MESSAGE_NAK)
+        self._message_callbacks.add_message_callback(MESSAGE_GET_IM_CONFIGURATION_0X73, None, None)
 
     def connection_made(self, transport):
         """Called when asyncio.Protocol establishes the network connection."""
@@ -113,7 +112,7 @@ class PLM(asyncio.Protocol):
         while worktodo:
             try:
                 msg = self._recv_queue.pop()
-                callback = self._message_callbacks[msg.code]
+                callback = self._message_callbacks.get_callback_from_message(msg)
                 if callback is not None:
                     self._loop.call_soon(callback, msg)
                 else: 
@@ -226,15 +225,6 @@ class PLM(asyncio.Protocol):
 
         self._send_msg(ExtendedSend(addr, flags, cmd1, cmd2, userdata_bytes))
 
-    def _add_message_callback(self, code, callback):
-        """Register a callback for when a matching message is seen."""
-
-        self.log.debug("Starting: _add_message_callback")
-
-        self._message_callbacks[code] = callback
-        self.log.debug('Added message callback to %s on %s', callback, code)
-        self.log.debug("Ending: _add_message_callback")
-
     def _get_plm_info(self):
         """Request PLM Info."""
         self.log.debug("Starting: _get_plm_info")
@@ -293,33 +283,32 @@ class PLM(asyncio.Protocol):
         
         self.log.debug('Ending _handle_all_link_record_response')
 
-    def _handle_get_next_all_link_record_acknak(self, msg):
+    def _handle_get_next_all_link_record_nak(self, msg):
         self.log.debug('Starting _handle_get_next_all_link_record_acknak')
 
         # When the last All-Link record is reached the PLM sends a NAK
-        if msg.isnak:
-            self.log.debug('Devices found: %d', len(self._aldb_response_queue))
-            for addr in self._aldb_response_queue:
-                aldbRecordMessage = self._aldb_response_queue[addr]['msg']
-                cat = aldbRecordMessage.linkdata1
-                subcat = aldbRecordMessage.linkdata2
-                product_key = aldbRecordMessage.linkdata3
+        self.log.debug('Devices found: %d', len(self._aldb_response_queue))
+        for addr in self._aldb_response_queue:
+            aldbRecordMessage = self._aldb_response_queue[addr]['msg']
+            cat = aldbRecordMessage.linkdata1
+            subcat = aldbRecordMessage.linkdata2
+            product_key = aldbRecordMessage.linkdata3
 
-                # Get a device from the ALDB based on cat, subcat and product_key
-                device = self.devices.create_device_from_category(self, aldbRecordMessage.address, cat, subcat, product_key)
+            # Get a device from the ALDB based on cat, subcat and product_key
+            device = self.devices.create_device_from_category(self, aldbRecordMessage.address, cat, subcat, product_key)
 
-                # If a device is returned and that device is of a type tha stores the product data in the ALDB record
-                # we can use that as the device type for this record
-                # Otherwise we need to request the device ID.
-                if device is not None:
-                    if device.prod_data_in_aldb:
-                        record = self._aldb_response_queue[addr]
-                        self.devices[device.id] = device
-                        self.log.debug('Device with address %s added to device list.', device.address.hex)
-                    else:
-                        self._device_id_request(addr)
+            # If a device is returned and that device is of a type tha stores the product data in the ALDB record
+            # we can use that as the device type for this record
+            # Otherwise we need to request the device ID.
+            if device is not None:
+                if device.prod_data_in_aldb:
+                    record = self._aldb_response_queue[addr]
+                    self.devices[device.id] = device
+                    self.log.debug('Device with address %s added to device list.', device.address.hex)
                 else:
                     self._device_id_request(addr)
+            else:
+                self._device_id_request(addr)
 
         self.log.debug('Ending _handle_get_next_all_link_record_acknak')
 
