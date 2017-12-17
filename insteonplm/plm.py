@@ -206,8 +206,8 @@ class PLM(asyncio.Protocol):
         
         self.log.debug("Ending _handle_assign_to_all_link_group")
 
-    def _handle_send_standard_message_nak(self, msg):
-        self.log.debug("Starting _handle_send_standard_message_acknak")
+    def _handle_send_standard_or_exteded_message_nak(self, msg):
+        self.log.debug("Starting _handle_send_standard_or_exteded_message_nak")
         if msg.cmd1 == COMMAND_ID_REQUEST_0X10_0X00['cmd1']:
             retries = self._aldb_response_queue[msg.address.hex]['retries']
             if retries < 5:
@@ -223,7 +223,7 @@ class PLM(asyncio.Protocol):
                     self.log.debug("Device with address %s is being removed from the list.", msg.address.hex)
                     self._aldb_response_queue.pop(msg.address.hex)
         
-        self.log.debug("Ending _handle_send_standard_message_acknak")
+        self.log.debug("Ending _handle_send_standard_or_exteded_message_nak")
 
     def _handle_standard_or_extended_message_received(self, msg):
         self.log.debug("Starting: _handle_standard_message_received")
