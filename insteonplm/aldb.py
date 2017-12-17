@@ -50,7 +50,7 @@ class ALDB(object):
 
         self._devices[key] = device
 
-        self.log.info('New INSTEON Device %r: %s (%02x:%02x)',
+        self.log.debug('New INSTEON Device %r: %s (%02x:%02x)',
                         key, device.description, device.cat,
                         device.subcat)
 

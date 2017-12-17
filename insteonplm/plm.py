@@ -270,14 +270,14 @@ class PLM(asyncio.Protocol):
                         if isinstance(device, list):
                             for dev in device:
                                 self.devices[device.id] = device
-                                self.log.info('--------------------------------------------------')
-                                self.log.info('Device with id %s added to device list.', device.id)
-                                self.log.info('--------------------------------------------------')
+                                self.log.info('--------------------------------------------------------')
+                                self.log.info('Device with id %s added to device list from ALDB Data.', device.id)
+                                self.log.info('--------------------------------------------------------')
                         else:
                             self.devices[device.id] = device
-                            self.log.info('--------------------------------------------------')
-                            self.log.info('Device with id %s added to device list.', device.id)
-                            self.log.info('--------------------------------------------------')
+                            self.log.info('--------------------------------------------------------')
+                            self.log.info('Device with id %s added to device list from ALDB data.', device.id)
+                            self.log.info('--------------------------------------------------------')
                 else:
                     self._device_id_request(addr)
             else:
