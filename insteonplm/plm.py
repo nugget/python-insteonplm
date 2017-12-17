@@ -204,9 +204,9 @@ class PLM(asyncio.Protocol):
                         self.log.info('--------------------------------------------------')
                 else:
                     self.devices[device.id] = device
-                        self.log.info('--------------------------------------------------')
-                        self.log.info('Device with id %s added to device list.', device.id)
-                        self.log.info('--------------------------------------------------')
+                    self.log.info('--------------------------------------------------')
+                    self.log.info('Device with id %s added to device list.', device.id)
+                    self.log.info('--------------------------------------------------')
         
         self.log.debug("Ending _handle_assign_to_all_link_group")
 
@@ -275,9 +275,9 @@ class PLM(asyncio.Protocol):
                                 self.log.info('--------------------------------------------------')
                         else:
                             self.devices[device.id] = device
-                                self.log.info('--------------------------------------------------')
-                                self.log.info('Device with id %s added to device list.', device.id)
-                                self.log.info('--------------------------------------------------')
+                            self.log.info('--------------------------------------------------')
+                            self.log.info('Device with id %s added to device list.', device.id)
+                            self.log.info('--------------------------------------------------')
                 else:
                     self._device_id_request(addr)
             else:
