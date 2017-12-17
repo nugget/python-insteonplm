@@ -75,6 +75,6 @@ class SwitchedLightingControl_2663_222(SwitchedLightingControl):
     @classmethod
     def create(cls, plm, address, cat, subcat, product_key=None, description=None, model=None, groupbutton = 0x01):
         devices = []
-        devices.append(super().create(plm, address, cat, subcat, product_key, description, model, groupbutton))
-        devices.append(super().create(plm, address, cat, subcat, product_key, description, model, 0x02))
+        devices.append(SwitchedLightingControl_2663_222(plm, address, cat, subcat, product_key, description, model, 0x01))
+        devices.append(SwitchedLightingControl_2663_222(plm, address, cat, subcat, product_key, description, model, 0x02))
         return devices
