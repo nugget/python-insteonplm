@@ -77,7 +77,7 @@ class PLM(asyncio.Protocol):
         self._message_callbacks.add_message_callback(MESSAGE_GET_IM_INFO_0X60, 
                                                      None, self._handle_get_plm_info)
         self._message_callbacks.add_message_callback(MESSAGE_SEND_STANDARD_MESSAGE_0X62, 
-                                                     None, self._handle_send_standard_or_exteded_message_nak, MESSAGE_NAK)
+                                                     None, self._handle_send_standard_or_extended_message_nak, MESSAGE_NAK)
         self._message_callbacks.add_message_callback(MESSAGE_GET_NEXT_ALL_LINK_RECORD_0X6A, 
                                                      None, self._handle_get_next_all_link_record_nak, MESSAGE_NAK)
 
@@ -210,22 +210,22 @@ class PLM(asyncio.Protocol):
         
         self.log.debug("Ending _handle_assign_to_all_link_group")
 
-    def _handle_send_standard_or_exteded_message_nak(self, msg):
+    def _handle_send_standard_or_extended_message_nak(self, msg):
         self.log.debug("Starting _handle_send_standard_or_exteded_message_nak")
         if msg.cmd1 == COMMAND_ID_REQUEST_0X10_0X00['cmd1']:
-            retries = self._aldb_response_queue[msg.address.hex]['retries']
+            retries = self._aldb_response_queue[msg.target.hex]['retries']
             if retries < 5:
-                self._aldb_response_queue[msg.address.hex]['retries'] = retries + 1
+                self._aldb_response_queue[msg.target.hex]['retries'] = retries + 1
                 self._device_id_request(msg.address.hex)
             else:
                 # If we have tried 5 times and did not get a device ID and
                 # the ALDB record did not return a device type either
                 # we remove the device from the list of devices assuming it is offline
                 # If it is online it can be added manually via the device overrides
-                if self._aldb_response_queue[msg.address.hex]['device'] is None:
-                    self.log.debug("Device with address %s did not respond to a request for a device ID.", msg.address.hex)
-                    self.log.debug("Device with address %s is being removed from the list.", msg.address.hex)
-                    self._aldb_response_queue.pop(msg.address.hex)
+                if self._aldb_response_queue[msg.target.hex]['device'] is None:
+                    self.log.debug("Device with address %s did not respond to a request for a device ID.", msg.taret.hex)
+                    self.log.debug("Device with address %s is being removed from the list.", msg.target.hex)
+                    self._aldb_response_queue.pop(msg.target.hex)
         
         self.log.debug("Ending _handle_send_standard_or_exteded_message_nak")
 
