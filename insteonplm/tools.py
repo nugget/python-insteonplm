@@ -58,7 +58,7 @@ def console(loop, log, devicelist):
     # conn.protocol.product_data_request('15c3ab')
     # yield from asyncio.sleep(10, loop=loop)
 
-    yield from asyncio.sleep(100, loop=loop)
+    yield from asyncio.sleep(150, loop=loop)
 
     if 1 == 1:
         device = conn.protocol.devices['14627a']
