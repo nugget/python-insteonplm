@@ -5,6 +5,7 @@ import collections
 from .generalController import GeneralController
 from .dimmableLightingControl import DimmableLightingControl
 from .switchedLightingControl import SwitchedLightingControl
+from .switchedLightingControl import SwitchedLightingControl_2663_222 
 
 # pylint: disable=line-too-long
 # pylint: disable=too-few-public-methods
