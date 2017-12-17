@@ -40,7 +40,7 @@ def console(loop, log, devicelist):
 
     def async_insteonplm_light_callback(device):
         """Log that our new device callback worked."""
-        log.warn('New Device: %s', device)
+        log.warn('New Device: %s %02x %02x %s, %s', device.id, device.cat, device.subcat, device.description, device.model)
 
     def async_light_on_level_callback(addr, onlevel):
         log.info('Light %s turn on to level %02x', addr, onlevel)
