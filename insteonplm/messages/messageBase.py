@@ -13,6 +13,7 @@ class MessageBase(object):
 
     def __init__(self):
         self._messageFlags = 0x00
+        self.log = logging.getLogger(__name__)
 
 #    def __repr__(self):
 #        attrs = vars(self)

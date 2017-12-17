@@ -16,6 +16,8 @@ class DeviceBase(object):
         self._model = model 
         self._groupbutton = groupbutton
 
+        self.log = logging.getLogger(__name__)
+
         self._product_data_in_aldb = False
         self._message_callbacks = MessageCallback()
 
