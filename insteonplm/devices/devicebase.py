@@ -115,6 +115,7 @@ class DeviceBase(object):
     def WriteALDB(self):
         raise NotImplemented
 
+    @property
     def prod_data_in_aldb(self):
         """True if Product data (cat, subcat, product_key) is stored in the PLM ALDB.
            False if product data must be aquired via a Device ID message or from a Product Data Request command.
