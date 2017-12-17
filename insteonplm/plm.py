@@ -215,15 +215,16 @@ class PLM(asyncio.Protocol):
         if msg.cmd1 == COMMAND_ID_REQUEST_0X10_0X00['cmd1']:
             retries = self._aldb_response_queue[msg.target.hex]['retries']
             if retries < 5:
+                self.log.info('Device %s did not respond to %d tries for a device ID. Retrying.', msg.target, retries)
                 self._aldb_response_queue[msg.target.hex]['retries'] = retries + 1
-                self._device_id_request(msg.address.hex)
+                self._device_id_request(msg.target.hex)
             else:
                 # If we have tried 5 times and did not get a device ID and
                 # the ALDB record did not return a device type either
                 # we remove the device from the list of devices assuming it is offline
                 # If it is online it can be added manually via the device overrides
                 if self._aldb_response_queue[msg.target.hex]['device'] is None:
-                    self.log.debug("Device with address %s did not respond to a request for a device ID.", msg.taret.hex)
+                    self.log.info("Device with address %s did not respond to a request for a device ID.", msg.taret.hex)
                     self.log.debug("Device with address %s is being removed from the list.", msg.target.hex)
                     self._aldb_response_queue.pop(msg.target.hex)
         
@@ -323,7 +324,7 @@ class PLM(asyncio.Protocol):
             device = addr
         else:
             device = Address(addr)
-        self.log.info('Requesting product data for %s', device.human)
+        self.log.info('Requesting device ID for %s', device.human)
         msg = StandardSend(device, 0x00, COMMAND_ID_REQUEST_0X10_0X00['cmd1'], COMMAND_ID_REQUEST_0X10_0X00['cmd1'])
         self.send_msg(msg)
         self.log.debug("Ending: _device_id_request")
