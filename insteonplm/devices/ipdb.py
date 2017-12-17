@@ -84,7 +84,7 @@ class IPDB(object):
         Product(0x02, 0x2f, None, 'Micro On/Off', '2443-222', SwitchedLightingControl),
         Product(0x02, 0x37, None, 'On/Off Module', '2635-222', SwitchedLightingControl),
         Product(0x02, 0x38, None, 'On/Off Outdoor Module', '2634-222', SwitchedLightingControl),
-        Product(0x02, 0x39, None, 'On/Off Outlet', '2663-222', SwitchedLightingControl),
+        Product(0x02, 0x39, None, 'On/Off Outlet', '2663-222', SwitchedLightingControl_2663_222),
 
         Product(0x03, None, None, 'Generic PLM', '', None),
         Product(0x03, 0x15, None, 'PowerLinc Modem (USB)', '2413U', None),  # PLM

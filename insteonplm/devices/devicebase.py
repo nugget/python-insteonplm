@@ -1,3 +1,5 @@
+import logging
+
 from insteonplm.address import Address
 from insteonplm.messages.messageBase import MessageBase
 from insteonplm.constants import *

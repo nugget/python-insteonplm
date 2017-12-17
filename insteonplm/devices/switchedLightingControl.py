@@ -50,3 +50,7 @@ class SwitchedLightingControl(DeviceBase):
 
     def _light_off_command_received(self, msg):
         self.lightOnLevel.update(msg.address.hex, 0)
+
+class SwitchedLightingControl_2663_222(SwitchedLightingControl):
+    def create(cls, plm, address, cat, subcat, product_key = None, description = None, model = None, groupbutton = 1):
+        return super().create(plm, address, cat, subcat, product_key, description, model, groupbutton)
