@@ -35,12 +35,7 @@ class StandardSend(MessageBase):
                             rawmessage[7],
                             rawmessage[8:9])
         if msg.isextendedflag:
-            msg = ExtendedSend(rawmessage[2:5],
-                               rawmessage[5],
-                               rawmessage[6],
-                               rawmessage[7],
-                               rawmessage[8:22],
-                               rawmessage[22:23])
+            msg = ExtendedSend.from_raw_message(rawmessage)
         return msg
 
     @property

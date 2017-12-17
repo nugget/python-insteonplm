@@ -140,97 +140,55 @@ class PLM(asyncio.Protocol):
         self.devices.add_device_callback(callback, criteria)
         self.log.debug("Ending: add_device_callback")
 
-    def send_standard(self, device, command, cmd2=None, flags=None):
-        """Send an INSTEON Standard message to the PLM.
-        
-           device: A device hex address in any form.
-           command: An insteon command tuple {'cmd1':value, 'cmd2': value'}
-                    Found in insteonplm.constants
-                    if 'cmd2' is None then 'cmd2' must be passed as an argument
-            cmd2: Ignored if command['cmd2'] has a value. 
-                  Required if command['cmd2'] is None
-            flags: Message flags
+    def send_msg(self, msg):
+        # TODO: implement an ACK/NAK review of sent commands
+        # Purpose of the function is to capture sent commands and compare them to ACK/NAK messages
+        # A callback can then be defined in the event of a NAK (i.e. retry or do something else)
+        # self._sent_queue.append(msg)
+        self.log.debug("Starting: send_msg")
+        self.log.debug('Sending %d byte message: %s',
+                len(msg.bytes), msg.hex)
+        time.sleep(1)
+        self._loop.call_soon(self.transport.write, msg.bytes)
+        self.log.debug("Sent message: %s", msg.hex)
+        self.log.debug("Ending: send_msg")
 
-            """
-        txtcommand2 = 'None'
-        txtcmd2 = 'None'
-        if command['cmd2'] is not None:
-            txtcmd2 = '{:02x}'.format(command['cmd2'])
-        if cmd2 is not None:
-            txtcmd2 = '{:02x}'.format(cmd2)
+    def send_standard(msg, target, commandtuple, cmd2=None, flags=0x00, acknak=None):
+        if commandtuple.get('cmd1', False):
+            cmd1 = commandtuple['cmd1']
+            cmd2out = commandtuple['cmd2']
+        else:
+            raise ValueError
+        if cmd2out is None:
+           if cmd2 is not None:
+               cmd2out = cmd2
+           else:
+                raise ValueError
 
-        self.log.debug('Command 1: %x  Command 2: %s  cmd2: %s', command['cmd1'], txtcommand2, txtcmd2)
-        addr = Address(device)
-        command1 = command['cmd1']
-        command2 = command['cmd2']
-        if flags is None:
-            flags = 0x00
+        msg = StandardSend(target, flags, cmd1, cmd2out, acknak)
+        self.send_msg(msg)
 
-        if command2 is None:
-            if cmd2 is None:
-                return ValueError
-            else:
-                command2 = cmd2
-        self.log.debug('Command 1: %x  Command 2: %x', command1, command2)
-        self._send_msg(StandardSend(addr, flags, command1, command2))
+    def send_extended(self, target, commandtuple, cmd2=None, flags=0x00, acknak=None, **userdata):
+        if commandtuple.get('cmd1', False):
+            cmd1 = commandtuple['cmd1']
+            cmd2out = commandtuple['cmd2']
+        else:
+            raise ValueError
+        if cmd2out is None:
+           if cmd2 is not None:
+               cmd2out = cmd2
+           else:
+                raise ValueError
 
-    def send_extended(self, device, command, *arg, **kwarg):
-        """Send an INSTEON Extended message to the PLM.
-        
-           device: A device hex address in any form.
-           command: An insteon command tuple {'cmd1':value, 'cmd2': value'}
-                    Found in insteonplm.constants
-                    if 'cmd2' is None then 'cmd2' must be an argument passed in *arg, *kwarg
-           **kwarg: dictionary with the following optons:
-                    'cmd2' - As byte or int If command['cmd2'] is None this is required or an error will be thrown.
-                             This will be ignored if command['cmd2'] is any value other than None
-                    'flags' - Message flags as byte or int
-                    'd0' - User data byte 0 as byte or int
-                    'd1' - user data byte 1 as byte or int
-                    ...
-                    'd13' - user data byte 14 as byte or int
-                    'd0' to 'd13' are assumed to equal 0x00 unless explicitly set
-        """
-
-        addr = Address(device)
-        cmd1 = command['cmd1']
-        cmd2 = command['cmd2']
-        flags = 0x00
-        userdata = []
-        userdata['d0'] = 0x00 
-        userdata['d1'] = 0x00 
-        userdata['d3'] = 0x00 
-        userdata['d4'] = 0x00 
-        userdata['d5'] = 0x00 
-        userdata['d6'] = 0x00 
-        userdata['d7'] = 0x00 
-        userdata['d8'] = 0x00 
-        userdata['d9'] = 0x00 
-        userdata['d10'] = 0x00 
-        userdata['d11'] = 0x00 
-        userdata['d12'] = 0x00 
-        userdata['d13'] = 0x00
-
-        for key,val in kwarg:
-            if key == 'cmd2':
-                cmd2 = val
-            if key in ['d0', 'd1', 'd3', 'd4', 'd5', 'd6', 'd7', 'd8', 'd9','d10', 'd11','d12','d13']:
-                userdata[key] = val
-            if key == 'flags':
-                flags = val
-
-        userdata_bytes = bytearray()
-        for dkey, dval in userdata:
-            userdata_bytes.extend(dval)
-
-        self._send_msg(ExtendedSend(addr, flags, cmd1, cmd2, userdata_bytes))
+        msg = ExtendedSend(target, cmd1, cmd2out,flags,  acknak, **userdata)
+        self.send_msg(msg)
 
     def _get_plm_info(self):
         """Request PLM Info."""
         self.log.debug("Starting: _get_plm_info")
         self.log.info('Requesting PLM Info')
         msg = GetImInfo()
-        self._send_msg(msg)
+        self.send_msg(msg)
         self.log.debug("Ending: _get_plm_info")
 
     def _handle_send_standard_message_acknak(self, msg):
@@ -262,8 +220,13 @@ class PLM(asyncio.Protocol):
                                binascii.hexlify(msg.address.hex), binascii.hexlify(cat), binascii.hexlify(subcat), binascii.hexlify(product_key))
                 device = self.devices.create_device_from_category(self, msg.address, cat, subcat, product_key)
                 if device is not None:
-                    self.devices[device.id] = device
-                    self.log.debug('Device with address %s added to device list.', device.address.hex)
+                    if isinstance(device, list):
+                        for dev in device:
+                            self.devices[device.id] = device
+                            self.log.debug('Device with address %s added to device list.', device.address.hex)
+                    else:
+                        self.devices[device.id] = device
+                        self.log.debug('Device with address %s added to device list.', device.address.hex)
             else:
                 # TODO: what do we do with other broadcast messages?
                 pass
@@ -332,7 +295,7 @@ class PLM(asyncio.Protocol):
         self.log.debug("Starting: _get_first_all_link_record")
         self.log.info('Requesting First ALL-Link Record')
         msg = GetFirstAllLinkRecord()
-        self._send_msg(msg)
+        self.send_msg(msg)
         self.log.debug("Ending: _get_first_all_link_record")
 
     def _get_next_all_link_record(self):
@@ -340,7 +303,7 @@ class PLM(asyncio.Protocol):
         self.log.debug("Starting: _get_next_all_link_recor")
         self.log.info('Requesting Next ALL-Link Record')
         msg = GetNextAllLinkRecord()
-        self._send_msg(msg)
+        self.send_msg(msg)
         self.log.debug("Ending: _get_next_all_link_recor")
 
     def _device_id_request(self, addr):
@@ -352,7 +315,7 @@ class PLM(asyncio.Protocol):
             device = Address(addr)
         self.log.info('Requesting product data for %s', device.human)
         msg = StandardSend(device, 0x00, COMMAND_ID_REQUEST_0X10_0X00['cmd1'], COMMAND_ID_REQUEST_0X10_0X00['cmd1'])
-        self._send_msg(msg)
+        self.send_msg(msg)
         self.log.debug("Ending: _device_id_request")
 
     def _product_data_request(self, addr):
@@ -361,7 +324,7 @@ class PLM(asyncio.Protocol):
         device = Address(addr)
         self.log.info('Requesting product data for %s', device.human)
         msg = StandardSend(device, 0x00, COMMAND_PRODUCT_DATA_REQUEST_0X03_0X00['cmd1'], COMMAND_PRODUCT_DATA_REQUEST_0X03_0X00['cmd2'])    
-        self._send_msg(msg)
+        self.send_msg(msg)
         self.log.debug("Starting: _product_data_request")
     
     def _peel_messages_from_buffer(self):
@@ -392,19 +355,6 @@ class PLM(asyncio.Protocol):
             lastlooplen = len(self._buffer)
 
         self.log.debug("Finishing: _peel_messages_from_buffer")
-
-    def _send_msg(self, msg):
-        # TODO: implement an ACK/NAK review of sent commands
-        # Purpose of the function is to capture sent commands and compare them to ACK/NAK messages
-        # A callback can then be defined in the event of a NAK (i.e. retry or do something else)
-        # self._sent_queue.append(msg)
-        self.log.debug("Starting: _send_msg")
-        self.log.debug('Sending %d byte message: %s',
-                len(msg.bytes), msg.hex)
-        time.sleep(1)
-        self._loop.call_soon(self.transport.write, msg.bytes)
-        self.log.debug("Sent message: %s", msg.hex)
-        self.log.debug("Ending: _send_msg")
 
 
 # pylint: disable=too-many-instance-attributes, too-many-public-methods

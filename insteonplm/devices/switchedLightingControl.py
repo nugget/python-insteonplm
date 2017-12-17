@@ -15,7 +15,11 @@ class SwitchedLightingControl(DeviceBase):
         self._message_callbacks.add_message_callback(MESSAGE_SEND_STANDARD_MESSAGE_0X62, COMMAND_LIGHT_OFF_0X13_0X00, self._light_off_command_received, MESSAGE_ACK)
 
     def light_on(self):
-        self._plm.send_standard(self.address.hex, COMMAND_LIGHT_ON_0X11_NONE, 0xff)
+        if self._groupbutton == 0x01:
+            self._plm.send_standard(self.address.hex, COMMAND_LIGHT_ON_0X11_NONE, 0xff)
+        else:
+            userdata = {'d1':self._groupbutton}
+            self._plm.send_extended(self._address.hex, COMMAND_LIGHT_ON_0X11_NONE, 0xff, **userdata)
 
     def light_on_fast (self):
         self._plm.send_standard(self.address.hex, COMMAND_LIGHT_ON_FAST_0X12_NONE, oxff)
@@ -52,5 +56,8 @@ class SwitchedLightingControl(DeviceBase):
         self.lightOnLevel.update(msg.address.hex, 0)
 
 class SwitchedLightingControl_2663_222(SwitchedLightingControl):
-    def create(cls, plm, address, cat, subcat, product_key = None, description = None, model = None, groupbutton = 1):
-        return super().create(plm, address, cat, subcat, product_key, description, model, groupbutton)
+    def create(cls, plm, address, cat, subcat, product_key = None, description = None, model = None, groupbutton = 0x01):
+        devices = []
+        devices[0] = super().create(plm, address, cat, subcat, product_key, description, model, groupbutton)
+        devices[1] = super().create(plm, address, cat, subcat, product_key, description, model, 0x02)
+        return devices

@@ -2,6 +2,7 @@ import insteonplm
 from insteonplm.constants import *
 from insteonplm.address import Address
 from insteonplm.messages.standardSend import StandardSend
+from insteonplm.messages.extendedSend import ExtendedSend 
 from insteonplm.devices.switchedLightingControl import SwitchedLightingControl
 
 class MockPLM(object):
@@ -39,7 +40,23 @@ class MockPLM(object):
             else:
                 command2 = cmd2
         msg = StandardSend(addr, flags, command1, command2)
-        self.sentmessage = msg.hex 
+        self.sentmessage = msg.hex
+
+
+    def send_extended(self, target, commandtuple, cmd2=None, flags=0x00, acknak=None, **userdata):
+        if commandtuple.get('cmd1', False):
+            cmd1 = commandtuple['cmd1']
+            cmd2out = commandtuple['cmd2']
+        else:
+            raise ValueError
+        if cmd2out is None:
+           if cmd2 is not None:
+               cmd2out = cmd2
+           else:
+                raise ValueError
+
+        msg = ExtendedSend(target, cmd1, cmd2out,flags,  acknak, **userdata)
+        self.sentmessage = msg.hex
 
 def test_switchedLightingControl():
     plm = MockPLM()
@@ -64,3 +81,27 @@ def test_switchedLightingControl():
 
     device.light_on()
     assert plm.sentmessage == '02621a2b3c0011ff'
+
+def test_switchedLightingControl_group():
+    plm = MockPLM()
+    address = '1a2b3c'
+    cat = 0x02
+    subcat = 0x0d
+    product_key = None
+    description = 'ToggleLinc Relay'
+    model = '2466S'
+    groupbutton = 0x02
+
+    device = SwitchedLightingControl(plm, address, cat, subcat, product_key, description, model, groupbutton)
+
+    assert device.address.hex == address
+    assert device.cat == cat
+    assert device.subcat == subcat
+    assert device.product_key == product_key
+    assert device.description == description
+    assert device.model == model
+    #assert device.groupbutton == groupbutton
+    assert device.id == address+'_2'
+
+    device.light_on()
+    assert plm.sentmessage == '02621a2b3c0011ff0200000000000000000000000000'

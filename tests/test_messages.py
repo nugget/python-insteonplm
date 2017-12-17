@@ -120,26 +120,28 @@ def test_extendedSend():
     flags = 0x44
     cmd1 = 0x55
     cmd2 = 0x66
-    userdata = bytearray([])
+    userdata = {}
     ack = 0x06
     nak = 0x15
 
     for i in range(1,15):
-        userdata.append(i+0xe0)
+        key = 'd'+str(i)
+        val = 0xe0 + i
+        userdata.update({key:val})
 
-    msg = ExtendedSend(address, flags, cmd1, cmd2, userdata)
+    msg = ExtendedSend(address, cmd1, cmd2, flags, **userdata)
     assert msg.hex == hexmsg(0x02, 0x62, Address(address), flags, cmd1, cmd2, userdata)
     assert not msg.isack 
     assert not msg.isnak
     assert len(msg.hex)/2 == msg.sendSize
 
-    msg = ExtendedSend(address, flags, cmd1, cmd2, userdata, ack)
+    msg = ExtendedSend(address, cmd1, cmd2,flags, ack, **userdata)
     assert msg.hex == hexmsg(0x02, 0x62, Address(address), flags, cmd1, cmd2, userdata, ack)
     assert msg.isack 
     assert not msg.isnak
     assert len(msg.hex)/2 == msg.receivedSize
     
-    msg = ExtendedSend(address, flags, cmd1, cmd2, userdata, nak)
+    msg = ExtendedSend(address, cmd1, cmd2, flags, nak, **userdata)
     assert msg.hex == hexmsg(0x02, 0x62, Address(address), flags, cmd1, cmd2, userdata, nak)
     assert not msg.isack 
     assert msg.isnak
@@ -397,5 +399,10 @@ def hexmsg(*arg):
             msg.extend(b)
         elif isinstance(b, bytes):
             msg.extend(b)
+        elif isinstance(b, dict):
+            for i in range(1,15):
+                key = 'd' + str(i)
+                val = b[key]
+                msg.append(val)
             
     return binascii.hexlify(msg).decode()

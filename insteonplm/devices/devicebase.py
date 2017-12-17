@@ -57,7 +57,7 @@ class DeviceBase(object):
         if self._groupbutton == 0x01:
             return self._address.hex
         else:
-            return '{}_{:d}'.format(self._address.hex, self._groupbuttons)
+            return '{}_{:d}'.format(self._address.hex, self._groupbutton)
     
     @property
     def prod_data_in_aldb(self):
