@@ -40,7 +40,7 @@ class Message(object):
 
         while len(rawmessage) > 0 and rawmessage[0] != MESSAGE_START_CODE_0X02: 
             rawmessage = rawmessage[1:]
-            self.log.debug('Trimming leading buffer garbage')
+            log.debug('Trimming leading buffer garbage')
 
         if len(rawmessage) < 2:
             return None
