@@ -142,7 +142,7 @@ class PLM(asyncio.Protocol):
         self.log.debug("Starting: send_msg")
         self.log.debug('Sending %d byte message: %s',
                 len(msg.bytes), msg.hex)
-        await asyncio.sleep(2)
+        yield from asyncio.sleep(2)
         self.transport.write(msg.bytes)
 
         self.log.debug("Ending: send_msg")
