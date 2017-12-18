@@ -143,7 +143,7 @@ class PLM(asyncio.Protocol):
         self.log.debug('Sending %d byte message: %s',
                 len(msg.bytes), msg.hex)
         time.sleep(2)
-        self.log.info('Write buffer is: %d', self.transport.get_write_buffer_size())
+        self.log.info('Write buffer limit is: %d', self.transport.get_write_buffer_limits())
         self.transport.write(msg.bytes)
 
         self.log.debug("Ending: send_msg")
