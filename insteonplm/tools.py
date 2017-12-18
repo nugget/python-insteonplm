@@ -107,7 +107,7 @@ def console(loop, log, devicelist):
 
     if 1 == 1:
         # Test Status Request message
-        device = conn.protocol.devices['14627a']
+        device = conn.protocol.devices['4189cf_2']
         device.lightOnLevel.connect(async_light_on_level_callback)
         device.light_on()
         yield from asyncio.sleep(5, loop=loop)
