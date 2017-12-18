@@ -47,7 +47,7 @@ class Message(object):
 
         code = rawmessage[1]
         _messageFlags = 0x00
-        
+        log.info('Getting message class for code %x', code)
         msgclass = Message.get_message_class(code)
         msg = None
         remainingBuffer = rawmessage
@@ -110,5 +110,5 @@ class Message(object):
         messageclasses[MESSAGE_GET_FIRST_ALL_LINK_RECORD_0X69] = GetFirstAllLinkRecord
         messageclasses[MESSAGE_GET_NEXT_ALL_LINK_RECORD_0X6A] = GetNextAllLinkRecord
         messageclasses[MESSAGE_GET_IM_CONFIGURATION_0X73] = GetImConfiguration
-
+        
         return messageclasses[code]
