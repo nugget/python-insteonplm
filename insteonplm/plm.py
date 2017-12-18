@@ -319,6 +319,7 @@ class PLM(asyncio.Protocol):
     def _get_next_all_link_record(self):
         """Request next ALL-Link record."""
         self.log.debug("Starting: _get_next_all_link_recor")
+        self.log.info("Requesting Next All-Link Record")
         msg = GetNextAllLinkRecord()
         self.send_msg(msg)
         self.log.debug("Ending: _get_next_all_link_recor")
