@@ -33,7 +33,7 @@ class ExtendedSend(MessageBase):
         else:
             self.target = Address(target)
 
-        self._messageFlags = flags
+        self._messageFlags = flags | MESSAGE_FLAG_EXTENDED_0X10
         self.cmd1 = cmd1
         self.cmd2 = cmd2
         self.userdata = bytearray()
