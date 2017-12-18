@@ -206,9 +206,9 @@ class PLM(asyncio.Protocol):
                                                               int.from_bytes(product_key, byteorder='big'))
             if device is not None:
                 if isinstance(device, list):
-                    for dev in device:
-                        self.devices[device.id] = device
-                        self.log.info('Device with id %s added to device list.', device.id)
+                    for currdev in device:
+                        self.devices[currdev.id] = device
+                        self.log.info('Device with id %s added to device list.', currdev.id)
                 else:
                     self.devices[device.id] = device
                     self.log.info('Device with id %s added to device list.', device.id)
