@@ -291,7 +291,7 @@ class PLM(asyncio.Protocol):
                 pass
         delay = 1
         for addr in self._aldb_response_queue:
-            self._loop.call_later(delay, self._device_id_request, msg)
+            self._loop.call_later(delay, self._device_id_request, addr)
             delay += 1
 
         self.log.debug('Ending _handle_get_next_all_link_record_acknak')
