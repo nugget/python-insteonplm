@@ -105,6 +105,7 @@ class PLM(asyncio.Protocol):
         while worktodo:
             try:
                 msg = self._recv_queue.pop()
+                self.log.debug('Processing message %s', msg.hex)
                 callback = self._message_callbacks.get_callback_from_message(msg)
                 if callback is not None:
                     self._loop.call_soon(callback, msg)
