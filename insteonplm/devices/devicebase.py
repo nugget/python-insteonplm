@@ -72,7 +72,10 @@ class DeviceBase(object):
     def receive_message(self, msg):
         callback = self._message_callbacks.get_callback_from_message(msg)
         if callback is None:
-            self.log.debug('No call back found in device %s for message %s', msg.address.hex, msg.hex)
+            if hasattr(msg, 'cmd1'):
+                self.log.debug('No callback found in device %s for message code %02x with cmd1 %02x and cmd2 %02x and acknak %02x', msg.code, msg.cmd1, msg.cmd2, msg.acknak)
+            else:
+                self.log.debug('No call back found in device %s for message %s', msg.address.hex, msg.hex)
         else:
             callback(msg)
 

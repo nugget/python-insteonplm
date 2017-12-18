@@ -47,7 +47,6 @@ class Message(object):
 
         code = rawmessage[1]
         _messageFlags = 0x00
-        log.info('Getting message class for code %x', code)
         msgclass = Message.get_message_class(code)
         msg = None
         remainingBuffer = rawmessage
@@ -76,16 +75,15 @@ class Message(object):
         msg = Message.get_message_class(rawmessage[1])
 
         if hasattr(msg, 'receivedSize') and msg.receivedSize:
-            log.debug('Found a code 0x%x message which returns %d bytes',rawmessage[1], msg.receivedSize)
             expectedSize = msg.receivedSize
         else:
-            log.debug('Unable to find an receivedSize for code 0x%x', rawmessage[1])
+            log.error('Unable to find an receivedSize for code 0x%x', rawmessage[1])
             return ValueError
 
         if len(rawmessage) >= expectedSize:
             return True
         else:
-            log.debug('Expected %r bytes but received %r bytes. Need more bytes to process message.', expectedSize, len(rawmessage))
+            #log.debug('Expected %r bytes but received %r bytes. Need more bytes to process message.', expectedSize, len(rawmessage))
             return False
 
     @classmethod

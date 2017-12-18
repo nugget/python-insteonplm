@@ -42,8 +42,8 @@ def console(loop, log, devicelist):
         """Log that our new device callback worked."""
         log.warn('New Device: %s %02x %02x %s, %s', device.id, device.cat, device.subcat, device.description, device.model)
 
-    def async_light_on_level_callback(addr, onlevel):
-        log.info('Light %s turn on to level %02x', addr, onlevel)
+    def async_light_on_level_callback(addr, state, value):
+        log.info('Device %s state %s value is changed to %02x', addr,state, value)
 
     criteria = {}
     conn.protocol.add_device_callback(async_insteonplm_light_callback, criteria)
@@ -58,7 +58,7 @@ def console(loop, log, devicelist):
     # conn.protocol.product_data_request('15c3ab')
     # yield from asyncio.sleep(10, loop=loop)
 
-    yield from asyncio.sleep(100, loop=loop)
+    yield from asyncio.sleep(120, loop=loop)
 
     if 1 == 0:
         device = conn.protocol.devices['14627a']

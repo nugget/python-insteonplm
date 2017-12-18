@@ -115,8 +115,11 @@ class PLM(asyncio.Protocol):
                 callback = self._message_callbacks.get_callback_from_message(msg)
                 if callback is not None:
                     self._loop.call_soon(callback, msg)
-                else: 
-                    self.log.debug("Did not find a message callback for code %x", msg.code)
+                else:             
+                    if hasattr(msg, 'cmd1'):
+                        self.log.debug('No callback found in device %s for message code %02x with cmd1 %02x and cmd2 %02x and acknak %02x', msg.code, msg.cmd1, msg.cmd2, msg.acknak)
+                    else:
+                        self.log.debug('No call back found in device %s for message %s', msg.address.hex, msg.hex)
             except:
                 worktodo = False
 
@@ -146,9 +149,8 @@ class PLM(asyncio.Protocol):
         # A callback can then be defined in the event of a NAK (i.e. retry or do something else)
         # self._sent_queue.append(msg)
         self.log.debug("Starting: send_msg")
-        self.log.debug('Sending %d byte message: %s',
-                len(msg.bytes), msg.hex)
         time.sleep(.5)
+        self.log.debug('Sending %d byte message: %s', len(msg.bytes), msg.hex)
         self.transport.write(msg.bytes)
 
         self.log.debug("Ending: send_msg")
@@ -230,8 +232,8 @@ class PLM(asyncio.Protocol):
                 # the ALDB record did not return a device type either
                 # we remove the device from the list of devices assuming it is offline
                 # If it is online it can be added manually via the device overrides
-                self.log.info("Device with address %s did not respond to a request for a device ID.", msg.target.hex)
-                self.log.debug("Device with address %s is being removed from the list.", msg.target.hex)
+                self.log.error("Device with address %s did not respond to a request for a device ID.", msg.target.hex)
+                self.log.error("Device with address %s is being removed from the list.", msg.target.hex)
                 self._aldb_response_queue.pop(msg.target.hex)
         
         self.log.debug("Ending _handle_send_standard_or_exteded_message_nak")
@@ -255,11 +257,14 @@ class PLM(asyncio.Protocol):
         self.log.debug('Ending _handle_all_link_record_response')
 
     def _handle_get_next_all_link_record_nak(self, msg):
-        self.log.debug('Starting _handle_get_next_all_link_record_acknak')
+        self.log.debug('Starting _handle_get_next_all_link_record_nak')
 
         # When the last All-Link record is reached the PLM sends a NAK
-        self.log.debug('Devices found: %d', len(self._aldb_response_queue))
+        self.log.debug('All-Link device records found in ALDB: %d', len(self._aldb_response_queue))
         for addr in self._aldb_response_queue:
+            # Check if the device is already entered in the device list
+            if self.devices[addr] is not None:
+                break
             aldbRecordMessage = self._aldb_response_queue[addr]['msg']
             cat = aldbRecordMessage.linkdata1
             subcat = aldbRecordMessage.linkdata2
@@ -277,15 +282,12 @@ class PLM(asyncio.Protocol):
                         if isinstance(device, list):
                             for currdev in device:
                                 self.devices[currdev.id] = currdev
-                                self.log.info('--------------------------------------------------------')
                                 self.log.info('Device with id %s added to device list from ALDB Data.', currdev.id)
-                                self.log.info('--------------------------------------------------------')
                         else:
                             self.devices[device.id] = device
-                            self.log.info('--------------------------------------------------------')
                             self.log.info('Device with id %s added to device list from ALDB data.', device.id)
-                            self.log.info('--------------------------------------------------------')
 
+        # Remove records for devices found in the ALDB
         for addr in self.devices:
             try:
                 self._aldb_response_queue.pop(addr)
@@ -316,7 +318,7 @@ class PLM(asyncio.Protocol):
     def _get_first_all_link_record(self):
         """Request first ALL-Link record."""
         self.log.debug("Starting: _get_first_all_link_record")
-        self.log.info('Requesting First ALL-Link Record')
+        self.log.info('Requesting ALL-Link Records')
         msg = GetFirstAllLinkRecord()
         self.send_msg(msg)
         self.log.debug("Ending: _get_first_all_link_record")
@@ -324,7 +326,6 @@ class PLM(asyncio.Protocol):
     def _get_next_all_link_record(self):
         """Request next ALL-Link record."""
         self.log.debug("Starting: _get_next_all_link_recor")
-        self.log.info('Requesting Next ALL-Link Record')
         msg = GetNextAllLinkRecord()
         self.send_msg(msg)
         self.log.debug("Ending: _get_next_all_link_recor")
@@ -336,7 +337,7 @@ class PLM(asyncio.Protocol):
             device = addr
         else:
             device = Address(addr)
-        self.log.info('Requesting device ID for %s', device.human)
+        self.log.debug('Requesting device ID for %s', device.human)
         msg = StandardSend(device, COMMAND_ID_REQUEST_0X10_0X00['cmd1'], COMMAND_ID_REQUEST_0X10_0X00['cmd1'])
         self.send_msg(msg)
         self.log.debug("Ending: _device_id_request")
@@ -345,7 +346,7 @@ class PLM(asyncio.Protocol):
         """Request Product Data Record for device."""
         self.log.debug("Starting: _product_data_request")
         device = Address(addr)
-        self.log.info('Requesting product data for %s', device.human)
+        self.log.debug('Requesting product data for %s', device.human)
         msg = StandardSend(device, COMMAND_PRODUCT_DATA_REQUEST_0X03_0X00['cmd1'], COMMAND_PRODUCT_DATA_REQUEST_0X03_0X00['cmd2'])    
         self.send_msg(msg)
         self.log.debug("Starting: _product_data_request")
@@ -357,7 +358,6 @@ class PLM(asyncio.Protocol):
 
         while worktodo:
             if len(self._buffer) == 0:
-                self.log.debug('Clean break!  There is no buffer left')
                 worktodo = False
                 break
             msg = Message.create(self._buffer)

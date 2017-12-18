@@ -79,6 +79,12 @@ class MessageBase(object):
     def maxhopsflag(self):
         return (self._messageFlags & MESSAGE_FLAG_MAX_HOPS)
 
+    @property 
+    def acknak(self):
+        if hasattr(self, '_acknak'):
+            return self._acknak
+        return None
+
     @property
     def isack(self):
         if hasattr(self, '_acknak'):

@@ -40,10 +40,6 @@ class ALDB(object):
 
     def __setitem__(self, key, device):
         """Add or Update a device in the ALDB."""
-        # TEH - Removing this since 0x00 is a valid device category
-        #if 'cat' not in value or value['cat'] == 0:
-        #    self.log.debug('Ignoring device setitem with no cat: %s', value)
-        #    return
 
         if not isinstance(device, DeviceBase):
             raise ValueError
@@ -66,7 +62,7 @@ class ALDB(object):
 
     def add_device_callback(self, callback, criteria):
         """Register a callback to be invoked when a new device appears."""
-        self.log.info('New callback %s with %s (%d items already in list)',
+        self.log.debug('New callback %s with %s (%d items already in list)',
                       callback, criteria, len(self._devices.keys()))
         self._cb_new_device.append([callback, criteria])
 
