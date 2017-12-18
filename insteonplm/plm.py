@@ -151,7 +151,7 @@ class PLM(asyncio.Protocol):
         self.log.debug("Starting: send_msg")
         self.log.debug('Sending %d byte message: %s',
                 len(msg.bytes), msg.hex)
-        time.sleep(1)
+        time.sleep(.5)
         self.transport.write(msg.bytes)
 
         self.log.debug("Ending: send_msg")
@@ -222,13 +222,13 @@ class PLM(asyncio.Protocol):
             if retries < 5:
                 self.log.info('Device %s did not respond to %d tries for a device ID. Retrying.', msg.target, retries)
                 self._aldb_response_queue[msg.target.hex]['retries'] = retries + 1
-                self._device_id_request(msg.target.hex)
+                self._loop.call_later(2, self._device_id_request, msg.target.hex)
             else:
                 # If we have tried 5 times and did not get a device ID and
                 # the ALDB record did not return a device type either
                 # we remove the device from the list of devices assuming it is offline
                 # If it is online it can be added manually via the device overrides
-                self.log.info("Device with address %s did not respond to a request for a device ID.", msg.taret.hex)
+                self.log.info("Device with address %s did not respond to a request for a device ID.", msg.target.hex)
                 self.log.debug("Device with address %s is being removed from the list.", msg.target.hex)
                 self._aldb_response_queue.pop(msg.target.hex)
         
