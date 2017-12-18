@@ -87,8 +87,8 @@ class PLM(asyncio.Protocol):
         self._message_callbacks.add_message_callback(MESSAGE_GET_NEXT_ALL_LINK_RECORD_0X6A, 
                                                      None, self._handle_get_next_all_link_record_nak, MESSAGE_NAK)
 
-        self._message_callbacks.add_message_callback(MESSAGE_STANDARD_MESSAGE_RECEIVED_0X50,
-                                                     COMMAND_ID_REQUEST_RESPONSE_0X10_0X10, self._handle_id_request_response)
+        # self._message_callbacks.add_message_callback(,
+        #                                             COMMAND_ID_REQUEST_RESPONSE_0X10_0X10, self._handle_id_request_response)
 
     def connection_made(self, transport):
         """Called when asyncio.Protocol establishes the network connection."""
@@ -289,8 +289,10 @@ class PLM(asyncio.Protocol):
                 self._aldb_response_queue.pop(addr)
             except:
                 pass
-
-        self._get_next_device_id()
+        delay = 1
+        for addr in self._aldb_response_queue:
+            self._loop.call_later(delay, self._device_id_request, msg)
+            delay += 1
 
         self.log.debug('Ending _handle_get_next_all_link_record_acknak')
 
