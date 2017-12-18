@@ -87,9 +87,6 @@ class PLM(asyncio.Protocol):
         self._message_callbacks.add_message_callback(MESSAGE_GET_NEXT_ALL_LINK_RECORD_0X6A, 
                                                      None, self._handle_get_next_all_link_record_nak, MESSAGE_NAK)
 
-        # self._message_callbacks.add_message_callback(,
-        #                                             COMMAND_ID_REQUEST_RESPONSE_0X10_0X10, self._handle_id_request_response)
-
     def connection_made(self, transport):
         """Called when asyncio.Protocol establishes the network connection."""
         self.log.info('Connection established to PLM')
@@ -198,9 +195,9 @@ class PLM(asyncio.Protocol):
         self.log.debug("Starting _handle_assign_to_all_link_group")
 
         if msg.isbroadcastflag:
-            cat = msg.target.bytes[0:1]
-            subcat = msg.target.bytes[2:3]
-            product_key = msg.target.bytes[4:5]
+            cat = msg.target.bytes[0:2]
+            subcat = msg.target.bytes[2:4]
+            product_key = msg.target.bytes[4:6]
             self.log.debug('Received Device ID with address: %s  cat: 0x%s  subcat: 0x%s  firmware: 0x%s', 
                             msg.address.hex, binascii.hexlify(cat), binascii.hexlify(subcat), binascii.hexlify(product_key))
             device = self.devices.create_device_from_category(msg.address, cat, subcat, product_key)
@@ -297,37 +294,6 @@ class PLM(asyncio.Protocol):
             delay += 2
 
         self.log.debug('Ending _handle_get_next_all_link_record_acknak')
-
-    def _handle_id_request_response(self, msg):
-        self.log.debug("Starting _handle_id_request_response")
-        if len(self._aldb_response_queue) > 0:
-            self._get_next_device_id()
-                
-        self.log.debug("Starting _handle_id_request_response")
-
-    def _get_next_device_id(self):
-        self.log.debug('Ending _get_next_device_id')
-        # Clear out the items already added to devices
-        if len(self.devices) > 0:
-            for addr in self.devices:
-                try:
-                    self._aldb_response_queue.pop(addr)
-                except:
-                    pass
-        # Find the next address to get
-        address = None 
-        for addr in self._aldb_response_queue:
-            aldb_record = self._aldb_response_queue[addr]
-            retries = aldb_record['retries']
-            if retries == 0:
-                address = addr
-                aldb_record['retries'] = 1
-                break 
-
-        if address is not None:
-            self._device_id_request(address)
-
-        self.log.debug('Ending _get_next_device_id')
 
     def _handle_get_plm_info(self, msg):
         self.log.debug('Starting _handle_get_plm_info')
