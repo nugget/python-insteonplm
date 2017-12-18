@@ -12,7 +12,7 @@ class StandardSend(MessageBase):
     receivedSize = MESSAGE_SEND_STANDARD_MESSAGE_RECEIVED_SIZE
     description = 'INSTEON Standard Message Send'
 
-    def __init__(self, target, flags, cmd1, cmd2, acknak = None):
+    def __init__(self, target, cmd1, cmd2, flags=0x00,  acknak = None):
 
         self.address = Address(bytes([0x00,0x00,0x00]))
 
@@ -30,9 +30,9 @@ class StandardSend(MessageBase):
     @classmethod
     def from_raw_message(cls, rawmessage):
         msg = StandardSend(rawmessage[2:5],
-                            rawmessage[5],
                             rawmessage[6],
                             rawmessage[7],
+                            rawmessage[5],
                             rawmessage[8:9])
         if msg.isextendedflag:
             msg = ExtendedSend.from_raw_message(rawmessage)

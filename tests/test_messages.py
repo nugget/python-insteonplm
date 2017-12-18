@@ -130,19 +130,19 @@ def test_extendedSend():
         userdata.update({key:val})
 
     msg = ExtendedSend(address, cmd1, cmd2, flags, **userdata)
-    assert msg.hex == hexmsg(0x02, 0x62, Address(address), flags, cmd1, cmd2, userdata)
+    assert msg.hex == hexmsg(0x02, 0x62, Address(address), flags | 0x10, cmd1, cmd2, userdata)
     assert not msg.isack 
     assert not msg.isnak
     assert len(msg.hex)/2 == msg.sendSize
 
     msg = ExtendedSend(address, cmd1, cmd2,flags, ack, **userdata)
-    assert msg.hex == hexmsg(0x02, 0x62, Address(address), flags, cmd1, cmd2, userdata, ack)
+    assert msg.hex == hexmsg(0x02, 0x62, Address(address), flags | 0x10, cmd1, cmd2, userdata, ack)
     assert msg.isack 
     assert not msg.isnak
     assert len(msg.hex)/2 == msg.receivedSize
     
     msg = ExtendedSend(address, cmd1, cmd2, flags, nak, **userdata)
-    assert msg.hex == hexmsg(0x02, 0x62, Address(address), flags, cmd1, cmd2, userdata, nak)
+    assert msg.hex == hexmsg(0x02, 0x62, Address(address), flags | 0x10, cmd1, cmd2, userdata, nak)
     assert not msg.isack 
     assert msg.isnak
     assert len(msg.hex)/2 == msg.receivedSize
@@ -306,19 +306,19 @@ def test_standardSend():
     ack = 0x06
     nak = 0x15
 
-    msg = StandardSend(address, flags, cmd1, cmd2)
+    msg = StandardSend(address, cmd1, cmd2, flags)
     assert msg.hex == hexmsg(0x02, 0x62, Address(address), flags, cmd1, cmd2)
     assert not msg.isack 
     assert not msg.isnak
     assert len(msg.hex)/2 == msg.sendSize
 
-    msg = StandardSend(address, flags, cmd1, cmd2, ack)
+    msg = StandardSend(address, cmd1, cmd2, flags, ack)
     assert msg.hex == hexmsg(0x02, 0x62, Address(address), flags, cmd1, cmd2, ack)
     assert msg.isack 
     assert not msg.isnak
     assert len(msg.hex)/2 == msg.receivedSize
     
-    msg = StandardSend(address, flags, cmd1, cmd2, nak)
+    msg = StandardSend(address, cmd1, cmd2, flags, nak)
     assert msg.hex == hexmsg(0x02, 0x62, Address(address), flags, cmd1, cmd2, nak)
     assert not msg.isack 
     assert msg.isnak

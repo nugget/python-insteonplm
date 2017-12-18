@@ -23,9 +23,8 @@ class ExtendedSend(MessageBase):
     receivedSize = MESSAGE_SEND_EXTENDED_MESSAGE_RECEIVED_SIZE
     description = 'INSTEON Standard Message Send'
 
-    def __init__(self, target, cmd1, cmd2, flags=0x00, acknak=None, **kwarg ):
+    def __init__(self, target, cmd1, cmd2, flags=0x10, acknak=None, **kwarg ):
 
-        print('kwag: ', kwarg)
         self.address = Address(bytes([0x00,0x00,0x00]))
 
         if isinstance(target, Address):
@@ -45,13 +44,10 @@ class ExtendedSend(MessageBase):
 
         for key in kwarg:
             if key in ['d1', 'd2', 'd3', 'd4', 'd5', 'd6', 'd7', 'd8', 'd9','d10', 'd11','d12','d13', 'd14']:
-                print('key: ',key, 'value ', kwarg[key])
                 userdata_array[key] = kwarg[key]
-        print(self.userdata)
         for i in range(1,15):
             key = 'd' + str(i)
             self.userdata.append(userdata_array[key])
-        print(self.userdata)
         self._acknak = self._setacknak(acknak)
 
     @classmethod
@@ -66,7 +62,6 @@ class ExtendedSend(MessageBase):
             key = 'd' + str(i)
             userdata_dict.update({key:val})
             i += 1
-        print('user_dict: ', userdata_dict)
         return ExtendedSend(rawmessage[2:5],
                             rawmessage[6],
                             rawmessage[7],

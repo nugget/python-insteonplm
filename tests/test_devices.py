@@ -40,11 +40,11 @@ class MockPLM(object):
                 return ValueError
             else:
                 command2 = cmd2
-        msg = StandardSend(addr, flags, command1, command2)
+        msg = StandardSend(addr, command1, command2, flags)
         self.sentmessage = msg.hex
 
 
-    def send_extended(self, target, commandtuple, cmd2=None, flags=0x00, acknak=None, **userdata):
+    def send_extended(self, target, commandtuple, cmd2=None, flags=0x10, acknak=None, **userdata):
         if commandtuple.get('cmd1', False):
             cmd1 = commandtuple['cmd1']
             cmd2out = commandtuple['cmd2']
@@ -56,7 +56,7 @@ class MockPLM(object):
            else:
                 raise ValueError
 
-        msg = ExtendedSend(target, cmd1, cmd2out,flags,  acknak, **userdata)
+        msg = ExtendedSend(target, cmd1, cmd2out, flags,  acknak, **userdata)
         self.sentmessage = msg.hex
 
 def test_switchedLightingControl():
@@ -105,7 +105,7 @@ def test_switchedLightingControl_group():
     assert device.id == address+'_2'
 
     device.light_on()
-    assert plm.sentmessage == '02621a2b3c0011ff0200000000000000000000000000'
+    assert plm.sentmessage == '02621a2b3c1011ff0200000000000000000000000000'
 
 def test_switchedLightingControl_2663_222():
     plm = MockPLM()

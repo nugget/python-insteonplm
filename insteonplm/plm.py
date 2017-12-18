@@ -165,7 +165,7 @@ class PLM(asyncio.Protocol):
            else:
                 raise ValueError
 
-        msg = StandardSend(target, flags, cmd1, cmd2out, acknak)
+        msg = StandardSend(target, cmd1, cmd2out, flags, acknak)
         self.send_msg(msg)
 
     def send_extended(self, target, commandtuple, cmd2=None, flags=0x00, acknak=None, **userdata):
@@ -337,7 +337,7 @@ class PLM(asyncio.Protocol):
         else:
             device = Address(addr)
         self.log.info('Requesting device ID for %s', device.human)
-        msg = StandardSend(device, 0x00, COMMAND_ID_REQUEST_0X10_0X00['cmd1'], COMMAND_ID_REQUEST_0X10_0X00['cmd1'])
+        msg = StandardSend(device, COMMAND_ID_REQUEST_0X10_0X00['cmd1'], COMMAND_ID_REQUEST_0X10_0X00['cmd1'])
         self.send_msg(msg)
         self.log.debug("Ending: _device_id_request")
 
@@ -346,7 +346,7 @@ class PLM(asyncio.Protocol):
         self.log.debug("Starting: _product_data_request")
         device = Address(addr)
         self.log.info('Requesting product data for %s', device.human)
-        msg = StandardSend(device, 0x00, COMMAND_PRODUCT_DATA_REQUEST_0X03_0X00['cmd1'], COMMAND_PRODUCT_DATA_REQUEST_0X03_0X00['cmd2'])    
+        msg = StandardSend(device, COMMAND_PRODUCT_DATA_REQUEST_0X03_0X00['cmd1'], COMMAND_PRODUCT_DATA_REQUEST_0X03_0X00['cmd2'])    
         self.send_msg(msg)
         self.log.debug("Starting: _product_data_request")
     
