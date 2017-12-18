@@ -46,6 +46,7 @@ class ALDB(object):
         #    return
 
         if not isinstance(device, DeviceBase):
+            self.log.info(device)
             raise ValueError
 
         self._devices[key] = device
