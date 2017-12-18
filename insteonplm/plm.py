@@ -58,14 +58,7 @@ class PLM(asyncio.Protocol):
 
         self.log = logging.getLogger(__name__)
         self.transport = None
-
-        # TODO: Define a method for handling Insteon commands received via StandardMessageRecieved
-        #       or ExtendedMessageReceived
-        #       This will also define the device class' capabilities (i.e. device class can handle a
-        #       COMMAND_LIGHT_ON request)
-        #       It feels like a good idea to build this into the PLMProtocol class so that every 
-        #       device (including the PLM) handle command registration the same way.
-
+        
         self._message_callbacks.add_message_callback(MESSAGE_STANDARD_MESSAGE_RECEIVED_0X50, 
                                                      None, self._handle_standard_or_extended_message_received)
 
@@ -250,7 +243,7 @@ class PLM(asyncio.Protocol):
 
     def _handle_all_link_record_response(self, msg):
         self.log.debug('Starting _handle_all_link_record_response')
-
+        self.log.info('Found all link record for device %s', msg.address.hex)
         self._aldb_response_queue[msg.address.hex] = {'msg':msg, 'retries':0}
         self._get_next_all_link_record()
         
