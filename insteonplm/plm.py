@@ -142,7 +142,7 @@ class PLM(asyncio.Protocol):
         self.log.debug("Starting: send_msg")
         self.log.debug('Sending %d byte message: %s',
                 len(msg.bytes), msg.hex)
-        yield from time.sleep(2)
+        time.sleep(1)
         self.transport.write(msg.bytes)
 
         self.log.debug("Ending: send_msg")
@@ -207,6 +207,8 @@ class PLM(asyncio.Protocol):
                     self.log.info('--------------------------------------------------')
                     self.log.info('Device with id %s added to device list.', device.id)
                     self.log.info('--------------------------------------------------')
+            if len(self._aldb_response_queue) > 0:
+                self._get_next_device_id()
         
         self.log.debug("Ending _handle_assign_to_all_link_group")
 
@@ -223,10 +225,9 @@ class PLM(asyncio.Protocol):
                 # the ALDB record did not return a device type either
                 # we remove the device from the list of devices assuming it is offline
                 # If it is online it can be added manually via the device overrides
-                if self._aldb_response_queue[msg.target.hex]['device'] is None:
-                    self.log.info("Device with address %s did not respond to a request for a device ID.", msg.taret.hex)
-                    self.log.debug("Device with address %s is being removed from the list.", msg.target.hex)
-                    self._aldb_response_queue.pop(msg.target.hex)
+                self.log.info("Device with address %s did not respond to a request for a device ID.", msg.taret.hex)
+                self.log.debug("Device with address %s is being removed from the list.", msg.target.hex)
+                self._aldb_response_queue.pop(msg.target.hex)
         
         self.log.debug("Ending _handle_send_standard_or_exteded_message_nak")
 
@@ -243,7 +244,7 @@ class PLM(asyncio.Protocol):
     def _handle_all_link_record_response(self, msg):
         self.log.debug('Starting _handle_all_link_record_response')
 
-        self._aldb_response_queue[msg.address.hex] = {'msg':msg, 'retries':0}
+        self._aldb_response_queue[msg.address.hex] = {'msg':msg, 'retries':0, 'device':None}
         self._get_next_all_link_record()
         
         self.log.debug('Ending _handle_all_link_record_response')
@@ -279,12 +280,16 @@ class PLM(asyncio.Protocol):
                             self.log.info('--------------------------------------------------------')
                             self.log.info('Device with id %s added to device list from ALDB data.', device.id)
                             self.log.info('--------------------------------------------------------')
-                else:
-                    self._device_id_request(addr)
-            else:
-                self._device_id_request(addr)
+        self._get_next_device_id()
 
         self.log.debug('Ending _handle_get_next_all_link_record_acknak')
+
+    def _get_next_device_id(self):
+        device = None
+        while device is None:
+            aldb = self._aldb_response_queue.pop()
+            msg = aldb['msg']
+            self._device_id_request(msg.address.hex)
 
     def _handle_get_plm_info(self, msg):
         self.log.debug('Starting _handle_get_plm_info')
