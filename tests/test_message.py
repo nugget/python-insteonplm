@@ -176,3 +176,21 @@ def test_iscomplete_with_complete_message():
 def test_iscomplete_with_incomplete_message():
     shortmessage = bytearray([0x02, 0x50, 0x00])
     assert not Message.iscomplete(shortmessage)
+
+def test_incomplete_standard_message():
+    rawmessage = bytearray([0x02, 0x50, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00])
+    msg = Message.create(rawmessage)
+    assert msg is None
+
+def test_incomplete_extended_messge():
+    msgext = ExtendedSend(bytearray({0x1a,0x2b,0x3c}), 0x7d, 0x8e, **{'d1':0x9f})
+    print(msgext.hex)
+
+    rawmessage = bytearray([0x02, 0x62, 0x1a, 0x2b, 0x3c, 0x10, 0x7d, 0x8e, 0x9f, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00])
+    msg = Message.create(rawmessage)
+    assert msg is None
+    
+
+    rawmessage.append(0x06)
+    msg = Message.create(rawmessage)
+    assert isinstance(msg, ExtendedSend)

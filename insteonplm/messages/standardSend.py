@@ -35,7 +35,10 @@ class StandardSend(MessageBase):
                             rawmessage[5],
                             rawmessage[8:9])
         if msg.isextendedflag:
-            msg = ExtendedSend.from_raw_message(rawmessage)
+            if len(rawmessage) >= ExtendedSend.receivedSize:
+                msg = ExtendedSend.from_raw_message(rawmessage)
+            else:
+                msg = None
         return msg
 
     @property
