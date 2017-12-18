@@ -75,7 +75,7 @@ class DeviceBase(object):
             if hasattr(msg, 'cmd1'):
                 self.log.debug('No callback found in device %s for message code %02x with cmd1 %02x and cmd2 %02x and acknak %02x', msg.code, msg.cmd1, msg.cmd2, msg.acknak)
             else:
-                self.log.debug('No call back found in device %s for message %s', msg.address.hex, msg.hex)
+                self.log.debug('No call back found in device %s for message %s', self.id, msg.hex)
         else:
             callback(msg)
 

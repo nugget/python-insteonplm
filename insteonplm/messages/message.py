@@ -39,6 +39,7 @@ class Message(object):
         log = logging.getLogger(__name__)
 
         while len(rawmessage) > 0 and rawmessage[0] != MESSAGE_START_CODE_0X02: 
+            log.debug('Buffer content: %s', binascii.hexlify(rawmessage))
             rawmessage = rawmessage[1:]
             log.debug('Trimming leading buffer garbage')
 

@@ -234,14 +234,14 @@ class PLM(asyncio.Protocol):
         self.log.debug("Ending _handle_send_standard_or_exteded_message_nak")
 
     def _handle_standard_or_extended_message_received(self, msg):
-        self.log.debug("Starting: _handle_standard_message_received")
+        self.log.debug("Starting: _handle_standard_or_extended_message_received")
         # If it is not a broadcast message then it is device specific and we call the device's receive_message method
         # TODO: Is there a situation where the PLM is the device? If this is the case the PLM device will not be in the ALDB
         device = self.devices[msg.address.hex]
         if device is not None:
             device.receive_message(msg)
 
-        self.log.debug("Ending: _handle_standard_message_received")
+        self.log.debug("Ending: _handle_standard_or_extended_message_received")
 
     def _handle_all_link_record_response(self, msg):
         self.log.debug('Starting _handle_all_link_record_response')
