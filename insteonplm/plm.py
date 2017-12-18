@@ -98,6 +98,7 @@ class PLM(asyncio.Protocol):
                        len(data), binascii.hexlify(data))
 
         self._buffer.extend(data)
+        self.log.debug('Total buffer: %s', binascii.hexlify(self._buffer))
         self._peel_messages_from_buffer()
 
         self.log.debug('Messages in queue: %d', len(self._recv_queue))
