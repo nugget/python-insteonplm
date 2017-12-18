@@ -198,9 +198,9 @@ class PLM(asyncio.Protocol):
             cat = msg.target.bytes[0:2]
             subcat = msg.target.bytes[2:4]
             product_key = msg.target.bytes[4:6]
-            self.log.debug('Received Device ID with address: %s  cat: 0x%s  subcat: 0x%s  firmware: 0x%s', 
+            self.log.info('Received Device ID with address: %s  cat: 0x%s  subcat: 0x%s  firmware: 0x%s', 
                             msg.address.hex, binascii.hexlify(cat), binascii.hexlify(subcat), binascii.hexlify(product_key))
-            device = self.devices.create_device_from_category(msg.address, cat, subcat, product_key)
+            device = self.devices.create_device_from_category(msg.address.hex, cat, subcat, product_key)
             if device is not None:
                 if isinstance(device, list):
                     for dev in device:
