@@ -88,7 +88,7 @@ class PLM(asyncio.Protocol):
                                                      None, self._handle_get_next_all_link_record_nak, MESSAGE_NAK)
 
         self._message_callbacks.add_message_callback(MESSAGE_STANDARD_MESSAGE_RECEIVED_0X50,
-                                                     COMMAND_ID_REQUEST_RESPONSE_0X10_0X10, _handle_id_request_response)
+                                                     COMMAND_ID_REQUEST_RESPONSE_0X10_0X10, self._handle_id_request_response)
 
     def connection_made(self, transport):
         """Called when asyncio.Protocol establishes the network connection."""
