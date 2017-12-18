@@ -247,7 +247,7 @@ class PLM(asyncio.Protocol):
     def _handle_all_link_record_response(self, msg):
         self.log.debug('Starting _handle_all_link_record_response')
 
-        self._aldb_response_queue[msg.address.hex] = {'msg':msg, 'retries':0, 'device':None}
+        self._aldb_response_queue[msg.address.hex] = {'msg':msg, 'retries':0}
         self._get_next_all_link_record()
         
         self.log.debug('Ending _handle_all_link_record_response')
@@ -283,12 +283,12 @@ class PLM(asyncio.Protocol):
                             self.log.info('--------------------------------------------------------')
                             self.log.info('Device with id %s added to device list from ALDB data.', device.id)
                             self.log.info('--------------------------------------------------------')
-        if len(self.devices) > 0:
-            for addr in self.devices:
-                try:
-                    self._aldb_response_queue.pop(addr)
-                except:
-                    pass
+
+        for addr in self.devices:
+            try:
+                self._aldb_response_queue.pop(addr)
+            except:
+                pass
 
         self._get_next_device_id()
 
@@ -317,6 +317,7 @@ class PLM(asyncio.Protocol):
             retries = aldb_record['retries']
             if retries == 0:
                 address = addr
+                aldb_record['retries'] = 1
                 break 
 
         if address is not None:
