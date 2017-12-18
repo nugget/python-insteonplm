@@ -48,7 +48,8 @@ class ExtendedSend(MessageBase):
                 print('key: ',key, 'value ', kwarg[key])
                 userdata_array[key] = kwarg[key]
         print(self.userdata)
-        for key in userdata_array:
+        for i in range(1,15):
+            key = 'd' + str(i)
             self.userdata.append(userdata_array[key])
         print(self.userdata)
         self._acknak = self._setacknak(acknak)
