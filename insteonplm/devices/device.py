@@ -17,7 +17,6 @@ class Device(object):
         ipdb = IPDB()
         product = ipdb[[cat, subcat]]
         deviceclass = product[5]
-        log.debug('Device cat: %x  subcat: %x returns deviceclass: %s', cat, subcat, deviceclass)
         if deviceclass is not None:
             return deviceclass.create(plm, address, cat, subcat, product[2], product[3], product[4])
         else:

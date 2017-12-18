@@ -58,9 +58,9 @@ def console(loop, log, devicelist):
     # conn.protocol.product_data_request('15c3ab')
     # yield from asyncio.sleep(10, loop=loop)
 
-    yield from asyncio.sleep(170, loop=loop)
+    yield from asyncio.sleep(200, loop=loop)
 
-    if 1 == 1:
+    if 1 == 0:
         device = conn.protocol.devices['14627a']
         device.lightOnLevel.connect(async_light_on_level_callback)
         device.light_off()
