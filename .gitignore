@@ -93,3 +93,4 @@ ENV/
 /.vs
 /python-insteonplm.pyproj
 /python-insteonplm.sln
+/insteonplm/plm.old

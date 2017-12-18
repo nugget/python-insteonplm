@@ -85,4 +85,4 @@ class DimmableLightingControl(DeviceBase):
             self.lightOnLevel.update(self.id, self.lightOnLevel._stateName, msg.cmd2)
 
     def _light_off_command_received(self, msg):
-        self.lightOnLevel.update(msg.address.hex, 0)
+        self.lightOnLevel.update(msg.address.hex, self.lightOnLevel._stateName, 0)

@@ -29,13 +29,24 @@ class SecurityHealthSafety(DeviceBase):
             self._product_data_in_aldb = True
 
         self._message_callbacks.add_message_callback(MESSAGE_STANDARD_MESSAGE_RECEIVED_0X50, COMMAND_LIGHT_ON_0X11_NONE, self._sensor_on_command_received)
+        self._message_callbacks.add_message_callback(MESSAGE_EXTENDED_MESSAGE_RECEIVED_0X51, COMMAND_LIGHT_ON_0X11_NONE, self._sensor_on_command_received)
         self._message_callbacks.add_message_callback(MESSAGE_STANDARD_MESSAGE_RECEIVED_0X50, COMMAND_LIGHT_OFF_0X13_0X00, self._sensor_off_command_received)
+        self._message_callbacks.add_message_callback(MESSAGE_EXTENDED_MESSAGE_RECEIVED_0X51, COMMAND_LIGHT_OFF_0X13_0X00, self._sensor_off_command_received)
 
 
     def _sensor_on_command_received(self, msg):
-        # Message handler for Standard (0x50) or Extended (0x51) message commands 0x11 Light On
-        # Also handles Standard or Extended (0x62) Lights On (0x11) ACK
-        # When any of these messages are received any state listeners are updated with the 
-        # current light on level (cmd2)
-        if msg.isack:
-            self.lightOnLevel.update(self.id, self.lightOnLevel._stateName, msg.cmd2)
+        """
+        Message handler for Standard (0x50) or Extended (0x51) message commands 0x11 Sensor On
+        When a message is received any state listeners are updated with the 
+        return 0x01 for on
+        """
+        self.lightOnLevel.update(self.id, self.lightOnLevel._stateName, 0x01)
+
+    def _sensor_offcommand_received(self, msg):
+        """
+        Message handler for Standard (0x50) or Extended (0x51) message commands 0x13 Sensor Off
+        When a message is received any state listeners are updated with the 
+        return 0x00 for off
+        """
+        self.lightOnLevel.update(self.id, self.lightOnLevel._stateName, 0x00)
+            
