@@ -195,9 +195,9 @@ class PLM(asyncio.Protocol):
         self.log.debug("Starting _handle_assign_to_all_link_group")
 
         if msg.isbroadcastflag:
-            cat = msg.target.bytes[0:2]
-            subcat = msg.target.bytes[2:4]
-            product_key = msg.target.bytes[4:6]
+            cat = msg.target.bytes[0:1]
+            subcat = msg.target.bytes[1:2]
+            product_key = msg.target.bytes[2:3]
             self.log.info('Received Device ID with address: %s  cat: 0x%s  subcat: 0x%s  firmware: 0x%s', 
                             msg.address.hex, binascii.hexlify(cat), binascii.hexlify(subcat), binascii.hexlify(product_key))
             device = self.devices.create_device_from_category(self, msg.address.hex, cat, subcat, product_key)
