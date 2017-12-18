@@ -45,10 +45,6 @@ class ALDB(object):
         #    self.log.debug('Ignoring device setitem with no cat: %s', value)
         #    return
 
-        if not isinstance(device, DeviceBase):
-            self.log.info(device)
-            raise ValueError
-
         self._devices[key] = device
 
         self.log.debug('New INSTEON Device %r: %s (%02x:%02x)',
