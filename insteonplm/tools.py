@@ -58,7 +58,7 @@ def console(loop, log, devicelist):
     # conn.protocol.product_data_request('15c3ab')
     # yield from asyncio.sleep(10, loop=loop)
 
-    yield from asyncio.sleep(75, loop=loop)
+    yield from asyncio.sleep(100, loop=loop)
 
     if 1 == 0:
         device = conn.protocol.devices['14627a']
@@ -77,6 +77,33 @@ def console(loop, log, devicelist):
         for key in conn.protocol.devices:
             log.debug('Address: %s', key)
         yield from asyncio.sleep(5, loop=loop)
+
+    if 1 == 1:
+        # Test Top Outlet
+        device = conn.protocol.devices['4189cf']
+        device.lightOnLevel.connect(async_light_on_level_callback)
+        device.light_off()
+
+        log.debug('Sent light off request')
+        log.debug('----------------------')
+        yield from asyncio.sleep(5, loop=loop)
+
+        device.light_on()
+        log.debug('Sent light on request')
+        log.debug('----------------------')
+        
+        # Test Bottom Outlet
+        device = conn.protocol.devices['4189cf_2']
+        device.lightOnLevel.connect(async_light_on_level_callback)
+        device.light_off()
+
+        log.debug('Sent light off request')
+        log.debug('----------------------')
+        yield from asyncio.sleep(5, loop=loop)
+
+        device.light_on()
+        log.debug('Sent light on request')
+        log.debug('----------------------')
 
 
 def monitor():
