@@ -201,7 +201,7 @@ class PLM(asyncio.Protocol):
             cat = msg.target.bytes[0:1]
             subcat = msg.target.bytes[2:3]
             product_key = msg.target.bytes[4:5]
-            self.log.debug('Found device in ALDB with address: %s  cat: 0x%s  subcat: 0x%s  firmware: 0x%s', 
+            self.log.debug('Received Device ID with address: %s  cat: 0x%s  subcat: 0x%s  firmware: 0x%s', 
                             msg.address.hex, binascii.hexlify(cat), binascii.hexlify(subcat), binascii.hexlify(product_key))
             device = self.devices.create_device_from_category(msg.address, cat, subcat, product_key)
             if device is not None:
@@ -212,7 +212,9 @@ class PLM(asyncio.Protocol):
                 else:
                     self.devices[device.id] = device
                     self.log.info('Device with id %s added to device list.', device.id)
-        
+            else:
+                self.log.error('Did not add device to list because the device came back None')
+            self.log.info('Total Devices Found: %d', len(self.devices))
         self.log.debug("Ending _handle_assign_to_all_link_group")
 
     def _handle_send_standard_or_extended_message_nak(self, msg):
@@ -289,10 +291,10 @@ class PLM(asyncio.Protocol):
                 self._aldb_response_queue.pop(addr)
             except:
                 pass
-        delay = 1
+        delay = 2
         for addr in self._aldb_response_queue:
             self._loop.call_later(delay, self._device_id_request, addr)
-            delay += 1
+            delay += 2
 
         self.log.debug('Ending _handle_get_next_all_link_record_acknak')
 
