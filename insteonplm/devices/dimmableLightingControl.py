@@ -10,15 +10,19 @@ class DimmableLightingControl(DeviceBase):
         - light_on_fast(onlevel=0xff)
         - light_off()
         - light_off_fast()
+
     To monitor the state of the device subscribe to the state monitor:
-         - lightOnLevel.connect(callback)
+         - lightOnLevel.connect(callback)  (state='LightOnLevel')
+
     where callback defined as:
         - callback(self, device_id, state, state_value)
     """
 
     def __init__(self, plm, address, cat, subcat, product_key=None, description=None, model=None, groupbutton=0x01):
         DeviceBase.__init__(self, plm, address, cat, subcat, product_key, description, model, groupbutton)
+
         self.lightOnLevel = StateChangeSignal()
+        self.lightOnLevel._stateName = 'LightOnLevel'
 
         self._message_callbacks.add_message_callback(MESSAGE_STANDARD_MESSAGE_RECEIVED_0X50, COMMAND_LIGHT_ON_0X11_NONE, self._light_on_command_received)
         self._message_callbacks.add_message_callback(MESSAGE_STANDARD_MESSAGE_RECEIVED_0X50, COMMAND_LIGHT_OFF_0X13_0X00, self._light_off_command_received)
@@ -74,10 +78,11 @@ class DimmableLightingControl(DeviceBase):
 
     def _light_on_command_received(self, msg):
         # Message handler for Standard (0x50) or Extended (0x51) message commands 0x11 Light On
-        # Also handles Standard or Extended (0x62) Lights On (0x11) ACK/NAK
-        # When any of these messages are received
+        # Also handles Standard or Extended (0x62) Lights On (0x11) ACK
+        # When any of these messages are received any state listeners are updated with the 
+        # current light on level (cmd2)
         if msg.isack:
-            self.lightOnLevel.update(msg.address.hex, msg.cmd2)
+            self.lightOnLevel.update(self.id, self.lightOnLevel._stateName, msg.cmd2)
 
     def _light_off_command_received(self, msg):
         self.lightOnLevel.update(msg.address.hex, 0)

@@ -1,6 +1,7 @@
 class StateChangeSignal(object):
     def __init__(self):
         self._handlers = []
+        self._stateName = 'sensor'
 
     def connect(self, handler):
         self._handlers.append(handler)
