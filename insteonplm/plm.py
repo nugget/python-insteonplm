@@ -143,8 +143,9 @@ class PLM(asyncio.Protocol):
         self.log.debug('Sending %d byte message: %s',
                 len(msg.bytes), msg.hex)
         time.sleep(2)
+        self.log.info('Write buffer is: %d', self.transport.get_write_buffer_size())
         self.transport.write(msg.bytes)
-        self.log.debug("Sent message: %s", msg.hex)
+
         self.log.debug("Ending: send_msg")
 
     def send_standard(self, target, commandtuple, cmd2=None, flags=0x00, acknak=None):
@@ -192,7 +193,7 @@ class PLM(asyncio.Protocol):
             cat = msg.target.bytes[0:1]
             subcat = msg.target.bytes[2:3]
             product_key = msg.target.bytes[4:5]
-            self.log.debug('Found device address: %s  cat: 0x%s  subcat: 0x%s  firmware: 0x%s', 
+            self.log.info('Found device address: %s  cat: 0x%s  subcat: 0x%s  firmware: 0x%s', 
                             msg.address.hex, binascii.hexlify(cat), binascii.hexlify(subcat), binascii.hexlify(product_key))
             device = self.devices.create_device_from_category(msg.address, cat, subcat, product_key)
             if device is not None:
