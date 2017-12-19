@@ -45,6 +45,13 @@ class SwitchedLightingControl(DimmableLightingControl):
         DimmableLightingControl.light_manually_turned_On(self)
 
 class SwitchedLightingControl_2663_222(SwitchedLightingControl):
+
+    def __init__(self, plm, address, cat, subcat, product_key=None, description=None, model=None, groupbutton=0x01):
+        super().__init__(plm, address, cat, subcat, product_key, description, model, groupbutton)
+
+        # 2663-222 has a custom COMMAND_LIGHT_STATUS_REQUEST_0X19_0X00 where cmd1:0x19 and cmd2:0x01 otherwise you only get the top outlet status
+        self._message_callbacks.add_message_callback(MESSAGE_SEND_STANDARD_MESSAGE_0X62, {'cmd1':0x19, 'cmd2':0x01}, self._light_status_request_ack, MESSAGE_ACK)
+
     @classmethod
     def create(cls, plm, address, cat, subcat, product_key=None, description=None, model=None, groupbutton = 0x01):
         devices = []
