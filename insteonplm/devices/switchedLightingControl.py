@@ -85,14 +85,14 @@ class SwitchedLightingControl_2663_222(SwitchedLightingControl):
         if msg.code == MESSAGE_EXTENDED_MESSAGE_RECEIVED_0X51:
             # I think byte 0 ('d1') of the extended message is always the group number for 0x01 and 0x02 devices
             if msg.userdata[0] == self._groupbutton:  
-                super().receive_message(self, msg)
+                super().receive_message(msg)
             else:
                 id = self._get_device_id(msg.userdata[0])
                 device = self._plm.devices[id]
                 if device is not None:
                     device.receive_message(msg)
         else:
-            super().receive_message(self, msg)
+            super().receive_message(msg)
     
     def light_status_request(self):
         """ 

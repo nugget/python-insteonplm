@@ -77,6 +77,9 @@ class PLM(asyncio.Protocol):
         self._message_callbacks.add_message_callback(MESSAGE_SEND_STANDARD_MESSAGE_0X62, 
                                                      None, self._handle_send_standard_or_extended_message_nak, MESSAGE_NAK)
 
+        self._message_callbacks.add_message_callback(MESSAGE_SEND_STANDARD_MESSAGE_0X62, 
+                                                     None, self._handle_standard_or_extended_message_received, MESSAGE_ACK)
+
         self._message_callbacks.add_message_callback(MESSAGE_GET_NEXT_ALL_LINK_RECORD_0X6A, 
                                                      None, self._handle_get_next_all_link_record_nak, MESSAGE_NAK)
 
