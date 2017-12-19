@@ -82,6 +82,8 @@ class SwitchedLightingControl_2663_222(SwitchedLightingControl):
         the device needs to recognize that the message is for a different group than the first group
         and dispatch the message to the correct device.
         """
+        
+        self.log.debug('Starting SwitchedLightingControl_2663_222.receive_message')
         if msg.code == MESSAGE_EXTENDED_MESSAGE_RECEIVED_0X51:
             # I think byte 0 ('d1') of the extended message is always the group number for 0x01 and 0x02 devices
             if msg.userdata[0] == self._groupbutton:  
@@ -93,6 +95,8 @@ class SwitchedLightingControl_2663_222(SwitchedLightingControl):
                     device.receive_message(msg)
         else:
             super().receive_message(msg)
+        
+        self.log.debug('Starting SwitchedLightingControl_2663_222.receive_message')
     
     def light_status_request(self):
         """ 

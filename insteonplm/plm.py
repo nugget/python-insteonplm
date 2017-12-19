@@ -115,7 +115,7 @@ class PLM(asyncio.Protocol):
                     self._loop.call_soon(callback, msg)
                 else:             
                     if hasattr(msg, 'cmd1'):
-                        self.log.debug('No callback found in for message code %02x with cmd1 %02x and cmd2 %02x and acknak %02x', msg.code, msg.cmd1, msg.cmd2, msg.acknak)
+                        self.log.debug('No callback found for message code %02x with cmd1 %02x and cmd2 %02x and acknak %02x', msg.code, msg.cmd1, msg.cmd2, msg.acknak)
                     else:
                         self.log.debug('No call back found for message %s', msg.hex)
             except IndexError:

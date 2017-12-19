@@ -67,6 +67,7 @@ class DeviceBase(object):
         return cls(plm, address, cat, subcat, product_key, description, model, groupbutton)
 
     def receive_message(self, msg):
+        self.log.debug('Starting DeviceBase.receive_message')
         callback = self._message_callbacks.get_callback_from_message(msg)
         if callback is None:
             if hasattr(msg, 'cmd1'):
@@ -78,6 +79,7 @@ class DeviceBase(object):
                 self.log.debug('No call back found in device %s for message %s', self.id, msg.hex)
         else:
             callback(msg)
+        self.log.debug('Ending DeviceBase.receive_message')
 
     def processMessage(self, message):
         raise NotImplemented
