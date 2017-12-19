@@ -23,14 +23,9 @@ class ExtendedSend(MessageBase):
     receivedSize = MESSAGE_SEND_EXTENDED_MESSAGE_RECEIVED_SIZE
     description = 'INSTEON Standard Message Send'
 
-    def __init__(self, target, cmd1, cmd2, flags=0x10, acknak=None, **kwarg ):
+    def __init__(self, address, cmd1, cmd2, flags=0x10, acknak=None, **kwarg ):
 
-        self.address = Address(bytes([0x00,0x00,0x00]))
-
-        if isinstance(target, Address):
-            self.target = target
-        else:
-            self.target = Address(target)
+        self.address = Address(address)
 
         self._messageFlags = flags | MESSAGE_FLAG_EXTENDED_0X10
         self.cmd1 = cmd1
@@ -71,7 +66,7 @@ class ExtendedSend(MessageBase):
 
     @property
     def hex(self):
-        return self._messageToHex(self.target,
+        return self._messageToHex(self.address,
                                   self._messageFlags,
                                   self.cmd1,
                                   self.cmd2,

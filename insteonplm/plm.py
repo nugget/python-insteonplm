@@ -223,19 +223,19 @@ class PLM(asyncio.Protocol):
     def _handle_send_standard_or_extended_message_nak(self, msg):
         self.log.debug("Starting _handle_send_standard_or_exteded_message_nak")
         if msg.cmd1 == COMMAND_ID_REQUEST_0X10_0X00['cmd1']:
-            retries = self._aldb_response_queue[msg.target.hex]['retries']
+            retries = self._aldb_response_queue[msg.address.hex]['retries']
             if retries < 5:
-                self.log.info('Device %s did not respond to %d tries for a device ID. Retrying.', msg.target, retries)
-                self._aldb_response_queue[msg.target.hex]['retries'] = retries + 1
-                self._loop.call_later(2, self._device_id_request, msg.target.hex)
+                self.log.info('Device %s did not respond to %d tries for a device ID. Retrying.', msg.address, retries)
+                self._aldb_response_queue[msg.address.hex]['retries'] = retries + 1
+                self._loop.call_later(2, self._device_id_request, msg.address.hex)
             else:
                 # If we have tried 5 times and did not get a device ID and
                 # the ALDB record did not return a device type either
                 # we remove the device from the list of devices assuming it is offline
                 # If it is online it can be added manually via the device overrides
-                self.log.error("Device with address %s did not respond to a request for a device ID.", msg.target.hex)
-                self.log.error("Device with address %s is being removed from the list.", msg.target.hex)
-                self._aldb_response_queue.pop(msg.target.hex)
+                self.log.error("Device with address %s did not respond to a request for a device ID.", msg.address.hex)
+                self.log.error("Device with address %s is being removed from the list.", msg.address.hex)
+                self._aldb_response_queue.pop(msg.address.hex)
         
         self.log.debug("Ending _handle_send_standard_or_exteded_message_nak")
 
