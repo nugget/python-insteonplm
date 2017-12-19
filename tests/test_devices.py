@@ -1,5 +1,6 @@
 import insteonplm
 from insteonplm.constants import *
+from insteonplm.aldb import ALDB
 from insteonplm.address import Address
 from insteonplm.messages.standardSend import StandardSend
 from insteonplm.messages.extendedSend import ExtendedSend 
@@ -9,6 +10,7 @@ from insteonplm.devices.switchedLightingControl import SwitchedLightingControl_2
 class MockPLM(object):
     def __init__(self):
         self.sentmessage = ''
+        self.devices = ALDB()
 
     def send_standard(self, device, command, cmd2=None, flags=None):
         """Send an INSTEON Standard message to the PLM.
@@ -118,3 +120,48 @@ def test_switchedLightingControl_2663_222():
     groupbutton = 0x02
     devices = SwitchedLightingControl_2663_222.create(plm, address, cat, subcat, product_key,description, model)
     assert isinstance(devices, list)
+
+def test_switchedLightingControl_2663_222_status():
+
+    class lightStatus(object):
+        light1OnLevel = None
+        light2OnLevel = None
+
+        def device1_status_callback(self, id, state, value):
+            print('Called device 1 callback')
+            self.light1OnLevel = value
+    
+        def device2_status_callback(self, id, state, value):
+            print('Called device 2 callback')
+            self.light2OnLevel = value
+
+    mockPLM = MockPLM()
+    address = '1a2b3c'
+    id1 = '1a2b3c'
+    id2 = '1a2b3c_2'
+
+    cat = 0x02
+    subcat = 0x0d
+    product_key = None
+    description = 'ToggleLinc Relay'
+    model = '2466S'
+
+    callbacks = lightStatus()
+
+    devices = SwitchedLightingControl_2663_222.create(mockPLM, address, cat, subcat, product_key, description, model)
+    
+    assert devices[0].id == id1
+    assert devices[1].id == id2
+
+    for device in devices:
+        mockPLM.devices[device.id] = device
+    mockPLM.devices[id1].lightOnLevel.connect(callbacks.device1_status_callback)
+    mockPLM.devices[id2].lightOnLevel.connect(callbacks.device2_status_callback)
+
+    ackmsg = StandardSend(address, COMMAND_LIGHT_STATUS_REQUEST_0X19_0X00['cmd1'], COMMAND_LIGHT_STATUS_REQUEST_0X19_0X00['cmd2'], 0x00, MESSAGE_ACK)
+    statusmsg = StandardSend(address, 0x03, 0x01)
+
+    mockPLM.devices[address].receive_message(ackmsg)
+    mockPLM.devices[address].receive_message(statusmsg)
+    assert callbacks.light1OnLevel == 0xff
+    assert callbacks.light2OnLevel == 0x00
