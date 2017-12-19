@@ -153,16 +153,19 @@ class PLM(asyncio.Protocol):
 
     def send_standard(self, target, commandtuple, cmd2=None, flags=0x00, acknak=None):
         self.log.debug('Received Standard mesage request with address %s commandtuple cmd1 %02x commandtuple cmd2 %02x override cmd2 %02x flags %02x', target, commandtuple['cmd1'], commandtuple['cmd2'], cmd2, flags)
+
         if commandtuple.get('cmd1', False):
             cmd1 = commandtuple['cmd1']
             cmd2out = commandtuple['cmd2']
         else:
             raise ValueError
+
+        if cmd2 is not None:
+            cmd2out = cmd2
+
         if cmd2out is None:
-           if cmd2 is not None:
-               cmd2out = cmd2
-           else:
-                raise ValueError
+            raise ValueError
+
         self.log.debug('Sending Standard mesage with address %s cmd1 %02x cmd2 %02x flags %02x', target, cmd1, cmd2out, flags)
         msg = StandardSend(target, cmd1, cmd2out, flags, acknak)
         self.send_msg(msg)
@@ -172,13 +175,15 @@ class PLM(asyncio.Protocol):
         if commandtuple.get('cmd1', False):
             cmd1 = commandtuple['cmd1']
             cmd2out = commandtuple['cmd2']
+
         else:
             raise ValueError
+
+        if cmd2 is not None:
+            cmd2out = cmd2
+
         if cmd2out is None:
-           if cmd2 is not None:
-               cmd2out = cmd2
-           else:
-                raise ValueError
+            raise ValueError
 
         
         self.log.debug('Sending Extended mesage with address %s cmd1 %02x cmd2 %02x flags %02x', target, cmd1, cmd2out, flags)
