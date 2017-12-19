@@ -120,24 +120,24 @@ def console(loop, log, devicelist):
         
         log.debug('Sent light status request')
         log.debug('----------------------')
-        device.light_status_request()
+        device1.light_status_request()
         yield from asyncio.sleep(5, loop=loop)
 
-        log.debug('Sent light off request')
+        log.debug('Turn Bottom outlet off')
         log.debug('----------------------')
-        device.light_off()
+        device2.light_off()
         yield from asyncio.sleep(5, loop=loop)
 
         
         log.debug('Sent light status request')
         log.debug('----------------------')
-        device.light_status_request()
+        device2.light_status_request()
         yield from asyncio.sleep(5, loop=loop)
 
 
-        log.debug('Sent light on request')
+        log.debug('Turn Bottom outlet on')
         log.debug('----------------------')
-        device.light_on()
+        device2.light_on()
 
 
 def monitor():
