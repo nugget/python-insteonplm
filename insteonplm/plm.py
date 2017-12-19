@@ -162,7 +162,7 @@ class PLM(asyncio.Protocol):
                cmd2out = cmd2
            else:
                 raise ValueError
-
+        self.log.debug('Sending Standard mesage with address %s cmd1 %02x cmd2 %02x flags %02x', target, cmd1, cmd2out, flags)
         msg = StandardSend(target, cmd1, cmd2out, flags, acknak)
         self.send_msg(msg)
 
@@ -178,6 +178,8 @@ class PLM(asyncio.Protocol):
            else:
                 raise ValueError
 
+        
+        self.log.debug('Sending Standard mesage with address %s cmd1 %02x cmd2 %02x flags %02x', target, cmd1, cmd2out, flags)
         msg = ExtendedSend(target, cmd1, cmd2out,flags,  acknak, **userdata)
         self.send_msg(msg)
 
