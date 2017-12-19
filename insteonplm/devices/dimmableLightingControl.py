@@ -63,6 +63,13 @@ class DimmableLightingControl(DeviceBase):
     def light_status_request(self):
         self._plm.send_standard(self.address.hex, COMMAND_LIGHT_STATUS_REQUEST_0X19_0X00)
 
+    def receive_message(self, msg):
+        self.log.debug('Next command is status: %r', self._nextCommandIsStatus)
+        if self._nextCommandIsStatus:
+            self._status_update_received(msg)
+        else:
+            super().receive_message(msg)
+
     def get_operating_flags(self):
         return NotImplemented
 
@@ -86,15 +93,13 @@ class DimmableLightingControl(DeviceBase):
     def _light_off_command_received(self, msg):
         self.lightOnLevel.update(msg.address.hex, self.lightOnLevel._stateName, 0)
 
-    def receive_message(self, msg):
-        if self._nextCommandIsStatus:
-            return self._status_update_received(msg)
-        else:
-            return super().receive_message(msg)
-
     def _light_status_request_ack(self, msg):
+        self.log.debug('Starting _light_status_request')
         self._nextCommandIsStatus = True
+        self.log.debug('Ending _light_status_request')
 
     def _status_update_received(self, msg):
+        self.log.debug('Starting _status_update_received')
         self._nextCommandIsStatus = False
         self.lightOnLevel.update(self.id, self.lightOnLevel._stateName, msg.cmd2)
+        self.log.debug('Ending _status_update_received')
