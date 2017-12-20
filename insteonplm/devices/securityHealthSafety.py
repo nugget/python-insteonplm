@@ -20,8 +20,9 @@ class SecurityHealthSafety(DeviceBase):
     def __init__(self, plm, address, cat, subcat, product_key=None, description=None, model=None, groupbutton=0x01):
         DeviceBase.__init__(self, plm, address, cat, subcat, product_key, description, model, groupbutton)
 
-        self.sensor = StateChangeSignal()
-        self.sensor._stateName = 'Sensor'
+        # Binary sensors are assumed to be readonly therefore no update method is necessary
+        # Assuming the default for the sensor is 0
+        self.sensor = StateChangeSignal('Sensor', None, 0x00)
 
         # Tell PLM not to just use the ALDB record for device info
         # This is likely the case for all devices in this category 

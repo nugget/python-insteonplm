@@ -11,7 +11,7 @@ class DimmableLightingControl(DeviceBase):
         - light_off()
         - light_off_fast()
 
-    To monitor the state of the device subscribe to the state monitor:
+    To monitor changes to the state of the device subscribe to the state monitor:
          - lightOnLevel.connect(callback)  (state='LightOnLevel')
 
     where callback defined as:
@@ -21,8 +21,8 @@ class DimmableLightingControl(DeviceBase):
     def __init__(self, plm, address, cat, subcat, product_key=None, description=None, model=None, groupbutton=0x01):
         DeviceBase.__init__(self, plm, address, cat, subcat, product_key, description, model, groupbutton)
 
-        self.lightOnLevel = StateChangeSignal()
-        self.lightOnLevel._stateName = 'LightOnLevel'
+        # Setting the default value of the light to 0 (i.e. Off)
+        self.lightOnLevel = StateChangeSignal('LightOnLevel', self.light_status_request, 0x00)
 
         self._nextCommandIsStatus = False
 

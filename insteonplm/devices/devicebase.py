@@ -4,6 +4,7 @@ from insteonplm.address import Address
 from insteonplm.messages.messageBase import MessageBase
 from insteonplm.constants import *
 from insteonplm.messagecallback import MessageCallback
+from insteonplm.statechangesignal import StateChangeSignal
 
 class DeviceBase(object):
     """INSTEON Device"""
@@ -80,6 +81,12 @@ class DeviceBase(object):
         else:
             callback(msg)
         self.log.debug('Ending DeviceBase.receive_message')
+
+    def async_refresh_state(self):
+        for prop in dir(self):
+            if type(prop) == StateChangeSignal:
+                prop.async_refresh_sensors()
+
 
     def processMessage(self, message):
         raise NotImplemented
