@@ -62,7 +62,7 @@ class ALDB(object):
         """Register a callback to be invoked when a new device appears."""
         self.log.debug('Added new callback %s ',
                       callback)
-        self._cb_new_device.append([callback])
+        self._cb_new_device.append(callback)
 
         #
         # When a new device callback is added, we want to include all
