@@ -277,7 +277,7 @@ class PLM(asyncio.Protocol):
                         self.devices[device.id] = device
                         self.log.info('Device with id %s added to device list from ALDB data.', device.id)
         #Check again that the device is not alreay added, otherwise queue it up for Get ID request
-        if self.devices[addr] is None:
+        if self.devices[msg.address.hex] is None:
             self._aldb_response_queue[msg.address.hex] = {'msg':msg, 'retries':0}
 
         self._get_next_all_link_record()
