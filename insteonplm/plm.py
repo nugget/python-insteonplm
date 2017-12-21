@@ -252,7 +252,7 @@ class PLM(asyncio.Protocol):
     def _handle_all_link_record_response(self, msg):
         self.log.debug('Starting _handle_all_link_record_response')
         self.log.info('Found all link record for device %s', msg.address.hex)
-        if self.devices[addr] is None:
+        if self.devices[msg.address.hex] is None:
             aldbRecordMessage = self._aldb_response_queue[addr]['msg']
             cat = aldbRecordMessage.linkdata1
             subcat = aldbRecordMessage.linkdata2
