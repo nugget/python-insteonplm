@@ -105,7 +105,9 @@ class SwitchedLightingControl_2663_222(SwitchedLightingControl):
             0x01 Top and Bottom outlets
         Sending status request for both outlets all the time.
         """
+        self.log.debug('Starting SwitchedLightingControl_2663_222.light_status_request')
         self._plm.send_standard(self.address.hex, COMMAND_LIGHT_STATUS_REQUEST_0X19_0X00, 0x01)
+        self.log.debug('Starting SwitchedLightingControl_2663_222.light_status_request')
 
     def _status_update_received(self, msg):
         """
@@ -115,6 +117,7 @@ class SwitchedLightingControl_2663_222(SwitchedLightingControl):
             0x02 = Only Bottom Outlet On 
             0x03 = Both Outlets On 
         """
+        self.log.debug('Starting SwitchedLightingControl_2663_222._status_update_received')
         device2 = self._plm.devices[self._get_device_id(0x02)]
         self._nextCommandIsStatus = False
         if msg.cmd2 == 0x00:
@@ -131,3 +134,4 @@ class SwitchedLightingControl_2663_222(SwitchedLightingControl):
             device2.lightOnLevel.update(device2.id, self.lightOnLevel._stateName, 0xff)
         else:
             raise ValueError
+        self.log.debug('Starting SwitchedLightingControl_2663_222._status_update_received')

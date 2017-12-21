@@ -1,8 +1,10 @@
+import logging
 from .constants import *
 
 class MessageCallback(object):
     def __init__(self):
         self._dict = {}
+        self.log = logging.getLogger(__name__)
 
     def __len__(self):
         return len(self._dict)
@@ -35,24 +37,28 @@ class MessageCallback(object):
             raise KeyError
 
         try:
+            self.log.debug('Trying callback key: %s', keystr)
             for itm in self._dict:
                 return self._dict[keystr]
         except KeyError:
             key['cmd2'] = None
             keystr = self._dict_to_key(key)
             try:
+                self.log.debug('Trying callback key: %s', keystr)
                 for itm in self._dict:
                     return self._dict[keystr]
             except:
                 key['cmd1'] = None
                 keystr = self._dict_to_key(key)
                 try:
+                    self.log.debug('Trying callback key: %s', keystr)
                     for itm in self._dict:
                         return self._dict[keystr]
                 except:
                     key['acknak'] = None
                     keystr = self._dict_to_key(key)
                     try:
+                        self.log.debug('Trying callback key: %s', keystr)
                         for itm in self._dict:
                             return self._dict[keystr]
                     except:

@@ -77,6 +77,7 @@ class DeviceBase(object):
 
     def receive_message(self, msg):
         self.log.debug('Starting DeviceBase.receive_message')
+        self.log.debug('Total callbacks: %d', len(self._message_callbacks))
         callback = self._message_callbacks.get_callback_from_message(msg)
         if callback is None:
             if hasattr(msg, 'cmd1'):

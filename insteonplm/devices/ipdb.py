@@ -4,6 +4,7 @@ import collections
 
 from .generalController import GeneralController
 from .dimmableLightingControl import DimmableLightingControl
+from .dimmableLightingControl import DimmableLightingControl_2475F
 from .switchedLightingControl import SwitchedLightingControl
 from .switchedLightingControl import SwitchedLightingControl_2663_222 
 from .securityHealthSafety import SecurityHealthSafety 
@@ -54,7 +55,7 @@ class IPDB(object):
         Product(0x01, 0x23, None, 'LampLinc EZ', '2457D2', DimmableLightingControl),
         Product(0x01, 0x24, None, 'SwitchLinc 2-wire Dimmer', '2474D', DimmableLightingControl),
         Product(0x01, 0x25, None, 'Ballast Dimmer', '2475DA2', DimmableLightingControl),
-        Product(0x01, 0x2e, None, 'FanLinc Dual Band', '2475F', DimmableLightingControl),
+        Product(0x01, 0x2e, None, 'FanLinc Dual Band', '2475F', DimmableLightingControl_2475F),
         Product(0x01, 0x31, None, 'SwitchLinc Dimmer 240V', '2478D', DimmableLightingControl),
         Product(0x01, 0x32, None, 'In-LineLinc Dimmer', '2457D2', DimmableLightingControl),
         Product(0x01, 0x34, None, 'DIN Rail Dimmer', '2542-222', DimmableLightingControl),
