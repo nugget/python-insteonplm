@@ -20,7 +20,7 @@ setup(
     author_email='nugget@macnugget.org',
     url='https://github.com/nugget/python-insteonplm',
     license="LICENSE",
-    packages=['insteonplm'],
+    packages=find_packages(),
     scripts=[],
     description='Python API for controlling Insteon PowerLinc Modems',
     long_description=long_description,
