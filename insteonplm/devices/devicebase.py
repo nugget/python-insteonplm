@@ -4,6 +4,7 @@ from insteonplm.address import Address
 from insteonplm.messages.messageBase import MessageBase
 from insteonplm.constants import *
 from insteonplm.messagecallback import MessageCallback
+from insteonplm.statechangesignal import StateChangeSignal
 
 class DeviceBase(object):
     """INSTEON Device"""
@@ -49,10 +50,7 @@ class DeviceBase(object):
 
     @property
     def id(self):
-        if self._groupbutton == 0x01:
-            return self._address.hex
-        else:
-            return '{}_{:d}'.format(self._address.hex, self._groupbutton)
+        return self._get_device_id(self._groupbutton)
     
     @property
     def prod_data_in_aldb(self):
@@ -70,6 +68,7 @@ class DeviceBase(object):
         return cls(plm, address, cat, subcat, product_key, description, model, groupbutton)
 
     def receive_message(self, msg):
+        self.log.debug('Starting DeviceBase.receive_message')
         callback = self._message_callbacks.get_callback_from_message(msg)
         if callback is None:
             if hasattr(msg, 'cmd1'):
@@ -81,6 +80,13 @@ class DeviceBase(object):
                 self.log.debug('No call back found in device %s for message %s', self.id, msg.hex)
         else:
             callback(msg)
+        self.log.debug('Ending DeviceBase.receive_message')
+
+    def async_refresh_state(self):
+        for prop in dir(self):
+            if type(prop) == StateChangeSignal:
+                prop.async_refresh_sensors()
+
 
     def processMessage(self, message):
         raise NotImplemented
@@ -121,14 +127,8 @@ class DeviceBase(object):
     def WriteALDB(self):
         raise NotImplemented
 
-    @property
-    def prod_data_in_aldb(self):
-        """True if Product data (cat, subcat, product_key) is stored in the PLM ALDB.
-           False if product data must be aquired via a Device ID message or from a Product Data Request command.
-           
-           Very few devices store their product data in the ALDB, therefore False is the default.
-           The common reason to store product data in the ALDB is for one way devices or battery opperated devices where 
-           the ability to send a command request is limited.
-           
-           To override this setting create a device specific class and override this class method."""
-        return self._product_data_in_aldb
+    def _get_device_id(self, groupbutton=0x01):
+        if groupbutton == 0x01:
+            return self._address.hex
+        else:
+            return '{}_{:d}'.format(self._address.hex, groupbutton)

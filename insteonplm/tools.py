@@ -42,8 +42,8 @@ def console(loop, log, devicelist):
         """Log that our new device callback worked."""
         log.warn('New Device: %s %02x %02x %s, %s', device.id, device.cat, device.subcat, device.description, device.model)
 
-    def async_light_on_level_callback(addr, state, value):
-        log.info('Device %s state %s value is changed to %02x', addr,state, value)
+    def async_light_on_level_callback(id, state, value):
+        log.info('Device %s state %s value is changed to %02x', id, state, value)
 
     criteria = {}
     conn.protocol.add_device_callback(async_insteonplm_light_callback, criteria)
@@ -107,31 +107,37 @@ def console(loop, log, devicelist):
 
     if 1 == 1:
         # Test Status Request message
-        device = conn.protocol.devices['4189cf_2']
-        device.lightOnLevel.connect(async_light_on_level_callback)
-        device.light_on()
+        device1 = conn.protocol.devices['4189cf']
+        device2 = conn.protocol.devices['4189cf_2']
+        device1.lightOnLevel.connect(async_light_on_level_callback)
+        device2.lightOnLevel.connect(async_light_on_level_callback)
+
+        log.debug('Setting top outlet off and bottom outlet on')
+        log.debug('----------------------')
+        device1.light_off()
+        device2.light_on()
         yield from asyncio.sleep(5, loop=loop)
         
         log.debug('Sent light status request')
         log.debug('----------------------')
-        device.light_status_request()
+        device1.light_status_request()
         yield from asyncio.sleep(5, loop=loop)
 
-        log.debug('Sent light off request')
+        log.debug('Turn Bottom outlet off')
         log.debug('----------------------')
-        device.light_off()
+        device2.light_off()
         yield from asyncio.sleep(5, loop=loop)
 
         
         log.debug('Sent light status request')
         log.debug('----------------------')
-        device.light_status_request()
+        device2.light_status_request()
         yield from asyncio.sleep(5, loop=loop)
 
 
-        log.debug('Sent light on request')
+        log.debug('Turn Bottom outlet on')
         log.debug('----------------------')
-        device.light_on()
+        device2.light_on()
 
 
 def monitor():

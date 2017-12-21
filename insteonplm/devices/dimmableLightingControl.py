@@ -11,7 +11,7 @@ class DimmableLightingControl(DeviceBase):
         - light_off()
         - light_off_fast()
 
-    To monitor the state of the device subscribe to the state monitor:
+    To monitor changes to the state of the device subscribe to the state monitor:
          - lightOnLevel.connect(callback)  (state='LightOnLevel')
 
     where callback defined as:
@@ -21,13 +21,16 @@ class DimmableLightingControl(DeviceBase):
     def __init__(self, plm, address, cat, subcat, product_key=None, description=None, model=None, groupbutton=0x01):
         DeviceBase.__init__(self, plm, address, cat, subcat, product_key, description, model, groupbutton)
 
-        self.lightOnLevel = StateChangeSignal()
-        self.lightOnLevel._stateName = 'LightOnLevel'
+        # Setting the default value of the light to 0 (i.e. Off)
+        self.lightOnLevel = StateChangeSignal('LightOnLevel', self.light_status_request, 0x00)
+
+        self._nextCommandIsStatus = False
 
         self._message_callbacks.add_message_callback(MESSAGE_STANDARD_MESSAGE_RECEIVED_0X50, COMMAND_LIGHT_ON_0X11_NONE, self._light_on_command_received)
         self._message_callbacks.add_message_callback(MESSAGE_STANDARD_MESSAGE_RECEIVED_0X50, COMMAND_LIGHT_OFF_0X13_0X00, self._light_off_command_received)
         self._message_callbacks.add_message_callback(MESSAGE_SEND_STANDARD_MESSAGE_0X62, COMMAND_LIGHT_ON_0X11_NONE, self._light_on_command_received, MESSAGE_ACK)
         self._message_callbacks.add_message_callback(MESSAGE_SEND_STANDARD_MESSAGE_0X62, COMMAND_LIGHT_OFF_0X13_0X00, self._light_off_command_received, MESSAGE_ACK)
+        self._message_callbacks.add_message_callback(MESSAGE_SEND_STANDARD_MESSAGE_0X62, COMMAND_LIGHT_STATUS_REQUEST_0X19_0X00, self._light_status_request_ack, MESSAGE_ACK)
 
     def light_on(self, onlevel=0xff):
         if self._groupbutton == 0x01:
@@ -58,11 +61,14 @@ class DimmableLightingControl(DeviceBase):
             self._plm.send_extended(self._address.hex, COMMAND_LIGHT_OFF_FAST_0X14_0X00, **userdata)
 
     def light_status_request(self):
-        if self._groupbutton == 0x01:
-            self._plm.send_standard(self.address.hex, COMMAND_LIGHT_STATUS_REQUEST_0X19_0X00)
+        self._plm.send_standard(self.address.hex, COMMAND_LIGHT_STATUS_REQUEST_0X19_0X00)
+
+    def receive_message(self, msg):
+        self.log.debug('Next command is status: %r', self._nextCommandIsStatus)
+        if self._nextCommandIsStatus:
+            self._status_update_received(msg)
         else:
-            userdata = {'d1':self._groupbutton}
-            self._plm.send_extended(self._address.hex, COMMAND_LIGHT_STATUS_REQUEST_0X19_0X00, **userdata)
+            super().receive_message(msg)
 
     def get_operating_flags(self):
         return NotImplemented
@@ -86,3 +92,14 @@ class DimmableLightingControl(DeviceBase):
 
     def _light_off_command_received(self, msg):
         self.lightOnLevel.update(msg.address.hex, self.lightOnLevel._stateName, 0)
+
+    def _light_status_request_ack(self, msg):
+        self.log.debug('Starting _light_status_request')
+        self._nextCommandIsStatus = True
+        self.log.debug('Ending _light_status_request')
+
+    def _status_update_received(self, msg):
+        self.log.debug('Starting _status_update_received')
+        self._nextCommandIsStatus = False
+        self.lightOnLevel.update(self.id, self.lightOnLevel._stateName, msg.cmd2)
+        self.log.debug('Ending _status_update_received')

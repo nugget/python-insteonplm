@@ -14,7 +14,6 @@ __all__ = ('ALDB')
 class ALDB(object):
     """Class holds and maintains the ALL-Link Database from the PLM device."""
 
-
     def __init__(self):
         """Instantiate the ALL-Link Database object."""
         self.log = logging.getLogger(__name__)
@@ -92,13 +91,10 @@ class ALDB(object):
 
     def create_device_from_category(self, plm, addr, cat, subcat, product_key=None):
         device_override = self._overrides.get(Address(addr).hex, {})
-        for key in device_override:
-            if key == 'cat':
-                cat = device_override['cat']
-            elif key == 'subcat':
-                subcat = device_override['subcat']
-            elif key == 'product_key' or key == 'firmware':
-                product_key = device_override['product_key']
+        cat = device_override.get('cat', cat)
+        subcat = device_override.get('subcat', subcat)
+        product_key = device_override.get('firmware' , product_key)
+        product_key = device_override.get('product_key', product_key)
         
         return Device.create(plm, addr, cat, subcat, product_key)
 
