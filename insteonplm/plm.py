@@ -253,14 +253,14 @@ class PLM(asyncio.Protocol):
         self.log.debug('Starting _handle_all_link_record_response')
         self.log.info('Found all link record for device %s', msg.address.hex)
         if self.devices[msg.address.hex] is None:
-            aldbRecordMessage = self._aldb_response_queue[addr]['msg']
-            cat = aldbRecordMessage.linkdata1
-            subcat = aldbRecordMessage.linkdata2
-            product_key = aldbRecordMessage.linkdata3
+
+            cat = msg.linkdata1
+            subcat = msg.linkdata2
+            product_key = msg.linkdata3
             
             self.log.debug('Product data: address %s cat: %02x subcat: %02x product_key: %02x', addr, cat, subcat, product_key)
             # Get a device from the ALDB based on cat, subcat and product_key
-            device = self.devices.create_device_from_category(self, aldbRecordMessage.address, cat, subcat, product_key)
+            device = self.devices.create_device_from_category(self, msg.address, cat, subcat, product_key)
 
             # If a device is returned and that device is of a type tha stores the product data in the ALDB record
             # we can use that as the device type for this record
