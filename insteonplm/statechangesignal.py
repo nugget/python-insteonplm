@@ -36,9 +36,10 @@ class StateChangeSignal(object):
     def connect(self, handler):
         self._handlers.append(handler)
 
-    def update(self, *args):
+    def update(self, deviceid, statename, val):
+        self._value = val
         for handler in self._handlers:
-            handler(*args)
+            handler(deviceid, statename, val)
 
     @property
     def value(self):

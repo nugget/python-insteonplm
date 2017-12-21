@@ -87,11 +87,10 @@ class DimmableLightingControl(DeviceBase):
         # Also handles Standard or Extended (0x62) Lights On (0x11) ACK
         # When any of these messages are received any state listeners are updated with the 
         # current light on level (cmd2)
-        if msg.isack:
-            self.lightOnLevel.update(self.id, self.lightOnLevel._stateName, msg.cmd2)
+        self.lightOnLevel.update(self.id, self.lightOnLevel._stateName, msg.cmd2)
 
     def _light_off_command_received(self, msg):
-        self.lightOnLevel.update(msg.address.hex, self.lightOnLevel._stateName, 0)
+        self.lightOnLevel.update(msg.id, self.lightOnLevel._stateName, 0)
 
     def _light_status_request_ack(self, msg):
         self.log.debug('Starting _light_status_request')
