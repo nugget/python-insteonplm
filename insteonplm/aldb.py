@@ -14,14 +14,13 @@ __all__ = ('ALDB')
 class ALDB(object):
     """Class holds and maintains the ALL-Link Database from the PLM device."""
 
-    def __init__(self, loop):
+    def __init__(self):
         """Instantiate the ALL-Link Database object."""
         self.log = logging.getLogger(__name__)
         self.state = 'empty'
         self._devices = {}
         self._cb_new_device = []
         self._overrides = {}
-        self._loop = loop
 
     def __len__(self):
         """Return the number of devices in the ALDB."""
@@ -51,7 +50,7 @@ class ALDB(object):
                         device.subcat)
 
         for callback in self._cb_new_device:
-            self._loop.call_soon(callback, device)
+            callback(device)
 
     def __repr__(self):
         """Human representation of a device from the ALDB."""
