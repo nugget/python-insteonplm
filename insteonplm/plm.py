@@ -257,7 +257,8 @@ class PLM(asyncio.Protocol):
             cat = aldbRecordMessage.linkdata1
             subcat = aldbRecordMessage.linkdata2
             product_key = aldbRecordMessage.linkdata3
-
+            
+            self.log.debug('Product data: address %s cat: %02x subcat: %02x product_key: %02x', addr, cat, subcat, product_key)
             # Get a device from the ALDB based on cat, subcat and product_key
             device = self.devices.create_device_from_category(self, aldbRecordMessage.address, cat, subcat, product_key)
 
