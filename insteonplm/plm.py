@@ -143,9 +143,13 @@ class PLM(asyncio.Protocol):
         self.log.debug("Ending: add_device_callback")
 
     def poll_devices(self):
+        self.log.debug("Starting: poll_devices")
+        delay = 2
         for addr in self.devices:
             device = self.devices[addr]
-            device.async_refresh_state()
+            self._loop.call_later(delay, device.async_refresh_state)
+            delay += 2
+        self.log.debug("Ending: poll_devices")
 
     def send_msg(self, msg):
         # TODO: implement an ACK/NAK review of sent commands
@@ -305,7 +309,7 @@ class PLM(asyncio.Protocol):
             self._loop.call_later(delay, self._device_id_request, addr)
             delay += 2
         
-        self._loop.call_later(delay, self.poll_devices)
+        self._loop.call_later(delay+10, self.poll_devices)
         self.log.debug('Ending _handle_get_next_all_link_record_nak')
 
     def _handle_get_plm_info(self, msg):
