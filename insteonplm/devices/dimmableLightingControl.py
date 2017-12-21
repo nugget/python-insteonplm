@@ -93,7 +93,7 @@ class DimmableLightingControl(DeviceBase):
 
     def _light_off_command_received(self, msg):
         self.log.debug('Starting _light_off_command_received')
-        self.lightOnLevel.update(msg.id, self.lightOnLevel._stateName, 0)
+        self.lightOnLevel.update(self.id, self.lightOnLevel._stateName, 0)
         self.log.debug('Ending _light_off_command_received')
 
     def _light_status_request_ack(self, msg):
