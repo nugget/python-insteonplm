@@ -26,8 +26,7 @@ class SecurityHealthSafety(DeviceBase):
 
         # Tell PLM not to just use the ALDB record for device info
         # This is likely the case for all devices in this category 
-        if self._subcat == 0x01:  
-            self._product_data_in_aldb = True
+        self._product_data_in_aldb = True
 
         self._message_callbacks.add_message_callback(MESSAGE_STANDARD_MESSAGE_RECEIVED_0X50, COMMAND_LIGHT_ON_0X11_NONE, self._sensor_on_command_received)
         self._message_callbacks.add_message_callback(MESSAGE_EXTENDED_MESSAGE_RECEIVED_0X51, COMMAND_LIGHT_ON_0X11_NONE, self._sensor_on_command_received)
