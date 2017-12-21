@@ -93,7 +93,7 @@ class DeviceBase(object):
 
     def async_refresh_state(self):
         for prop in dir(self):
-            if type(prop) == StateChangeSignal:
+            if type(getattr(self, prop)) == StateChangeSignal:
                 prop.async_refresh_sensors()
 
 
