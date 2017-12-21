@@ -143,7 +143,8 @@ class PLM(asyncio.Protocol):
         self.log.debug("Ending: add_device_callback")
 
     def poll_devices(self):
-        for device in self.devices:
+        for addr in self.devices:
+            device = self.devices[addr]
             device.async_refresh_state()
 
     def send_msg(self, msg):
