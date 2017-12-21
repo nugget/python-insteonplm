@@ -9,12 +9,16 @@ from insteonplm.statechangesignal import StateChangeSignal
 class DeviceBase(object):
     """INSTEON Device"""
 
-    def __init__(self, plm, address, cat, subcat, product_key=None, description=None, model=None, groupbutton=0x01):
+    def __init__(self, plm, address, cat, subcat, product_key=0x00, description='', model='', groupbutton=0x01):
         self._plm = plm
         self._address = Address(address)
         self._cat = cat
         self._subcat = subcat
+        if self._subcat is None:
+            self._subcat = 0x00
         self._product_key = product_key
+        if self._product_key is None:
+            self._product_key = 0x00
         self._description = description
         self._model = model 
         self._groupbutton = groupbutton
@@ -47,6 +51,10 @@ class DeviceBase(object):
     @property
     def model(self):
         return self._model
+
+    @property
+    def groupbutton(self):
+        return self._groupbutton
 
     @property
     def id(self):
