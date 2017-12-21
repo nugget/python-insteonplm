@@ -42,7 +42,7 @@ class SecurityHealthSafety(DeviceBase):
         """
         self.lightOnLevel.update(self.id, self.lightOnLevel._stateName, 0x01)
 
-    def _sensor_offcommand_received(self, msg):
+    def _sensor_off_command_received(self, msg):
         """
         Message handler for Standard (0x50) or Extended (0x51) message commands 0x13 Sensor Off
         When a message is received any state listeners are updated with the 
