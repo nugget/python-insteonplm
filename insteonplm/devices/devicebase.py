@@ -53,6 +53,10 @@ class DeviceBase(object):
         return self._model
 
     @property
+    def groupbutton(self):
+        return self._groupbutton
+
+    @property
     def id(self):
         return self._get_device_id(self._groupbutton)
     
