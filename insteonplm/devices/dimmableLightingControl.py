@@ -83,19 +83,23 @@ class DimmableLightingControl(DeviceBase):
         return NotImplemented
 
     def _light_on_command_received(self, msg):
+        self.log.debug('Starting _light_on_command_received')
         # Message handler for Standard (0x50) or Extended (0x51) message commands 0x11 Light On
         # Also handles Standard or Extended (0x62) Lights On (0x11) ACK
         # When any of these messages are received any state listeners are updated with the 
         # current light on level (cmd2)
         self.lightOnLevel.update(self.id, self.lightOnLevel._stateName, msg.cmd2)
+        self.log.debug('Ending _light_on_command_received')
 
     def _light_off_command_received(self, msg):
+        self.log.debug('Starting _light_off_command_received')
         self.lightOnLevel.update(msg.id, self.lightOnLevel._stateName, 0)
+        self.log.debug('Ending _light_off_command_received')
 
     def _light_status_request_ack(self, msg):
-        self.log.debug('Starting _light_status_request')
+        self.log.debug('Starting _light_status_request_ack')
         self._nextCommandIsStatus = True
-        self.log.debug('Ending _light_status_request')
+        self.log.debug('Ending _light_status_request_ack')
 
     def _status_update_received(self, msg):
         self.log.debug('Starting _status_update_received')

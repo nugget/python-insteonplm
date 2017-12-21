@@ -37,6 +37,7 @@ class StateChangeSignal(object):
         self._handlers.append(handler)
 
     def update(self, deviceid, statename, val):
+        """Save value to state.value property and notify listeners of the change"""
         self._value = val
         for handler in self._handlers:
             handler(deviceid, statename, val)
