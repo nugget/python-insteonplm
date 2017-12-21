@@ -252,20 +252,7 @@ class PLM(asyncio.Protocol):
     def _handle_all_link_record_response(self, msg):
         self.log.debug('Starting _handle_all_link_record_response')
         self.log.info('Found all link record for device %s', msg.address.hex)
-        self._aldb_response_queue[msg.address.hex] = {'msg':msg, 'retries':0}
-        self._get_next_all_link_record()
-        
-        self.log.debug('Ending _handle_all_link_record_response')
-
-    def _handle_get_next_all_link_record_nak(self, msg):
-        self.log.debug('Starting _handle_get_next_all_link_record_nak')
-
-        # When the last All-Link record is reached the PLM sends a NAK
-        self.log.debug('All-Link device records found in ALDB: %d', len(self._aldb_response_queue))
-        for addr in self._aldb_response_queue:
-            # Check if the device is already entered in the device list
-            if self.devices[addr] is not None:
-                break
+        if self.devices[addr] is None:
             aldbRecordMessage = self._aldb_response_queue[addr]['msg']
             cat = aldbRecordMessage.linkdata1
             subcat = aldbRecordMessage.linkdata2
@@ -278,18 +265,29 @@ class PLM(asyncio.Protocol):
             # we can use that as the device type for this record
             # Otherwise we need to request the device ID.
             if device is not None:
-                if device is not None:
-                    if isinstance(device, list):
-                        for currdev in device:
-                            if currdev.prod_data_in_aldb:
-                                self.devices[currdev.id] = currdev
-                                self.log.info('Device with id %s added to device list from ALDB Data.', currdev.id)
-                    else:
-                        if device.prod_data_in_aldb:
-                            self.devices[device.id] = device
-                            self.log.info('Device with id %s added to device list from ALDB data.', device.id)
+                if isinstance(device, list):
+                    for currdev in device:
+                        if currdev.prod_data_in_aldb:
+                            self.devices[currdev.id] = currdev
+                            self.log.info('Device with id %s added to device list from ALDB Data.', currdev.id)
+                else:
+                    if device.prod_data_in_aldb:
+                        self.devices[device.id] = device
+                        self.log.info('Device with id %s added to device list from ALDB data.', device.id)
+        #Check again that the device is not alreay added, otherwise queue it up for Get ID request
+        if self.devices[addr] is None:
+            self._aldb_response_queue[msg.address.hex] = {'msg':msg, 'retries':0}
 
-        # Remove records for devices found in the ALDB
+        self._get_next_all_link_record()
+        
+        self.log.debug('Ending _handle_all_link_record_response')
+
+    def _handle_get_next_all_link_record_nak(self, msg):
+        self.log.debug('Starting _handle_get_next_all_link_record_nak')
+
+        # When the last All-Link record is reached the PLM sends a NAK
+        self.log.debug('All-Link device records found in ALDB: %d', len(self._aldb_response_queue))
+        # Remove records for devices found in the ALDB (should not be any so may remove this)
         for addr in self.devices:
             try:
                 self._aldb_response_queue.pop(addr)
@@ -300,7 +298,7 @@ class PLM(asyncio.Protocol):
             self._loop.call_later(delay, self._device_id_request, addr)
             delay += 2
 
-        self.log.debug('Ending _handle_get_next_all_link_record_acknak')
+        self.log.debug('Ending _handle_get_next_all_link_record_nak')
 
     def _handle_get_plm_info(self, msg):
         self.log.debug('Starting _handle_get_plm_info')
