@@ -309,7 +309,7 @@ class PLM(asyncio.Protocol):
             self._loop.call_later(delay, self._device_id_request, addr)
             delay += 2
         
-        self._loop.call_later(delay+10, self.poll_devices)
+        self._loop.call_later(delay+20, self.poll_devices)
         self.log.debug('Ending _handle_get_next_all_link_record_nak')
 
     def _handle_get_plm_info(self, msg):
