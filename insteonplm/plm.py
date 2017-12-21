@@ -49,7 +49,7 @@ class PLM(asyncio.Protocol):
         self._send_queue = []
         self._wait_acknack_queue = []
         self._aldb_response_queue = {}
-        self.devices = ALDB()
+        self.devices = ALDB(self._loop)
 
         self.address = None
         self.category = None
