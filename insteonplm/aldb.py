@@ -50,20 +50,19 @@ class ALDB(object):
                         device.subcat)
 
 
-        for callback, criteria in self._cb_new_device:
-            if self._device_matches_criteria(device, criteria):
-                callback(device)
+        for callback in self._cb_new_device:
+            callback(device)
 
     def __repr__(self):
         """Human representation of a device from the ALDB."""
         attrs = vars(self)
         return ', '.join("%s: %r" % item for item in attrs.items())
 
-    def add_device_callback(self, callback, criteria):
+    def add_device_callback(self, callback):
         """Register a callback to be invoked when a new device appears."""
-        self.log.debug('New callback %s with %s (%d items already in list)',
-                      callback, criteria, len(self._devices.keys()))
-        self._cb_new_device.append([callback, criteria])
+        self.log.debug('Added new callback %s ',
+                      callback)
+        self._cb_new_device.append([callback])
 
         #
         # When a new device callback is added, we want to include all
@@ -71,12 +70,13 @@ class ALDB(object):
         # iterate through the existing device list and trigger the callback
         # for each of them
         #
-        for device in self:
-            value = self[device]
-            if self._device_matches_criteria(value, criteria):
-                self.log.info('retroactive callback device %s matching %s',
-                              value['address'], criteria)
-                callback(value)
+
+        #for device in self:
+        #    value = self[device]
+        #    if self._device_matches_criteria(value, criteria):
+        #        self.log.info('retroactive callback device %s matching %s',
+        #                      value['address'], criteria)
+        #        callback(value)
 
     def add_override(self, addr, key, value):
         """Register an attribute override for a device."""
