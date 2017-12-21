@@ -53,4 +53,5 @@ class StateChangeSignal(object):
         return self._stateName
 
     def async_refresh_state(self):
-        self._updatemethod()
+        if self._updatemethod is not None:
+            self._updatemethod()
