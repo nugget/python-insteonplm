@@ -315,8 +315,8 @@ class PLM(asyncio.Protocol):
                 self._aldb_response_queue[addr]['retries'] = retries + 1
                 delay += 2
             else:
-                self._warn('Device %s found in the ALDB did not respond and is being removed from the list.')
-                self._warn('If this device is still active you can add it to the device_override configuration.')
+                self.log.warn('Device %s found in the ALDB did not respond and is being removed from the list.')
+                self.log.warn('If this device is still active you can add it to the device_override configuration.')
                 staleaddr.append(addr)
 
         for addr in staleaddr:
