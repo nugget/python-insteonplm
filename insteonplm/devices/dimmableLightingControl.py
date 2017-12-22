@@ -90,7 +90,7 @@ class DimmableLightingControl(DeviceBase):
         # Also handles Standard or Extended (0x62) Lights On (0x11) ACK
         # When any of these messages are received any state listeners are updated with the 
         # current light on level (cmd2)
-        if msg.code == MESSAGE_EXTENDED_MESSAGE_RECEIVED_0X51 or 
+        if msg.code == MESSAGE_EXTENDED_MESSAGE_RECEIVED_0X51 or \
           (msg.code == MESSAGE_SEND_STANDARD_MESSAGE_0X62 and msg.isextendedflag):
               group = msg.userdata[0]
             if group == self._groupbutton:
@@ -104,7 +104,7 @@ class DimmableLightingControl(DeviceBase):
 
     def _light_off_command_received(self, msg):
         self.log.debug('Starting _light_off_command_received')
-        if msg.code == MESSAGE_EXTENDED_MESSAGE_RECEIVED_0X51 or 
+        if msg.code == MESSAGE_EXTENDED_MESSAGE_RECEIVED_0X51 or \
           (msg.code == MESSAGE_SEND_STANDARD_MESSAGE_0X62 and msg.isextendedflag):
               group = msg.userdata[0]
             if group == self._groupbutton:
