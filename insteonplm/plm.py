@@ -74,8 +74,8 @@ class PLM(asyncio.Protocol):
         self._message_callbacks.add_message_callback(MESSAGE_GET_IM_INFO_0X60, 
                                                      None, self._handle_get_plm_info)
 
-        self._message_callbacks.add_message_callback(MESSAGE_SEND_STANDARD_MESSAGE_0X62, 
-                                                     None, self._handle_send_standard_or_extended_message_nak, MESSAGE_NAK)
+        #self._message_callbacks.add_message_callback(MESSAGE_SEND_STANDARD_MESSAGE_0X62, 
+        #                                             None, self._handle_send_standard_or_extended_message_nak, MESSAGE_NAK)
 
         self._message_callbacks.add_message_callback(MESSAGE_SEND_STANDARD_MESSAGE_0X62, 
                                                      None, self._handle_standard_or_extended_message_received, MESSAGE_ACK)
@@ -306,12 +306,12 @@ class PLM(asyncio.Protocol):
                 self._aldb_response_queue.pop(addr)
             except:
                 pass
-        delay = 0
+        delay = 2
         staleaddr = []
         for addr in self._aldb_response_queue:
             retries = self._aldb_response_queue[addr]['retries']
             if retries < 5:
-                delay += 1.5
+                delay += 2
                 self._loop.call_later(delay, self._device_id_request, addr)
                 self._aldb_response_queue[addr]['retries'] = retries + 1
             else:
