@@ -92,7 +92,7 @@ class DimmableLightingControl(DeviceBase):
         # current light on level (cmd2)
         if msg.code == MESSAGE_EXTENDED_MESSAGE_RECEIVED_0X51 or \
           (msg.code == MESSAGE_SEND_STANDARD_MESSAGE_0X62 and msg.isextendedflag):
-              group = msg.userdata[0]
+            group = msg.userdata[0]
             if group == self._groupbutton:
                 self.lightOnLevel.update(self.id, self.lightOnLevel._stateName, msg.cmd2)
             else:
@@ -106,7 +106,7 @@ class DimmableLightingControl(DeviceBase):
         self.log.debug('Starting _light_off_command_received')
         if msg.code == MESSAGE_EXTENDED_MESSAGE_RECEIVED_0X51 or \
           (msg.code == MESSAGE_SEND_STANDARD_MESSAGE_0X62 and msg.isextendedflag):
-              group = msg.userdata[0]
+            group = msg.userdata[0]
             if group == self._groupbutton:
                 self.lightOnLevel.update(self.id, self.lightOnLevel._stateName, 0)
             else:
