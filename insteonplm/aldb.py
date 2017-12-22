@@ -83,7 +83,7 @@ class ALDB(object):
         
         return Device.create(plm, addr, cat, subcat, product_key)
 
-    def has_override(cls, addr):
+    def has_override(self, addr):
         if self._overrides.get(addr, None) is not None:
             return True
         else:
