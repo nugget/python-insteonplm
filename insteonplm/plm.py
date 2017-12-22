@@ -306,14 +306,14 @@ class PLM(asyncio.Protocol):
                 self._aldb_response_queue.pop(addr)
             except:
                 pass
-        delay = 2
+        delay = 0
         staleaddr = []
         for addr in self._aldb_response_queue:
             retries = self._aldb_response_queue[addr]['retries']
             if retries < 5:
                 self._loop.call_later(delay, self._device_id_request, addr)
                 self._aldb_response_queue[addr]['retries'] = retries + 1
-                delay += 2
+                delay += 1
             else:
                 self.log.warn('Device %s found in the ALDB did not respond and is being removed from the list.')
                 self.log.warn('If this device is still active you can add it to the device_override configuration.')
@@ -326,7 +326,7 @@ class PLM(asyncio.Protocol):
 
         if num_devices_not_added > 0:
             # Schedule _handle_get_next_all_link_record_nak to run again later if some devices did not respond
-            self._loop.call_later(delay+num_devices_not_added*2, self._handle_get_next_all_link_record_nak, None)
+            self._loop.call_later(delay+2, self._handle_get_next_all_link_record_nak, None)
         else:
             self._loop.call_soon(self.poll_devices)
         self.log.debug('Ending _handle_get_next_all_link_record_nak')
