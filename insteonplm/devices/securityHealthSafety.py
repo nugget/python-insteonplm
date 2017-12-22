@@ -40,7 +40,7 @@ class SecurityHealthSafety(DeviceBase):
         When a message is received any state listeners are updated with the 
         return 0x01 for on
         """
-        self.lightOnLevel.update(self.id, self.lightOnLevel._stateName, 0x01)
+        self.lightOnLevel.update(self.id, self.sensor._stateName, 0x01)
 
     def _sensor_off_command_received(self, msg):
         """
@@ -48,5 +48,5 @@ class SecurityHealthSafety(DeviceBase):
         When a message is received any state listeners are updated with the 
         return 0x00 for off
         """
-        self.lightOnLevel.update(self.id, self.lightOnLevel._stateName, 0x00)
+        self.lightOnLevel.update(self.id, self.sensor._stateName, 0x00)
             
