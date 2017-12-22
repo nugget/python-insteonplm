@@ -262,7 +262,6 @@ class PLM(asyncio.Protocol):
         self.log.debug('Starting _handle_all_link_record_response')
         self.log.info('Found all link record for device %s', msg.address.hex)
         if self.devices[msg.address.hex] is None:
-
             cat = msg.linkdata1
             subcat = msg.linkdata2
             product_key = msg.linkdata3
@@ -279,11 +278,11 @@ class PLM(asyncio.Protocol):
             if device is not None:
                 if isinstance(device, list):
                     for currdev in device:
-                        if currdev.prod_data_in_aldb or self.devices.has_override(device.address.hex):
+                        if currdev.prod_data_in_aldb or self.devices.has_override(currdev.address.hex):
                             self.devices[currdev.id] = currdev
                             self.log.info('Device with id %s added to device list from ALDB Data.', currdev.id)
                 else:
-                    if device.prod_data_in_aldb:
+                    if device.prod_data_in_aldb or self.devices.has_override(device.address.hex)::
                         self.devices[device.id] = device
                         self.log.info('Device with id %s added to device list from ALDB data.', device.id)
         #Check again that the device is not alreay added, otherwise queue it up for Get ID request
