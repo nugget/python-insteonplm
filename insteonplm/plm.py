@@ -269,6 +269,7 @@ class PLM(asyncio.Protocol):
             
             self.log.debug('Product data: address %s cat: %02x subcat: %02x product_key: %02x', 
                            msg.address.hex, cat, subcat, product_key)
+
             # Get a device from the ALDB based on cat, subcat and product_key
             device = self.devices.create_device_from_category(self, msg.address, cat, subcat, product_key)
 
@@ -278,7 +279,7 @@ class PLM(asyncio.Protocol):
             if device is not None:
                 if isinstance(device, list):
                     for currdev in device:
-                        if currdev.prod_data_in_aldb:
+                        if currdev.prod_data_in_aldb or self.devices.has_override(device.address.hex):
                             self.devices[currdev.id] = currdev
                             self.log.info('Device with id %s added to device list from ALDB Data.', currdev.id)
                 else:
@@ -298,18 +299,37 @@ class PLM(asyncio.Protocol):
 
         # When the last All-Link record is reached the PLM sends a NAK
         self.log.debug('All-Link device records found in ALDB: %d', len(self._aldb_response_queue))
-        # Remove records for devices found in the ALDB (should not be any so may remove this)
+
+        # Remove records for devices found in the ALDB 
+        # or in previous calls to _handle_get_next_all_link_record_nak
         for addr in self.devices:
             try:
                 self._aldb_response_queue.pop(addr)
             except:
                 pass
         delay = 2
+        staleaddr = []
         for addr in self._aldb_response_queue:
-            self._loop.call_later(delay, self._device_id_request, addr)
-            delay += 2
+            retries = self._aldb_response_queue[addr]['retries']
+            if retries < 5:
+                self._loop.call_later(delay, self._device_id_request, addr)
+                self._aldb_response_queue[addr]['retries'] = retries + 1
+                delay += 2
+            else:
+                self._warn('Device %s found in the ALDB did not respond and is being removed from the list.')
+                self._warn('If this device is still active you can add it to the device_override configuration.')
+                staleaddr.append(addr)
+
+        for addr in staleaddr:
+            self._aldb_response_queue.pop(addr)
         
-        self._loop.call_later(delay+20, self.poll_devices)
+        num_devices_not_added = len(self._aldb_response_queue)
+
+        if num_devices_not_added > 0:
+            # Schedule _handle_get_next_all_link_record_nak to run again later if some devices did not respond
+            self._loop.call_later(delay+num_devices_not_added*2, self._handle_get_next_all_link_record_nak, None)
+        else:
+            self._loop.call_soon(self.poll_devices)
         self.log.debug('Ending _handle_get_next_all_link_record_nak')
 
     def _handle_get_plm_info(self, msg):

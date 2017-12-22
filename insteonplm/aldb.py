@@ -63,20 +63,6 @@ class ALDB(object):
                       callback)
         self._cb_new_device.append(callback)
 
-        #
-        # When a new device callback is added, we want to include all
-        # previously-discovered devices as well as new devices.  So we
-        # iterate through the existing device list and trigger the callback
-        # for each of them
-        #
-
-        #for device in self:
-        #    value = self[device]
-        #    if self._device_matches_criteria(value, criteria):
-        #        self.log.info('retroactive callback device %s matching %s',
-        #                      value['address'], criteria)
-        #        callback(value)
-
     def add_override(self, addr, key, value):
         """Register an attribute override for a device."""
         address = Address(addr).hex
@@ -97,51 +83,8 @@ class ALDB(object):
         
         return Device.create(plm, addr, cat, subcat, product_key)
 
-    @staticmethod
-    def _device_matches_criteria(device, criteria):
-        match = True
-
-        if 'address' in criteria:
-            criteria['address'] = Address(criteria['address'])
-
-        for key in criteria.keys():
-            if key == 'capability':
-                if criteria[key] not in device['capabilities']:
-                    match = False
-                    break
-            elif key[0] != '_':
-                if key not in device:
-                    match = False
-                    break
-                elif criteria[key] != device[key]:
-                    match = False
-                    break
-        return match
-
-
-
-
-    def getattr(self, key, attr):
-        """Return the requested attribute for device with address 'key'."""
-        key = Address(key).hex
-        if key in self._devices:
-            return self._devices[key].get(attr, None)
-        return None
-
-    def setattr(self, key, attr, value):
-        """Set supplied attribute on designated device in the ALDB."""
-        key = Address(key).hex
-
-        if key in self._devices:
-            oldvalue = self._devices[key].get(attr, None)
-            self._devices[key][attr] = value
-            if value != oldvalue:
-                self.log.info('Device %s.%s changed: %s->%s"',
-                              key, attr, oldvalue, value)
-                return True
-            else:
-                self.log.debug('Device %s.%s unchanged: %s->%s"',
-                               key, attr, oldvalue, value)
-                return False
+    def has_override(cls, addr):
+        if self._overrides.get(addr, None) is not None:
+            return True
         else:
-            raise KeyError
+            return False
