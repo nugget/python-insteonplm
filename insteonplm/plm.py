@@ -310,7 +310,7 @@ class PLM(asyncio.Protocol):
         staleaddr = []
         for addr in self._aldb_response_queue:
             retries = self._aldb_response_queue[addr]['retries']
-            if retries < 5:
+            if retries < 10:
                 delay += 2
                 self._loop.call_later(delay, self._device_id_request, addr)
                 self._aldb_response_queue[addr]['retries'] = retries + 1
