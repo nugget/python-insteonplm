@@ -282,7 +282,7 @@ class PLM(asyncio.Protocol):
                             self.devices[currdev.id] = currdev
                             self.log.info('Device with id %s added to device list from ALDB Data.', currdev.id)
                 else:
-                    if device.prod_data_in_aldb or self.devices.has_override(device.address.hex)::
+                    if device.prod_data_in_aldb or self.devices.has_override(device.address.hex):
                         self.devices[device.id] = device
                         self.log.info('Device with id %s added to device list from ALDB data.', device.id)
         #Check again that the device is not alreay added, otherwise queue it up for Get ID request
