@@ -11,7 +11,7 @@ class SecurityHealthSafety(DeviceBase):
     
     To monitor the state of the device subscribe to the state monitor:
          - sensor.connect(callback)  (state='Sensor')
-
+         kk
     where callback defined as:
         - callback(self, device_id, state, state_value)
     """
@@ -32,6 +32,9 @@ class SecurityHealthSafety(DeviceBase):
         self._message_callbacks.add_message_callback(MESSAGE_EXTENDED_MESSAGE_RECEIVED_0X51, COMMAND_LIGHT_ON_0X11_NONE, self._sensor_on_command_received)
         self._message_callbacks.add_message_callback(MESSAGE_STANDARD_MESSAGE_RECEIVED_0X50, COMMAND_LIGHT_OFF_0X13_0X00, self._sensor_off_command_received)
         self._message_callbacks.add_message_callback(MESSAGE_EXTENDED_MESSAGE_RECEIVED_0X51, COMMAND_LIGHT_OFF_0X13_0X00, self._sensor_off_command_received)
+        # Motion Sensor 2842-222 sends cmd1:0x13 cmd2: 0x01 for an off command. Not sure about other devices in this devcat.
+        self._message_callbacks.add_message_callback(MESSAGE_STANDARD_MESSAGE_RECEIVED_0X50, {'cmd1':0x13, 'cmd2':0x01}, self._sensor_off_command_received)
+        self._message_callbacks.add_message_callback(MESSAGE_EXTENDED_MESSAGE_RECEIVED_0X51, {'cmd1':0x13, 'cmd2':0x01}, self._sensor_off_command_received)
 
 
     def _sensor_on_command_received(self, msg):
@@ -40,7 +43,7 @@ class SecurityHealthSafety(DeviceBase):
         When a message is received any state listeners are updated with the 
         return 0x01 for on
         """
-        self.lightOnLevel.update(self.id, self.sensor._stateName, 0x01)
+        self.sensor.update(self.id, self.sensor._stateName, msg.cmd2)
 
     def _sensor_off_command_received(self, msg):
         """
@@ -48,5 +51,5 @@ class SecurityHealthSafety(DeviceBase):
         When a message is received any state listeners are updated with the 
         return 0x00 for off
         """
-        self.lightOnLevel.update(self.id, self.sensor._stateName, 0x00)
+        self.sensor.update(self.id, self.sensor._stateName, 0x00)
             

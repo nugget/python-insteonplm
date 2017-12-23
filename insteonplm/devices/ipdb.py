@@ -100,6 +100,8 @@ class IPDB(object):
         Product(0x09, 0x0a, None, '220/240V 30A Load Controller NO', '2477SA1', None),
         Product(0x09, 0x0b, None, '220/240V 30A Load Controller NC', '2477SA2', None),
 
+        
+        Product(0x10, None, None, 'Generic Security, Heath and Safety Device', '', SecurityHealthSafety),
         Product(0x10, 0x01, None, 'Motion Sensor', '2842-222', SecurityHealthSafety),
         Product(0x10, 0x02, None, 'TriggerLinc', '2421', SecurityHealthSafety),
         Product(0x10, 0x08, None, 'Water Leak Sensor', '2852-222', SecurityHealthSafety),
