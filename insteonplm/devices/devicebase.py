@@ -97,10 +97,6 @@ class DeviceBase(object):
             if type(propAttr) == StateChangeSignal:
                 propAttr.async_refresh_state()
 
-
-    def processMessage(self, message):
-        raise NotImplemented
-
     def AssignToALLLinkGroup(self, group):
         raise NotImplemented
 

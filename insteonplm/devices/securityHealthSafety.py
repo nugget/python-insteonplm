@@ -44,7 +44,7 @@ class SecurityHealthSafety(DeviceBase):
         return 0x01 for on
         """
         self.log.debug('Starting SecurityHealthSafety._sensor_on_command_received')
-        self.sensor.update(self.id, self.sensor._stateName, msg.cmd2)
+        self.sensor.update(self.id, msg.cmd2)
         self.log.debug('Starting SecurityHealthSafety._sensor_on_command_received')
 
     def _sensor_off_command_received(self, msg):
@@ -53,7 +53,7 @@ class SecurityHealthSafety(DeviceBase):
         When a message is received any state listeners are updated with the 
         return 0x00 for off
         """
-        self.sensor.update(self.id, self.sensor._stateName, 0x00)
+        self.sensor.update(self.id, 0x00)
             
 class SecurityHealthSafety_2982_222(SecurityHealthSafety):
     
@@ -66,5 +66,5 @@ class SecurityHealthSafety_2982_222(SecurityHealthSafety):
     def _sensor_state_received(self, msg):
         self.log.debug('Starting SecurityHealthSafety_2982_222._sensor_on_command_received')
         if msg.isbroadcastflag:
-            self.sensor.update(self.id, self.sensor._stateName, msg.targetHi)
+            self.sensor.update(self.id, msg.targetHi)
         self.log.debug('Ending SecurityHealthSafety_2982_222._sensor_on_command_received')

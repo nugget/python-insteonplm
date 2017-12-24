@@ -2,7 +2,7 @@ class StateChangeSignal(object):
     """
     Class used by Insteon devices to hold a device state such as "Light On Level", "Temperature" or "Fan Mode".
     The class is defined with the following options:
-        statename: Required text name of the state, such as "LightOnLevel". This value is returned when an async
+        stateName: Required text name of the state, such as "LightOnLevel". This value is returned when an async
                    request is made to update the state value.
         updatemethod: Required callback method where callback is defined as:
                       callback(self)
@@ -10,7 +10,7 @@ class StateChangeSignal(object):
 
     The following public properties are available:
 
-    statename - Text name for the device state.
+    stateName - Text name for the device state.
     value - Cached value of the state value. If this value is None, referencing this property forces an udpate
             by calling async_refresh_state
 
@@ -36,11 +36,11 @@ class StateChangeSignal(object):
     def connect(self, handler):
         self._handlers.append(handler)
 
-    def update(self, deviceid, statename, val):
+    def update(self, deviceid, val):
         """Save value to state.value property and notify listeners of the change"""
         self._value = val
         for handler in self._handlers:
-            handler(deviceid, statename, val)
+            handler(deviceid, self._stateName, val)
 
     @property
     def value(self):
@@ -49,7 +49,7 @@ class StateChangeSignal(object):
         return self._value
 
     @property
-    def statename(self):
+    def stateName(self):
         return self._stateName
 
     def async_refresh_state(self):

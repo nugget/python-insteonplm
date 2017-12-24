@@ -76,27 +76,27 @@ class SwitchedLightingControl_2663_222(SwitchedLightingControl):
         devices.append(SwitchedLightingControl_2663_222(plm, address, cat, subcat, product_key, description, model, 0x02))
         return devices
     
-    def receive_message(self, msg):
-        """ 
-        PLM will dispatch commands to the first device in a class. If there are two devices, like the 2662-222, 
-        the device needs to recognize that the message is for a different group than the first group
-        and dispatch the message to the correct device.
-        """
+    #def receive_message(self, msg):
+    #    """ 
+    #    PLM will dispatch commands to the first device in a class. If there are two devices, like the 2662-222, 
+    #    the device needs to recognize that the message is for a different group than the first group
+    #    and dispatch the message to the correct device.
+    #    """
         
-        self.log.debug('Starting SwitchedLightingControl_2663_222.receive_message')
-        if msg.code == MESSAGE_EXTENDED_MESSAGE_RECEIVED_0X51:
-            # I think byte 0 ('d1') of the extended message is always the group number for 0x01 and 0x02 devices
-            if msg.userdata[0] == self._groupbutton:  
-                super().receive_message(msg)
-            else:
-                id = self._get_device_id(msg.userdata[0])
-                device = self._plm.devices[id]
-                if device is not None:
-                    device.receive_message(msg)
-        else:
-            super().receive_message(msg)
+    #    self.log.debug('Starting SwitchedLightingControl_2663_222.receive_message')
+    #    if msg.code == MESSAGE_EXTENDED_MESSAGE_RECEIVED_0X51:
+    #        # I think byte 0 ('d1') of the extended message is always the group number for 0x01 and 0x02 devices
+    #        if msg.userdata[0] == self._groupbutton:  
+    #            super().receive_message(msg)
+    #        else:
+    #            id = self._get_device_id(msg.userdata[0])
+    #            device = self._plm.devices[id]
+    #            if device is not None:
+    #                device.receive_message(msg)
+    #    else:
+    #        super().receive_message(msg)
         
-        self.log.debug('Starting SwitchedLightingControl_2663_222.receive_message')
+    #    self.log.debug('Starting SwitchedLightingControl_2663_222.receive_message')
     
     def light_status_request(self):
         """ 
@@ -118,20 +118,21 @@ class SwitchedLightingControl_2663_222(SwitchedLightingControl):
             0x03 = Both Outlets On 
         """
         self.log.debug('Starting SwitchedLightingControl_2663_222._status_update_received')
+        device1 = self._plm.devices[self._get_device_id(0x01)]
         device2 = self._plm.devices[self._get_device_id(0x02)]
         self._nextCommandIsStatus = False
         if msg.cmd2 == 0x00:
-            self.lightOnLevel.update(self.id, self.lightOnLevel._stateName, 0x00)
-            device2.lightOnLevel.update(device2.id, self.lightOnLevel._stateName, 0x00)
+            device1.lightOnLevel.update(device1.id, 0x00)
+            device2.lightOnLevel.update(device2.id, 0x00)
         elif msg.cmd2 == 0x01:
-            self.lightOnLevel.update(self.id, self.lightOnLevel._stateName, 0xff)
-            device2.lightOnLevel.update(device2.id, self.lightOnLevel._stateName, 0x00)
+            device1.lightOnLevel.update(device1.id, 0xff)
+            device2.lightOnLevel.update(device2.id, 0x00)
         elif msg.cmd2 == 0x02:
-            self.lightOnLevel.update(self.id, self.lightOnLevel._stateName, 0x00)
-            device2.lightOnLevel.update(device2.id, self.lightOnLevel._stateName, 0xff)
+            device1.lightOnLevel.update(device1.id, 0x00)
+            device2.lightOnLevel.update(device2.id, 0xff)
         elif msg.cmd2 == 0x03:
-            self.lightOnLevel.update(self.id, self.lightOnLevel._stateName, 0xff)
-            device2.lightOnLevel.update(device2.id, self.lightOnLevel._stateName, 0xff)
+            device1.lightOnLevel.update(device1.id, 0xff)
+            device2.lightOnLevel.update(device2.id, 0xff)
         else:
             raise ValueError
         self.log.debug('Starting SwitchedLightingControl_2663_222._status_update_received')
