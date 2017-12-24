@@ -122,16 +122,24 @@ class SwitchedLightingControl_2663_222(SwitchedLightingControl):
         device2 = self._plm.devices[self._get_device_id(0x02)]
         self._nextCommandIsStatus = False
         if msg.cmd2 == 0x00:
+            self.log.debug('Sending Top Outlet %s Off', device1.id)
             device1.lightOnLevel.update(device1.id, 0x00)
+            self.log.debug('Sending Bottom Outlet %s Off', device2.id)
             device2.lightOnLevel.update(device2.id, 0x00)
         elif msg.cmd2 == 0x01:
+            self.log.debug('Sending Top Outlet %s On', device1.id)
             device1.lightOnLevel.update(device1.id, 0xff)
+            self.log.debug('Sending Bottom Outlet %s Off', device2.id)
             device2.lightOnLevel.update(device2.id, 0x00)
         elif msg.cmd2 == 0x02:
+            self.log.debug('Sending Top Outlet %s Off', device1.id)
             device1.lightOnLevel.update(device1.id, 0x00)
+            self.log.debug('Sending Bottom Outlet %s On', device2.id)
             device2.lightOnLevel.update(device2.id, 0xff)
         elif msg.cmd2 == 0x03:
+            self.log.debug('Sending Top Outlet %s On', device1.id)
             device1.lightOnLevel.update(device1.id, 0xff)
+            self.log.debug('Sending Bottom Outlet %s On', device2.id)
             device2.lightOnLevel.update(device2.id, 0xff)
         else:
             raise ValueError
