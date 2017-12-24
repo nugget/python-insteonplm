@@ -44,6 +44,21 @@ class SwitchedLightingControl(DimmableLightingControl):
     def light_manually_turned_On(self):
         DimmableLightingControl.light_manually_turned_On(self)
 
+    def _light_on_command_received(self, msg):
+        self.log.debug('Starting _light_on_command_received')
+        # Message handler for Standard (0x50) or Extended (0x51) message commands 0x11 Light On
+        # Also handles Standard or Extended (0x62) Lights On (0x11) ACK
+        # When any of these messages are received any state listeners are updated with the 
+        # current light on level (cmd2)
+        if msg.code == MESSAGE_EXTENDED_MESSAGE_RECEIVED_0X51 or \
+          (msg.code == MESSAGE_SEND_STANDARD_MESSAGE_0X62 and msg.isextendedflag):
+            group = msg.userdata[0]
+            device = self._plm.devices[self._get_device_id(group)]
+            device.lightOnLevel.update(device.id, 0xff)
+        else:
+            self.lightOnLevel.update(self.id, 0xff)
+        self.log.debug('Ending _light_on_command_received')
+
 class SwitchedLightingControl_2663_222(SwitchedLightingControl):
     
     """On/Off outlet model 2663-222 Switched Lighting Control Device Class 0x02 subcat 0x39
@@ -75,28 +90,6 @@ class SwitchedLightingControl_2663_222(SwitchedLightingControl):
         devices.append(SwitchedLightingControl_2663_222(plm, address, cat, subcat, product_key, description, model, 0x01))
         devices.append(SwitchedLightingControl_2663_222(plm, address, cat, subcat, product_key, description, model, 0x02))
         return devices
-    
-    #def receive_message(self, msg):
-    #    """ 
-    #    PLM will dispatch commands to the first device in a class. If there are two devices, like the 2662-222, 
-    #    the device needs to recognize that the message is for a different group than the first group
-    #    and dispatch the message to the correct device.
-    #    """
-        
-    #    self.log.debug('Starting SwitchedLightingControl_2663_222.receive_message')
-    #    if msg.code == MESSAGE_EXTENDED_MESSAGE_RECEIVED_0X51:
-    #        # I think byte 0 ('d1') of the extended message is always the group number for 0x01 and 0x02 devices
-    #        if msg.userdata[0] == self._groupbutton:  
-    #            super().receive_message(msg)
-    #        else:
-    #            id = self._get_device_id(msg.userdata[0])
-    #            device = self._plm.devices[id]
-    #            if device is not None:
-    #                device.receive_message(msg)
-    #    else:
-    #        super().receive_message(msg)
-        
-    #    self.log.debug('Starting SwitchedLightingControl_2663_222.receive_message')
     
     def light_status_request(self):
         """ 

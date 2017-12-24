@@ -105,9 +105,9 @@ class DimmableLightingControl(DeviceBase):
           (msg.code == MESSAGE_SEND_STANDARD_MESSAGE_0X62 and msg.isextendedflag):
             group = msg.userdata[0]
             device = self._plm.devices[self._get_device_id(group)]
-            device.lightOnLevel.update(device.id, msg.cmd2)
+            device.lightOnLevel.update(device.id, 0x00)
         else:
-            self.lightOnLevel.update(self.id, msg.cmd2)
+            self.lightOnLevel.update(self.id, 0x00)
         self.log.debug('Ending _light_off_command_received')
 
     def _light_status_request_ack(self, msg):

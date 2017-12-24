@@ -77,18 +77,21 @@ class DeviceBase(object):
 
     def receive_message(self, msg):
         self.log.debug('Starting DeviceBase.receive_message')
-        self.log.debug('Total callbacks: %d', len(self._message_callbacks))
-        callback = self._message_callbacks.get_callback_from_message(msg)
-        if callback is None:
-            if hasattr(msg, 'cmd1'):
-                if msg.acknak is None:
-                    self.log.debug('No callback found in device %s for message code %02x with cmd1 %02x and cmd2 %02x and acknak %s', self.id, msg.code, msg.cmd1, msg.cmd2, 'None')
-                else:
-                    self.log.debug('No callback found in device %s for message code %02x with cmd1 %02x and cmd2 %02x and acknak %02x', self.id, msg.code, msg.cmd1, msg.cmd2, msg.acknak)
-            else:
-                self.log.debug('No call back found in device %s for message %s', self.id, msg.hex)
+        if msg.isnakflag or msg.isgroupflag:  #Need to work on this more. In this case the high bite, 0x04 bit indicates cleanup
+            pass
         else:
-            callback(msg)
+            self.log.debug('Total callbacks: %d', len(self._message_callbacks))
+            callback = self._message_callbacks.get_callback_from_message(msg)
+            if callback is None:
+                if hasattr(msg, 'cmd1'):
+                    if msg.acknak is None:
+                        self.log.debug('No callback found in device %s for message code %02x with cmd1 %02x and cmd2 %02x and acknak %s', self.id, msg.code, msg.cmd1, msg.cmd2, 'None')
+                    else:
+                        self.log.debug('No callback found in device %s for message code %02x with cmd1 %02x and cmd2 %02x and acknak %02x', self.id, msg.code, msg.cmd1, msg.cmd2, msg.acknak)
+                else:
+                    self.log.debug('No call back found in device %s for message %s', self.id, msg.hex)
+            else:
+                callback(msg)
         self.log.debug('Ending DeviceBase.receive_message')
 
     def async_refresh_state(self):
