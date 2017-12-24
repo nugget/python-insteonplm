@@ -8,6 +8,7 @@ from .dimmableLightingControl import DimmableLightingControl_2475F
 from .switchedLightingControl import SwitchedLightingControl
 from .switchedLightingControl import SwitchedLightingControl_2663_222 
 from .securityHealthSafety import SecurityHealthSafety 
+from .securityHealthSafety import SecurityHealthSafety_2982_222
 
 # pylint: disable=line-too-long
 # pylint: disable=too-few-public-methods
@@ -105,8 +106,8 @@ class IPDB(object):
         Product(0x10, 0x01, None, 'Motion Sensor', '2842-222', SecurityHealthSafety),
         Product(0x10, 0x02, None, 'TriggerLinc', '2421', SecurityHealthSafety),
         Product(0x10, 0x08, None, 'Water Leak Sensor', '2852-222', SecurityHealthSafety),
+        Product(0x10, 0x0a, None, 'Smoke Bridge', '2982-222', SecurityHealthSafety_2982_222),
         Product(0x10, 0x11, None, 'Hidden Door Sensor', '2845-222', SecurityHealthSafety),
-
         Product(0x0f, 0x06, None, 'MorningLinc', '2458A1', None),
     ]
 
