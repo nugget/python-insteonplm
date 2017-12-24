@@ -14,7 +14,7 @@ def test_create_device_from_bytearray():
     target = bytearray()
     target.append(0x01)
     target.append(0x0d)
-    device = Device.create(None, '112233', int.from_bytes(target[0:1], byteorder='big'), int.from_bytes(target[1:2], byteorder='big'), None)
+    device = Device.create(None, '112233', target[0], target[1], None)
     print(device.id)
     assert device.id == '112233'
     assert isinstance(device, DimmableLightingControl)

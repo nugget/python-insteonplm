@@ -40,3 +40,24 @@ class ExtendedReceive(MessageBase):
     @property
     def bytes(self):
         return binascii.unhexlify(self.hex)
+
+    @property
+    def targetLow(self):
+        if self.isbroadcastflag:
+            return self.target.bytes[0]
+        else:
+            return None
+
+    @property
+    def targetMed(self):
+        if self.isbroadcastflag:
+            return self.target.bytes[1]
+        else:
+            return None
+
+    @property
+    def targetHi(self):
+        if self.isbroadcastflag:
+            return self.target.bytes[2]
+        else:
+            return None

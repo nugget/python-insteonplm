@@ -18,7 +18,7 @@ class SecurityHealthSafety(DeviceBase):
     
 
     def __init__(self, plm, address, cat, subcat, product_key=None, description=None, model=None, groupbutton=0x01):
-        DeviceBase.__init__(self, plm, address, cat, subcat, product_key, description, model, groupbutton)
+        super().__init__(plm, address, cat, subcat, product_key, description, model, groupbutton)
 
         # Binary sensors are assumed to be readonly therefore no update method is necessary
         # Assuming the default for the sensor is 0
@@ -43,7 +43,9 @@ class SecurityHealthSafety(DeviceBase):
         When a message is received any state listeners are updated with the 
         return 0x01 for on
         """
+        self.log.debug('Starting SecurityHealthSafety._sensor_on_command_received')
         self.sensor.update(self.id, self.sensor._stateName, msg.cmd2)
+        self.log.debug('Starting SecurityHealthSafety._sensor_on_command_received')
 
     def _sensor_off_command_received(self, msg):
         """
@@ -53,3 +55,16 @@ class SecurityHealthSafety(DeviceBase):
         """
         self.sensor.update(self.id, self.sensor._stateName, 0x00)
             
+class SecurityHealthSafety_2982_222(SecurityHealthSafety):
+    
+    def __init__(self, plm, address, cat, subcat, product_key=None, description=None, model=None, groupbutton=0x01):
+        super().__init__(plm, address, cat, subcat, product_key, description, model, groupbutton)
+        
+        self._message_callbacks.add_message_callback(MESSAGE_STANDARD_MESSAGE_RECEIVED_0X50, COMMAND_LIGHT_ON_0X11_NONE, self._sensor_state_received)
+        self._message_callbacks.add_message_callback(MESSAGE_EXTENDED_MESSAGE_RECEIVED_0X51, COMMAND_LIGHT_ON_0X11_NONE, self._sensor_state_received)
+
+    def _sensor_state_received(self, msg):
+        self.log.debug('Starting SecurityHealthSafety_2982_222._sensor_on_command_received')
+        if msg.isbroadcastflag:
+            self.sensor.update(self.id, self.sensor._stateName, msg.targetHi)
+        self.log.debug('Ending SecurityHealthSafety_2982_222._sensor_on_command_received')

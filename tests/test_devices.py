@@ -4,9 +4,13 @@ from insteonplm.aldb import ALDB
 from insteonplm.address import Address
 from insteonplm.messages.standardSend import StandardSend
 from insteonplm.messages.extendedSend import ExtendedSend 
+from insteonplm.messages.standardReceive import StandardReceive
+from insteonplm.messages.extendedReceive import ExtendedReceive
 from insteonplm.devices.switchedLightingControl import SwitchedLightingControl
 from insteonplm.devices.switchedLightingControl import SwitchedLightingControl_2663_222 
 from insteonplm.devices.dimmableLightingControl import DimmableLightingControl_2475F
+from insteonplm.devices.securityHealthSafety import SecurityHealthSafety 
+from insteonplm.devices.securityHealthSafety import SecurityHealthSafety_2982_222
 
 class MockPLM(object):
     def __init__(self):
@@ -218,3 +222,67 @@ def test_switchedLightingControl_2663_222_status():
 
     assert callbacks.lightOnLevel == 0x55
     assert callbacks.fanOnLevel == 0x77
+
+
+def test_securityhealthsafety():
+    
+    class sensorState(object):
+        sensor = None
+
+        def sensor_status_callback(self, id, state, value):
+            print('Called sensor callback')
+            self.sensor = value
+
+    mockPLM = MockPLM()
+    address = '1a2b3c'
+    target = '4d5e6f'
+    id1 = '1a2b3c'
+    id2 = '1a2b3c_2'
+    cmd1 = 0x11
+    cmd2 = 0x04
+
+    cat = 0x10
+    subcat = 0x00
+    product_key = 0x00
+    description = 'Generic Security, Heath and Safety Device'
+    model = ''
+
+    callbacks = sensorState()
+
+    device = SecurityHealthSafety.create(mockPLM, address, cat, subcat, product_key, description, model)
+    device.sensor.connect(callbacks.sensor_status_callback)
+    msg = StandardReceive(address, target, 0x00, cmd1, cmd2)
+    device.receive_message(msg)
+    assert callbacks.sensor == cmd2
+
+
+def test_securityhealthsafety_2982_222():
+    
+    class sensorState(object):
+        sensor = None
+
+        def sensor_status_callback(self, id, state, value):
+            print('Called sensor callback')
+            self.sensor = value
+
+    mockPLM = MockPLM()
+    address = '1a2b3c'
+    target = '4d5e6f'
+    id1 = '1a2b3c'
+    id2 = '1a2b3c_2'
+    cmd1 = 0x11
+    cmd2 = 0x04
+
+    cat = 0x10
+    subcat = 0x00
+    product_key = 0x00
+    description = 'Generic Security, Heath and Safety Device'
+    model = ''
+
+    callbacks = sensorState()
+
+    device = SecurityHealthSafety_2982_222.create(mockPLM, address, cat, subcat, product_key, description, model)
+    device.sensor.connect(callbacks.sensor_status_callback)
+    msg = StandardReceive(address, target, 0x80, cmd1, cmd2)
+    device.receive_message(msg)
+    assert callbacks.sensor == 0x6f
