@@ -219,7 +219,13 @@ class DimmableLightingControl_2475F(DimmableLightingControl):
         self.log.debug('Ending DimmableLightingControl_2475F._fan_status_update_received')
 
     def _light_on_command_received(self, msg):
-        light_status_request()
+        device1 = self._plm.devices[self._get_device_id(0x01)]
+        device2 = self._plm.devices[self._get_device_id(0x02)]
+        device1.light_status_request()
+        device2.ligth_status_request()
 
     def _light_off_command_received(self, msg):
-        light_status_request()
+        device1 = self._plm.devices[self._get_device_id(0x01)]
+        device2 = self._plm.devices[self._get_device_id(0x02)]
+        device1.light_status_request()
+        device2.ligth_status_request()
