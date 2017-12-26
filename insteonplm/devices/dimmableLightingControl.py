@@ -217,3 +217,9 @@ class DimmableLightingControl_2475F(DimmableLightingControl):
         self._nextCommandIsFanStatus = False
         device2.lightOnLevel.update(device2.id, msg.cmd2)
         self.log.debug('Ending DimmableLightingControl_2475F._fan_status_update_received')
+
+    def _light_on_command_received(self, msg):
+        light_status_request()
+
+    def _light_off_command_received(self, msg):
+        light_status_request()
