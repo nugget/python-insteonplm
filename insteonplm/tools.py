@@ -46,7 +46,7 @@ def console(loop, log, devicelist):
         log.info('Device %s state %s value is changed to %02x', id, state, value)
 
     criteria = {}
-    conn.protocol.add_device_callback(async_insteonplm_light_callback, criteria)
+    conn.protocol.add_device_callback(async_insteonplm_light_callback)
 
     plm = conn.protocol
 
