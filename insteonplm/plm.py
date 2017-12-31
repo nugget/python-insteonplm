@@ -133,10 +133,10 @@ class PLM(asyncio.Protocol):
         if self._connection_lost_callback:
             self._connection_lost_callback()
 
-    def add_device_callback(self, callback, criteria):
+    def add_device_callback(self, callback):
         """Register a callback for when a matching new device is seen."""
         self.log.debug("Starting: add_device_callback")
-        self.devices.add_device_callback(callback, criteria)
+        self.devices.add_device_callback(callback)
         self.log.debug("Ending: add_device_callback")
 
     def poll_devices(self):
