@@ -139,7 +139,7 @@ class SwitchedLightingControl_2663_222(SwitchedLightingControl):
         self.log.debug('Starting SwitchedLightingControl_2663_222._status_update_received')
 
     def _light_on_command_received(self, msg):
-        light_status_request()
+        self.light_status_request()
 
     def _light_off_command_received(self, msg):
-        light_status_request()
+        self.light_status_request()
