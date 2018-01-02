@@ -74,7 +74,7 @@ class ALDB(object):
         if address in self._devices:
             self._apply_overrides(address)
 
-    def create_device_from_category(self, plm, addr, cat, subcat, product_key=None):
+    def create_device_from_category(self, plm, addr, cat, subcat, product_key=0x00):
         device_override = self._overrides.get(Address(addr).hex, {})
         cat = device_override.get('cat', cat)
         subcat = device_override.get('subcat', subcat)

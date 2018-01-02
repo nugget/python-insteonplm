@@ -265,7 +265,8 @@ class PLM(asyncio.Protocol):
                         self.log.info('Device with id %s added to device list from ALDB data.', device.id)
         #Check again that the device is not alreay added, otherwise queue it up for Get ID request
         if self.devices[msg.address.hex] is None:
-            self._aldb_response_queue[msg.address.hex] = {'msg':msg, 'retries':0}
+            unknowndevice = self.devices.create_device_from_category(self, msg.address.hex)
+            self._aldb_response_queue[msg.address.hex] = {'device':unknowndevice, 'retries':0}
 
         self._get_next_all_link_record()
         
@@ -290,7 +291,7 @@ class PLM(asyncio.Protocol):
             retries = self._aldb_response_queue[addr]['retries']
             if retries < 20:
                 delay += 2
-                self._loop.call_later(delay, self._device_id_request, addr)
+                self._loop.call_later(delay, self._aldb_response_queue[addr]['device'].id_request)
                 self._aldb_response_queue[addr]['retries'] = retries + 1
             else:
                 self.log.warn('Device %s found in the ALDB did not respond and is being removed from the list.', addr)
@@ -339,27 +340,6 @@ class PLM(asyncio.Protocol):
         msg = GetNextAllLinkRecord()
         self.send_msg(msg)
         self.log.debug("Ending: _get_next_all_link_recor")
-
-    def _device_id_request(self, addr):
-        """Request a device ID from a device"""
-        self.log.debug("Starting: _device_id_request")
-        if isinstance(addr, Address):
-            device = addr
-        else:
-            device = Address(addr)
-        self.log.debug('Requesting device ID for %s', device.human)
-        msg = StandardSend(device, COMMAND_ID_REQUEST_0X10_0X00['cmd1'], COMMAND_ID_REQUEST_0X10_0X00['cmd1'])
-        self.send_msg(msg)
-        self.log.debug("Ending: _device_id_request")
-
-    def _product_data_request(self, addr):
-        """Request Product Data Record for device."""
-        self.log.debug("Starting: _product_data_request")
-        device = Address(addr)
-        self.log.debug('Requesting product data for %s', device.human)
-        msg = StandardSend(device, COMMAND_PRODUCT_DATA_REQUEST_0X03_0X00['cmd1'], COMMAND_PRODUCT_DATA_REQUEST_0X03_0X00['cmd2'])    
-        self.send_msg(msg)
-        self.log.debug("Starting: _product_data_request")
     
     def _peel_messages_from_buffer(self):
         self.log.debug("Starting: _peel_messages_from_buffer")
