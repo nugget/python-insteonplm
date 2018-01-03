@@ -1,3 +1,5 @@
+import logging
+
 class StateChangeSignal(object):
     """
     Class used by Insteon devices to hold a device state such as "Light On Level", "Temperature" or "Fan Mode".
@@ -32,8 +34,11 @@ class StateChangeSignal(object):
         self._stateName = statename
         self._value = defaultvalue
         self._updatemethod = updatemethod
+        
+        self._log = logging.getLogger(__name__)
 
     def connect(self, handler):
+        self._log.debug("Registered callback for state: %s", self._stateName)
         self._handlers.append(handler)
 
     def update(self, deviceid, val):

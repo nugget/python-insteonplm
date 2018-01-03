@@ -11,6 +11,7 @@ from insteonplm.devices.switchedLightingControl import SwitchedLightingControl_2
 from insteonplm.devices.dimmableLightingControl import DimmableLightingControl_2475F
 from insteonplm.devices.securityHealthSafety import SecurityHealthSafety 
 from insteonplm.devices.securityHealthSafety import SecurityHealthSafety_2982_222
+from insteonplm.devices.sensorsActuators import SensorsActuators_2450 
 
 class MockPLM(object):
     def __init__(self):
@@ -286,3 +287,53 @@ def test_securityhealthsafety_2982_222():
     msg = StandardReceive(address, target, 0x80, cmd1, cmd2)
     device.receive_message(msg)
     assert callbacks.sensor == 0x6f
+
+def test_SensorsActuators_2450():
+
+    class IOLincStatus(object):
+        relayOnLevel = None
+        sensorOnLevel = None
+
+        def device1_status_callback(self, id, state, value):
+            print('Called device 1 callback')
+            self.relayOnLevel = value
+    
+        def device2_status_callback(self, id, state, value):
+            print('Called device 2 callback')
+            self.sensorOnLevel = value
+
+    mockPLM = MockPLM()
+    address = '1a2b3c'
+    id1 = '1a2b3c'
+    id2 = '1a2b3c_2'
+
+    cat = 0x07
+    subcat = 0x00
+    product_key = 0x00
+    description = 'I/O Linc'
+    model = '2450'
+
+    callbacks = IOLincStatus()
+
+    devices = SensorsActuators_2450.create(mockPLM, address, cat, subcat, product_key, description, model)
+    
+    assert devices[0].id == id1
+    assert devices[1].id == id2
+
+    for device in devices:
+        mockPLM.devices[device.id] = device
+    mockPLM.devices[id1].relay.connect(callbacks.device1_status_callback)
+    mockPLM.devices[id2].sensor.connect(callbacks.device2_status_callback)
+
+    mockPLM.devices[id1].relay_status_request()
+    ackmsg = StandardSend(address, COMMAND_LIGHT_STATUS_REQUEST_0X19_0X00['cmd1'], 0x55, None, MESSAGE_ACK)
+    mockPLM.devices[address].receive_message(ackmsg)
+    assert callbacks.relayOnLevel == 0x55
+    
+    mockPLM.devices[id2].sensor_status_request()
+    ackmsg = StandardSend(address, COMMAND_LIGHT_STATUS_REQUEST_0X19_0X00['cmd1'], 0x77, None, MESSAGE_ACK)
+    statusmsg = StandardSend(address, 0x03, 0x77)
+    mockPLM.devices[address].receive_message(ackmsg)
+
+    assert callbacks.relayOnLevel == 0x55
+    assert callbacks.sensorOnLevel == 0x77

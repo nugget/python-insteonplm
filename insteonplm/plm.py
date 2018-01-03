@@ -194,6 +194,10 @@ class PLM(asyncio.Protocol):
         msg = ExtendedSend(target, cmd1, cmd2out,flags,  acknak, **userdata)
         self.send_msg(msg)
 
+    def async_sleep(self, seconds):
+        """Utility method to allow devices or message handlers to pause execution and yeild back time to the asyncio loop"""
+        yield from asyncio.sleep(seconds, loop=self._loop)
+
     def _get_plm_info(self):
         """Request PLM Info."""
         self.log.debug("Starting: _get_plm_info")
