@@ -157,7 +157,7 @@ class PLM(asyncio.Protocol):
         time.sleep(.5)
         self.log.debug('Sending %d byte message: %s', len(msg.bytes), msg.hex)
         self.transport.write(msg.bytes)
-
+        self.transport.read(len(msg.bytes)+1)
         self.log.debug("Ending: send_msg")
 
     def send_standard(self, target, commandtuple, cmd2=None, flags=0x00, acknak=None):
