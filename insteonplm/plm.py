@@ -84,7 +84,7 @@ class PLM(asyncio.Protocol):
         """Called when asyncio.Protocol establishes the network connection."""
         self.log.info('Connection established to PLM')
         self.transport = transport
-
+        self.transport.serial.timeout = 1 # Testing to see if this fixes the 2413S issue
         # self.transport.set_write_buffer_limits(128)
         # limit = self.transport.get_write_buffer_size()
         # self.log.debug('Write buffer size is %d', limit)
@@ -92,8 +92,8 @@ class PLM(asyncio.Protocol):
         self._load_all_link_database()
 
     def data_received(self, data):
-        self.log.debug("Starting: data_received")
         """Called when asyncio.Protocol detects received data from network."""
+        self.log.debug("Starting: data_received")
         self.log.debug('Received %d bytes from PLM: %s',
                        len(data), binascii.hexlify(data))
         self._buffer.extend(data)
