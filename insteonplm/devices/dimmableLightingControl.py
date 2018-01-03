@@ -89,14 +89,20 @@ class DimmableLightingControl(DeviceBase):
         # Message handler for Standard (0x50) or Extended (0x51) message commands 0x11 Light On
         # Also handles Standard or Extended (0x62) Lights On (0x11) ACK
         # When any of these messages are received any state listeners are updated with the 
-        # current light on level (cmd2)
+        # current light on level (cmd2).
+        # Some times the onlevel comes in as cmd2:0x00. We assume this to be 0xff
+        if msg.cmd2 == 0x00:
+            onlevel = 0xff
+        else:
+            onlevel = msg.cmd2
+
         if msg.code == MESSAGE_EXTENDED_MESSAGE_RECEIVED_0X51 or \
           (msg.code == MESSAGE_SEND_STANDARD_MESSAGE_0X62 and msg.isextendedflag):
             group = msg.userdata[0]
             device = self._plm.devices[self._get_device_id(group)]
-            device.lightOnLevel.update(device.id, msg.cmd2)
+            device.lightOnLevel.update(device.id, onlevel)
         else:
-            self.lightOnLevel.update(self.id, msg.cmd2)
+            self.lightOnLevel.update(self.id, onlevel)
         self.log.debug('Ending _light_on_command_received')
 
     def _light_off_command_received(self, msg):
