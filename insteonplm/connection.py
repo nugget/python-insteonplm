@@ -99,7 +99,7 @@ class Connection:
                     self.log.info('Connecting to PLM on %s', self.device)
                     yield from serial.aio.create_serial_connection(
                         self._loop, lambda: self.protocol,
-                        self.device, baudrate=19200)
+                        self.device, baudrate=19200, timeout=1000)
                     self._reset_retry_interval()
                     return
 
