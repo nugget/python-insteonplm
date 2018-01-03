@@ -154,8 +154,8 @@ class DimmableLightingControl_2475F(DimmableLightingControl):
     @classmethod
     def create(cls, plm, address, cat, subcat, product_key=None, description=None, model=None, groupbutton = 0x01):
         devices = []
-        devices.append(DimmableLightingControl_2475F(plm, address, cat, subcat, product_key, description, model, 0x01))
-        devices.append(DimmableLightingControl_2475F(plm, address, cat, subcat, product_key, description, model, 0x02))
+        devices.append(DimmableLightingControl_2475F(plm, address, cat, subcat, product_key, description + ' Light', model, 0x01))
+        devices.append(DimmableLightingControl_2475F(plm, address, cat, subcat, product_key, description + ' Fan', model, 0x02))
         return devices
     
     def receive_message(self, msg):
