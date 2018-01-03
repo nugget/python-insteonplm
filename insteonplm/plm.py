@@ -49,7 +49,6 @@ class PLM(asyncio.Protocol):
         self._send_queue = []
         self._wait_acknack_queue = []
         self._aldb_response_queue = {}
-        self._response_received = False
         self.devices = ALDB()
 
         self.address = None
@@ -97,7 +96,6 @@ class PLM(asyncio.Protocol):
         """Called when asyncio.Protocol detects received data from network."""
         self.log.debug('Received %d bytes from PLM: %s',
                        len(data), binascii.hexlify(data))
-        self._response_received = True
         self._buffer.extend(data)
         self.log.debug('Total buffer: %s', binascii.hexlify(self._buffer))
         self._peel_messages_from_buffer()
@@ -157,11 +155,7 @@ class PLM(asyncio.Protocol):
         self.log.debug("Starting: send_msg")
         time.sleep(.5)
         self.log.debug('Sending %d byte message: %s', len(msg.bytes), msg.hex)
-        
-        self._response_received = False
         self.transport.write(msg.bytes)
-        if not self._response_received:
-            self.transport.read(1)
         self.log.debug("Ending: send_msg")
 
     def send_standard(self, target, commandtuple, cmd2=None, flags=0x00, acknak=None):
