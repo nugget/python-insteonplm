@@ -207,7 +207,7 @@ def test_switchedLightingControl_2663_222_status():
     for device in devices:
         mockPLM.devices[device.id] = device
     mockPLM.devices[id1].lightOnLevel.connect(callbacks.device1_status_callback)
-    mockPLM.devices[id2].lightOnLevel.connect(callbacks.device2_status_callback)
+    mockPLM.devices[id2].fanSpeed.connect(callbacks.device2_status_callback)
 
     ackmsg = StandardSend(address, COMMAND_LIGHT_STATUS_REQUEST_0X19_0X00['cmd1'], COMMAND_LIGHT_STATUS_REQUEST_0X19_0X00['cmd2'], None, MESSAGE_ACK)
     statusmsg = StandardSend(address, 0x03, 0x55)

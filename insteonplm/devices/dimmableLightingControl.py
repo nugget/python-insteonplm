@@ -132,17 +132,22 @@ class DimmableLightingControl_2475F(DimmableLightingControl):
     """FanLinc model 2475F Dimmable Lighting Control Device Class 0x01 subcat 0x2e
     
     Two separate INSTEON On/Off switch devices are created with ID
-        - 'address': Top Outlet
-        - 'address_2': Bottom Outlet
-
-    INSTEON On/Off switch device class. Available device control options are:
-        - light_on(onlevel=0xff)
-        - light_on_fast(onlevel=0xff)
-        - light_off()
-        - light_off_fast()
-
-    To monitor the state of the device subscribe to the state monitor:
-         - lightOnLevel.connect(callback)
+        1) Ligth
+            - ID: xxxxxx (where xxxxxx is the Insteon address of the device)
+            - Controls: 
+                - light_on(onlevel=0xff)
+                - light_on_fast(onlevel=0xff)
+                - light_off()
+                - light_off_fast()
+            - Monitor: lightOnLevel.connect(callback)
+        2) Fan
+            - ID: xxxxxx_2  (where xxxxxx is the Insteon address of the device)
+            - Controls: 
+                - fan_on(onlevel=0xff)
+                - fan_off()
+                - light_on(onlevel=0xff)  - Same as fan_on(onlevel=0xff)
+                - light_off()  - Same as fan_off()
+            - Monitor: fanSpeed.connect(callback)
 
     where callback defined as:
         - callback(self, device_id, state, state_value)
@@ -151,6 +156,7 @@ class DimmableLightingControl_2475F(DimmableLightingControl):
     def __init__(self, plm, address, cat, subcat, product_key=None, description=None, model=None, groupbutton=0x01):
         super().__init__(plm, address, cat, subcat, product_key, description, model, groupbutton)
 
+        self.fanSpeed = StateChangeSignal("fanSpeed", self.light_status_request, 0x00)
         self._nextCommandIsFanStatus = False
 
         # 2475F has a custom COMMAND_LIGHT_STATUS_REQUEST_0X19_0X00 where cmd1:0x19 and cmd2:0x03 to get the fan status
@@ -222,6 +228,7 @@ class DimmableLightingControl_2475F(DimmableLightingControl):
         device2 = self._plm.devices[self._get_device_id(0x02)]
         self._nextCommandIsFanStatus = False
         device2.lightOnLevel.update(device2.id, msg.cmd2)
+        device2.fanSpeed.update(device2.id, msg.cmd2)
         self.log.debug('Ending DimmableLightingControl_2475F._fan_status_update_received')
 
     def _light_on_command_received(self, msg):
