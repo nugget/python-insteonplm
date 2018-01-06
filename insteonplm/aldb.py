@@ -63,7 +63,7 @@ class ALDB(object):
 
     def add_override(self, addr, key, value):
         """Register an attribute override for a device."""
-        address = Address(addr).hex
+        address = Address(str(addr)).hex
         self.log.info('New override for %s %s is %s', address, key, value)
         device_override = self._overrides.get(address, {})
         device_override[key] = value
