@@ -222,11 +222,13 @@ class PLM(asyncio.Protocol):
             if device is not None:
                 if isinstance(device, list):
                     for currdev in device:
-                        self.devices[currdev.id] = currdev
-                        self.log.info('Device with id %s added to device list.', currdev.id)
+                        if self.devices[currdev] == None:
+                            self.devices[currdev.id] = currdev
+                            self.log.info('Device with id %s added to device list.', currdev.id)
                 else:
-                    self.devices[device.id] = device
-                    self.log.info('Device with id %s added to device list.', device.id)
+                    if self.devices[device.id] == None:
+                        self.devices[device.id] = device
+                        self.log.info('Device with id %s added to device list.', device.id)
             else:
                 self.log.error('Did not add device to list because the device came back None')
             self.log.info('Total Devices Found: %d', len(self.devices))
@@ -263,12 +265,14 @@ class PLM(asyncio.Protocol):
                 if isinstance(device, list):
                     for currdev in device:
                         if currdev.prod_data_in_aldb or self.devices.has_override(currdev.address.hex):
-                            self.devices[currdev.id] = currdev
-                            self.log.info('Device with id %s added to device list from ALDB Data.', currdev.id)
+                            if self.devices[currdev.id] == None:
+                                self.devices[currdev.id] = currdev
+                                self.log.info('Device with id %s added to device list from ALDB Data.', currdev.id)
                 else:
                     if device.prod_data_in_aldb or self.devices.has_override(device.address.hex):
-                        self.devices[device.id] = device
-                        self.log.info('Device with id %s added to device list from ALDB data.', device.id)
+                        if self.devices[device.id] == None:
+                            self.devices[device.id] = device
+                            self.log.info('Device with id %s added to device list from ALDB data.', device.id)
         #Check again that the device is not alreay added, otherwise queue it up for Get ID request
         if self.devices[msg.address.hex] is None:
             unknowndevice = self.devices.create_device_from_category(self, msg.address.hex, None, None, None)
