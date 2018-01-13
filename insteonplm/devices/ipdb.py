@@ -2,6 +2,7 @@
 import logging
 import collections
 
+from .unknowndevice import UnKnownDevice 
 from .generalController import GeneralController
 from .dimmableLightingControl import DimmableLightingControl
 from .dimmableLightingControl import DimmableLightingControl_2475F
@@ -9,6 +10,8 @@ from .switchedLightingControl import SwitchedLightingControl
 from .switchedLightingControl import SwitchedLightingControl_2663_222 
 from .securityHealthSafety import SecurityHealthSafety 
 from .securityHealthSafety import SecurityHealthSafety_2982_222
+from .sensorsActuators import SensorsActuators
+from .sensorsActuators import SensorsActuators_2450
 
 # pylint: disable=line-too-long
 # pylint: disable=too-few-public-methods
@@ -20,6 +23,7 @@ class IPDB(object):
     """Embodies the INSTEON Product Database static data and access methods."""
 
     products = [
+        Product(None, None, None, '', '', UnKnownDevice),
         
         Product(0x00, None, None, 'Generic General Controller', '', GeneralController),
         Product(0x00, 0x04, None, 'ControLinc', '2430', GeneralController),
@@ -96,7 +100,7 @@ class IPDB(object):
 
         Product(0x05, 0x0b, None, 'Thermostat', '2441TH', None), #<- Coming Soon!
 
-        Product(0x07, 0x00, None, 'I/O Linc', '2450', None),
+        Product(0x07, 0x00, None, 'I/O Linc', '2450', SensorsActuators_2450),
 
         Product(0x09, 0x0a, None, '220/240V 30A Load Controller NO', '2477SA1', None),
         Product(0x09, 0x0b, None, '220/240V 30A Load Controller NC', '2477SA2', None),

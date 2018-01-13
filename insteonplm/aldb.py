@@ -33,9 +33,7 @@ class ALDB(object):
 
     def __getitem__(self, address):
         """Fetch a device from the ALDB."""
-        if address in self._devices:
-            return self._devices.get(address, None)
-        return None
+        return self._devices.get(address, None)
 
     def __setitem__(self, key, device):
         """Add or Update a device in the ALDB."""
@@ -65,7 +63,7 @@ class ALDB(object):
 
     def add_override(self, addr, key, value):
         """Register an attribute override for a device."""
-        address = Address(addr).hex
+        address = Address(str(addr)).hex
         self.log.info('New override for %s %s is %s', address, key, value)
         device_override = self._overrides.get(address, {})
         device_override[key] = value
@@ -74,7 +72,7 @@ class ALDB(object):
         if address in self._devices:
             self._apply_overrides(address)
 
-    def create_device_from_category(self, plm, addr, cat, subcat, product_key=None):
+    def create_device_from_category(self, plm, addr, cat, subcat, product_key=0x00):
         device_override = self._overrides.get(Address(addr).hex, {})
         cat = device_override.get('cat', cat)
         subcat = device_override.get('subcat', subcat)

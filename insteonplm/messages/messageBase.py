@@ -51,7 +51,7 @@ class MessageBase(object):
 
     @property
     def isnakflag(self):
-        return (self._messageFlags & MESSAGE_FLAG_NAK) == MESSAGE_FLAG_NAK_0X20 
+        return (self._messageFlags & MESSAGE_FLAG_NAK_0X20) == MESSAGE_FLAG_NAK_0X20 
 
     @isnakflag.setter
     def isnakflag(self, value):

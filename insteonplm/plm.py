@@ -74,9 +74,6 @@ class PLM(asyncio.Protocol):
         self._message_callbacks.add_message_callback(MESSAGE_GET_IM_INFO_0X60, 
                                                      None, self._handle_get_plm_info)
 
-        #self._message_callbacks.add_message_callback(MESSAGE_SEND_STANDARD_MESSAGE_0X62, 
-        #                                             None, self._handle_send_standard_or_extended_message_nak, MESSAGE_NAK)
-
         self._message_callbacks.add_message_callback(MESSAGE_SEND_STANDARD_MESSAGE_0X62, 
                                                      None, self._handle_standard_or_extended_message_received, MESSAGE_ACK)
 
@@ -87,6 +84,10 @@ class PLM(asyncio.Protocol):
         """Called when asyncio.Protocol establishes the network connection."""
         self.log.info('Connection established to PLM')
         self.transport = transport
+        
+        # Testing to see if this fixes the 2413S issue
+        self.transport.serial.timeout = 1 
+        self.transport.serial.write_timeout = 1
 
         # self.transport.set_write_buffer_limits(128)
         # limit = self.transport.get_write_buffer_size()
@@ -95,11 +96,10 @@ class PLM(asyncio.Protocol):
         self._load_all_link_database()
 
     def data_received(self, data):
-        self.log.debug("Starting: data_received")
         """Called when asyncio.Protocol detects received data from network."""
+        self.log.debug("Starting: data_received")
         self.log.debug('Received %d bytes from PLM: %s',
                        len(data), binascii.hexlify(data))
-
         self._buffer.extend(data)
         self.log.debug('Total buffer: %s', binascii.hexlify(self._buffer))
         self._peel_messages_from_buffer()
@@ -136,10 +136,10 @@ class PLM(asyncio.Protocol):
         if self._connection_lost_callback:
             self._connection_lost_callback()
 
-    def add_device_callback(self, callback, criteria):
+    def add_device_callback(self, callback):
         """Register a callback for when a matching new device is seen."""
         self.log.debug("Starting: add_device_callback")
-        self.devices.add_device_callback(callback, criteria)
+        self.devices.add_device_callback(callback)
         self.log.debug("Ending: add_device_callback")
 
     def poll_devices(self):
@@ -160,7 +160,6 @@ class PLM(asyncio.Protocol):
         time.sleep(.5)
         self.log.debug('Sending %d byte message: %s', len(msg.bytes), msg.hex)
         self.transport.write(msg.bytes)
-
         self.log.debug("Ending: send_msg")
 
     def send_standard(self, target, commandtuple, cmd2=None, flags=0x00, acknak=None):
@@ -195,6 +194,10 @@ class PLM(asyncio.Protocol):
         msg = ExtendedSend(target, cmd1, cmd2out,flags,  acknak, **userdata)
         self.send_msg(msg)
 
+    def async_sleep(self, seconds):
+        """Utility method to allow devices or message handlers to pause execution and yeild back time to the asyncio loop"""
+        yield from asyncio.sleep(seconds, loop=self._loop)
+
     def _get_plm_info(self):
         """Request PLM Info."""
         self.log.debug("Starting: _get_plm_info")
@@ -219,34 +222,17 @@ class PLM(asyncio.Protocol):
             if device is not None:
                 if isinstance(device, list):
                     for currdev in device:
-                        self.devices[currdev.id] = currdev
-                        self.log.info('Device with id %s added to device list.', currdev.id)
+                        if self.devices[currdev] == None:
+                            self.devices[currdev.id] = currdev
+                            self.log.info('Device with id %s added to device list.', currdev.id)
                 else:
-                    self.devices[device.id] = device
-                    self.log.info('Device with id %s added to device list.', device.id)
+                    if self.devices[device.id] == None:
+                        self.devices[device.id] = device
+                        self.log.info('Device with id %s added to device list.', device.id)
             else:
                 self.log.error('Did not add device to list because the device came back None')
             self.log.info('Total Devices Found: %d', len(self.devices))
         self.log.debug("Ending _handle_assign_to_all_link_group")
-
-    def _handle_send_standard_or_extended_message_nak(self, msg):
-        self.log.debug("Starting _handle_send_standard_or_exteded_message_nak")
-        if msg.cmd1 == COMMAND_ID_REQUEST_0X10_0X00['cmd1']:
-            retries = self._aldb_response_queue[msg.address.hex]['retries']
-            if retries < 5:
-                self.log.info('Device %s did not respond to %d tries for a device ID. Retrying.', msg.address, retries)
-                self._aldb_response_queue[msg.address.hex]['retries'] = retries + 1
-                self._loop.call_later(2, self._device_id_request, msg.address.hex)
-            else:
-                # If we have tried 5 times and did not get a device ID and
-                # the ALDB record did not return a device type either
-                # we remove the device from the list of devices assuming it is offline
-                # If it is online it can be added manually via the device overrides
-                self.log.error("Device with address %s did not respond to a request for a device ID.", msg.address.hex)
-                self.log.error("Device with address %s is being removed from the list.", msg.address.hex)
-                self._aldb_response_queue.pop(msg.address.hex)
-        
-        self.log.debug("Ending _handle_send_standard_or_exteded_message_nak")
 
     def _handle_standard_or_extended_message_received(self, msg):
         self.log.debug("Starting: _handle_standard_or_extended_message_received")
@@ -279,15 +265,18 @@ class PLM(asyncio.Protocol):
                 if isinstance(device, list):
                     for currdev in device:
                         if currdev.prod_data_in_aldb or self.devices.has_override(currdev.address.hex):
-                            self.devices[currdev.id] = currdev
-                            self.log.info('Device with id %s added to device list from ALDB Data.', currdev.id)
+                            if self.devices[currdev.id] == None:
+                                self.devices[currdev.id] = currdev
+                                self.log.info('Device with id %s added to device list from ALDB Data.', currdev.id)
                 else:
                     if device.prod_data_in_aldb or self.devices.has_override(device.address.hex):
-                        self.devices[device.id] = device
-                        self.log.info('Device with id %s added to device list from ALDB data.', device.id)
+                        if self.devices[device.id] == None:
+                            self.devices[device.id] = device
+                            self.log.info('Device with id %s added to device list from ALDB data.', device.id)
         #Check again that the device is not alreay added, otherwise queue it up for Get ID request
         if self.devices[msg.address.hex] is None:
-            self._aldb_response_queue[msg.address.hex] = {'msg':msg, 'retries':0}
+            unknowndevice = self.devices.create_device_from_category(self, msg.address.hex, None, None, None)
+            self._aldb_response_queue[msg.address.hex] = {'device':unknowndevice, 'retries':0}
 
         self._get_next_all_link_record()
         
@@ -310,9 +299,9 @@ class PLM(asyncio.Protocol):
         staleaddr = []
         for addr in self._aldb_response_queue:
             retries = self._aldb_response_queue[addr]['retries']
-            if retries < 10:
+            if retries < 20:
                 delay += 2
-                self._loop.call_later(delay, self._device_id_request, addr)
+                self._loop.call_later(delay, self._aldb_response_queue[addr]['device'].id_request)
                 self._aldb_response_queue[addr]['retries'] = retries + 1
             else:
                 self.log.warn('Device %s found in the ALDB did not respond and is being removed from the list.', addr)
@@ -361,27 +350,6 @@ class PLM(asyncio.Protocol):
         msg = GetNextAllLinkRecord()
         self.send_msg(msg)
         self.log.debug("Ending: _get_next_all_link_recor")
-
-    def _device_id_request(self, addr):
-        """Request a device ID from a device"""
-        self.log.debug("Starting: _device_id_request")
-        if isinstance(addr, Address):
-            device = addr
-        else:
-            device = Address(addr)
-        self.log.debug('Requesting device ID for %s', device.human)
-        msg = StandardSend(device, COMMAND_ID_REQUEST_0X10_0X00['cmd1'], COMMAND_ID_REQUEST_0X10_0X00['cmd1'])
-        self.send_msg(msg)
-        self.log.debug("Ending: _device_id_request")
-
-    def _product_data_request(self, addr):
-        """Request Product Data Record for device."""
-        self.log.debug("Starting: _product_data_request")
-        device = Address(addr)
-        self.log.debug('Requesting product data for %s', device.human)
-        msg = StandardSend(device, COMMAND_PRODUCT_DATA_REQUEST_0X03_0X00['cmd1'], COMMAND_PRODUCT_DATA_REQUEST_0X03_0X00['cmd2'])    
-        self.send_msg(msg)
-        self.log.debug("Starting: _product_data_request")
     
     def _peel_messages_from_buffer(self):
         self.log.debug("Starting: _peel_messages_from_buffer")

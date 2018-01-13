@@ -38,10 +38,7 @@ class Message(object):
     def create(rawmessage):
         log = logging.getLogger(__name__)
 
-        while len(rawmessage) > 0 and rawmessage[0] != MESSAGE_START_CODE_0X02: 
-            log.debug('Buffer content: %s', binascii.hexlify(rawmessage))
-            rawmessage = rawmessage[1:]
-            log.debug('Trimming leading buffer garbage')
+        rawmessage = Message._trim_buffer_garbage(rawmessage)
 
         if len(rawmessage) < 2:
             return None
@@ -49,14 +46,27 @@ class Message(object):
         code = rawmessage[1]
         _messageFlags = 0x00
         msgclass = Message.get_message_class(code)
-        msg = None
-        remainingBuffer = rawmessage
 
-        if msgclass is not None:
+        msg = None
+
+        if msgclass is None:
+            rawmessage = rawmessage[1:]
+            msg = Message.create(rawmessage)
+        else:
+            remainingBuffer = rawmessage
             if Message.iscomplete(rawmessage):
                 msg = msgclass.from_raw_message(rawmessage)
 
         return msg
+
+    @classmethod
+    def _trim_buffer_garbage(cls, rawmessage):
+        log = logging.getLogger(__name__)
+        while len(rawmessage) > 0 and rawmessage[0] != MESSAGE_START_CODE_0X02: 
+            log.debug('Buffer content: %s', binascii.hexlify(rawmessage))
+            rawmessage = rawmessage[1:]
+            log.debug('Trimming leading buffer garbage')
+        return rawmessage
 
     @classmethod
     def iscomplete(self, rawmessage):
@@ -110,4 +120,4 @@ class Message(object):
         messageclasses[MESSAGE_GET_NEXT_ALL_LINK_RECORD_0X6A] = GetNextAllLinkRecord
         messageclasses[MESSAGE_GET_IM_CONFIGURATION_0X73] = GetImConfiguration
         
-        return messageclasses[code]
+        return messageclasses.get(code, None)

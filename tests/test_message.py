@@ -182,7 +182,7 @@ def test_incomplete_standard_message():
     msg = Message.create(rawmessage)
     assert msg is None
 
-def test_incomplete_extended_messge():
+def test_incomplete_extended_message():
     msgext = ExtendedSend(bytearray({0x1a,0x2b,0x3c}), 0x7d, 0x8e, **{'d1':0x9f})
     print(msgext.hex)
 
@@ -194,3 +194,11 @@ def test_incomplete_extended_messge():
     rawmessage.append(0x06)
     msg = Message.create(rawmessage)
     assert isinstance(msg, ExtendedSend)
+
+
+def test_leading_unknown_messge():
+    rawmessage = bytearray([0x02, 0x00, 0x15, 0x02, 0x50, 0x46, 0xd0, 0xe6, 0x43, 0x6c, 0x15, 0x40, 0x11, 0x01])
+    msg = Message.create(rawmessage)
+    assert isinstance(msg, StandardReceive)  
+    assert msg.cmd1 == 0x11
+    assert msg.cmd2 == 0x01
