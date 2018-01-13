@@ -22,7 +22,7 @@ class DimmableLightingControl(DeviceBase):
         DeviceBase.__init__(self, plm, address, cat, subcat, product_key, description, model, groupbutton)
 
         # Setting the default value of the light to 0 (i.e. Off)
-        self.lightOnLevel = StateChangeSignal('LightOnLevel', self.light_status_request, 0x00)
+        self.lightOnLevel = StateChangeSignal('LightOnLevel', self.id, self.light_status_request, 0x00)
 
         self._nextCommandIsStatus = False
 
@@ -94,12 +94,12 @@ class DimmableLightingControl(DeviceBase):
           (msg.code == MESSAGE_SEND_STANDARD_MESSAGE_0X62 and msg.isextendedflag):
             group = msg.userdata[0]
             if group == self._groupbutton:
-                self.lightOnLevel.update(self.id, self.lightOnLevel._stateName, msg.cmd2)
+                self.lightOnLevel.update(msg.cmd2)
             else:
                 device2 = self._plm.devices[self._get_device_id(0x02)]
-                self.lightOnLevel.update(self.id, self.lightOnLevel._stateName, msg.cmd2)
+                self.lightOnLevel.update(msg.cmd2)
         else:
-            self.lightOnLevel.update(self.id, self.lightOnLevel._stateName, msg.cmd2)
+            self.lightOnLevel.update(msg.cmd2)
         self.log.debug('Ending _light_on_command_received')
 
     def _light_off_command_received(self, msg):
@@ -108,12 +108,12 @@ class DimmableLightingControl(DeviceBase):
           (msg.code == MESSAGE_SEND_STANDARD_MESSAGE_0X62 and msg.isextendedflag):
             group = msg.userdata[0]
             if group == self._groupbutton:
-                self.lightOnLevel.update(self.id, self.lightOnLevel._stateName, 0)
+                self.lightOnLevel.update(s0)
             else:
                 device2 = self._plm.devices[self._get_device_id(0x02)]
-                self.lightOnLevel.update(self.id, self.lightOnLevel._stateName, 0)
+                self.lightOnLevel.update(0)
         else:
-            self.lightOnLevel.update(self.id, self.lightOnLevel._stateName, msg.cmd2)
+            self.lightOnLevel.update(msg.cmd2)
         self.log.debug('Ending _light_off_command_received')
 
     def _light_status_request_ack(self, msg):
@@ -124,7 +124,7 @@ class DimmableLightingControl(DeviceBase):
     def _status_update_received(self, msg):
         self.log.debug('Starting _status_update_received')
         self._nextCommandIsStatus = False
-        self.lightOnLevel.update(self.id, self.lightOnLevel._stateName, msg.cmd2)
+        self.lightOnLevel.update(msg.cmd2)
         self.log.debug('Ending _status_update_received')
 
 class DimmableLightingControl_2475F(DimmableLightingControl):
@@ -221,5 +221,5 @@ class DimmableLightingControl_2475F(DimmableLightingControl):
         self.log.debug('Starting DimmableLightingControl_2475F._fan_status_update_received')
         device2 = self._plm.devices[self._get_device_id(0x02)]
         self._nextCommandIsFanStatus = False
-        device2.lightOnLevel.update(device2.id, self.lightOnLevel._stateName, msg.cmd2)
+        device2.lightOnLevel.update(msg.cmd2)
         self.log.debug('Ending DimmableLightingControl_2475F._fan_status_update_received')

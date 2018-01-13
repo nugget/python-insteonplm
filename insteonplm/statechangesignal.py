@@ -27,20 +27,21 @@ class StateChangeSignal(object):
         - callback(self, device_id, state, state_value)
 
     """
-    def __init__(self, statename, updatemethod, defaultvalue=None):
+    def __init__(self, deviceid, statename, updatemethod, defaultvalue=None):
         self._handlers = []
         self._stateName = statename
         self._value = defaultvalue
         self._updatemethod = updatemethod
+        self._deviceid = deviceid
 
     def connect(self, handler):
         self._handlers.append(handler)
 
-    def update(self, deviceid, statename, val):
+    def update(self, val):
         """Save value to state.value property and notify listeners of the change"""
         self._value = val
         for handler in self._handlers:
-            handler(deviceid, statename, val)
+            handler(self._deviceid, self._stateName, val)
 
     @property
     def value(self):

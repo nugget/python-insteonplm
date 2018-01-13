@@ -121,17 +121,17 @@ class SwitchedLightingControl_2663_222(SwitchedLightingControl):
         device2 = self._plm.devices[self._get_device_id(0x02)]
         self._nextCommandIsStatus = False
         if msg.cmd2 == 0x00:
-            self.lightOnLevel.update(self.id, self.lightOnLevel._stateName, 0x00)
-            device2.lightOnLevel.update(device2.id, self.lightOnLevel._stateName, 0x00)
+            self.lightOnLevel.update(0x00)
+            device2.lightOnLevel.update(0x00)
         elif msg.cmd2 == 0x01:
-            self.lightOnLevel.update(self.id, self.lightOnLevel._stateName, 0xff)
-            device2.lightOnLevel.update(device2.id, self.lightOnLevel._stateName, 0x00)
+            self.lightOnLevel.update(0xff)
+            device2.lightOnLevel.update(d0x00)
         elif msg.cmd2 == 0x02:
-            self.lightOnLevel.update(self.id, self.lightOnLevel._stateName, 0x00)
-            device2.lightOnLevel.update(device2.id, self.lightOnLevel._stateName, 0xff)
+            self.lightOnLevel.update(self.id, 0x00)
+            device2.lightOnLevel.update(d0xff)
         elif msg.cmd2 == 0x03:
-            self.lightOnLevel.update(self.id, self.lightOnLevel._stateName, 0xff)
-            device2.lightOnLevel.update(device2.id, self.lightOnLevel._stateName, 0xff)
+            self.lightOnLevel.update(0xff)
+            device2.lightOnLevel.update(0xff)
         else:
             raise ValueError
         self.log.debug('Starting SwitchedLightingControl_2663_222._status_update_received')
