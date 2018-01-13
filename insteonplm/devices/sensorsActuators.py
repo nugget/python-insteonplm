@@ -52,8 +52,8 @@ class SensorsActuators_2450(SensorsActuators):
     def __init__(self, plm, address, cat, subcat, product_key=None, description=None, model=None, groupbutton=0x01):
         super().__init__(plm, address, cat, subcat, product_key, description, model, groupbutton)
 
-        self.sensor = StateChangeSignal('Sensor', self.sensor_status_request, 0x00)
-        self.relay = StateChangeSignal('Relay', self.relay_status_request, 0x00)
+        self.sensor = StateChangeSignal(self.id, 'Sensor', self.sensor_status_request, 0x00)
+        self.relay = StateChangeSignal(self.id, 'Relay', self.relay_status_request, 0x00)
 
         self._message_callbacks.add_message_callback(MESSAGE_STANDARD_MESSAGE_RECEIVED_0X50, COMMAND_LIGHT_ON_0X11_NONE, self._closed_command_received)
         self._message_callbacks.add_message_callback(MESSAGE_EXTENDED_MESSAGE_RECEIVED_0X51, COMMAND_LIGHT_ON_0X11_NONE, self._closed_command_received)
@@ -102,10 +102,10 @@ class SensorsActuators_2450(SensorsActuators):
         self.log.debug('Starting SensorsActuators_2450._closed_command_received')
         if msg.isbroadcastflag:
             sensor_device = self._plm.devices[self._get_device_id(0x02)]
-            sensor_device.sensor.update(self._get_device_id(0x02), 0x00)
+            sensor_device.sensor.value =  0x00
         else:
             relay_device = self._plm.devices[self._get_device_id(0x01)]
-            relay_device.relay.update(self._get_device_id(0x01), 0x00)
+            relay_device.relay.value = 0x00
         self.log.debug('Starting SensorsActuators_2450._closed_command_received')
 
     def _open_command_received(self, msg):
@@ -115,19 +115,19 @@ class SensorsActuators_2450(SensorsActuators):
         """
         self.log.debug('Starting SensorsActuators_2450._open_command_received')
         if msg.isbroadcastflag:
-            self.sensor.update(self._get_device_id(0x02), 0x01)
+            self.sensor.value = 0x01
         else:
-            self.relay.update(self._get_device_id(0x01), 0xff)
+            self.relay.value = 0xff
         self.log.debug('Starting SensorsActuators_2450._open_command_received')
 
     def _sensor_status_received(self, msg):
         sensor_device = self._plm.devices[self._get_device_id(0x02)]
-        sensor_device.sensor.update(self._get_device_id(0x02), msg.cmd2)
+        sensor_device.sensor.value = msg.cmd2
         self._set_status_callback(None)
 
     def _relay_status_received(self, msg):
         relay_device = self._plm.devices[self._get_device_id(0x01)]
-        relay_device.relay.update(self._get_device_id(0x01), msg.cmd2)
+        relay_device.relay.value =  msg.cmd2
         self._set_status_callback(None)
 
     def _set_status_callback(self, callback):

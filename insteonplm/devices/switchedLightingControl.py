@@ -54,9 +54,9 @@ class SwitchedLightingControl(DimmableLightingControl):
           (msg.code == MESSAGE_SEND_STANDARD_MESSAGE_0X62 and msg.isextendedflag):
             group = msg.userdata[0]
             device = self._plm.devices[self._get_device_id(group)]
-            device.lightOnLevel.update(device.id, 0xff)
+            device.lightOnLevel.value = 0xff
         else:
-            self.lightOnLevel.update(self.id, 0xff)
+            self.lightOnLevel.value = 0xff
         self.log.debug('Ending _light_on_command_received')
 
 class SwitchedLightingControl_2663_222(SwitchedLightingControl):
@@ -116,24 +116,24 @@ class SwitchedLightingControl_2663_222(SwitchedLightingControl):
         self._nextCommandIsStatus = False
         if msg.cmd2 == 0x00:
             self.log.debug('Sending Top Outlet %s Off', device1.id)
-            device1.lightOnLevel.update(device1.id, 0x00)
+            device1.lightOnLevel.value = 0x00
             self.log.debug('Sending Bottom Outlet %s Off', device2.id)
-            device2.lightOnLevel.update(device2.id, 0x00)
+            device2.lightOnLevel.value =  0x00
         elif msg.cmd2 == 0x01:
             self.log.debug('Sending Top Outlet %s On', device1.id)
-            device1.lightOnLevel.update(device1.id, 0xff)
+            device1.lightOnLevel.value = 0xff
             self.log.debug('Sending Bottom Outlet %s Off', device2.id)
-            device2.lightOnLevel.update(device2.id, 0x00)
+            device2.lightOnLevel.value = 0x00
         elif msg.cmd2 == 0x02:
             self.log.debug('Sending Top Outlet %s Off', device1.id)
-            device1.lightOnLevel.update(device1.id, 0x00)
+            device1.lightOnLevel.value = 0x00
             self.log.debug('Sending Bottom Outlet %s On', device2.id)
-            device2.lightOnLevel.update(device2.id, 0xff)
+            device2.lightOnLevel.value = 0xff
         elif msg.cmd2 == 0x03:
             self.log.debug('Sending Top Outlet %s On', device1.id)
-            device1.lightOnLevel.update(device1.id, 0xff)
+            device1.lightOnLevel.value = 0xff
             self.log.debug('Sending Bottom Outlet %s On', device2.id)
-            device2.lightOnLevel.update(device2.id, 0xff)
+            device2.lightOnLevel.value = 0xff
         else:
             raise ValueError
         self.log.debug('Starting SwitchedLightingControl_2663_222._status_update_received')
