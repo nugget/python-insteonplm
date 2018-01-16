@@ -22,7 +22,7 @@ class DimmableLightingControl(DeviceBase):
         DeviceBase.__init__(self, plm, address, cat, subcat, product_key, description, model, groupbutton)
 
         # Setting the default value of the light to 0 (i.e. Off)
-        self.lightOnLevel = StateChangeSignal(self.id, 'LightOnLevel', self.light_status_request, 0x00)
+        self.lightOnLevel = StateChangeSignal('LightOnLevel', self.light_status_request, 0x00)
 
         self._nextCommandIsStatus = False
 
@@ -100,9 +100,9 @@ class DimmableLightingControl(DeviceBase):
           (msg.code == MESSAGE_SEND_STANDARD_MESSAGE_0X62 and msg.isextendedflag):
             group = msg.userdata[0]
             device = self._plm.devices[self._get_device_id(group)]
-            device.lightOnLevel.value = onlevel
+            device.lightOnLevel.update(device.id, onlevel)
         else:
-            self.lightOnLevel.value = onlevel
+            self.lightOnLevel.update(self.id, onlevel)
         self.log.debug('Ending _light_on_command_received')
 
     def _light_off_command_received(self, msg):
@@ -111,9 +111,9 @@ class DimmableLightingControl(DeviceBase):
           (msg.code == MESSAGE_SEND_STANDARD_MESSAGE_0X62 and msg.isextendedflag):
             group = msg.userdata[0]
             device = self._plm.devices[self._get_device_id(group)]
-            device.lightOnLevel.value = 0x00
+            device.lightOnLevel.update(device.id, 0x00)
         else:
-            self.lightOnLevel.value = 0x00
+            self.lightOnLevel.update(self.id, 0x00)
         self.log.debug('Ending _light_off_command_received')
 
     def _light_status_request_ack(self, msg):
@@ -124,7 +124,7 @@ class DimmableLightingControl(DeviceBase):
     def _status_update_received(self, msg):
         self.log.debug('Starting _status_update_received')
         self._nextCommandIsStatus = False
-        self.lightOnLevel.value = msg.cmd2
+        self.lightOnLevel.update(self.id, msg.cmd2)
         self.log.debug('Ending _status_update_received')
 
 class DimmableLightingControl_2475F(DimmableLightingControl):
@@ -156,7 +156,7 @@ class DimmableLightingControl_2475F(DimmableLightingControl):
     def __init__(self, plm, address, cat, subcat, product_key=None, description=None, model=None, groupbutton=0x01):
         super().__init__(plm, address, cat, subcat, product_key, description, model, groupbutton)
 
-        self.fanSpeed = StateChangeSignal(self.id, "fanSpeed", self.light_status_request, 0x00)
+        self.fanSpeed = StateChangeSignal("fanSpeed", self.light_status_request, 0x00)
         self._nextCommandIsFanStatus = False
 
         # 2475F has a custom COMMAND_LIGHT_STATUS_REQUEST_0X19_0X00 where cmd1:0x19 and cmd2:0x03 to get the fan status
@@ -227,7 +227,8 @@ class DimmableLightingControl_2475F(DimmableLightingControl):
         self.log.debug('Starting DimmableLightingControl_2475F._fan_status_update_received')
         device2 = self._plm.devices[self._get_device_id(0x02)]
         self._nextCommandIsFanStatus = False
-        device2.fanSpeed.value = msg.cmd2
+        device2.lightOnLevel.update(device2.id, msg.cmd2)
+        device2.fanSpeed.update(device2.id, msg.cmd2)
         self.log.debug('Ending DimmableLightingControl_2475F._fan_status_update_received')
 
     def _light_on_command_received(self, msg):

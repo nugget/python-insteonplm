@@ -29,9 +29,8 @@ class StateChangeSignal(object):
         - callback(self, device_id, state, state_value)
 
     """
-    def __init__(self, deviceid, statename, updatemethod, defaultvalue=None):
+    def __init__(self, statename, updatemethod, defaultvalue=None):
         self._handlers = []
-        self._deviceid = deviceid
         self._stateName = statename
         self._value = defaultvalue
         self._updatemethod = updatemethod
@@ -42,18 +41,17 @@ class StateChangeSignal(object):
         self._log.debug("Registered callback for state: %s", self._stateName)
         self._handlers.append(handler)
 
+    def update(self, deviceid, val):
+        """Save value to state.value property and notify listeners of the change"""
+        self._value = val
+        for handler in self._handlers:
+            handler(deviceid, self._stateName, val)
+
     @property
     def value(self):
         if self._value == None:
             self.async_refresh_state()
         return self._value
-
-    @value.setter
-    def value(self, val):
-        """Save value to state.value property and notify listeners of the change"""
-        self._value = val
-        for handler in self._handlers:
-            handler(self._deviceid, self._stateName, val)
 
     @property
     def stateName(self):
