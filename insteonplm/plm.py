@@ -154,6 +154,7 @@ class PLM(asyncio.Protocol):
             delay += 0
         self.log.debug("Ending: poll_devices")
 
+    @asyncio.coroutine
     def send_msg(self, msg):
         # TODO: implement an ACK/NAK review of sent commands
         # Purpose of the function is to capture sent commands and compare them to ACK/NAK messages
