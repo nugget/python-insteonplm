@@ -4,6 +4,7 @@ import logging
 import binascii
 import time
 from collections import deque
+import async_timeout
 
 from .constants import *
 from .aldb import ALDB
@@ -17,6 +18,7 @@ from .messages.standardSend import StandardSend
 from .messages.extendedSend import ExtendedSend 
 
 __all__ = ('PLM')
+WAIT_TIMEOUT = 2
 
 #PP = PLMProtocol()
 
@@ -46,10 +48,11 @@ class PLM(asyncio.Protocol):
 
         self._buffer = bytearray()
         self._recv_queue = deque([])
-        self._send_queue = []
+        self._send_queue = asyncio.Queue(loop=self._loop)
         self._wait_acknack_queue = []
         self._aldb_response_queue = {}
         self.devices = ALDB()
+        self._write_transport_lock = asyncio.Lock(loop=self._loop)
 
         self.address = None
         self.category = None
@@ -144,11 +147,11 @@ class PLM(asyncio.Protocol):
 
     def poll_devices(self):
         self.log.debug("Starting: poll_devices")
-        delay = 2
+        delay = 0
         for addr in self.devices:
             device = self.devices[addr]
             self._loop.call_later(delay, device.async_refresh_state)
-            delay += 2
+            delay += 0
         self.log.debug("Ending: poll_devices")
 
     def send_msg(self, msg):
@@ -157,9 +160,13 @@ class PLM(asyncio.Protocol):
         # A callback can then be defined in the event of a NAK (i.e. retry or do something else)
         # self._sent_queue.append(msg)
         self.log.debug("Starting: send_msg")
-        time.sleep(.5)
-        self.log.debug('Sending %d byte message: %s', len(msg.bytes), msg.hex)
-        self.transport.write(msg.bytes)
+        #time.sleep(.5)
+        #self.log.debug('Sending %d byte message: %s', len(msg.bytes), msg.hex)
+        #self.transport.write(msg.bytes)
+        put_queue_coro = self._put_to_send_queue(msg)
+        get_queue_coro = self._get_from_send_queue()
+        asyncio.ensure_future(put_queue_coro)
+        asyncio.ensure_future(get_queue_coro)
         self.log.debug("Ending: send_msg")
 
     def send_standard(self, target, commandtuple, cmd2=None, flags=0x00, acknak=None):
@@ -194,9 +201,42 @@ class PLM(asyncio.Protocol):
         msg = ExtendedSend(target, cmd1, cmd2out,flags,  acknak, **userdata)
         self.send_msg(msg)
 
+    @asyncio.coroutine
     def async_sleep(self, seconds):
         """Utility method to allow devices or message handlers to pause execution and yeild back time to the asyncio loop"""
         yield from asyncio.sleep(seconds, loop=self._loop)
+
+    @asyncio.coroutine
+    def _put_to_send_queue(self, msg):
+        self.log.info('Starting _put_to_send_queue')
+        self._send_queue.put_nowait(msg)
+        self.log.info('Ending _put_to_send_queue')
+
+    @asyncio.coroutine
+    def _get_from_send_queue(self):
+        self.log.info('Starting _get_from_send_queue')
+        if not self._write_transport_lock.locked():
+            self.log.info('Aquiring lock')
+            yield from self._write_transport_lock.acquire()
+            self.log.info(self._write_transport_lock.locked())
+            while True:
+                self.log.info(self._write_transport_lock.locked())
+                # wait for an item from the queue
+                try:
+                    with async_timeout.timeout(WAIT_TIMEOUT):
+                        msg = yield from self._send_queue.get()
+                except asyncio.TimeoutError:
+                    self.log.info('No new messages received.')
+                    break
+                # process the item
+                self.log.info('Writing %d byte message to transport: %s', len(msg.bytes), msg.hex)
+                yield from asyncio.sleep(1)
+            self.log.info('Lock status: %r', self._write_transport_lock.locked())
+            self.log.info('Releasing write lock')
+            self._write_transport_lock.release()
+        else:
+            self.log.info('Instance of _get_from_send_queue already running')
+        self.log.info('Ending _get_from_send_queue')
 
     def _get_plm_info(self):
         """Request PLM Info."""
@@ -295,13 +335,12 @@ class PLM(asyncio.Protocol):
                 self._aldb_response_queue.pop(addr)
             except:
                 pass
-        delay = 2
+
         staleaddr = []
         for addr in self._aldb_response_queue:
             retries = self._aldb_response_queue[addr]['retries']
             if retries < 20:
-                delay += 2
-                self._loop.call_later(delay, self._aldb_response_queue[addr]['device'].id_request)
+                self._aldb_response_queue[addr]['device'].id_request()
                 self._aldb_response_queue[addr]['retries'] = retries + 1
             else:
                 self.log.warn('Device %s found in the ALDB did not respond and is being removed from the list.', addr)
@@ -315,6 +354,7 @@ class PLM(asyncio.Protocol):
 
         if num_devices_not_added > 0:
             # Schedule _handle_get_next_all_link_record_nak to run again later if some devices did not respond
+            delay = num_devices_not_added*3
             self._loop.call_later(delay, self._handle_get_next_all_link_record_nak, None)
         else:
             self._loop.call_soon(self.poll_devices)

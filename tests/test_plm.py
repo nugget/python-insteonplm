@@ -75,7 +75,7 @@ def do_plm(loop, log, devicelist):
     log.info('_____________________')
     msg = insteonplm.messages.getIMInfo.GetImInfo(address='1a2b3c', cat=0x03, subcat=0x20, firmware=0x00, acknak = 0x06)
     plm.data_received(msg.bytes)
-    yield from asyncio.sleep(1)
+    yield from asyncio.sleep(10)
     try:
         assert plm.address == Address('1a2b3c')
         print('Address check passed')
@@ -115,7 +115,7 @@ def do_plm(loop, log, devicelist):
     log.info('__________________________________')
     msg = insteonplm.messages.getNextAllLinkRecord.GetNextAllLinkRecord(0x15)
     plm.data_received(msg.bytes)
-    yield from asyncio.sleep(4)
+    yield from asyncio.sleep(8)
     
     log.info('Replying with Device Info Record')
     log.info('________________________________')
@@ -125,7 +125,7 @@ def do_plm(loop, log, devicelist):
                                                               cmd1=0x01, 
                                                               cmd2=0x00)
     plm.data_received(msg.bytes)
-    yield from asyncio.sleep(10)
+    yield from asyncio.sleep(14)
     
     log.info('Replying with Device Status Record')
     log.info('__________________________________')
@@ -142,7 +142,7 @@ def do_plm(loop, log, devicelist):
                                                               cmd1=0x19, 
                                                               cmd2=0xff)
     plm.data_received(msg.bytes)
-    yield from asyncio.sleep(10)
+    yield from asyncio.sleep(15)
 
     try:
         assert plm.devices['4d5e6f'].lightOnLevel.value == 0xff
