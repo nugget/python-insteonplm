@@ -37,6 +37,7 @@ setup(
     install_requires=[
         'pyserial==3.2.0',
         'pyserial-asyncio'
+        'async_timeout'
     ],
     entry_points={
         'console_scripts': [ 'insteonplm_monitor = insteonplm.tools:monitor', ]
