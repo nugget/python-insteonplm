@@ -204,30 +204,30 @@ class PLM(asyncio.Protocol):
 
     @asyncio.coroutine
     def _write_message_from_send_queue(self):
-        self.log.info('Starting _get_from_send_queue')
+        self.log.debug('Starting _get_from_send_queue')
         if not self._write_transport_lock.locked():
-            self.log.info('Aquiring lock')
+            self.log.debug('Aquiring write lock')
             yield from self._write_transport_lock.acquire()
-            self.log.info(self._write_transport_lock.locked())
+            self.log.debug(self._write_transport_lock.locked())
             while True:
-                self.log.info(self._write_transport_lock.locked())
+                self.log.debug(self._write_transport_lock.locked())
                 # wait for an item from the queue
                 try:
                     with async_timeout.timeout(WAIT_TIMEOUT):
                         msg = yield from self._send_queue.get()
                 except asyncio.TimeoutError:
-                    self.log.info('No new messages received.')
+                    self.log.debug('No new messages received.')
                     break
                 # process the item
-                self.log.info('Writing %d byte message to transport: %s', len(msg.bytes), msg.hex)
+                self.log.debug('Writing %d byte message to transport: %s', len(msg.bytes), msg.hex)
                 self.transport.write(msg.bytes)
                 yield from asyncio.sleep(1, loop=self._loop)
-            self.log.info('Lock status: %r', self._write_transport_lock.locked())
-            self.log.info('Releasing write lock')
+            self.log.debug('Lock status: %r', self._write_transport_lock.locked())
+            self.log.debug('Releasing write lock')
             self._write_transport_lock.release()
         else:
-            self.log.info('Instance of _get_from_send_queue already running')
-        self.log.info('Ending _get_from_send_queue')
+            pass
+        self.log.debug('Ending _get_from_send_queue')
 
     def _get_plm_info(self):
         """Request PLM Info."""
