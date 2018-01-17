@@ -231,7 +231,8 @@ class PLM(asyncio.Protocol):
                     break
                 # process the item
                 self.log.info('Writing %d byte message to transport: %s', len(msg.bytes), msg.hex)
-                yield from asyncio.sleep(5, loop=self._loop)
+                yield from self.transport.write(msg.bytes)
+                yield from asyncio.sleep(1, loop=self._loop)
             self.log.info('Lock status: %r', self._write_transport_lock.locked())
             self.log.info('Releasing write lock')
             self._write_transport_lock.release()
