@@ -150,6 +150,16 @@ def do_plm(loop, log, devicelist):
     except:
         print('Light On Level test failed')
 
+    msg = insteonplm.messages.standardSend.StandardSend('4d5e6f', 0x011, 0xff, flags=0x00, acknak=0x15)
+    plm.data_received(msg.bytes)
+    yield from asyncio.sleep(8)
+
+    try:
+        assert plm.transport.lastmessage == msg.bytes[:-1]
+        print('NAK test passed')
+    except:
+        print('NAK test failed')
+
     loop.stop()
 
 def test_plm1():

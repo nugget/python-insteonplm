@@ -51,7 +51,7 @@ class SwitchedLightingControl(DimmableLightingControl):
         # When any of these messages are received any state listeners are updated with the 
         # current light on level (cmd2)
         if msg.code == MESSAGE_EXTENDED_MESSAGE_RECEIVED_0X51 or \
-          (msg.code == MESSAGE_SEND_STANDARD_MESSAGE_0X62 and msg.isextendedflag):
+          (msg.code == MESSAGE_SEND_STANDARD_MESSAGE_0X62 and msg.isextended):
             group = msg.userdata[0]
             device = self._plm.devices[self._get_device_id(group)]
             device.lightOnLevel.update(device.id, 0xff)

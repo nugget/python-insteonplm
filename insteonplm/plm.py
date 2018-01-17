@@ -80,6 +80,9 @@ class PLM(asyncio.Protocol):
         self._message_callbacks.add_message_callback(MESSAGE_SEND_STANDARD_MESSAGE_0X62, 
                                                      None, self._handle_standard_or_extended_message_received, MESSAGE_ACK)
 
+        self._message_callbacks.add_message_callback(MESSAGE_SEND_STANDARD_MESSAGE_0X62, 
+                                                     None, self._handle_standard_or_extended_message_nak, MESSAGE_NAK)
+
         self._message_callbacks.add_message_callback(MESSAGE_GET_NEXT_ALL_LINK_RECORD_0X6A, 
                                                      None, self._handle_get_next_all_link_record_nak, MESSAGE_NAK)
 
@@ -155,18 +158,11 @@ class PLM(asyncio.Protocol):
         self.log.debug("Ending: poll_devices")
 
     def send_msg(self, msg):
-        # TODO: implement an ACK/NAK review of sent commands
-        # Purpose of the function is to capture sent commands and compare them to ACK/NAK messages
-        # A callback can then be defined in the event of a NAK (i.e. retry or do something else)
-        # self._sent_queue.append(msg)
+        """Places a message on the send queue for sending in the order they are placed in the queue."""
         self.log.debug("Starting: send_msg")
-        #time.sleep(.5)
-        #self.log.debug('Sending %d byte message: %s', len(msg.bytes), msg.hex)
-        #self.transport.write(msg.bytes)
-        put_queue_coro = self._put_to_send_queue(msg)
-        get_queue_coro = self._get_from_send_queue()
-        asyncio.ensure_future(put_queue_coro)
-        asyncio.ensure_future(get_queue_coro)
+        write_message_coroutine = self._write_message_from_send_queue()
+        self._send_queue.put_nowait(msg)
+        asyncio.ensure_future(write_message_coroutine)
         self.log.debug("Ending: send_msg")
 
     def send_standard(self, target, commandtuple, cmd2=None, flags=0x00, acknak=None):
@@ -207,13 +203,7 @@ class PLM(asyncio.Protocol):
         yield from asyncio.sleep(seconds, loop=self._loop)
 
     @asyncio.coroutine
-    def _put_to_send_queue(self, msg):
-        self.log.info('Starting _put_to_send_queue')
-        self._send_queue.put_nowait(msg)
-        self.log.info('Ending _put_to_send_queue')
-
-    @asyncio.coroutine
-    def _get_from_send_queue(self):
+    def _write_message_from_send_queue(self):
         self.log.info('Starting _get_from_send_queue')
         if not self._write_transport_lock.locked():
             self.log.info('Aquiring lock')
@@ -231,7 +221,7 @@ class PLM(asyncio.Protocol):
                 # process the item
                 self.log.info('Writing %d byte message to transport: %s', len(msg.bytes), msg.hex)
                 self.transport.write(msg.bytes)
-                yield from asyncio.sleep(1.5, loop=self._loop)
+                yield from asyncio.sleep(1, loop=self._loop)
             self.log.info('Lock status: %r', self._write_transport_lock.locked())
             self.log.info('Releasing write lock')
             self._write_transport_lock.release()
@@ -360,6 +350,12 @@ class PLM(asyncio.Protocol):
         else:
             self._loop.call_soon(self.poll_devices)
         self.log.debug('Ending _handle_get_next_all_link_record_nak')
+
+    def _handle_standard_or_extended_message_nak(self, msg):
+        if msg.isextended:
+            self.send_extended(msg.address, {'cmd1':msg.cmd1, 'cmd2':msg.cmd2}, MESSAGE_FLAG_EXTENDED_0X10, msg.userdata)
+        else:
+            self.send_standard(msg.address, {'cmd1':msg.cmd1, 'cmd2':msg.cmd2})
 
     def _handle_get_plm_info(self, msg):
         self.log.debug('Starting _handle_get_plm_info')

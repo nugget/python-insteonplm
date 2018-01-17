@@ -61,15 +61,8 @@ class MessageBase(object):
             self._messageFlags = self._messageFlags & ~MESSAGE_FLAG_NAK_0X20 
 
     @property
-    def isextendedflag(self):
+    def isextended(self):
         return (self._messageFlags & MESSAGE_FLAG_EXTENDED_0X10) == MESSAGE_FLAG_EXTENDED_0X10
-
-    @isextendedflag.setter
-    def isextendedflag(self, value):
-        if value:
-            self._messageFlags = self._messageFlags | MESSAGE_FLAG_EXTENDED_0X10
-        else:
-            self._messageFlags = self._messageFlags | MESSAGE_FLAG_EXTENDED_0X10
 
     @property
     def hopsflag(self):
