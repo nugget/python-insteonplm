@@ -166,8 +166,8 @@ class PLM(asyncio.Protocol):
         #self.transport.write(msg.bytes)
         put_queue_coro = self._put_to_send_queue(msg)
         get_queue_coro = self._get_from_send_queue()
-        asyncio.ensure_future(put_queue_coro)
-        asyncio.ensure_future(get_queue_coro)
+        yield from asyncio.ensure_future(put_queue_coro)
+        yield from asyncio.ensure_future(get_queue_coro)
         self.log.debug("Ending: send_msg")
 
     def send_standard(self, target, commandtuple, cmd2=None, flags=0x00, acknak=None):
