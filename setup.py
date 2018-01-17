@@ -36,7 +36,7 @@ setup(
     zip_safe=True,
     install_requires=[
         'pyserial==3.2.0',
-        'pyserial-asyncio'
+        'pyserial-asyncio',
         'async_timeout'
     ],
     entry_points={
