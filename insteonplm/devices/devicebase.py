@@ -1,4 +1,5 @@
 import logging
+import asyncio
 
 from insteonplm.address import Address
 from insteonplm.messages.messageBase import MessageBase
@@ -27,6 +28,8 @@ class DeviceBase(object):
 
         self._product_data_in_aldb = False
         self._message_callbacks = MessageCallback()
+        self._state_status_callback = None
+        self._state_status_lock = asyncio.Lock(loop=self._plm.loop)
 
     @property
     def address(self):
@@ -59,6 +62,10 @@ class DeviceBase(object):
     @property
     def id(self):
         return self._get_device_id(self._groupbutton)
+
+    @property 
+    def state_status_lock(self):
+        return self._state_status_lock 
     
     @property
     def prod_data_in_aldb(self):
@@ -99,6 +106,9 @@ class DeviceBase(object):
             propAttr = getattr(self, prop)
             if type(propAttr) == StateChangeSignal:
                 propAttr.async_refresh_state()
+
+    def set_status_callback(self, callback):
+        self._state_status_callback = callback
 
     def id_request(self):
         """Request a device ID from a device"""

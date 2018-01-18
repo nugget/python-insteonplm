@@ -1,8 +1,8 @@
 import logging
 
-class StateChangeSignal(object):
+class State(object):
     """
-    Class used by Insteon devices to hold a device state such as "Light On Level", "Temperature" or "Fan Mode".
+    Base class used by Insteon devices to hold a device state such as "Light On Level", "Temperature" or "Fan Mode".
     The class is defined with the following options:
         stateName: Required text name of the state, such as "LightOnLevel". This value is returned when an async
                    request is made to update the state value.
@@ -26,12 +26,15 @@ class StateChangeSignal(object):
     async_refresh_state(self) - called by a device or a subscriber to force an update to the state value
 
     where callback defined as:
-        - callback(self, device_id, state, state_value)
+        - callback(self, device_id, stateName, state_value)
 
     """
-    def __init__(self, statename, updatemethod, defaultvalue=None):
+    def __init__(self, plm, device, statename, group, updatemethod=None, defaultvalue=None):
+        self._plm = plm
+        self._device = device
         self._handlers = []
         self._stateName = statename
+        self._group = group
         self._value = defaultvalue
         self._updatemethod = updatemethod
         

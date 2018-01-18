@@ -86,6 +86,10 @@ class PLM(asyncio.Protocol):
         self._message_callbacks.add_message_callback(MESSAGE_GET_NEXT_ALL_LINK_RECORD_0X6A, 
                                                      None, self._handle_get_next_all_link_record_nak, MESSAGE_NAK)
 
+    @property
+    def loop(self):
+        return self._loop
+
     def connection_made(self, transport):
         """Called when asyncio.Protocol establishes the network connection."""
         self.log.info('Connection established to PLM')
