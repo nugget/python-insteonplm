@@ -4,15 +4,31 @@ from insteonplm.address import Address
 from insteonplm.constants import *
 #from .message import Message
 
-class MessageBase(object):
+class ClassPropertyMetaClass(type):
+    """This is meta class magic to allow class attributes to also appear as an instance property."""
 
-    def __init__(self, code, sendSize, receiveSize, description):
-        self.log = logging.getLogger(__name__)
+    @property
+    def code(cls):
+        return cls._code
 
-        self._code = code
-        self._sendSize = sendSize
-        self._receivedSize = receiveSize
-        self._description = description
+    @property
+    def sendSize(cls):
+        return cls._sendSize
+
+    @property
+    def receivedSize(cls):
+        return cls._receivedSize
+
+    @property
+    def description(cls):
+        return cls._description
+
+class MessageBase(metaclass=ClassPropertyMetaClass):
+
+    _code = None
+    _sendSize = None
+    _receivedSize = None
+    _description = "Empty message"
 
     @classmethod
     def get_properties(cls):
@@ -33,8 +49,7 @@ class MessageBase(object):
 
     @property
     def description(self):
-        return 
-        self._description
+        return self._description
 
     def to_hex(self):
         return NotImplemented
@@ -71,7 +86,10 @@ class MessageBase(object):
             elif isinstance(b,int):
                 msg.append(b)
             elif isinstance(b, Address):
-                msg.extend(b.bytes)
+                if b.addr == None:
+                    pass
+                else:
+                    msg.extend(b.bytes)
             elif isinstance(b, bytearray):
                 msg.extend(b)
             elif isinstance(b, bytes):

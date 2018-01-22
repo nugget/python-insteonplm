@@ -28,7 +28,7 @@ def test_messagecallback_msg():
     address = '1a2b3c'
     target = '4d5e6f'
 
-    callbacks.add_message_callback(MESSAGE_STANDARD_MESSAGE_RECEIVED_0X50, COMMAND_LIGHT_ON_0X11_NONE, callbacktest)
+    callbacks.add_message_callback(StandardReceive(None, None, None, COMMAND_LIGHT_ON_0X11_NONE['cmd1'], None), callbacktest)
     msg1 = StandardReceive(address, target, 0x00, COMMAND_LIGHT_ON_0X11_NONE['cmd1'], COMMAND_LIGHT_ON_0X11_NONE['cmd2'])
     msg2 = StandardReceive(address, target, 0x00, COMMAND_LIGHT_ON_0X11_NONE['cmd1'], 0xff)
 
@@ -44,7 +44,7 @@ def test_messagecallback_acknak():
     address = '1a2b3c'
     target = '4d5e6f'
 
-    callbacks.add_message_callback(MESSAGE_SEND_STANDARD_MESSAGE_0X62, None, callbacktest, MESSAGE_NAK)
+    callbacks.add_message_callback(StandardSend(None, None, None, None, acknak=MESSAGE_NAK), callbacktest)
     msg1 = StandardSend(target, 0x00, COMMAND_LIGHT_ON_0X11_NONE['cmd1'], 0xff, MESSAGE_NAK)
     msg2 = StandardSend(target, 0x00, COMMAND_LIGHT_ON_0X11_NONE['cmd1'], 0xff, MESSAGE_ACK)
 

@@ -5,13 +5,13 @@ import binascii
 
 class AllLinkCleanupFailureReport(MessageBase):
     """INSTEON All-Link Failure Report Message 0x56"""
+    _code = MESSAGE_ALL_LINK_CEANUP_FAILURE_REPORT_0X56
+    _sendSize = MESSAGE_ALL_LINK_CEANUP_FAILURE_REPORT_SIZE
+    _receivedSize = MESSAGE_ALL_LINK_CEANUP_FAILURE_REPORT_SIZE
+    _description = 'INSTEON All-Link Failure Report Message'
+
 
     def __init__(self, group, address):
-        super().__init__(MESSAGE_ALL_LINK_CEANUP_FAILURE_REPORT_0X56,
-                         MESSAGE_ALL_LINK_CEANUP_FAILURE_REPORT_SIZE,
-                         MESSAGE_ALL_LINK_CEANUP_FAILURE_REPORT_SIZE,
-                         'INSTEON All-Link Failure Report Message')
-
         self._group = group
         self._address = Address(address)
 

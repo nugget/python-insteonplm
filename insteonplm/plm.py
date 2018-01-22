@@ -10,12 +10,7 @@ from .constants import *
 from .aldb import ALDB
 from .address import Address
 from .messagecallback import MessageCallback 
-from .messages.message import Message
-from .messages.getIMInfo import GetImInfo
-from .messages.getFirstAllLinkRecord import GetFirstAllLinkRecord
-from .messages.getNextAllLinkRecord import GetNextAllLinkRecord 
-from .messages.standardSend import StandardSend
-from .messages.extendedSend import ExtendedSend 
+from .messages import *
 
 __all__ = ('PLM')
 WAIT_TIMEOUT = 2
@@ -62,29 +57,28 @@ class PLM(asyncio.Protocol):
         self.log = logging.getLogger(__name__)
         self.transport = None
         
-        self._message_callbacks.add_message_callback(MESSAGE_STANDARD_MESSAGE_RECEIVED_0X50, 
-                                                     None, self._handle_standard_or_extended_message_received)
+        self._message_callbacks.add_message_callback(StandardReceive(None, None, None, None, None), 
+                                                     self._handle_standard_or_extended_message_received)
 
-        self._message_callbacks.add_message_callback(MESSAGE_EXTENDED_MESSAGE_RECEIVED_0X51, 
-                                                     None, self._handle_standard_or_extended_message_received)
+        self._message_callbacks.add_message_callback(ExtendedReceive(None, None, None, None, None), 
+                                                     self._handle_standard_or_extended_message_received)
 
-        self._message_callbacks.add_message_callback(MESSAGE_STANDARD_MESSAGE_RECEIVED_0X50, 
-                                                     COMMAND_ASSIGN_TO_ALL_LINK_GROUP_0X01_NONE, self._handle_assign_to_all_link_group)
+        self._message_callbacks.add_message_callback(StandardSend(None, None, None, None, acknak=MESSAGE_ACK), 
+                                                     self._handle_standard_or_extended_message_received)
 
-        self._message_callbacks.add_message_callback(MESSAGE_ALL_LINK_RECORD_RESPONSE_0X57, 
-                                                     None, self._handle_all_link_record_response)
+        self._message_callbacks.add_message_callback(StandardSend(None, None, None, None, acknak=MESSAGE_NAK),
+                                                     self._handle_standard_or_extended_message_nak)
 
-        self._message_callbacks.add_message_callback(MESSAGE_GET_IM_INFO_0X60, 
-                                                     None, self._handle_get_plm_info)
+        self._message_callbacks.add_message_callback(StandardReceive(None, None, None, COMMAND_ASSIGN_TO_ALL_LINK_GROUP_0X01_NONE['cmd1'], None), 
+                                                     self._handle_assign_to_all_link_group)
 
-        self._message_callbacks.add_message_callback(MESSAGE_SEND_STANDARD_MESSAGE_0X62, 
-                                                     None, self._handle_standard_or_extended_message_received, MESSAGE_ACK)
+        self._message_callbacks.add_message_callback(AllLinkRecordResponse(None, None, None, None, None, None, None), 
+                                                     self._handle_all_link_record_response)
 
-        self._message_callbacks.add_message_callback(MESSAGE_SEND_STANDARD_MESSAGE_0X62, 
-                                                     None, self._handle_standard_or_extended_message_nak, MESSAGE_NAK)
+        self._message_callbacks.add_message_callback(GetImInfo(), self._handle_get_plm_info)
 
-        self._message_callbacks.add_message_callback(MESSAGE_GET_NEXT_ALL_LINK_RECORD_0X6A, 
-                                                     None, self._handle_get_next_all_link_record_nak, MESSAGE_NAK)
+        self._message_callbacks.add_message_callback(GetNextAllLinkRecord(acknak=MESSAGE_NAK),
+                                                     self._handle_get_next_all_link_record_nak)
 
     @property
     def loop(self):
@@ -169,7 +163,7 @@ class PLM(asyncio.Protocol):
         asyncio.ensure_future(write_message_coroutine)
         self.log.debug("Ending: send_msg")
 
-    def send_standard(self, target, commandtuple, cmd2=None, flags=0x00, acknak=None):
+    def send_standard(self, addr, commandtuple, cmd2=None, flags=0x00, acknak=None):
         if commandtuple.get('cmd1', False):
             cmd1 = commandtuple['cmd1']
             cmd2out = commandtuple['cmd2']
@@ -182,10 +176,10 @@ class PLM(asyncio.Protocol):
         if cmd2out is None:
             raise ValueError
 
-        msg = StandardSend(target, cmd1, cmd2out, flags, acknak)
+        msg = StandardSend(addr, cmd1, cmd2out, flags, acknak)
         self.send_msg(msg)
 
-    def send_extended(self, target, commandtuple, cmd2=None, flags=0x00, acknak=None, **userdata):
+    def send_extended(self, addr, commandtuple, cmd2=None, flags=0x00, acknak=None, **userdata):
         if commandtuple.get('cmd1', False):
             cmd1 = commandtuple['cmd1']
             cmd2out = commandtuple['cmd2']
@@ -198,7 +192,7 @@ class PLM(asyncio.Protocol):
         if cmd2out is None:
             raise ValueError
 
-        msg = ExtendedSend(target, cmd1, cmd2out,flags,  acknak, **userdata)
+        msg = ExtendedSend(addr, cmd1, cmd2out,flags,  acknak, **userdata)
         self.send_msg(msg)
 
     @asyncio.coroutine
@@ -244,10 +238,10 @@ class PLM(asyncio.Protocol):
     def _handle_assign_to_all_link_group(self, msg):
         self.log.debug("Starting _handle_assign_to_all_link_group")
 
-        if msg.isbroadcastflag:
-            cat = msg.target.bytes[0:1]
-            subcat = msg.target.bytes[1:2]
-            product_key = msg.target.bytes[2:3]
+        if msg.flags.isBroadcast:
+            cat = msg.targetLow
+            subcat = msg.targetMed
+            product_key = msg.targetHi
             self.log.info('Received Device ID with address: %s  cat: 0x%s  subcat: 0x%s  firmware: 0x%s', 
                             msg.address.hex, binascii.hexlify(cat), binascii.hexlify(subcat), binascii.hexlify(product_key))
             device = self.devices.create_device_from_category(self, msg.address.hex, 
@@ -356,7 +350,7 @@ class PLM(asyncio.Protocol):
         self.log.debug('Ending _handle_get_next_all_link_record_nak')
 
     def _handle_standard_or_extended_message_nak(self, msg):
-        if msg.isextended:
+        if msg.flags.isExtended:
             self.send_extended(msg.address, {'cmd1':msg.cmd1, 'cmd2':msg.cmd2}, MESSAGE_FLAG_EXTENDED_0X10, msg.userdata)
         else:
             self.send_standard(msg.address, {'cmd1':msg.cmd1, 'cmd2':msg.cmd2})

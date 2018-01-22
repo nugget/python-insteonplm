@@ -4,13 +4,14 @@ import binascii
 
 class ResetIM(MessageBase):
     """Insteon Reset IM Message 0x67"""
+    
+    _code = MESSAGE_RESET_IM_0X67
+    _sendSize = MESSAGE_RESET_IM_SIZE
+    _receivedSize = MESSAGE_RESET_IM_RECEIVED_SIZE
+    _description = 'Insteon Reset IM Message'
+
 
     def __init__(self, acknak=None):
-        super().__init__(MESSAGE_RESET_IM_0X67,
-                         MESSAGE_RESET_IM_SIZE, 
-                         MESSAGE_RESET_IM_RECEIVED_SIZE,
-                         'Insteon Reset IM Message')
-
         self._acknak = self._setacknak(acknak)
 
     @classmethod

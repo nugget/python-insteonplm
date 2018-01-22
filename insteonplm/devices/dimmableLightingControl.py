@@ -97,7 +97,7 @@ class DimmableLightingControl(DeviceBase):
             onlevel = msg.cmd2
 
         if msg.code == MESSAGE_EXTENDED_MESSAGE_RECEIVED_0X51 or \
-          (msg.code == MESSAGE_SEND_STANDARD_MESSAGE_0X62 and msg.isextended):
+          (msg.code == MESSAGE_SEND_STANDARD_MESSAGE_0X62 and msg.flags.isExtended):
             group = msg.userdata[0]
             device = self._plm.devices[self._get_device_id(group)]
             device.lightOnLevel.update(device.id, onlevel)
@@ -108,7 +108,7 @@ class DimmableLightingControl(DeviceBase):
     def _light_off_command_received(self, msg):
         self.log.debug('Starting _light_off_command_received')
         if msg.code == MESSAGE_EXTENDED_MESSAGE_RECEIVED_0X51 or \
-          (msg.code == MESSAGE_SEND_STANDARD_MESSAGE_0X62 and msg.isextended):
+          (msg.code == MESSAGE_SEND_STANDARD_MESSAGE_0X62 and msg.flags.isExtended):
             group = msg.userdata[0]
             device = self._plm.devices[self._get_device_id(group)]
             device.lightOnLevel.update(device.id, 0x00)

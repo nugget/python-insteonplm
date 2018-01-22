@@ -5,13 +5,14 @@ import binascii
 
 class CancelAllLinking(MessageBase):
     """INSTEON Cancel All-Linking 0x65"""
+    
+    _code = MESSAGE_CANCEL_ALL_LINKING_0X65
+    _sendSize = MESSAGE_CANCEL_ALL_LINKING_SIZE
+    _receivedSize = MESSAGE_CANCEL_ALL_LINKING_RECEIVED_SIZE
+    _description = 'INSTEON Cancel All-Linking'
+
 
     def __init__(self, acknak = None):
-        super().__init__(MESSAGE_CANCEL_ALL_LINKING_0X65,
-                         MESSAGE_CANCEL_ALL_LINKING_SIZE,
-                         MESSAGE_CANCEL_ALL_LINKING_RECEIVED_SIZE,
-                         'INSTEON Cancel All-Linking')
-
         self._acknak = self._setacknak(acknak)
 
     @classmethod

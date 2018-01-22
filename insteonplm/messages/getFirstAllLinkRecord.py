@@ -4,13 +4,14 @@ import binascii
 
 class GetFirstAllLinkRecord(MessageBase):
     """Insteon Get First All Link Record Message 0x69"""
+    
+    _code = MESSAGE_GET_FIRST_ALL_LINK_RECORD_0X69
+    _sendSize = MESSAGE_GET_FIRST_ALL_LINK_RECORD_SIZE
+    _receivedSize = MESSAGE_GET_FIRST_ALL_LINK_RECORD_RECEIVED_SIZE
+    _description = 'Insteon Get First All Link Record Message'
+
 
     def __init__(self, acknak=None):
-        super().__init__(MESSAGE_GET_FIRST_ALL_LINK_RECORD_0X69,
-                         MESSAGE_GET_FIRST_ALL_LINK_RECORD_SIZE, 
-                         MESSAGE_GET_FIRST_ALL_LINK_RECORD_RECEIVED_SIZE,
-                         'Insteon Get First All Link Record Message')
-
         self._acknak = self._setacknak(acknak)
 
 

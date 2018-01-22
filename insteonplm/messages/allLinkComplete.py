@@ -6,12 +6,12 @@ import binascii
 class AllLinkComplete(MessageBase):
     """INSTEON ALL-Linking Completed Message 0x53"""
 
-    def __init__(self, linkcode, group, address, cat, subcat, firmware):
-        super().__init__(MESSAGE_ALL_LINKING_COMPLETED_0X53,
-                         MESSAGE_ALL_LINKING_COMPLETED_SIZE,
-                         MESSAGE_ALL_LINKING_COMPLETED_SIZE,
-                         'INSTEON ALL-Linking Completed Message Received')
+    _code = MESSAGE_ALL_LINKING_COMPLETED_0X53
+    _sendSize = MESSAGE_ALL_LINKING_COMPLETED_SIZE
+    _receivedSize = MESSAGE_ALL_LINKING_COMPLETED_SIZE
+    _description = 'INSTEON ALL-Linking Completed Message Received'
 
+    def __init__(self, linkcode, group, address, cat, subcat, firmware):
         # ALL-Linking Complete
         self._linkcode = linkcode
         self._group = group

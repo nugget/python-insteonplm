@@ -41,7 +41,8 @@ class MessageCallback(object):
         self[msg] = callback
 
     def get_callback_from_message(self, msg):
-        if self._match_msg(msg) is not None:
+        key = self._match_msg(msg)
+        if key is not None:
             return self[key]
         else:
             return None
@@ -50,35 +51,37 @@ class MessageCallback(object):
         properties = msg.get_properties()
         ismatch = False
         for key in self._dict:
-            for property in properties:
-                print('Checking property: ', property)
-                p = getattr(msg, property)
-                if isinstance(p, MessageFlags):
-                    if self._test_flags(p, msg):
-                        print(property, 'with value ', p, " is equal to ", k)
-                        ismatch = True
+            if key.code == msg.code:
+                for property in properties:
+                    print('Checking property: ', property)
+                    p = getattr(msg, property)
+                    if hasattr(key, property):   
+                        k =  getattr(key, property)
+                        if k is not None:
+                            if isinstance(p, MessageFlags):
+                                if self._match_flags(p, k):
+                                    print('Flags match')
+                                    ismatch = True
+                                else:
+                                    print('Flags do not match')
+                                    ismatch = False
+                                    break
+                            else:
+                                if p == k:
+                                    print(property, ' with value ', p, " is equal to ", k)
+                                    ismatch = True
+                                else:
+                                    print(property, ' with value ', p, " is not equal ", k)
+                                    ismatch = False
+                                    break
                     else:
-                        print('Flags do not match')
+                        print('Properties do not match')
                         ismatch = False
                         break
-                if hasattr(key, property):
-                    k =  getattr(key, property)
-                    if k is not None:
-                        if p == k:
-                            print(property, 'with value ', p, " is equal to ", k)
-                            ismatch = True
-                        else:
-                            print(property, 'with value ', p, " is not equal ", k)
-                            ismatch = False
-                            break
+                if ismatch:
+                    return key
                 else:
-                    print('Properties do not match')
-                    ismatch = False
                     break
-            if ismatch:
-                return key
-            else:
-                break
         return None
 
     def _dict_to_key(self, dictkey):
@@ -115,3 +118,7 @@ class MessageCallback(object):
             'acknak':keyarray[3]
             }
         return key
+
+    def _match_flags(self, msg, key):
+        return True
+

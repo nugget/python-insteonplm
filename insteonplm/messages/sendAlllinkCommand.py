@@ -5,12 +5,13 @@ import binascii
 class SendAllLinkCommand(MessageBase):
     """Insteon Send All Link Command Message 0x6A"""
 
-    def __init__(self,group, allLinkCommand, broadcastCommand, acknak=None):
-        super().__jnit__(MESSAGE_SEND_ALL_LINK_COMMAND_0X61, 
-                         MESSAGE_SEND_ALL_LINK_COMMAND_SIZE,
-                         MESSAGE_SEND_ALL_LINK_COMMAND_RECEIVED_SIZE,
-                         'Insteon Get Next All Link Record Message')
+    _code = MESSAGE_SEND_ALL_LINK_COMMAND_0X61
+    _sendSize = MESSAGE_SEND_ALL_LINK_COMMAND_SIZE
+    _receivedSize = MESSAGE_SEND_ALL_LINK_COMMAND_RECEIVED_SIZE
+    _description = 'Insteon Get Next All Link Record Message'
 
+
+    def __init__(self,group, allLinkCommand, broadcastCommand, acknak=None):
         self._group = group
         self._allLinkCommmand = allLinkCommand
         self._broadcastCommand = broadcastCommand

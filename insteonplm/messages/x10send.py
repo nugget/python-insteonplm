@@ -5,13 +5,14 @@ from .messageFlags import MessageFlags
 
 class X10Send(MessageBase):
     """Insteon Get Next All Link Record Message 0x6A"""
+    
+    _code = MESSAGE_X10_MESSAGE_SEND_0X63
+    _sendSize = MESSAGE_X10_MESSAGE_SEND_SIZE
+    _receivedSize = MESSAGE_X10_MESSAGE_SEND_RECEIVED_SIZE
+    _description = 'Insteon Get Next All Link Record Message'
+
 
     def __init__(self, rawX10, flag, acknak=None):
-        super().__init__(MESSAGE_X10_MESSAGE_SEND_0X63,
-                         MESSAGE_X10_MESSAGE_SEND_SIZE,
-                         MESSAGE_X10_MESSAGE_SEND_RECEIVED_SIZE,
-                         'Insteon Get Next All Link Record Message')
-
         self._rawX10 = rawX10
         self._flag = flag
         self._acknak = self._setacknak(acknak)

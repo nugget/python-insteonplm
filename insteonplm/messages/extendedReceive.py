@@ -5,13 +5,14 @@ from .messageFlags import MessageFlags
 
 class ExtendedReceive(MessageBase):
     """Insteon Extended Length Message Received 0x51"""
+    
+    _code = MESSAGE_EXTENDED_MESSAGE_RECEIVED_0X51
+    _sendSize = MESSAGE_EXTENDED_MESSAGE_RECEIVED_SIZE
+    _receivedSize = MESSAGE_EXTENDED_MESSAGE_RECEIVED_SIZE
+    _description = 'INSTEON Extended Message Received'
+
 
     def __init__(self, address, target, flags, cmd1, cmd2, **kwarg):
-        super().__init__(MESSAGE_EXTENDED_MESSAGE_RECEIVED_0X51, 
-                         MESSAGE_EXTENDED_MESSAGE_RECEIVED_SIZE,
-                         MESSAGE_EXTENDED_MESSAGE_RECEIVED_SIZE,
-                         'INSTEON Extended Message Received')
-
         self._address = Address(address)
         self._target = Address(target)
         self._messageFlags = MessageFlags(flags)
@@ -33,12 +34,13 @@ class ExtendedReceive(MessageBase):
 
     @classmethod
     def from_raw_message(cls, rawmessage):
+        userdata = cls._userdata_to_dict(rawmessage[11:25])
         return ExtendedReceive(rawmessage[2:5], 
                                rawmessage[5:8],
                                rawmessage[8],
                                rawmessage[9],
                                rawmessage[10],
-                               rawmessage[11:25])
+                               **userdata)
 
     @property
     def address(self):
@@ -92,3 +94,25 @@ class ExtendedReceive(MessageBase):
                                   self._cmd1, 
                                   self._cmd2,
                                   self._userdata)
+    
+
+    @classmethod
+    def _userdata_to_dict(cls, userdata):
+        userdata_dict = {}
+        for i in range(1,15):
+            key = 'd' + str(i)
+            userdata_dict.update({key:0x00})
+
+        if isinstance(userdata, dict):
+            for key in kwarg:
+                if key in ['d1', 'd2', 'd3', 'd4', 'd5', 'd6', 'd7', 'd8', 'd9','d10', 'd11','d12','d13', 'd14']:
+                    userdata_dict[key] = kwarg[key]
+        elif isinstance(userdata, bytes) or isinstance(userdata, bytearray):
+            if len(userdata) == 14:
+                for i in range(1, 15):
+                    key = 'd' + str(i)
+                    userdata_dict[key] = userdata[i-1]
+            else:
+                raise ValueError
+
+        return userdata_dict

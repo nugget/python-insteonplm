@@ -7,13 +7,14 @@ from .messageFlags import MessageFlags
 
 class StandardSend(MessageBase):
     """Insteon Standard Length Message Received 0x62"""
+    
+    _code = MESSAGE_SEND_STANDARD_MESSAGE_0X62
+    _sendSize = MESSAGE_SEND_STANDARD_MESSAGE_SIZE
+    _receivedSize = MESSAGE_SEND_STANDARD_MESSAGE_RECEIVED_SIZE
+    _description = 'INSTEON Standard Message Send'
+
 
     def __init__(self, address, cmd1, cmd2, flags=0x00,  acknak = None):
-        super().__init__(MESSAGE_SEND_STANDARD_MESSAGE_0X62,
-                         MESSAGE_SEND_STANDARD_MESSAGE_SIZE,
-                         MESSAGE_SEND_STANDARD_MESSAGE_RECEIVED_SIZE,
-                         'INSTEON Standard Message Send')
-
         self._address = Address(address)
         self._messageFlags = MessageFlags(flags)
         self._cmd1 = cmd1
@@ -28,7 +29,7 @@ class StandardSend(MessageBase):
                             rawmessage[7],
                             rawmessage[5],
                             rawmessage[8:9])
-        if msg.isextended:
+        if msg.flags.isExtended:
             if len(rawmessage) >= ExtendedSend.receivedSize:
                 msg = ExtendedSend.from_raw_message(rawmessage)
             else:

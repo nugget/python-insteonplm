@@ -1,13 +1,7 @@
 import unittest
 from insteonplm.messages.message import Message
-from insteonplm.messages.standardReceive import StandardReceive #50
-from insteonplm.messages.extendedReceive import ExtendedReceive #51
-from insteonplm.messages.allLinkComplete import AllLinkComplete #53
-from insteonplm.messages.buttonEventReport import ButtonEventReport #54
-from insteonplm.messages.allLinkRecordResponse import AllLinkRecordResponse #57
-from insteonplm.messages.getIMInfo import GetImInfo #60
-from insteonplm.messages.standardSend import StandardSend #62
-from insteonplm.messages.extendedSend import ExtendedSend
+from insteonplm.messages import *
+from insteonplm.messages.messageFlags import MessageFlags
 from insteonplm.address import Address
 
 def test_create_standardReceive_message():
@@ -78,7 +72,7 @@ def test_button_event_report():
 
     assert isinstance(msg, ButtonEventReport)
     assert msg.event == event
-    assert msg.description == 'SET button tapped'
+    assert msg.eventText == 'SET button tapped'
 
 def test_AllLinkRecordResponse_message():
     flags = 0x11
@@ -184,7 +178,7 @@ def test_incomplete_standard_message():
 
 def test_incomplete_extended_message():
     msgext = ExtendedSend(bytearray({0x1a,0x2b,0x3c}), 0x7d, 0x8e, **{'d1':0x9f})
-    print(msgext.hex)
+    print(msgext.to_hex())
 
     rawmessage = bytearray([0x02, 0x62, 0x1a, 0x2b, 0x3c, 0x10, 0x7d, 0x8e, 0x9f, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00])
     msg = Message.create(rawmessage)
@@ -194,7 +188,6 @@ def test_incomplete_extended_message():
     rawmessage.append(0x06)
     msg = Message.create(rawmessage)
     assert isinstance(msg, ExtendedSend)
-
 
 def test_leading_unknown_messge():
     rawmessage = bytearray([0x02, 0x00, 0x15, 0x02, 0x50, 0x46, 0xd0, 0xe6, 0x43, 0x6c, 0x15, 0x40, 0x11, 0x01])

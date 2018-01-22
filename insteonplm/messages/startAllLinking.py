@@ -4,13 +4,14 @@ import binascii
 
 class StartAllLinking(MessageBase):
     """Insteon Start All Linking Message 0x64"""
+    
+    _code = MESSAGE_START_ALL_LINKING_0X64
+    _sendSize = MESSAGE_START_ALL_LINKING_SIZE
+    _receivedSize = MESSAGE_START_ALL_LINKING_RECEIVED_SIZE
+    _description = 'Insteon Start All Linking Message'
+
 
     def __init__(self, linkCode, group, acknak=None):
-        super().__init__(MESSAGE_START_ALL_LINKING_0X64,
-                         MESSAGE_START_ALL_LINKING_SIZE,
-                         MESSAGE_START_ALL_LINKING_RECEIVED_SIZE,
-                         'Insteon Start All Linking Message')
-
         self._linkCode = linkCode
         self._group = group
 

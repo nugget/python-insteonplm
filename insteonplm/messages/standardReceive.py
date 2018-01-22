@@ -6,13 +6,14 @@ from .messageFlags import MessageFlags
 
 class StandardReceive(MessageBase):
     """Insteon Standard Length Message Received 0x50"""
+    
+    _code = MESSAGE_STANDARD_MESSAGE_RECEIVED_0X50
+    _sendSize = MESSAGE_STANDARD_MESSAGE_RECIEVED_SIZE
+    _receivedSize = MESSAGE_STANDARD_MESSAGE_RECIEVED_SIZE
+    _description = 'INSTEON Standard Message Received'
+
 
     def __init__(self, address, target, flags, cmd1, cmd2):
-        super().__init__(MESSAGE_STANDARD_MESSAGE_RECEIVED_0X50,
-                         MESSAGE_STANDARD_MESSAGE_RECIEVED_SIZE, 
-                         MESSAGE_STANDARD_MESSAGE_RECIEVED_SIZE,
-                         'INSTEON Standard Message Received')
-
         self._address = Address(address)
         self._target = Address(target)
         self._messageFlags = MessageFlags(flags)

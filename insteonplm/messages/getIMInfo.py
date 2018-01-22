@@ -5,13 +5,14 @@ import binascii
 
 class GetImInfo(MessageBase):
     """INSTEON Get Insteon Modem Info Message 0x60"""
+    
+    _code = MESSAGE_GET_IM_INFO_0X60
+    _sendSize = MESSAGE_GET_IM_INFO_SIZE
+    _receivedSize = MESSAGE_GET_IM_INFO_RECEIVED_SIZE
+    _description = 'INSTEON Get Insteon Modem Info Message Received'
+        
 
     def __init__(self, address=None, cat=None, subcat=None, firmware=None, acknak = None):
-        super().__init__(MESSAGE_GET_IM_INFO_0X60,
-                         MESSAGE_GET_IM_INFO_SIZE,
-                         MESSAGE_GET_IM_INFO_RECEIVED_SIZE,
-                         'INSTEON Get Insteon Modem Info Message Received')
-        
         self._address = Address(address)
         self._category = cat
         self._subcategory = subcat
@@ -57,10 +58,10 @@ class GetImInfo(MessageBase):
             return False
 
     def to_hex(self):
-        return self._messageToHex(self.address,
-                                    self.category,
-                                    self.subcategory,
-                                    self.firmware,
-                                    self._acknak)
+        return self._messageToHex(self._address,
+                                  self._category,
+                                  self._subcategory,
+                                  self._firmware,
+                                  self._acknak)
 
 

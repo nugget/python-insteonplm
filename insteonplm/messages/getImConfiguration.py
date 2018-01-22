@@ -5,13 +5,14 @@ from .messageFlags import MessageFlags
 
 class GetImConfiguration(MessageBase):
     """Insteon Get IM Configuration Message 0x62"""
+    
+    _code = MESSAGE_GET_IM_CONFIGURATION_0X73
+    _sendSize = MESSAGE_GET_IM_CONFIGURATION_SIZE
+    _receivedSize = MESSAGE_GET_IM_CONFIGURATION_RECEIVED_SIZE
+    _description = 'Insteon Get IM Configuration Message'
+        
 
     def __init__(self, flags = None, acknak = None):
-        super().__init__(MESSAGE_GET_IM_CONFIGURATION_0X73,
-                         MESSAGE_GET_IM_CONFIGURATION_SIZE,
-                         MESSAGE_GET_IM_CONFIGURATION_RECEIVED_SIZE, 
-                         'Insteon Get IM Configuration Message')
-        
         self._imConfigurationFlags = flags
         self._spare1 = None
         self._spare2 = None

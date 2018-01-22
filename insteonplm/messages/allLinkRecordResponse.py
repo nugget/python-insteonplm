@@ -6,12 +6,13 @@ import binascii
 class AllLinkRecordResponse(MessageBase):
     """INSTEON ALL-Link Record Response 0x57"""
 
-    def __init__(self, flags, group, address, linkdata1, linkdata2, linkdata3):
-        super().__init__(MESSAGE_ALL_LINK_RECORD_RESPONSE_0X57,
-                         MESSAGE_ALL_LINK_RECORD_RESPONSE_SIZE,
-                         MESSAGE_ALL_LINK_RECORD_RESPONSE_SIZE,
-                         'INSTEON ALL-Link Record Response')
+    _code = MESSAGE_ALL_LINK_RECORD_RESPONSE_0X57
+    _sendSize = MESSAGE_ALL_LINK_RECORD_RESPONSE_SIZE
+    _receivedSize = MESSAGE_ALL_LINK_RECORD_RESPONSE_SIZE
+    _description = 'INSTEON ALL-Link Record Response'
 
+
+    def __init__(self, flags, group, address, linkdata1, linkdata2, linkdata3):
         # ALL-Link Record Response
         self._controlFlags = flags
         self._group = group
@@ -31,23 +32,23 @@ class AllLinkRecordResponse(MessageBase):
 
     @property
     def group(self):
-        self._group
+        return self._group
 
     @property
     def address(self):
-        self._address
+        return self._address
 
     @property
     def linkdata1(self):
-        self._linkdata1
+        return self._linkdata1
 
     @property
     def linkdata2(self):
-        self._linkdata2
+        return self._linkdata2
 
     @property
     def linkdata3(self):
-        self._linkdata3
+        return self._linkdata3
 
     @property
     def isRecordinuse(self):

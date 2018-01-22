@@ -18,13 +18,14 @@ class ExtendedSend(MessageBase):
                 'd14' - user data byte 14 as byte or int
                 'd1' to 'd14' are assumed to equal 0x00 unless explicitly set
     """
+    
+    _code = MESSAGE_SEND_EXTENDED_MESSAGE_0X62
+    _sendSize = MESSAGE_SEND_EXTENDED_MESSAGE_SIZE
+    _receivedSize = MESSAGE_SEND_EXTENDED_MESSAGE_RECEIVED_SIZE
+    _description = 'INSTEON Standard Message Send'
+
 
     def __init__(self, address, cmd1, cmd2, flags=0x10, acknak=None, **kwarg ):
-        super().__init__(MESSAGE_SEND_EXTENDED_MESSAGE_0X62, 
-                         MESSAGE_SEND_EXTENDED_MESSAGE_SIZE,
-                         MESSAGE_SEND_EXTENDED_MESSAGE_RECEIVED_SIZE,
-                         'INSTEON Standard Message Send')
-
         self._address = Address(address)
         self._messageFlags = MessageFlags(flags | MESSAGE_FLAG_EXTENDED_0X10)
         self._cmd1 = cmd1

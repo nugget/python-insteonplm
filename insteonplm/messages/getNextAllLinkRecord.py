@@ -4,14 +4,15 @@ import binascii
 
 class GetNextAllLinkRecord(MessageBase):
     """Insteon Get Next All Link Record Message 0x6A"""
+    
+    _code = MESSAGE_GET_NEXT_ALL_LINK_RECORD_0X6A
+    _sendSize = MESSAGE_GET_NEXT_ALL_LINK_RECORD_SIZE
+    _receivedSize = MESSAGE_GET_NEXT_ALL_LINK_RECORD_RECEIVED_SIZE
+    _description = 'Insteon Get Next All Link Record Message'
+
 
 
     def __init__(self, acknak=None):
-        super().__init__(MESSAGE_GET_NEXT_ALL_LINK_RECORD_0X6A,
-                         MESSAGE_GET_NEXT_ALL_LINK_RECORD_SIZE,
-                         MESSAGE_GET_NEXT_ALL_LINK_RECORD_RECEIVED_SIZE,
-                         'Insteon Get Next All Link Record Message')
-
         self._acknak = self._setacknak(acknak)
 
     @classmethod

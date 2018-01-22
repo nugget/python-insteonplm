@@ -8,20 +8,23 @@ class MessageFlags(object):
         self._flags = self._normalize(flags)
         
     def __repr__(self):
-        return self.to_hex()
+        return self._flags
 
     def __str__(self):
+        if self._flags is None:
+            return ''
         return self.to_hex()
 
     def __eq__(self, other):
-        if hasattr(other, 'to_hex'):
-            return self.to_hex() == other.to_hex()
-        return False
+        if self._flags == None or other == None:
+            return True
+        return self._flags == other
+
 
     def __ne__(self, other):
-        if hasattr(other, 'to_hex'):
-            return self.to_hex() != other.to_hex()
-        return True
+        if self._flags == None or other == None:
+            return False
+        return self._flags == other
 
     @classmethod
     def get_properties(cls):
@@ -123,7 +126,9 @@ class MessageFlags(object):
         if isinstance(flags, str):
             flags = flags[0:2]
             return binascii.unhexlify(flags.lower())
+        if flags is None:
+            return None
         else:
             self.log.warning('MessageFlags class init with unknown type %s: %r',
                              type(flags), flags)
-            return '000000'
+            return None

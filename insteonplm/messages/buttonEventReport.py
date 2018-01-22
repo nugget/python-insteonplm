@@ -4,13 +4,14 @@ import binascii
 
 class ButtonEventReport(MessageBase):
     """Insteon Button Event Report Message Received 0x54"""
+    
+    _code = MESSAGE_BUTTON_EVENT_REPORT_0X54
+    _sendSize = MESSAGE_BUTTON_EVENT_REPORT_SIZE
+    _receivedSize = MESSAGE_BUTTON_EVENT_REPORT_SIZE
+    _description = 'INSTEON Standard Message Received'
+
 
     def __init__(self, event):
-        super().__init__(MESSAGE_BUTTON_EVENT_REPORT_0X54,
-                         MESSAGE_BUTTON_EVENT_REPORT_SIZE, 
-                         MESSAGE_BUTTON_EVENT_REPORT_SIZE,
-                         'INSTEON Standard Message Received')
-
         self._event = event
 
         self._events = {0x02: 'SET button tapped',

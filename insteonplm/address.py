@@ -14,58 +14,67 @@ class Address(object):
         self.addr = self.normalize(addr)
 
     def __repr__(self):
-        if self.human is not None:
-            return self.human
-        return ''
+        return self.hex
 
     def __str__(self):
-        if self.hex is not None:
-            return self.hex
-        return ''
+        return self.hex
 
     def __eq__(self, other):
-        return self.hex == other.hex
+        if hasattr(other, 'addr'):
+            if self.addr == None or other.addr == None:
+                return True
+            return self.addr == other.addr
+        return False
 
     def __ne__(self, other):
-        return self.hex != other.hex
+        if hasattr(other, 'addr'):
+            return self.addr != other.addr
+        return True
 
     def normalize(self, addr):
         """Take any format of address and turn it into a hex string."""
         if isinstance(addr, Address):
-            return addr.hex
+            return addr.addr
+
         if isinstance(addr, bytearray):
-            return binascii.hexlify(addr).decode()
+            return binascii.unhexlify(binascii.hexlify(addr).decode())
+
         if isinstance(addr, bytes):
-            return binascii.hexlify(addr).decode()
+            return addr
+
         if isinstance(addr, str):
             addr.replace('.', '')
             addr = addr[0:6]
-            return addr.lower()
+            return binascii.unhexlify(addr.lower())
+
         if addr is None:
             return None
+
         else:
             self.log.warning('Address class init with unknown type %s: %r',
                              type(addr), addr)
-            return '000000'
+            return None
 
     @property
     def human(self):
         """Emit the address in human-readible format (AA.BB.CC)."""
         if self.addr is not None:
-            addrstr = self.addr[0:2]+'.'+self.addr[2:4]+'.'+self.addr[4:6]
+            addrstr = self.hex[0:2]+'.'+self.hex[2:4]+'.'+self.hex[4:6]
             return addrstr.upper()
-        return None
+        return '00.00.00'
 
     @property
     def hex(self):
         """Emit the address in bare hex format (aabbcc)."""
         if self.addr is not None:
-            return self.addr
-        return None
+            return binascii.hexlify(self.addr).decode()
+        else:
+            return '000000'
 
     @property
     def bytes(self):
-        r"""Emit the address in bytes format (b'\xaabbcc')."""
+        """Emit the address in bytes format (b'\xaabbcc')."""
         if self.addr is not None:
-            return binascii.unhexlify(self.addr)
-        return None
+            return self.addr
+        else:
+            return b'\x00\x00\x00'
