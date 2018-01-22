@@ -1,22 +1,23 @@
-from .messageBase import MessageBase
-from .extendedSend import ExtendedSend
+import binascii
 from insteonplm.constants import *
 from insteonplm.address import Address
-import binascii
+from .messageBase import MessageBase
+from .extendedSend import ExtendedSend
+from .messageFlags import MessageFlags
 
 class StandardSend(MessageBase):
     """Insteon Standard Length Message Received 0x62"""
 
-    code = MESSAGE_SEND_STANDARD_MESSAGE_0X62
-    sendSize = MESSAGE_SEND_STANDARD_MESSAGE_SIZE
-    receivedSize = MESSAGE_SEND_STANDARD_MESSAGE_RECEIVED_SIZE
-    description = 'INSTEON Standard Message Send'
-
     def __init__(self, address, cmd1, cmd2, flags=0x00,  acknak = None):
-        self.address = Address(address)
-        self._messageFlags = flags
-        self.cmd1 = cmd1
-        self.cmd2 = cmd2
+        super().__init__(MESSAGE_SEND_STANDARD_MESSAGE_0X62,
+                         MESSAGE_SEND_STANDARD_MESSAGE_SIZE,
+                         MESSAGE_SEND_STANDARD_MESSAGE_RECEIVED_SIZE,
+                         'INSTEON Standard Message Send')
+
+        self._address = Address(address)
+        self._messageFlags = MessageFlags(flags)
+        self._cmd1 = cmd1
+        self._cmd2 = cmd2
 
         self._acknak = self._setacknak(acknak)
 
@@ -35,16 +36,20 @@ class StandardSend(MessageBase):
         return msg
 
     @property
-    def hex(self):
-        return self._messageToHex(self.address,
-                                  self._messageFlags,
-                                  self.cmd1,
-                                  self.cmd2,
-                                  self._acknak)
+    def address(self):
+        return self._address
 
     @property
-    def bytes(self):
-        return binascii.unhexlify(self.hex)
+    def cmd1(self):
+        return self._cmd1
+
+    @property
+    def cmd2(self):
+        return self._cmd2
+
+    @property
+    def flags(self):
+        return self._messageFlags
 
     @property
     def isack(self):
@@ -60,3 +65,9 @@ class StandardSend(MessageBase):
         else:
             return False
 
+    def to_hex(self):
+        return self._messageToHex(self.address,
+                                  self._messageFlags.to_byte(),
+                                  self.cmd1,
+                                  self.cmd2,
+                                  self._acknak)

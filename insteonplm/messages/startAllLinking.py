@@ -5,15 +5,14 @@ import binascii
 class StartAllLinking(MessageBase):
     """Insteon Start All Linking Message 0x64"""
 
-    code =    MESSAGE_START_ALL_LINKING_0X64
-    sendSize = MESSAGE_START_ALL_LINKING_SIZE
-    receivedSize = MESSAGE_START_ALL_LINKING_RECEIVED_SIZE
-    description = 'Insteon Start All Linking Message'
-
     def __init__(self, linkCode, group, acknak=None):
+        super().__init__(MESSAGE_START_ALL_LINKING_0X64,
+                         MESSAGE_START_ALL_LINKING_SIZE,
+                         MESSAGE_START_ALL_LINKING_RECEIVED_SIZE,
+                         'Insteon Start All Linking Message')
 
-        self.linkCode = linkCode
-        self.group = group
+        self._linkCode = linkCode
+        self._group = group
 
         self._acknak = self._setacknak(acknak)
 
@@ -22,14 +21,12 @@ class StartAllLinking(MessageBase):
         return StartAllLinking(rawmessage[2], rawmessage[3], rawmessage[4:5])
 
     @property
-    def hex(self):
-        return self._messageToHex(self.linkCode,
-                                  self.group,
-                                  self._acknak)
+    def linkCode(self):
+        return self._linkCode
 
     @property
-    def bytes(self):
-        return binascii.unhexlify(self.hex)
+    def group(self):
+        return self._group
 
     @property
     def isack(self):
@@ -45,5 +42,9 @@ class StartAllLinking(MessageBase):
         else:
             return False
 
+    def to_hex(self):
+        return self._messageToHex(self._linkCode,
+                                  self._group,
+                                  self._acknak)
 
 

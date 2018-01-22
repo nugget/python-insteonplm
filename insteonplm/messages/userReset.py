@@ -5,25 +5,16 @@ import binascii
 class UserReset(MessageBase):
     """Insteon User Reset Message Received 0x55"""
 
-    code = MESSAGE_USER_RESET_DETECTED_0X55
-    sendSize = MESSAGE_USER_RESET_DETECTED_SIZE
-    receivedSize = MESSAGE_USER_RESET_DETECTED_SIZE
-    name = 'INSTEON User Reset Message Received'
+    def __init__(self):
+        super().__init__(MESSAGE_USER_RESET_DETECTED_0X55,
+                         MESSAGE_USER_RESET_DETECTED_SIZE,
+                         MESSAGE_USER_RESET_DETECTED_SIZE,
+                         'INSTEON User Reset Message Received')
 
 
     @classmethod
     def from_raw_messsage(cls, rawmessage):
         return UserReset()
 
-    @property
-    def message(self):
-        return bytearray([MESSAGE_START_CODE_0X02,
-                          self.code])
-
-    @property
-    def hex(self):
+    def to_hex(self):
         return self._messageToHex()
-
-    @property
-    def bytes(self):
-        return binascii.unhexlify(self.hex)

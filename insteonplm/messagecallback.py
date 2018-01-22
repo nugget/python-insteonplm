@@ -1,5 +1,7 @@
 import logging
 from .constants import *
+from insteonplm.messages.messageBase import MessageBase
+from insteonplm.messages.messageFlags import MessageFlags
 
 class MessageCallback(object):
     def __init__(self):
@@ -27,62 +29,57 @@ class MessageCallback(object):
            (i.e. any Standard Message (0x50)) and the message is {'code':0x50, 'cmd1':0x11, 'cmd2:0xff, 'acknak':None}
            this will be a match.
         """
-        keystr = ''
-        if isinstance(key, dict):
-            keystr = self._dict_to_key(key)
-        elif isinstance(key, str):
-            keystr = key
-            key = self._key_to_dict(key)
-        else:
-            raise KeyError
+        foundKey = self._match_msg(key)
+        if foundKey is not None:
+            return self._dict[foundKey]
 
-        try:
-            for itm in self._dict:
-                return self._dict[keystr]
-        except KeyError:
-            key['cmd2'] = None
-            keystr = self._dict_to_key(key)
-            try:
-                return self._dict[keystr]
-            except:
-                key['cmd1'] = None
-                keystr = self._dict_to_key(key)
-                try:
-                    return self._dict[keystr]
-                except:
-                    key['acknak'] = None
-                    keystr = self._dict_to_key(key)
-                    try:
-                        return self._dict[keystr]
-                    except:
-                        return None
-        raise KeyError
 
     def __setitem__(self, key, value):
-        keystr = self._dict_to_key(key)
-        self._dict[keystr] = value
+        self._dict[key] = value
 
-    def add_message_callback(self, code, commandtuple, callback, acknak=None):
-        key = {'code':code}
-        if isinstance(commandtuple, dict):
-            key.update(commandtuple)
-        key.update({'acknak':acknak})
-        self[key] = callback
+    def add_message_callback(self, msg, callback):
+        self[msg] = callback
 
     def get_callback_from_message(self, msg):
-        key = {'code': msg.code}
-        cmd1 = None
-        cmd2 = None
-        acknak = None
-        if hasattr(msg, 'cmd1'):
-            cmd1 = msg.cmd1
-            cmd2 = msg.cmd2
-        if msg.isack:
-            acknak = MESSAGE_ACK
-        elif msg.isnak:
-            acknak = MESSAGE_NAK
-        key.update({'cmd1':cmd1, 'cmd2':cmd2, 'acknak':acknak})
-        return self[key]
+        if self._match_msg(msg) is not None:
+            return self[key]
+        else:
+            return None
+
+    def _match_msg(self, msg):
+        properties = msg.get_properties()
+        ismatch = False
+        for key in self._dict:
+            for property in properties:
+                print('Checking property: ', property)
+                p = getattr(msg, property)
+                if isinstance(p, MessageFlags):
+                    if self._test_flags(p, msg):
+                        print(property, 'with value ', p, " is equal to ", k)
+                        ismatch = True
+                    else:
+                        print('Flags do not match')
+                        ismatch = False
+                        break
+                if hasattr(key, property):
+                    k =  getattr(key, property)
+                    if k is not None:
+                        if p == k:
+                            print(property, 'with value ', p, " is equal to ", k)
+                            ismatch = True
+                        else:
+                            print(property, 'with value ', p, " is not equal ", k)
+                            ismatch = False
+                            break
+                else:
+                    print('Properties do not match')
+                    ismatch = False
+                    break
+            if ismatch:
+                return key
+            else:
+                break
+        return None
 
     def _dict_to_key(self, dictkey):
         code = dictkey.get('code', None)

@@ -1,7 +1,8 @@
-from .messageBase import MessageBase
+import binascii
 from insteonplm.constants import *
 from insteonplm.address import Address
-import binascii
+from .messageBase import MessageBase
+from .messageFlags import MessageFlags
 
 class ExtendedSend(MessageBase):
 
@@ -18,19 +19,17 @@ class ExtendedSend(MessageBase):
                 'd1' to 'd14' are assumed to equal 0x00 unless explicitly set
     """
 
-    code = MESSAGE_SEND_EXTENDED_MESSAGE_0X62
-    sendSize = MESSAGE_SEND_EXTENDED_MESSAGE_SIZE
-    receivedSize = MESSAGE_SEND_EXTENDED_MESSAGE_RECEIVED_SIZE
-    description = 'INSTEON Standard Message Send'
-
     def __init__(self, address, cmd1, cmd2, flags=0x10, acknak=None, **kwarg ):
+        super().__init__(MESSAGE_SEND_EXTENDED_MESSAGE_0X62, 
+                         MESSAGE_SEND_EXTENDED_MESSAGE_SIZE,
+                         MESSAGE_SEND_EXTENDED_MESSAGE_RECEIVED_SIZE,
+                         'INSTEON Standard Message Send')
 
-        self.address = Address(address)
-
-        self._messageFlags = flags | MESSAGE_FLAG_EXTENDED_0X10
-        self.cmd1 = cmd1
-        self.cmd2 = cmd2
-        self.userdata = bytearray()
+        self._address = Address(address)
+        self._messageFlags = MessageFlags(flags | MESSAGE_FLAG_EXTENDED_0X10)
+        self._cmd1 = cmd1
+        self._cmd2 = cmd2
+        self._userdata = bytearray()
 
         userdata_array = {}
         for i in range(1,15):
@@ -42,7 +41,7 @@ class ExtendedSend(MessageBase):
                 userdata_array[key] = kwarg[key]
         for i in range(1,15):
             key = 'd' + str(i)
-            self.userdata.append(userdata_array[key])
+            self._userdata.append(userdata_array[key])
         self._acknak = self._setacknak(acknak)
 
     @classmethod
@@ -65,17 +64,24 @@ class ExtendedSend(MessageBase):
                             **userdata_dict)
 
     @property
-    def hex(self):
-        return self._messageToHex(self.address,
-                                  self._messageFlags,
-                                  self.cmd1,
-                                  self.cmd2,
-                                  self.userdata,
-                                  self._acknak)
+    def address(self):
+        return self._address
 
     @property
-    def bytes(self):
-        return binascii.unhexlify(self.hex)
+    def cmd1(self):
+        return self._cmd1
+
+    @property
+    def cmd2(self):
+        return self._cmd2
+
+    @property
+    def userdata(self):
+        return self._userdata
+
+    @property
+    def flags(self):
+        return self._messageFlags
 
     @property
     def isack(self):
@@ -90,3 +96,11 @@ class ExtendedSend(MessageBase):
             return True
         else:
             return False
+
+    def to_hex(self):
+        return self._messageToHex(self._address,
+                                  self._messageFlags.to_byte(),
+                                  self._cmd1,
+                                  self._cmd2,
+                                  self._userdata,
+                                  self._acknak)

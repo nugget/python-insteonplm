@@ -5,26 +5,17 @@ import binascii
 class ResetIM(MessageBase):
     """Insteon Reset IM Message 0x67"""
 
-    code = MESSAGE_RESET_IM_0X67
-    sendSize = MESSAGE_RESET_IM_SIZE
-    receivedSize = MESSAGE_RESET_IM_RECEIVED_SIZE
-    description = 'Insteon Reset IM Message'
-
     def __init__(self, acknak=None):
+        super().__init__(MESSAGE_RESET_IM_0X67,
+                         MESSAGE_RESET_IM_SIZE, 
+                         MESSAGE_RESET_IM_RECEIVED_SIZE,
+                         'Insteon Reset IM Message')
 
         self._acknak = self._setacknak(acknak)
 
     @classmethod
     def from_raw_message(cls, rawmessage):
         return ResetIM(rawmessage[2:3])
-
-    @property
-    def hex(self):
-        return self._messageToHex(self._acknak)
-
-    @property
-    def bytes(self):
-        return binascii.unhexlify(self.hex)
 
     @property
     def isack(self):
@@ -39,6 +30,9 @@ class ResetIM(MessageBase):
             return True
         else:
             return False
+
+    def to_hex(self):
+        return self._messageToHex(self._acknak)
 
 
 

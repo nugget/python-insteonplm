@@ -6,20 +6,19 @@ import binascii
 class AllLinkRecordResponse(MessageBase):
     """INSTEON ALL-Link Record Response 0x57"""
 
-    code = MESSAGE_ALL_LINK_RECORD_RESPONSE_0X57
-    sendSize = MESSAGE_ALL_LINK_RECORD_RESPONSE_SIZE
-    receivedSize = MESSAGE_ALL_LINK_RECORD_RESPONSE_SIZE
-    description = 'INSTEON ALL-Link Record Response'
-
     def __init__(self, flags, group, address, linkdata1, linkdata2, linkdata3):
+        super().__init__(MESSAGE_ALL_LINK_RECORD_RESPONSE_0X57,
+                         MESSAGE_ALL_LINK_RECORD_RESPONSE_SIZE,
+                         MESSAGE_ALL_LINK_RECORD_RESPONSE_SIZE,
+                         'INSTEON ALL-Link Record Response')
 
         # ALL-Link Record Response
         self._controlFlags = flags
-        self.group = group
-        self.address = Address(address)
-        self.linkdata1 = linkdata1
-        self.linkdata2 = linkdata2
-        self.linkdata3 = linkdata3
+        self._group = group
+        self._address = Address(address)
+        self._linkdata1 = linkdata1
+        self._linkdata2 = linkdata2
+        self._linkdata3 = linkdata3
 
     @classmethod
     def from_raw_message(cls, rawmessage):
@@ -29,27 +28,43 @@ class AllLinkRecordResponse(MessageBase):
                                      rawmessage[7],
                                      rawmessage[8],
                                      rawmessage[9])
-    @property
-    def hex(self):
-        return self._messageToHex(self._controlFlags,
-                                  self.group,
-                                  self.address,
-                                  self.linkdata1,
-                                  self.linkdata2,
-                                  self.linkdata3)
 
     @property
-    def bytes(self):
-        return binascii.unhexlify(self.hex)
+    def group(self):
+        self._group
 
     @property
-    def isrecordinuse(self):
+    def address(self):
+        self._address
+
+    @property
+    def linkdata1(self):
+        self._linkdata1
+
+    @property
+    def linkdata2(self):
+        self._linkdata2
+
+    @property
+    def linkdata3(self):
+        self._linkdata3
+
+    @property
+    def isRecordinuse(self):
         return (self._controlFlags & self.CONTROL_FLAG_RECORD_IN_USE) == self.CONTROL_FLAG_RECORD_IN_USE
 
     @property
-    def iscontroller(self):
+    def isController(self):
         return (self._controlFlags & self.CONTROL_FLAG_CONTROLLER) == self.CONTROL_FLAG_CONTROLER
 
     @property
-    def isslave(self):
+    def isSlave(self):
         return not self.iscontroller
+
+    def to_hex(self):
+        return self._messageToHex(self._controlFlags,
+                                  self._group,
+                                  self._address,
+                                  self._linkdata1,
+                                  self._linkdata2,
+                                  self._linkdata3)

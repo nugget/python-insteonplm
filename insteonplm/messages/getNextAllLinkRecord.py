@@ -5,26 +5,18 @@ import binascii
 class GetNextAllLinkRecord(MessageBase):
     """Insteon Get Next All Link Record Message 0x6A"""
 
-    code = MESSAGE_GET_NEXT_ALL_LINK_RECORD_0X6A
-    sendSize = MESSAGE_GET_NEXT_ALL_LINK_RECORD_SIZE
-    receivedSize = MESSAGE_GET_NEXT_ALL_LINK_RECORD_RECEIVED_SIZE
-    description = 'Insteon Get Next All Link Record Message'
-
 
     def __init__(self, acknak=None):
+        super().__init__(MESSAGE_GET_NEXT_ALL_LINK_RECORD_0X6A,
+                         MESSAGE_GET_NEXT_ALL_LINK_RECORD_SIZE,
+                         MESSAGE_GET_NEXT_ALL_LINK_RECORD_RECEIVED_SIZE,
+                         'Insteon Get Next All Link Record Message')
+
         self._acknak = self._setacknak(acknak)
 
     @classmethod
     def from_raw_message(cls, rawmessage):
         return GetNextAllLinkRecord(rawmessage[2:3])
-
-    @property
-    def hex(self):
-        return self._messageToHex(self._acknak)
-
-    @property
-    def bytes(self):
-        return binascii.unhexlify(self.hex)
 
     @property
     def isack(self):
@@ -40,5 +32,7 @@ class GetNextAllLinkRecord(MessageBase):
         else:
             return False
 
+    def to_hex(self):
+        return self._messageToHex(self._acknak)
 
 

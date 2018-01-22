@@ -44,7 +44,7 @@ class State(object):
         self._log.debug("Registered callback for state: %s", self._stateName)
         self._handlers.append(handler)
 
-    def update(self, deviceid, val):
+    def update(self, val):
         """Save value to state.value property and notify listeners of the change"""
         self._value = val
         for handler in self._handlers:

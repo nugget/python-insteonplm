@@ -1,18 +1,18 @@
-from .messageBase import MessageBase
-from insteonplm.constants import *
 import binascii
+from insteonplm.constants import *
+from .messageBase import MessageBase
+from .messageFlags import MessageFlags
 
 class GetImConfiguration(MessageBase):
     """Insteon Get IM Configuration Message 0x62"""
 
-    code = MESSAGE_GET_IM_CONFIGURATION_0X73
-    sendSize = MESSAGE_GET_IM_CONFIGURATION_SIZE
-    receivedSize = MESSAGE_GET_IM_CONFIGURATION_RECEIVED_SIZE
-    description = 'Insteon Get IM Configuration Message'
-
     def __init__(self, flags = None, acknak = None):
+        super().__init__(MESSAGE_GET_IM_CONFIGURATION_0X73,
+                         MESSAGE_GET_IM_CONFIGURATION_SIZE,
+                         MESSAGE_GET_IM_CONFIGURATION_RECEIVED_SIZE, 
+                         'Insteon Get IM Configuration Message')
         
-        self._messageFlags = flags
+        self._imConfigurationFlags = flags
         self._spare1 = None
         self._spare2 = None
         self._acknak = self._setacknak(acknak)
@@ -23,18 +23,8 @@ class GetImConfiguration(MessageBase):
                                   rawmessage[5])
 
     @property
-    def hex(self):
-        if self._messageFlags is not None:
-            self._spare1 = 0x00
-            self._spare2 = 0x00
-        return self._messageToHex(self._messageFlags,
-                                  self._spare1,
-                                  self._spare2,
-                                  self._acknak)
-
-    @property
-    def bytes(self):
-        return binascii.unhexlify(self.hex)
+    def ImConfigurationFlags(self):
+        return self._imConfigurationFlags
 
     @property
     def isack(self):
@@ -49,3 +39,12 @@ class GetImConfiguration(MessageBase):
             return True
         else:
             return False
+
+    def to_hex(self):
+        if self._imConfigurationFlags is not None:
+            self._spare1 = 0x00
+            self._spare2 = 0x00
+        return self._messageToHex(self._imConfigurationFlags,
+                                  self._spare1,
+                                  self._spare2,
+                                  self._acknak)

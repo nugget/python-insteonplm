@@ -6,20 +6,16 @@ import binascii
 class GetImInfo(MessageBase):
     """INSTEON Get Insteon Modem Info Message 0x60"""
 
-    code = MESSAGE_GET_IM_INFO_0X60
-    sendSize = MESSAGE_GET_IM_INFO_SIZE
-    receivedSize = MESSAGE_GET_IM_INFO_RECEIVED_SIZE
-    description = 'INSTEON Get Insteon Modem Info Message Received'
-
     def __init__(self, address=None, cat=None, subcat=None, firmware=None, acknak = None):
+        super().__init__(MESSAGE_GET_IM_INFO_0X60,
+                         MESSAGE_GET_IM_INFO_SIZE,
+                         MESSAGE_GET_IM_INFO_RECEIVED_SIZE,
+                         'INSTEON Get Insteon Modem Info Message Received')
         
-        if address is None:
-            self.address = None
-        else:
-            self.address = Address(address)
-        self.category = cat
-        self.subcategory = subcat
-        self.firmware = firmware
+        self._address = Address(address)
+        self._category = cat
+        self._subcategory = subcat
+        self._firmware = firmware
         self._acknak = self._setacknak(acknak)
 
     @classmethod
@@ -31,16 +27,20 @@ class GetImInfo(MessageBase):
                          rawmessage[8])
 
     @property
-    def hex(self):
-        return self._messageToHex(self.address,
-                                    self.category,
-                                    self.subcategory,
-                                    self.firmware,
-                                    self._acknak)
+    def address(self):
+        return self._address
 
     @property
-    def bytes(self):
-        return binascii.unhexlify(self.hex)
+    def category(self):
+        return self._category
+
+    @property
+    def subcategory(self):
+        return self._subcategory
+
+    @property
+    def firmware(self):
+        return self._firmware
 
     @property
     def isack(self):
@@ -55,5 +55,12 @@ class GetImInfo(MessageBase):
             return True
         else:
             return False
+
+    def to_hex(self):
+        return self._messageToHex(self.address,
+                                    self.category,
+                                    self.subcategory,
+                                    self.firmware,
+                                    self._acknak)
 
 

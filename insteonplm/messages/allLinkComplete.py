@@ -6,20 +6,19 @@ import binascii
 class AllLinkComplete(MessageBase):
     """INSTEON ALL-Linking Completed Message 0x53"""
 
-    code = MESSAGE_ALL_LINKING_COMPLETED_0X53
-    sendSize = MESSAGE_ALL_LINKING_COMPLETED_SIZE
-    receivedSize = MESSAGE_ALL_LINKING_COMPLETED_SIZE
-    description = 'INSTEON ALL-Linking Completed Message Received'
-
     def __init__(self, linkcode, group, address, cat, subcat, firmware):
+        super().__init__(MESSAGE_ALL_LINKING_COMPLETED_0X53,
+                         MESSAGE_ALL_LINKING_COMPLETED_SIZE,
+                         MESSAGE_ALL_LINKING_COMPLETED_SIZE,
+                         'INSTEON ALL-Linking Completed Message Received')
 
         # ALL-Linking Complete
-        self.linkcode = linkcode
-        self.group = group
-        self.address = Address(address)
-        self.category = cat
-        self.subcategory = subcat
-        self.firmware = firmware
+        self._linkcode = linkcode
+        self._group = group
+        self._address = Address(address)
+        self._category = cat
+        self._subcategory = subcat
+        self._firmware = firmware
 
     @classmethod
     def from_raw_message(cls, rawmessage):
@@ -29,18 +28,30 @@ class AllLinkComplete(MessageBase):
                                rawmessage[7],
                                rawmessage[8],
                                rawmessage[9])
+    
     @property
-    def hex(self):
-        return self._messageToHex(self.linkcode,
-                                  self.group,
-                                  self.address,
-                                  self.category,
-                                  self.subcategory, 
-                                  self.firmware)
-
+    def linkcode(self):
+        return self._linkcode
+    
     @property
-    def bytes(self):
-        return binascii.unhexlify(self.hex)
+    def group(self):
+        return self._group
+    
+    @property
+    def address(self):
+        return self._address
+    
+    @property
+    def category(self):
+        return self._category
+    
+    @property
+    def subcategory(self):
+        return self._subcategory
+    
+    @property
+    def firmware(self):
+        return self._firmware
 
     @property
     def isresponder(self):
@@ -62,5 +73,13 @@ class AllLinkComplete(MessageBase):
             return True
         else:
             return False
+
+    def to_hex(self):
+        return self._messageToHex(self._linkcode,
+                                  self._group,
+                                  self._address,
+                                  self._category,
+                                  self._subcategory, 
+                                  self._firmware)
 
 

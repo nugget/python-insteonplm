@@ -6,92 +6,41 @@ from insteonplm.constants import *
 
 class MessageBase(object):
 
-    code = None
-    sendSize = None
-    receivedSize = None
-    description = "Empty message"
-
-    def __init__(self):
-        self._messageFlags = 0x00
+    def __init__(self, code, sendSize, receiveSize, description):
         self.log = logging.getLogger(__name__)
 
-#    def __repr__(self):
-#        attrs = vars(self)
-#        return ', '.join("%s: %r" % item for item in attrs.items())
-   
+        self._code = code
+        self._sendSize = sendSize
+        self._receivedSize = receiveSize
+        self._description = description
+
+    @classmethod
+    def get_properties(cls):
+        property_names=[p for p in dir(cls) if isinstance(getattr(cls,p),property)]
+        return property_names
+
     @property
-    def hex(self):
+    def code(self):
+        return self._code
+
+    @property
+    def sendSize(self):
+        return self._sendSize
+
+    @property
+    def receivedSize(self):
+        return self._receivedSize
+
+    @property
+    def description(self):
+        return 
+        self._description
+
+    def to_hex(self):
         return NotImplemented
 
-    @property
-    def bytes(self):
-        return NotImplemented
-
-    @property
-    def isbroadcastflag(self):
-        return (self._messageFlags & MESSAGE_FLAG_BROADCAST_0X80) == MESSAGE_FLAG_BROADCAST_0X80
-
-    @isbroadcastflag.setter
-    def isbroadcastflag(self, value):
-        if value:
-            self._messageFlags = self._messageFlags | MESSAGE_FLAG_BROADCAST_0X80
-        else:
-            self._messageFlags = self._messageFlags & ~MESSAGE_FLAG_BROADCAST_0X80
-
-    @property
-    def isgroupflag(self):
-        return (self._messageFlags & MESSAGE_FLAG_GROUP_0X40) == MESSAGE_FLAG_GROUP_0X40
-
-    @isgroupflag.setter
-    def isgroupflag(self, value):
-        if value:
-            self._messageFlags = self._messageFlags | MESSAGE_FLAG_GROUP_0X40
-        else:
-            self._messageFlags = self._messageFlags & ~MESSAGE_FLAG_GROUP_0X40
-
-    @property
-    def isnakflag(self):
-        return (self._messageFlags & MESSAGE_FLAG_NAK_0X20) == MESSAGE_FLAG_NAK_0X20 
-
-    @isnakflag.setter
-    def isnakflag(self, value):
-        if value:
-            self._messageFlags = self._messageFlags | MESSAGE_FLAG_NAK_0X20 
-        else:
-            self._messageFlags = self._messageFlags & ~MESSAGE_FLAG_NAK_0X20 
-
-    @property
-    def isextended(self):
-        return (self._messageFlags & MESSAGE_FLAG_EXTENDED_0X10) == MESSAGE_FLAG_EXTENDED_0X10
-
-    @property
-    def hopsflag(self):
-        return (self._messageFlags & MESSAGE_FLAG_HOPS_LEFT) >> 2
-
-    @property
-    def maxhopsflag(self):
-        return (self._messageFlags & MESSAGE_FLAG_MAX_HOPS)
-
-    @property 
-    def acknak(self):
-        if hasattr(self, '_acknak'):
-            return self._acknak
-        return None
-
-    @property
-    def isack(self):
-        if hasattr(self, '_acknak'):
-            if self._acknak == MESSAGE_ACK:
-                return True
-        return False
-
-    @property
-    def isnak(self):
-        if hasattr(self, '_acknak'):
-            if self._acknak == MESSAGE_NAK:
-                return True
-        return False
-
+    def to_bytes(self):
+        return binascii.unhexlify(self.to_hex())
     
     def fromDevice(self, devices):
         try:
@@ -114,7 +63,7 @@ class MessageBase(object):
             return acknak
 
     def _messageToHex(self, *arg):
-        msg = bytearray([MESSAGE_START_CODE_0X02, self.code])
+        msg = bytearray([MESSAGE_START_CODE_0X02, self._code])
         i = 0
         for b in arg:
             if b is None:

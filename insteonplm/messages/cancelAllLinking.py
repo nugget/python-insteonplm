@@ -6,26 +6,17 @@ import binascii
 class CancelAllLinking(MessageBase):
     """INSTEON Cancel All-Linking 0x65"""
 
-    code = MESSAGE_CANCEL_ALL_LINKING_0X65
-    sendSize = MESSAGE_CANCEL_ALL_LINKING_SIZE
-    receivedSize = MESSAGE_CANCEL_ALL_LINKING_RECEIVED_SIZE
-    description = 'INSTEON Cancel All-Linking'
-
     def __init__(self, acknak = None):
+        super().__init__(MESSAGE_CANCEL_ALL_LINKING_0X65,
+                         MESSAGE_CANCEL_ALL_LINKING_SIZE,
+                         MESSAGE_CANCEL_ALL_LINKING_RECEIVED_SIZE,
+                         'INSTEON Cancel All-Linking')
 
         self._acknak = self._setacknak(acknak)
 
     @classmethod
     def from_raw_message(cls, rawmessage):
         return CancelAllLinking(rawmessage[2:3])
-
-    @property
-    def hex(self):
-        return self._messageToHex(self._acknak)
-
-    @property
-    def bytes(self):
-        return binascii.unhexlify(self.hex)
 
     @property
     def isack(self):
@@ -40,5 +31,8 @@ class CancelAllLinking(MessageBase):
             return True
         else:
             return False
+
+    def to_hex(self):
+        return self._messageToHex(self._acknak)
 
 

@@ -14,10 +14,14 @@ class Address(object):
         self.addr = self.normalize(addr)
 
     def __repr__(self):
-        return self.human
+        if self.human is not None:
+            return self.human
+        return ''
 
     def __str__(self):
-        return self.hex
+        if self.hex is not None:
+            return self.hex
+        return ''
 
     def __eq__(self, other):
         return self.hex == other.hex
@@ -37,6 +41,8 @@ class Address(object):
             addr.replace('.', '')
             addr = addr[0:6]
             return addr.lower()
+        if addr is None:
+            return None
         else:
             self.log.warning('Address class init with unknown type %s: %r',
                              type(addr), addr)
@@ -45,15 +51,21 @@ class Address(object):
     @property
     def human(self):
         """Emit the address in human-readible format (AA.BB.CC)."""
-        addrstr = self.addr[0:2]+'.'+self.addr[2:4]+'.'+self.addr[4:6]
-        return addrstr.upper()
+        if self.addr is not None:
+            addrstr = self.addr[0:2]+'.'+self.addr[2:4]+'.'+self.addr[4:6]
+            return addrstr.upper()
+        return None
 
     @property
     def hex(self):
         """Emit the address in bare hex format (aabbcc)."""
-        return self.addr
+        if self.addr is not None:
+            return self.addr
+        return None
 
     @property
     def bytes(self):
         r"""Emit the address in bytes format (b'\xaabbcc')."""
-        return binascii.unhexlify(self.addr)
+        if self.addr is not None:
+            return binascii.unhexlify(self.addr)
+        return None

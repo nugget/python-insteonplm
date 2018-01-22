@@ -1,11 +1,12 @@
 from .state import State
 from insteonplm.constants import *
 
-class OnOffSwitch(State):
+class DimmableSwitch(State):
     """Device state representing an On/Off switch that is controllable.
 
     Available methods are:
-    on()
+    on(self, onlevel)
+    set_level(self, onlevel)
     off()
     async_refresh_state()
     connect()
@@ -16,8 +17,11 @@ class OnOffSwitch(State):
     def __init__(self, plm, device, statename, group, defaultvalue=None):
         State.__init__(self, plm, device, statename, group, self._status_request, defaultvalue)
 
-    def on(self):
-        self._plm.send_standard(self.address.hex, COMMAND_LIGHT_ON_0X11_NONE, 0xff)
+    def on(self, onlevel=0xff):
+        self._plm.send_standard(self.address.hex, COMMAND_LIGHT_ON_0X11_NONE, onlevel)
+
+    def set_level(self, onlevel=0xff):
+        self.on(onlevel)
 
     def off(self):
         self._plm.send_standard(self.address.hex, COMMAND_LIGHT_OFF_0X13_0X00)
@@ -29,11 +33,12 @@ class OnOffSwitch(State):
     def _status_received(self, msg):
         self.update(msg.cmd2)
 
-class OnOffSwitch_OutletTop(OnOffSwitch):
-    """Device state representing a the top outlet On/Off switch that is controllable.
+class DimmableSwitch_Fan(OnOffSwitch):
+    """Device state representing a the fan switch that is controllable.
 
     Available methods are:
-    on(self)
+    on(self, onlevel)
+    set_level(self, onlevel)
     off(self)
     async_refresh_state(self)
     connect(self, call_back)
@@ -108,4 +113,5 @@ class OnOffSwitch_OutletBottom(State):
         else:
             raise ValueError
         self.log.debug('Starting SwitchedLightingControl_2663_222._status_update_received')
+
 

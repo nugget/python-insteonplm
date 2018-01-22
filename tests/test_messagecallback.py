@@ -1,4 +1,6 @@
-import insteonplm
+import sys
+sys.path.append('../')
+#import insteonplm
 from insteonplm.messagecallback import MessageCallback
 from insteonplm.constants import *
 from insteonplm.messages.standardReceive import StandardReceive
@@ -9,13 +11,16 @@ def test_messagecallback_basic():
     callbacktest1 = "test callback 1"
     callbacktest2 = "test callback 2"
 
-    callbacks.add_message_callback(MESSAGE_STANDARD_MESSAGE_RECEIVED_0X50, COMMAND_ASSIGN_TO_ALL_LINK_GROUP_0X01_NONE, callbacktest1)
-    callbacks.add_message_callback(MESSAGE_STANDARD_MESSAGE_RECEIVED_0X50, None, callbacktest2)
+    msg_template = StandardReceive(None, None, 0x80, 0x11, None)
+    callbacks[msg_template] = callbacktest1
 
-    callback1 = callbacks['50:01:None:None']
-    callback2 = callbacks['50:02:None:None']
+    msg = StandardReceive('1a2b3c', '4d5e6f', 0x80, 0x11, 0xff)
+
+    callback1 = callbacks[msg]
+    print('Callback: ', callback1)
+    print('MT Code: {:x}'.format(msg.code))
+    print('msg: ', msg.to_hex())
     assert callback1 == callbacktest1
-    assert callback2 == callbacktest2
 
 def test_messagecallback_msg():
     callbacks = MessageCallback()
@@ -48,3 +53,7 @@ def test_messagecallback_acknak():
 
     assert callback1 == callbacktest
     assert callback2 == None
+
+
+if __name__ == "__main__":
+    test_messagecallback_basic()

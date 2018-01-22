@@ -6,29 +6,28 @@ import binascii
 class AllLinkCleanupFailureReport(MessageBase):
     """INSTEON All-Link Failure Report Message 0x56"""
 
-    code = MESSAGE_ALL_LINK_CEANUP_FAILURE_REPORT_0X56
-    sendSize = MESSAGE_ALL_LINK_CEANUP_FAILURE_REPORT_SIZE
-    receivedSize = MESSAGE_ALL_LINK_CEANUP_FAILURE_REPORT_SIZE
-    description = 'INSTEON All-Link Failure Report Message'
-
     def __init__(self, group, address):
+        super().__init__(MESSAGE_ALL_LINK_CEANUP_FAILURE_REPORT_0X56,
+                         MESSAGE_ALL_LINK_CEANUP_FAILURE_REPORT_SIZE,
+                         MESSAGE_ALL_LINK_CEANUP_FAILURE_REPORT_SIZE,
+                         'INSTEON All-Link Failure Report Message')
 
-        self.group = group
-        if isinstance(address, Address):
-            self.address = address
-        else:
-            self.address = Address(address)
+        self._group = group
+        self._address = Address(address)
 
     @classmethod
     def from_raw_message(cls, rawmessage):
         return AllLinkCleanupFailureReport(rawmessage[3], rawmessage[4:7])
-
+    
     @property
-    def hex(self):
+    def group(self):
+        return self._group
+    
+    @property
+    def address(self):
+        return self._address
+
+    def to_hex(self):
         return self._messageToHex(0x01,
-                                  self.group,
-                                  self.address)
-
-    @property
-    def bytes(self):
-        return binascii.unhexlify(self.hex)
+                                  self._group,
+                                  self._address)

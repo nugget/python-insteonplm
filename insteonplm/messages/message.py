@@ -25,6 +25,7 @@ from .resetIM import ResetIM
 from .getFirstAllLinkRecord import GetFirstAllLinkRecord
 from .getNextAllLinkRecord import GetNextAllLinkRecord
 from .getImConfiguration import GetImConfiguration
+from .messageFlags import MessageFlags
 
 
 class Message(object):
@@ -44,7 +45,6 @@ class Message(object):
             return None
 
         code = rawmessage[1]
-        _messageFlags = 0x00
         msgclass = Message.get_message_class(code)
 
         msg = None

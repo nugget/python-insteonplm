@@ -1,19 +1,19 @@
-from .messageBase import MessageBase
-from insteonplm.constants import *
 import binascii
+from insteonplm.constants import *
+from .messageBase import MessageBase
+from .messageFlags import MessageFlags
 
 class X10Send(MessageBase):
     """Insteon Get Next All Link Record Message 0x6A"""
 
-    code = MESSAGE_X10_MESSAGE_SEND_0X63
-    sendSize = MESSAGE_X10_MESSAGE_SEND_SIZE
-    receivedSize = MESSAGE_X10_MESSAGE_SEND_RECEIVED_SIZE
-    description = 'Insteon Get Next All Link Record Message'
-
     def __init__(self, rawX10, flag, acknak=None):
+        super().__init__(MESSAGE_X10_MESSAGE_SEND_0X63,
+                         MESSAGE_X10_MESSAGE_SEND_SIZE,
+                         MESSAGE_X10_MESSAGE_SEND_RECEIVED_SIZE,
+                         'Insteon Get Next All Link Record Message')
 
-        self.rawX10 = rawX10
-        self.flag = flag
+        self._rawX10 = rawX10
+        self._flag = flag
         self._acknak = self._setacknak(acknak)
     
     @classmethod
@@ -21,14 +21,12 @@ class X10Send(MessageBase):
         return X10Send(rawmessage[2], rawmessage[3], rawmessage[4:5])
 
     @property
-    def hex(self):
-        return self._messageToHex(self.rawX10,
-                                  self.flag,
-                                  self._acknak)
-
+    def rawX10(self):
+        return self._rawX10
+    
     @property
-    def bytes(self):
-        return binascii.unhexlify(self.hex)
+    def flag(self):
+        return self._flag
 
     @property
     def isack(self):
@@ -43,6 +41,11 @@ class X10Send(MessageBase):
             return True
         else:
             return False
+
+    def to_hex(self):
+        return self._messageToHex(self._rawX10,
+                                  self._flag,
+                                  self._acknak)
 
 
 
