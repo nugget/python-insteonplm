@@ -119,6 +119,4 @@ class MessageCallback(object):
             }
         return key
 
-    def _match_flags(self, msg, key):
-        return True
 
