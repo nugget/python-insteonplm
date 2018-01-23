@@ -32,27 +32,40 @@ def test_messagecallback_msg():
     msg1 = StandardReceive(address, target, 0x00, COMMAND_LIGHT_ON_0X11_NONE['cmd1'], COMMAND_LIGHT_ON_0X11_NONE['cmd2'])
     msg2 = StandardReceive(address, target, 0x00, COMMAND_LIGHT_ON_0X11_NONE['cmd1'], 0xff)
 
-    callback1 = callbacks.get_callback_from_message(msg1)
-    callback2 = callbacks.get_callback_from_message(msg2)
+    callback1 = callbacks.get_callbacks_from_message(msg1)
+    callback2 = callbacks.get_callbacks_from_message(msg2)
 
-    assert callback1 == callbacktest
-    assert callback2 == callbacktest
+    assert callback1[0] == callbacktest
+    assert callback2[0] == callbacktest
 
 def test_messagecallback_acknak():
     callbacks = MessageCallback()
-    callbacktest = "test callback"
+    callbacktest1 = "test callback 1"
+    callbacktest2 = "test callback 2"
+    callbacktest3 = "test callback 3"
+    callbacktest4 = "test callback 4"
     address = '1a2b3c'
     target = '4d5e6f'
 
-    callbacks.add_message_callback(StandardSend(None, None, None, None, acknak=MESSAGE_NAK), callbacktest)
-    msg1 = StandardSend(target, 0x00, COMMAND_LIGHT_ON_0X11_NONE['cmd1'], 0xff, MESSAGE_NAK)
-    msg2 = StandardSend(target, 0x00, COMMAND_LIGHT_ON_0X11_NONE['cmd1'], 0xff, MESSAGE_ACK)
+    callbacks.add_message_callback(StandardSend(None, None, None, None), callbacktest1)
+    callbacks.add_message_callback(StandardSend(None, None, None, None), callbacktest2)
+    callbacks.add_message_callback(StandardSend(None, None, None, None, acknak=MESSAGE_NAK), callbacktest3)
 
-    callback1 = callbacks.get_callback_from_message(msg1)
-    callback2 = callbacks.get_callback_from_message(msg2)
+    msg1 = StandardSend('111111', 0x00, COMMAND_LIGHT_ON_0X11_NONE['cmd1'], 0xcd)
+    msg2 = StandardSend('222222', 0x00, COMMAND_LIGHT_ON_0X11_NONE['cmd1'], 0xff)
+    msg3 = StandardSend('333333', 0x00, COMMAND_LIGHT_ON_0X11_NONE['cmd1'], 0xff, MESSAGE_NAK)
+    msg4 = StandardSend('444444', 0x00, COMMAND_LIGHT_ON_0X11_NONE['cmd1'], 0xff, MESSAGE_ACK)
 
-    assert callback1 == callbacktest
-    assert callback2 == None
+    callback1 = callbacks.get_callbacks_from_message(msg1)
+    callback2 = callbacks.get_callbacks_from_message(msg2)
+    callback3 = callbacks.get_callbacks_from_message(msg3)
+    callback4 = callbacks.get_callbacks_from_message(msg4)
+    
+    assert len(callback1) == 2
+    assert callback1[0] == callbacktest1
+    assert callback1 == callback2
+    assert callback3[0] == callbacktest3
+    assert len(callback4) == 0
 
 
 if __name__ == "__main__":

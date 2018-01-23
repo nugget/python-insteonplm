@@ -30,24 +30,34 @@ class MessageCallback(object):
            this will be a match.
         """
         foundKey = self._match_msg(key)
-        if foundKey is not None:
-            return self._dict[foundKey]
+        return self._dict.get(foundKey, [])
 
 
     def __setitem__(self, key, value):
         self._dict[key] = value
 
-    def add_message_callback(self, msg, callback):
-        self[msg] = callback
-
-    def get_callback_from_message(self, msg):
-        key = self._match_msg(msg)
-        if key is not None:
-            return self[key]
+    def add_message_callback(self, msg, callback, override=False):
+        if override:
+            print('Setting callback: ', callback)
+            self[msg] = [callback]
         else:
-            return None
+            print('Appending callback: ', callback)
+            cb = self[msg]
+            cb.append(callback)
+            print('Total callbacks for message: ', len(cb))
+            self[msg] = cb
+
+
+    def get_callbacks_from_message(self, msg):
+        foundKey = self._match_msg(msg)
+        if foundKey is not None:
+            return self[foundKey]
+        else:
+            return []
 
     def _match_msg(self, msg):
+        print('')
+        print('Starting new message key search')
         properties = msg.get_properties()
         ismatch = False
         for key in self._dict:
@@ -58,30 +68,20 @@ class MessageCallback(object):
                     if hasattr(key, property):   
                         k =  getattr(key, property)
                         if k is not None:
-                            if isinstance(p, MessageFlags):
-                                if self._match_flags(p, k):
-                                    print('Flags match')
-                                    ismatch = True
-                                else:
-                                    print('Flags do not match')
-                                    ismatch = False
-                                    break
+                            if p == k:
+                                print(property, ' with value ', p, " is equal to ", k)
+                                ismatch = True
                             else:
-                                if p == k:
-                                    print(property, ' with value ', p, " is equal to ", k)
-                                    ismatch = True
-                                else:
-                                    print(property, ' with value ', p, " is not equal ", k)
-                                    ismatch = False
-                                    break
+                                print(property, ' with value ', p, " is not equal ", k)
+                                ismatch = False
+                                break
                     else:
                         print('Properties do not match')
                         ismatch = False
                         break
                 if ismatch:
+                    print('Found key for message')
                     return key
-                else:
-                    break
         return None
 
     def _dict_to_key(self, dictkey):

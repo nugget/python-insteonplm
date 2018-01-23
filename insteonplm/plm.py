@@ -114,9 +114,10 @@ class PLM(asyncio.Protocol):
             try:
                 msg = self._recv_queue.pop()
                 self.log.debug('Processing message %s', msg.hex)
-                callback = self._message_callbacks.get_callback_from_message(msg)
-                if callback is not None:
-                    self._loop.call_soon(callback, msg)
+                callbacks = self._message_callbacks.get_callbacks_from_message(msg)
+                if len(callbacks) > 0:
+                    for callback in callbacks:
+                        self._loop.call_soon(callback, msg)
                 else:             
                     if hasattr(msg, 'cmd1'):
                         self.log.debug('No callback found for message code %02x with cmd1 %02x and cmd2 %02x and acknak %02x', msg.code, msg.cmd1, msg.cmd2, msg.acknak)
