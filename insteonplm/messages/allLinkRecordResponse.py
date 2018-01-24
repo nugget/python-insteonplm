@@ -62,10 +62,10 @@ class AllLinkRecordResponse(MessageBase):
     def isSlave(self):
         return not self.iscontroller
 
-    def to_hex(self):
-        return self._messageToHex(self._controlFlags,
-                                  self._group,
-                                  self._address,
-                                  self._linkdata1,
-                                  self._linkdata2,
-                                  self._linkdata3)
+    def _message_properties(self):
+        return {'controlFlags': self._controlFlags,
+                'group': self._group,
+                'address': self._address,
+                'linkdata1': self._linkdata1,
+                'linkdata2': self._linkdata2,
+                'linkdata3': self._linkdata3}

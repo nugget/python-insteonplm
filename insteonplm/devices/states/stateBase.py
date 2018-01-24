@@ -1,6 +1,6 @@
 import logging
 
-class State(object):
+class StateBase(object):
     """
     Base class used by Insteon devices to hold a device state such as "Light On Level", "Temperature" or "Fan Mode".
     The class is defined with the following options:

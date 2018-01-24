@@ -2,7 +2,7 @@ import logging
 import binascii
 from insteonplm.address import Address
 from insteonplm.constants import *
-#from .message import Message
+from .messageFlags import MessageFlags
 
 class ClassPropertyMetaClass(type):
     """This is meta class magic to allow class attributes to also appear as an instance property."""
@@ -23,17 +23,32 @@ class ClassPropertyMetaClass(type):
     def description(cls):
         return cls._description
 
-class MessageBase(metaclass=ClassPropertyMetaClass):
-
+class MessageBase(metaclass=ClassPropertyMetaClass):    
     _code = None
     _sendSize = None
     _receivedSize = None
     _description = "Empty message"
 
-    @classmethod
-    def get_properties(cls):
-        property_names=[p for p in dir(cls) if isinstance(getattr(cls,p),property)]
-        return property_names
+    def __str__(self):
+        props = self._message_properties()
+        msgstr = "{'code': 0x" + binascii.hexlify(bytes([self._code])).decode()
+        first = True
+        for prop in props:
+            msgstr = msgstr + ', '
+            if isinstance(props[prop], Address):
+                msgstr = msgstr + "'" + prop + "': " + props[prop].human
+            elif isinstance(props[prop], MessageFlags):
+                msgstr = msgstr + "'" + prop + "': 0x" + props[prop].to_hex()
+            elif isinstance(props[prop], int):
+                msgstr = msgstr + "'" + prop + "': 0x" + binascii.hexlify(bytes([props[prop]])).decode()
+            elif isinstance(props[prop], bytearray):
+                msgstr = msgstr + "'" + prop + "': 0x" + binascii.hexlify(props[prop]).decode()
+            elif isinstance(props[prop], bytes):
+                msgstr = msgstr + "'" + prop + "': 0x" + binascii.hexlify(props[prop]).decode()
+            else:
+                msgstr = msgstr + "'" + prop + "': " + str(props[prop])
+        msgstr = msgstr + '}'
+        return msgstr
 
     @property
     def code(self):
@@ -52,10 +67,50 @@ class MessageBase(metaclass=ClassPropertyMetaClass):
         return self._description
 
     def to_hex(self):
-        return NotImplemented
+        props = self._message_properties()
+        msg = bytearray([MESSAGE_START_CODE_0X02, self._code])
+        i = 0
+        for key in props:
+            val = props[key]
+            if val is None:
+                pass
+            elif isinstance(val,int):
+                msg.append(val)
+            elif isinstance(val, Address):
+                if val.addr == None:
+                    pass
+                else:
+                    msg.extend(val.bytes)
+            elif isinstance(val, MessageFlags):
+                msg.extend(val.to_byte())
+            elif isinstance(val, bytearray):
+                msg.extend(val)
+            elif isinstance(val, bytes):
+                msg.extend(val)
+            
+        return binascii.hexlify(msg).decode()
 
     def to_bytes(self):
         return binascii.unhexlify(self.to_hex())
+
+    def matches_pattern(self, other):
+        properties = self._message_properties()
+        ismatch = False
+        if isinstance(other, MessageBase) and self.code == other.code:
+            for property in properties:
+                p = properties[property]
+                if hasattr(other, property):    
+                    k =  getattr(other, property)
+                    if k is not None:
+                        if p == k:
+                            ismatch = True
+                        else:
+                            ismatch = False
+                            break
+                else:
+                    ismatch = False
+                    break
+        return ismatch
     
     def fromDevice(self, devices):
         try:
@@ -77,22 +132,7 @@ class MessageBase(metaclass=ClassPropertyMetaClass):
         else:
             return acknak
 
-    def _messageToHex(self, *arg):
-        msg = bytearray([MESSAGE_START_CODE_0X02, self._code])
-        i = 0
-        for b in arg:
-            if b is None:
-                pass
-            elif isinstance(b,int):
-                msg.append(b)
-            elif isinstance(b, Address):
-                if b.addr == None:
-                    pass
-                else:
-                    msg.extend(b.bytes)
-            elif isinstance(b, bytearray):
-                msg.extend(b)
-            elif isinstance(b, bytes):
-                msg.extend(b)
-            
-        return binascii.hexlify(msg).decode()
+    def _message_properties(self):
+        raise NotImplementedError
+
+

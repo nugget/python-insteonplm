@@ -50,14 +50,6 @@ def console(loop, log, devicelist):
 
     plm = conn.protocol
 
-    # yield from asyncio.sleep(5, loop=loop)
-    #  Successfully turns off the light in my computer room (yay)
-    #  conn.protocol._send_raw(binascii.unhexlify('02624095e6001300'))
-    #
-    # conn.protocol._send_raw(binascii.unhexlify('02624095e6000300'))
-    # conn.protocol.product_data_request('15c3ab')
-    # yield from asyncio.sleep(10, loop=loop)
-
     yield from asyncio.sleep(120, loop=loop)
 
     if 1 == 0:

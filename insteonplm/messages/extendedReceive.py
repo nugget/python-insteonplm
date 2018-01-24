@@ -87,14 +87,13 @@ class ExtendedReceive(MessageBase):
         else:
             return None
 
-    def to_hex(self):
-        return self._messageToHex(self._address, 
-                                  self._target, 
-                                  self._messageFlags.to_byte(), 
-                                  self._cmd1, 
-                                  self._cmd2,
-                                  self._userdata)
-    
+    def _message_properties(self):
+        return {'address': self.address, 
+                'target': self.target, 
+                'flags': self.flags,
+                'cmd1': self.cmd1,
+                'cmd2': self.cmd2,
+                'userdata': self.userdata}
 
     @classmethod
     def _userdata_to_dict(cls, userdata):

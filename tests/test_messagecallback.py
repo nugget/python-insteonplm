@@ -1,6 +1,3 @@
-import sys
-sys.path.append('../')
-#import insteonplm
 from insteonplm.messagecallback import MessageCallback
 from insteonplm.constants import *
 from insteonplm.messages.standardReceive import StandardReceive
@@ -16,11 +13,13 @@ def test_messagecallback_basic():
 
     msg = StandardReceive('1a2b3c', '4d5e6f', 0x80, 0x11, 0xff)
 
-    callback1 = callbacks[msg]
+    callback1 = callbacks.get_callbacks_from_message(msg)
     print('Callback: ', callback1)
     print('MT Code: {:x}'.format(msg.code))
     print('msg: ', msg.to_hex())
-    assert callback1 == callbacktest1
+
+    assert len(callback1) == 1
+    assert callback1[0] == callbacktest1
 
 def test_messagecallback_msg():
     callbacks = MessageCallback()
@@ -62,11 +61,6 @@ def test_messagecallback_acknak():
     callback4 = callbacks.get_callbacks_from_message(msg4)
     
     assert len(callback1) == 2
-    assert callback1[0] == callbacktest1
-    assert callback1 == callback2
-    assert callback3[0] == callbacktest3
-    assert len(callback4) == 0
-
-
-if __name__ == "__main__":
-    test_messagecallback_basic()
+    assert len(callback2) == 2
+    assert len(callback3) == 3
+    assert len(callback4) == 2

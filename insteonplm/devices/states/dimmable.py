@@ -1,7 +1,7 @@
-from .state import State
+from .stateBase import StateBase
 from insteonplm.constants import *
 
-class DimmableSwitch(State):
+class DimmableSwitch(StateBase):
     """Device state representing an On/Off switch that is controllable.
 
     Available methods are:
@@ -33,7 +33,7 @@ class DimmableSwitch(State):
     def _status_received(self, msg):
         self.update(msg.cmd2)
 
-class DimmableSwitch_Fan(OnOffSwitch):
+class DimmableSwitch_Fan(DimmableSwitch):
     """Device state representing a the fan switch that is controllable.
 
     Available methods are:
@@ -67,7 +67,7 @@ class DimmableSwitch_Fan(OnOffSwitch):
         self.log.debug('Starting SwitchedLightingControl_2663_222._status_update_received')
 
 
-class OnOffSwitch_OutletBottom(State):
+class OnOffSwitch_OutletBottom(StateBase):
     """Device state representing a the bottom outlet On/Off switch that is controllable.
 
     Available methods are:

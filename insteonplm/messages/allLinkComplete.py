@@ -74,12 +74,12 @@ class AllLinkComplete(MessageBase):
         else:
             return False
 
-    def to_hex(self):
-        return self._messageToHex(self._linkcode,
-                                  self._group,
-                                  self._address,
-                                  self._category,
-                                  self._subcategory, 
-                                  self._firmware)
+    def _message_properties(self):
+        return {'linkcode': self.linkcode,
+                'group': self.group,
+                'address': self.address,
+                'category': self.category,
+                'subcategory': self.subcategory, 
+                'firmware': self.firmware}
 
 

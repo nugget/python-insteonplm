@@ -14,5 +14,5 @@ class UserReset(MessageBase):
     def from_raw_messsage(cls, rawmessage):
         return UserReset()
 
-    def to_hex(self):
-        return self._messageToHex()
+    def _message_properties(self):
+        return []

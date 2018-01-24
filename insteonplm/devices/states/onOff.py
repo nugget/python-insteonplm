@@ -1,13 +1,13 @@
-from .state import State
+from .stateBase import StateBase
 from insteonplm.constants import *
+from insteonplm.messages import *
 
-class OnOffSwitch(State):
+class OnOffSwitch(StateBase):
     """Device state representing an On/Off switch that is controllable.
 
     Available methods are:
     on()
     off()
-    async_refresh_state()
     connect()
     update(self, val)
     async_refresh_state()
@@ -15,6 +15,7 @@ class OnOffSwitch(State):
 
     def __init__(self, plm, device, statename, group, defaultvalue=None):
         State.__init__(self, plm, device, statename, group, self._status_request, defaultvalue)
+        device.register_message_callback()
 
     def on(self):
         self._plm.send_standard(self.address.hex, COMMAND_LIGHT_ON_0X11_NONE, 0xff)
@@ -23,7 +24,7 @@ class OnOffSwitch(State):
         self._plm.send_standard(self.address.hex, COMMAND_LIGHT_OFF_0X13_0X00)
 
     def _status_request(self):
-        self._device.set_status_callback(self._status_received)
+        self.add_message_
         self._plm.send_standard(self.address.hex, COMMAND_LIGHT_STATUS_REQUEST_0X19_0X00)
 
     def _status_received(self, msg):
@@ -35,7 +36,6 @@ class OnOffSwitch_OutletTop(OnOffSwitch):
     Available methods are:
     on(self)
     off(self)
-    async_refresh_state(self)
     connect(self, call_back)
     update(self, val)
     async_refresh_state(self)
@@ -62,7 +62,7 @@ class OnOffSwitch_OutletTop(OnOffSwitch):
         self.log.debug('Starting SwitchedLightingControl_2663_222._status_update_received')
 
 
-class OnOffSwitch_OutletBottom(State):
+class OnOffSwitch_OutletBottom(StateBase):
     """Device state representing a the bottom outlet On/Off switch that is controllable.
 
     Available methods are:

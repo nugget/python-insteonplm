@@ -48,11 +48,11 @@ class SendAllLinkCommand(MessageBase):
         else:
             return False
 
-    def to_hex(self):
-        return self._messageToHex(self._group,
-                                  self._allLinkCommmand,
-                                  self._broadcastCommand,
-                                  self._acknak)
+    def _message_properties(self):
+        return {'group': self._group,
+                'allLinkCommand': self._allLinkCommmand,
+                'broadcastCommand': self._broadcastCommand,
+                'acknak': self._acknak}
 
 
 

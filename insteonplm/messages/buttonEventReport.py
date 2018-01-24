@@ -36,5 +36,5 @@ class ButtonEventReport(MessageBase):
     def eventText(self):
         return self._events.get(self.event, None)
 
-    def to_hex(self):
-        return self._messageToHex(self._event)
+    def _message_properties(self):
+        return {'event': self.event}

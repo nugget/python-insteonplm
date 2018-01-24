@@ -24,8 +24,12 @@ class GetImConfiguration(MessageBase):
                                   rawmessage[5])
 
     @property
-    def ImConfigurationFlags(self):
+    def imConfigurationFlags(self):
         return self._imConfigurationFlags
+
+    @property
+    def acknak(self):
+        return self._acknak
 
     @property
     def isack(self):
@@ -41,11 +45,14 @@ class GetImConfiguration(MessageBase):
         else:
             return False
 
-    def to_hex(self):
+    def _message_properties(self):
         if self._imConfigurationFlags is not None:
             self._spare1 = 0x00
             self._spare2 = 0x00
-        return self._messageToHex(self._imConfigurationFlags,
-                                  self._spare1,
-                                  self._spare2,
-                                  self._acknak)
+        else:
+            self._spare1 = None
+            self._spare2 = None
+        return {'imConfigurationFlags': self.imConfigurationFlags,
+                'spare1': self._spare1,
+                'spare2': self._spare2,
+                'acknak': self.acknak}

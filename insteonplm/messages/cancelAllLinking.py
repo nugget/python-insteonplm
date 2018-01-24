@@ -20,6 +20,10 @@ class CancelAllLinking(MessageBase):
         return CancelAllLinking(rawmessage[2:3])
 
     @property
+    def acknak(self):
+        return self._acknak
+
+    @property
     def isack(self):
         if (self._acknak is not None and self._acknak == MESSAGE_ACK):
             return True
@@ -33,7 +37,7 @@ class CancelAllLinking(MessageBase):
         else:
             return False
 
-    def to_hex(self):
-        return self._messageToHex(self._acknak)
+    def _message_properties(self):
+        return {'acknak': self._acknak}
 
 

@@ -30,6 +30,10 @@ class X10Send(MessageBase):
         return self._flag
 
     @property
+    def acknak(self):
+        return self._acknak
+
+    @property
     def isack(self):
         if (self._acknak is not None and self._acknak == MESSAGE_ACK):
             return True
@@ -43,10 +47,10 @@ class X10Send(MessageBase):
         else:
             return False
 
-    def to_hex(self):
-        return self._messageToHex(self._rawX10,
-                                  self._flag,
-                                  self._acknak)
+    def _message_properties(self):
+        return {'rawX10': self.rawX10,
+                'flag': self.flag,
+                'acknak': self.acknak}
 
 
 

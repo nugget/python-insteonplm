@@ -27,9 +27,9 @@ class X10Received(MessageBase):
     def flag(self):
         return self._flag
 
-    def to_hex(self):
-        return self._messageToHex(self._rawX10,
-                                  self._flag)
+    def _message_properties(self):
+        return {'rawX10': self.rawX10,
+                'flag': self.flag}
 
 
 

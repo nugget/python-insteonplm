@@ -85,6 +85,10 @@ class ExtendedSend(MessageBase):
         return self._messageFlags
 
     @property
+    def acknak(self):
+        return self._acknak
+
+    @property
     def isack(self):
         if (self._acknak is not None and self._acknak == MESSAGE_ACK):
             return True
@@ -98,10 +102,10 @@ class ExtendedSend(MessageBase):
         else:
             return False
 
-    def to_hex(self):
-        return self._messageToHex(self._address,
-                                  self._messageFlags.to_byte(),
-                                  self._cmd1,
-                                  self._cmd2,
-                                  self._userdata,
-                                  self._acknak)
+    def _message_properties(self):
+        return {'address': self.address,
+                'flags': self.flags,
+                'cmd1': self.cmd1,
+                'cmd2': self.cmd2,
+                'userdata': self.userdata,
+                'acknak': self.acknak}

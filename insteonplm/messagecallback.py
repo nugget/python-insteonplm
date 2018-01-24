@@ -29,60 +29,40 @@ class MessageCallback(object):
            (i.e. any Standard Message (0x50)) and the message is {'code':0x50, 'cmd1':0x11, 'cmd2:0xff, 'acknak':None}
            this will be a match.
         """
-        foundKey = self._match_msg(key)
-        return self._dict.get(foundKey, [])
-
+        return self._dict.get(key, [])
 
     def __setitem__(self, key, value):
-        self._dict[key] = value
+        callbacks = self._dict.get(key, [])
+        if isinstance(value, list):
+            for callback in value:
+                callbacks.append(callback)
+        else:
+            callbacks.append(value)
+        self._dict[key] = callbacks
 
     def add_message_callback(self, msg, callback, override=False):
         if override:
-            print('Setting callback: ', callback)
             self[msg] = [callback]
         else:
-            print('Appending callback: ', callback)
             cb = self[msg]
             cb.append(callback)
-            print('Total callbacks for message: ', len(cb))
+            self.log.debug('%d total callbacks for template: %s', len(cb), str(msg))
             self[msg] = cb
 
-
     def get_callbacks_from_message(self, msg):
-        foundKey = self._match_msg(msg)
-        if foundKey is not None:
-            return self[foundKey]
-        else:
-            return []
+        foundKeys = self._find_matching_keys(msg)
+        callbacks = []
+        for key in foundKeys:
+            for callback in self[key]:
+                callbacks.append(callback)
+        return callbacks
 
-    def _match_msg(self, msg):
+    def _find_matching_keys(self, msg):
         print('')
         print('Starting new message key search')
-        properties = msg.get_properties()
-        ismatch = False
         for key in self._dict:
-            if key.code == msg.code:
-                for property in properties:
-                    print('Checking property: ', property)
-                    p = getattr(msg, property)
-                    if hasattr(key, property):   
-                        k =  getattr(key, property)
-                        if k is not None:
-                            if p == k:
-                                print(property, ' with value ', p, " is equal to ", k)
-                                ismatch = True
-                            else:
-                                print(property, ' with value ', p, " is not equal ", k)
-                                ismatch = False
-                                break
-                    else:
-                        print('Properties do not match')
-                        ismatch = False
-                        break
-                if ismatch:
-                    print('Found key for message')
-                    return key
-        return None
+            if msg.matches_pattern(key):
+                yield key
 
     def _dict_to_key(self, dictkey):
         code = dictkey.get('code', None)

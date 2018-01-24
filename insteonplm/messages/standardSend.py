@@ -53,6 +53,10 @@ class StandardSend(MessageBase):
         return self._messageFlags
 
     @property
+    def acknak(self):
+        return self._acknak
+
+    @property
     def isack(self):
         if (self._acknak is not None and self._acknak == MESSAGE_ACK):
             return True
@@ -66,9 +70,9 @@ class StandardSend(MessageBase):
         else:
             return False
 
-    def to_hex(self):
-        return self._messageToHex(self.address,
-                                  self._messageFlags.to_byte(),
-                                  self.cmd1,
-                                  self.cmd2,
-                                  self._acknak)
+    def _message_properties(self):
+        return {'address': self._address,
+                'flags': self._messageFlags,
+                'cmd1': self._cmd1,
+                'cmd2': self._cmd2,
+                'acknak': self._acknak}

@@ -88,8 +88,8 @@ class DeviceBase(object):
         #    pass
         # else:
         self.log.debug('Total callbacks: %d', len(self._message_callbacks))
-        callback = self._message_callbacks.get_callback_from_message(msg)
-        if callback is None:
+        callbacks = self._message_callbacks.get_callback_from_message(msg)
+        if len(callbacks) == 0:
             if hasattr(msg, 'cmd1'):
                 if msg.acknak is None:
                     self.log.debug('No callback found in device %s for message code %02x with cmd1 %02x and cmd2 %02x and acknak %s', self.id, msg.code, msg.cmd1, msg.cmd2, 'None')
@@ -98,7 +98,8 @@ class DeviceBase(object):
             else:
                 self.log.debug('No call back found in device %s for message %s', self.id, msg.hex)
         else:
-            callback(msg)
+            for callback in _message_callbacks:
+                callback(msg)
         self.log.debug('Ending DeviceBase.receive_message')
 
     def async_refresh_state(self):
@@ -109,6 +110,9 @@ class DeviceBase(object):
 
     def set_status_callback(self, callback):
         self._state_status_callback = callback
+
+    def add_message_callback(self, msg, callback, override=False):
+        self._message_callbacks.add_message_callback(msg, callback, override)
 
     def id_request(self):
         """Request a device ID from a device"""

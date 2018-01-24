@@ -27,7 +27,7 @@ class AllLinkCleanupFailureReport(MessageBase):
     def address(self):
         return self._address
 
-    def to_hex(self):
-        return self._messageToHex(0x01,
-                                  self._group,
-                                  self._address)
+    def _message_properties(self):
+        return {'failedFlag': 0x01,
+                'group': self.group,
+                'address': self.address}

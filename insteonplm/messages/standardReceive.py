@@ -69,9 +69,9 @@ class StandardReceive(MessageBase):
         else:
             return None
 
-    def to_hex(self):
-        return self._messageToHex(self._address, 
-                                  self._target,
-                                  self._messageFlags.to_byte(),
-                                  self._cmd1,
-                                  self._cmd2)
+    def _message_properties(self):
+        return {'address': self._address, 
+                'target': self._target,
+                'flags': self._messageFlags,
+                'cmd1': self._cmd1,
+                'cmd2': self._cmd2}

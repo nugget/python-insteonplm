@@ -11,13 +11,14 @@ from .aldb import ALDB
 from .address import Address
 from .messagecallback import MessageCallback 
 from .messages import *
+from .devices.devicebase import DeviceBase
 
 __all__ = ('PLM')
 WAIT_TIMEOUT = 2
 
 #PP = PLMProtocol()
 
-class PLM(asyncio.Protocol):
+class PLM(asyncio.Protocol, DeviceBase):
     """The Insteon PLM IP control protocol handler."""
 
     def __init__(self, loop=None, connection_lost_callback=None, userdefineddevices=()):
@@ -39,7 +40,6 @@ class PLM(asyncio.Protocol):
         self._loop = loop
 
         self._connection_lost_callback = connection_lost_callback
-        self._message_callbacks = MessageCallback()
 
         self._buffer = bytearray()
         self._recv_queue = deque([])
@@ -57,28 +57,28 @@ class PLM(asyncio.Protocol):
         self.log = logging.getLogger(__name__)
         self.transport = None
         
-        self._message_callbacks.add_message_callback(StandardReceive(None, None, None, None, None), 
-                                                     self._handle_standard_or_extended_message_received)
+        self.add_message_callback(StandardReceive(None, None, None, None, None), 
+                                  self._handle_standard_or_extended_message_received)
 
-        self._message_callbacks.add_message_callback(ExtendedReceive(None, None, None, None, None), 
-                                                     self._handle_standard_or_extended_message_received)
+        self.add_message_callback(ExtendedReceive(None, None, None, None, None), 
+                                  self._handle_standard_or_extended_message_received)
 
-        self._message_callbacks.add_message_callback(StandardSend(None, None, None, None, acknak=MESSAGE_ACK), 
-                                                     self._handle_standard_or_extended_message_received)
+        self.add_message_callback(StandardSend(None, None, None, None, acknak=MESSAGE_ACK), 
+                                  self._handle_standard_or_extended_message_received)
 
-        self._message_callbacks.add_message_callback(StandardSend(None, None, None, None, acknak=MESSAGE_NAK),
-                                                     self._handle_standard_or_extended_message_nak)
+        self.add_message_callback(StandardSend(None, None, None, None, acknak=MESSAGE_NAK),
+                                  self._handle_standard_or_extended_message_nak)
 
-        self._message_callbacks.add_message_callback(StandardReceive(None, None, None, COMMAND_ASSIGN_TO_ALL_LINK_GROUP_0X01_NONE['cmd1'], None), 
-                                                     self._handle_assign_to_all_link_group)
+        self.add_message_callback(StandardReceive(None, None, None, COMMAND_ASSIGN_TO_ALL_LINK_GROUP_0X01_NONE['cmd1'], None), 
+                                  self._handle_assign_to_all_link_group)
 
-        self._message_callbacks.add_message_callback(AllLinkRecordResponse(None, None, None, None, None, None, None), 
-                                                     self._handle_all_link_record_response)
+        self.add_message_callback(AllLinkRecordResponse(None, None, None, None, None, None, None), 
+                                  elf._handle_all_link_record_response)
 
-        self._message_callbacks.add_message_callback(GetImInfo(), self._handle_get_plm_info)
+        self.add_message_callback(GetImInfo(), self._handle_get_plm_info)
 
-        self._message_callbacks.add_message_callback(GetNextAllLinkRecord(acknak=MESSAGE_NAK),
-                                                     self._handle_get_next_all_link_record_nak)
+        self.add_message_callback(GetNextAllLinkRecord(acknak=MESSAGE_NAK),
+                                  self._handle_get_next_all_link_record_nak)
 
     @property
     def loop(self):
@@ -267,7 +267,7 @@ class PLM(asyncio.Protocol):
     def _handle_standard_or_extended_message_received(self, msg):
         self.log.debug("Starting: _handle_standard_or_extended_message_received")
         # If it is not a broadcast message then it is device specific and we call the device's receive_message method
-        # TODO: Is there a situation where the PLM is the device? If this is the case the PLM device will not be in the ALDB
+        # TODO: Is there a situation where the PLM is the device? If this is the case the PLM device will not be in the ALDB (Why not?)
         device = self.devices[msg.address.hex]
         if device is not None:
             device.receive_message(msg)

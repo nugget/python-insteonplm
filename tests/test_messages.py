@@ -7,7 +7,7 @@ import binascii
 
 def test_allLinkCleanupStatusReport():
     msg = AllLinkCleanupStatusReport(0x11)
-    assert msg.status == 0x11
+    assert msg.acknak == 0x11
     assert msg.to_hex() == hexmsg(0x02, 0x58, 0x11)
     assert len(msg.to_hex())/2 == msg.sendSize
     assert len(msg.to_hex())/2 == msg.receivedSize
