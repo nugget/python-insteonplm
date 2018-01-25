@@ -17,6 +17,7 @@ class StandardReceive(MessageBase):
         self._address = Address(address)
         self._target = Address(target)
         self._messageFlags = MessageFlags(flags)
+        # self._messageFlags.extended = 0
         self._cmd1 = cmd1
         self._cmd2 = cmd2
 

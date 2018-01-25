@@ -98,7 +98,7 @@ def test_extendedReceive():
         userdata.update({key:0xe0})
         userdatatest.append(0xe0)
 
-    msg = ExtendedReceive(address, target, flags, cmd1, cmd2, **userdata)
+    msg = ExtendedReceive(address, target, cmd1, cmd2, userdata, flags=flags)
     assert msg.to_hex() == hexmsg(0x02, 0x51, Address(address), Address(target), flags, cmd1, cmd2, userdatatest)
     print(msg.to_hex())
     print(len(msg.to_hex()))
@@ -120,19 +120,19 @@ def test_extendedSend():
         val = 0xe0 + i
         userdata.update({key:val})
 
-    msg = ExtendedSend(address, cmd1, cmd2, flags, **userdata)
+    msg = ExtendedSend(address, cmd1, cmd2, userdata, flags)
     assert msg.to_hex() == hexmsg(0x02, 0x62, Address(address), flags | 0x10, cmd1, cmd2, userdata)
     assert not msg.isack 
     assert not msg.isnak
     assert len(msg.to_hex())/2 == msg.sendSize
 
-    msg = ExtendedSend(address, cmd1, cmd2,flags, ack, **userdata)
-    assert msg.to_hex() == hexmsg(0x02, 0x62, Address(address), flags | 0x10, cmd1, cmd2, userdata, ack)
+    msg = ExtendedSend(address, cmd1, cmd2, userdata, flags=flags, acknak=ack)
+    assert msg.to_hex() == hexmsg(0x02, 0x62, Address(address), flags | 0x10, cmd1, cmd2, userdata,  ack)
     assert msg.isack 
     assert not msg.isnak
     assert len(msg.to_hex())/2 == msg.receivedSize
     
-    msg = ExtendedSend(address, cmd1, cmd2, flags, nak, **userdata)
+    msg = ExtendedSend(address, cmd1, cmd2, userdata, flags=flags, acknak=nak)
     assert msg.to_hex() == hexmsg(0x02, 0x62, Address(address), flags | 0x10, cmd1, cmd2, userdata, nak)
     assert not msg.isack 
     assert msg.isnak

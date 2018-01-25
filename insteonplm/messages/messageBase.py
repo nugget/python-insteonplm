@@ -3,6 +3,7 @@ import binascii
 from insteonplm.address import Address
 from insteonplm.constants import *
 from .messageFlags import MessageFlags
+from .userdata import Userdata
 
 class ClassPropertyMetaClass(type):
     """This is meta class magic to allow class attributes to also appear as an instance property."""
@@ -82,11 +83,14 @@ class MessageBase(metaclass=ClassPropertyMetaClass):
                 else:
                     msg.extend(val.bytes)
             elif isinstance(val, MessageFlags):
+                print('got a MessageFlags object: ', val)
                 msg.extend(val.to_byte())
             elif isinstance(val, bytearray):
                 msg.extend(val)
             elif isinstance(val, bytes):
                 msg.extend(val)
+            elif isinstance(val, Userdata):
+                msg.extend(val.bytes)
             
         return binascii.hexlify(msg).decode()
 
@@ -102,7 +106,11 @@ class MessageBase(metaclass=ClassPropertyMetaClass):
                 if hasattr(other, property):    
                     k =  getattr(other, property)
                     if k is not None:
-                        if p == k:
+                        if isinstance(p, MessageFlags):
+                            ismatch = p.matches_pattern(k)
+                        elif isinstance(p, Address):
+                            ismatch = p.matches_pattern(k)
+                        elif p == k:
                             ismatch = True
                         else:
                             ismatch = False

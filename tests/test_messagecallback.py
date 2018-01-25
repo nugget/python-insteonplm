@@ -2,6 +2,8 @@ from insteonplm.messagecallback import MessageCallback
 from insteonplm.constants import *
 from insteonplm.messages.standardReceive import StandardReceive
 from insteonplm.messages.standardSend import StandardSend
+from insteonplm.messages.extendedReceive import ExtendedReceive
+from insteonplm.messages.userdata import Userdata
 
 def test_messagecallback_basic():
     callbacks = MessageCallback()
@@ -64,3 +66,19 @@ def test_messagecallback_acknak():
     assert len(callback2) == 2
     assert len(callback3) == 3
     assert len(callback4) == 2
+
+def test_message_callback_extended():
+    callbacks = MessageCallback()
+    callbacktest = "test callback"
+    address = '1a2b3c'
+    target = '4d5e6f'
+
+    callbacks.add_message_callback(ExtendedReceive(None, None, 0x11, None, Userdata({'d1':0x02})), callbacktest)
+    msg1 = ExtendedReceive(address, target, 0x11, 0xff, Userdata({'d1':0x02}))
+    msg2 = ExtendedReceive(address, target, 0x11, 0xff, Userdata({'d1':0x03, 'd2':0x02}))
+
+    callback1 = callbacks.get_callbacks_from_message(msg1)
+    callback2 = callbacks.get_callbacks_from_message(msg2)
+
+    assert callback1[0] == callbacktest
+    assert len(callback2) == 0

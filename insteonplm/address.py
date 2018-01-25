@@ -21,15 +21,22 @@ class Address(object):
 
     def __eq__(self, other):
         if hasattr(other, 'addr'):
-            if self.addr == None or other.addr == None:
-                return True
             return self.addr == other.addr
-        return False
+        else:
+            return False
 
     def __ne__(self, other):
         if hasattr(other, 'addr'):
             return self.addr != other.addr
-        return True
+        else:
+            return true
+
+    def matches_pattern(self, other):
+        if hasattr(other, 'addr'):
+            if self.addr == None or other.addr == None:
+                return True
+            return self.addr == other.addr
+        return False
 
     def normalize(self, addr):
         """Take any format of address and turn it into a hex string."""

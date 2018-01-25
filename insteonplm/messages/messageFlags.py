@@ -5,7 +5,6 @@ from insteonplm.constants import *
 class MessageFlags(object):
     def __init__(self, flags=0x00):
         self.log = logging.getLogger(__name__)
-        #self._flags = self._normalize(flags)
         self._messageType = None
         self._extended = None
         self._hopsLeft = None
@@ -22,6 +21,19 @@ class MessageFlags(object):
 
     def __eq__(self, other):
         if hasattr(other, 'messageType'):
+            return self._messageType == other.messageType and \
+                   self._extended == other._extended
+        return False
+
+    def __ne__(self, other):
+        if hasattr(other, 'messageType'):
+            return self._messageType == other.messageType and \
+                   self._extended == other._extendedand 
+        return True
+
+
+    def matches_pattern(self, other):
+        if hasattr(other, 'messageType'):
             messageTypeIsEqual = False
             if self.messageType == None or other.messageType == None:
                 messageTypeIsEqual = True
@@ -35,11 +47,6 @@ class MessageFlags(object):
             return messageTypeIsEqual and extendedIsEqual
         else:
             return False
-
-    def __ne__(self, other):
-        if self._flags == None or other == None:
-            return False
-        return self._flags == other
 
     @classmethod
     def get_properties(cls):
@@ -90,23 +97,37 @@ class MessageFlags(object):
         return self._hopsLeft
 
     @property
-    def maxHops(self):
+    def hopsMax(self):
         return self._hopsMax
 
-    @maxHops.setter
-    def maxHops(self, val):
-        self._maxhops = val
+    @hopsMax.setter
+    def hopsMax(self, val):
+        self._hopsMax = val
 
     @property
     def messageType(self):
         return self._messageType
 
+    @messageType.setter
+    def messageType(self, val):
+        if val in range(0, 8):
+            self._messageType = val
+        else:
+            raise ValueError
+
     @property
     def extended(self):
         return self._extended
 
+    @extended.setter
+    def extended(self, val):
+        if val in [None, 0, 1]:
+            self._extended = val
+        else:
+            raise ValueError
+
     @classmethod
-    def create(cls, messageType, extended, hopsleft=None, maxhops=None):
+    def create(cls, messageType, extended, hopsleft=None, hopsmax=None):
         """Create message flags.
         messageType: integter 0 to 7:
                         MESSAGE_TYPE_DIRECT_MESSAGE = 0
@@ -119,13 +140,13 @@ class MessageFlags(object):
                         MESSAGE_TYPE_ALL_LINK_CLEANUP_NAK = 7   
         extended: 1 for extended, 0 for standard or None
         hopsleft: int  0 - 3
-        maxhops:  int  0 - 3
+        hopsmax:  int  0 - 3
         """
         flags = MessageFlags(None)
         flags._messageType = messageType
         flags._extended = 1 if extended else 0
         flags._hopsLeft = hopsleft
-        flags._hopsMax = maxhops
+        flags._hopsMax = hopsmax        
         return flags
 
     def to_byte(self):
@@ -147,12 +168,12 @@ class MessageFlags(object):
         if isinstance(flags, bytearray):
             return binascii.hexlify(flags)
         if isinstance(flags, int):
-            return flags
+            return bytes([flags])
         if isinstance(flags, bytes):
             return binascii.hexlify(flags)
         if isinstance(flags, str):
             flags = flags[0:2]
-            return binascii.unhexlify(flags.lower())
+            return binascii.hexilfy(binascii.unhexlify(flags.lower()))
         if flags is None:
             return None
         else:
@@ -163,7 +184,13 @@ class MessageFlags(object):
     def _set_properties(self, flags):
         flagByte = self._normalize(flags)
 
-        self._messageType = (flagByte & 0xe0) >> 5
-        self._extended = (flagByte & MESSAGE_FLAG_EXTENDED_0X10) >> 4
-        self._hopsLeft = (flagByte & 0x0c) >> 2
-        self._hopsMax = flagByte & 0x03
+        if flagByte is not None:
+            self._messageType = (flagByte[0] & 0xe0) >> 5
+            self._extended = (flagByte[0] & MESSAGE_FLAG_EXTENDED_0X10) >> 4
+            self._hopsLeft = (flagByte[0] & 0x0c) >> 2
+            self._hopsMax = flagByte[0] & 0x03
+        else:
+            self._messageType = None
+            self._extended = None
+            self._hopsLeft = None
+            self._hopsMax = None

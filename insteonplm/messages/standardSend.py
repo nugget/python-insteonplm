@@ -17,6 +17,7 @@ class StandardSend(MessageBase):
     def __init__(self, address, cmd1, cmd2, flags=0x00,  acknak = None):
         self._address = Address(address)
         self._messageFlags = MessageFlags(flags)
+        self._messageFlags.extended = 0
         self._cmd1 = cmd1
         self._cmd2 = cmd2
 
@@ -24,16 +25,17 @@ class StandardSend(MessageBase):
 
     @classmethod
     def from_raw_message(cls, rawmessage):
-        msg = StandardSend(rawmessage[2:5],
-                            rawmessage[6],
-                            rawmessage[7],
-                            rawmessage[5],
-                            rawmessage[8:9])
-        if msg.flags.isExtended:
+        if rawmessage[5] | MESSAGE_FLAG_EXTENDED_0X10 == MESSAGE_FLAG_EXTENDED_0X10:
             if len(rawmessage) >= ExtendedSend.receivedSize:
                 msg = ExtendedSend.from_raw_message(rawmessage)
             else:
                 msg = None
+        else:
+            msg = StandardSend(rawmessage[2:5],
+                            rawmessage[6],
+                            rawmessage[7],
+                            rawmessage[5],
+                            rawmessage[8:9])
         return msg
 
     @property

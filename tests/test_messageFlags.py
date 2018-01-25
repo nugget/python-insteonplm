@@ -34,7 +34,7 @@ def test_eq():
     flag1 = MessageFlags(0x80)
     flag2 = MessageFlags.create(MESSAGE_TYPE_BROADCAST_MESSAGE, 0)
 
-    assert flag1 == flag2
+    assert flag1.matches_pattern(flag2)
 
 
 
