@@ -1,3 +1,4 @@
+from .messageBase import MessageBase
 from .standardReceive import StandardReceive
 from .extendedReceive import ExtendedReceive
 from .x10received import X10Received 

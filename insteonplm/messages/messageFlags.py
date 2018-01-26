@@ -129,7 +129,7 @@ class MessageFlags(object):
     @classmethod
     def create(cls, messageType, extended, hopsleft=None, hopsmax=None):
         """Create message flags.
-        messageType: integter 0 to 7:
+        messageType: integter 0 to 7 or None:
                         MESSAGE_TYPE_DIRECT_MESSAGE = 0
                         MESSAGE_TYPE_DIRECT_MESSAGE_ACK = 1
                         MESSAGE_TYPE_ALL_LINK_CLEANUP = 2

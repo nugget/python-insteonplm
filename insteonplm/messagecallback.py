@@ -40,14 +40,33 @@ class MessageCallback(object):
             callbacks.append(value)
         self._dict[key] = callbacks
 
-    def add_message_callback(self, msg, callback, override=False):
+    def add(self, msg, callback, override=False):
         if override:
-            self[msg] = [callback]
+            if isinstance(callback, list):
+                self._dict[msg] = callback
+            else:
+                self._dict[msg] = [callback]
         else:
             cb = self[msg]
             cb.append(callback)
             self.log.debug('%d total callbacks for template: %s', len(cb), str(msg))
-            self[msg] = cb
+            self._dict[msg] = cb
+
+    def remove(self, msg, callback):
+        if callback is None:
+            removed = self._dict.pop(msg, None)
+        else:
+            cb = self._dict[msg]
+            try:
+                cb.remove(callback)
+            except:
+                pass
+            if len(cb) == 0:
+                removed = self._dict.pop(msg, None)
+                self.log.debug('Removed all callbacks for message: %s', msg)
+            else:
+                self.log.debug('%d callbacks for message: %s', len(cb), msg)
+                self.add(msg, cb, True)
 
     def get_callbacks_from_message(self, msg):
         foundKeys = self._find_matching_keys(msg)
@@ -58,8 +77,6 @@ class MessageCallback(object):
         return callbacks
 
     def _find_matching_keys(self, msg):
-        print('')
-        print('Starting new message key search')
         for key in self._dict:
             if msg.matches_pattern(key):
                 yield key

@@ -26,11 +26,11 @@ class DimmableLightingControl(DeviceBase):
 
         self._nextCommandIsStatus = False
 
-        self._message_callbacks.add_message_callback(MESSAGE_STANDARD_MESSAGE_RECEIVED_0X50, COMMAND_LIGHT_ON_0X11_NONE, self._light_on_command_received)
-        self._message_callbacks.add_message_callback(MESSAGE_STANDARD_MESSAGE_RECEIVED_0X50, COMMAND_LIGHT_OFF_0X13_0X00, self._light_off_command_received)
-        self._message_callbacks.add_message_callback(MESSAGE_SEND_STANDARD_MESSAGE_0X62, COMMAND_LIGHT_ON_0X11_NONE, self._light_on_command_received, MESSAGE_ACK)
-        self._message_callbacks.add_message_callback(MESSAGE_SEND_STANDARD_MESSAGE_0X62, COMMAND_LIGHT_OFF_0X13_0X00, self._light_off_command_received, MESSAGE_ACK)
-        self._message_callbacks.add_message_callback(MESSAGE_SEND_STANDARD_MESSAGE_0X62, COMMAND_LIGHT_STATUS_REQUEST_0X19_0X00, self._light_status_request_ack, MESSAGE_ACK)
+        self._message_callbacks.add(MESSAGE_STANDARD_MESSAGE_RECEIVED_0X50, COMMAND_LIGHT_ON_0X11_NONE, self._light_on_command_received)
+        self._message_callbacks.add(MESSAGE_STANDARD_MESSAGE_RECEIVED_0X50, COMMAND_LIGHT_OFF_0X13_0X00, self._light_off_command_received)
+        self._message_callbacks.add(MESSAGE_SEND_STANDARD_MESSAGE_0X62, COMMAND_LIGHT_ON_0X11_NONE, self._light_on_command_received, MESSAGE_ACK)
+        self._message_callbacks.add(MESSAGE_SEND_STANDARD_MESSAGE_0X62, COMMAND_LIGHT_OFF_0X13_0X00, self._light_off_command_received, MESSAGE_ACK)
+        self._message_callbacks.add(MESSAGE_SEND_STANDARD_MESSAGE_0X62, COMMAND_LIGHT_STATUS_REQUEST_0X19_0X00, self._light_status_request_ack, MESSAGE_ACK)
 
     def light_on(self, onlevel=0xff):
         if self._groupbutton == 0x01:
@@ -160,7 +160,7 @@ class DimmableLightingControl_2475F(DimmableLightingControl):
         self._nextCommandIsFanStatus = False
 
         # 2475F has a custom COMMAND_LIGHT_STATUS_REQUEST_0X19_0X00 where cmd1:0x19 and cmd2:0x03 to get the fan status
-        self._message_callbacks.add_message_callback(MESSAGE_SEND_STANDARD_MESSAGE_0X62, {'cmd1':0x19, 'cmd2':0x03}, 
+        self._message_callbacks.add(MESSAGE_SEND_STANDARD_MESSAGE_0X62, {'cmd1':0x19, 'cmd2':0x03}, 
                                                      self._fan_status_request_ack, MESSAGE_ACK)
     
     @classmethod

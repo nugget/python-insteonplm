@@ -1,4 +1,4 @@
-from .states.state import State
+from .states.stateBase import StateBase
 
 class StateList(object):
     """Internal class used to hold a list of device states."""
@@ -20,7 +20,7 @@ class StateList(object):
 
     def __setitem__(self, group, state):
         """Add or update a state in the StateList"""
-        if not isinstance(state, State):
+        if not isinstance(state, StateBase):
             return ValueError
 
         self._stateList[group] = state

@@ -55,10 +55,10 @@ class SensorsActuators_2450(SensorsActuators):
         self.sensor = StateChangeSignal('Sensor', self.sensor_status_request, 0x00)
         self.relay = StateChangeSignal('Relay', self.relay_status_request, 0x00)
 
-        self._message_callbacks.add_message_callback(MESSAGE_STANDARD_MESSAGE_RECEIVED_0X50, COMMAND_LIGHT_ON_0X11_NONE, self._closed_command_received)
-        self._message_callbacks.add_message_callback(MESSAGE_EXTENDED_MESSAGE_RECEIVED_0X51, COMMAND_LIGHT_ON_0X11_NONE, self._closed_command_received)
-        self._message_callbacks.add_message_callback(MESSAGE_STANDARD_MESSAGE_RECEIVED_0X50, COMMAND_LIGHT_OFF_0X13_0X00, self._open_command_received)
-        self._message_callbacks.add_message_callback(MESSAGE_EXTENDED_MESSAGE_RECEIVED_0X51, COMMAND_LIGHT_OFF_0X13_0X00, self._open_command_received)
+        self._message_callbacks.add(MESSAGE_STANDARD_MESSAGE_RECEIVED_0X50, COMMAND_LIGHT_ON_0X11_NONE, self._closed_command_received)
+        self._message_callbacks.add(MESSAGE_EXTENDED_MESSAGE_RECEIVED_0X51, COMMAND_LIGHT_ON_0X11_NONE, self._closed_command_received)
+        self._message_callbacks.add(MESSAGE_STANDARD_MESSAGE_RECEIVED_0X50, COMMAND_LIGHT_OFF_0X13_0X00, self._open_command_received)
+        self._message_callbacks.add(MESSAGE_EXTENDED_MESSAGE_RECEIVED_0X51, COMMAND_LIGHT_OFF_0X13_0X00, self._open_command_received)
        
     @classmethod
     def create(cls, plm, address, cat, subcat, product_key=None, description=None, model=None, groupbutton = 0x01):
@@ -134,8 +134,8 @@ class SensorsActuators_2450(SensorsActuators):
         self.log.debug("Setting status callback %s", callback)
         relay_device = self._plm.devices[self._get_device_id(0x01)]
         relay_device._status_callback = callback
-        relay_device._message_callbacks.add_message_callback(MESSAGE_SEND_STANDARD_MESSAGE_0X62, COMMAND_LIGHT_STATUS_REQUEST_0X19_NONE, relay_device._status_callback, MESSAGE_ACK)
+        relay_device._message_callbacks.add(MESSAGE_SEND_STANDARD_MESSAGE_0X62, COMMAND_LIGHT_STATUS_REQUEST_0X19_NONE, relay_device._status_callback, MESSAGE_ACK)
 
         sensor_device = self._plm.devices[self._get_device_id(0x02)]
         sensor_device._status_callback = callback
-        sensor_device._message_callbacks.add_message_callback(MESSAGE_SEND_STANDARD_MESSAGE_0X62, COMMAND_LIGHT_STATUS_REQUEST_0X19_NONE, sensor_device._status_callback, MESSAGE_ACK)
+        sensor_device._message_callbacks.add(MESSAGE_SEND_STANDARD_MESSAGE_0X62, COMMAND_LIGHT_STATUS_REQUEST_0X19_NONE, sensor_device._status_callback, MESSAGE_ACK)

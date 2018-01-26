@@ -51,6 +51,33 @@ class MessageBase(metaclass=ClassPropertyMetaClass):
         msgstr = msgstr + '}'
         return msgstr
 
+    def __eq__(self, other):
+        if isinstance(other, MessageBase) and other.code == self._code:
+            return str(self) == str(other)
+        else:
+            return False
+
+    def __ne__(self, other):
+        if isinstance(other, MessageBase) and other.code == self._code:
+            return str(self) != str(other)
+        else:
+            return True
+
+    def __lt__(self, other):
+        if isinstance(other, MessageBase):
+            return str(self) < str(other)
+        else:
+            return TypeError
+
+    def __gt__(self, other):
+        if isinstance(other, MessageBase):
+            return str(self) > str(other)
+        else:
+            return TypeError
+
+    def __hash__(self):
+        return hash(str(self))
+
     @property
     def code(self):
         return self._code

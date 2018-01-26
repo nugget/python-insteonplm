@@ -29,7 +29,7 @@ def test_messagecallback_msg():
     address = '1a2b3c'
     target = '4d5e6f'
 
-    callbacks.add_message_callback(StandardReceive(None, None, None, COMMAND_LIGHT_ON_0X11_NONE['cmd1'], None), callbacktest)
+    callbacks.add(StandardReceive(None, None, None, COMMAND_LIGHT_ON_0X11_NONE['cmd1'], None), callbacktest)
     msg1 = StandardReceive(address, target, 0x00, COMMAND_LIGHT_ON_0X11_NONE['cmd1'], COMMAND_LIGHT_ON_0X11_NONE['cmd2'])
     msg2 = StandardReceive(address, target, 0x00, COMMAND_LIGHT_ON_0X11_NONE['cmd1'], 0xff)
 
@@ -48,9 +48,9 @@ def test_messagecallback_acknak():
     address = '1a2b3c'
     target = '4d5e6f'
 
-    callbacks.add_message_callback(StandardSend(None, None, None, None), callbacktest1)
-    callbacks.add_message_callback(StandardSend(None, None, None, None), callbacktest2)
-    callbacks.add_message_callback(StandardSend(None, None, None, None, acknak=MESSAGE_NAK), callbacktest3)
+    callbacks.add(StandardSend(None, None, None, None), callbacktest1)
+    callbacks.add(StandardSend(None, None, None, None), callbacktest2)
+    callbacks.add(StandardSend(None, None, None, None, acknak=MESSAGE_NAK), callbacktest3)
 
     msg1 = StandardSend('111111', 0x00, COMMAND_LIGHT_ON_0X11_NONE['cmd1'], 0xcd)
     msg2 = StandardSend('222222', 0x00, COMMAND_LIGHT_ON_0X11_NONE['cmd1'], 0xff)
@@ -73,7 +73,7 @@ def test_message_callback_extended():
     address = '1a2b3c'
     target = '4d5e6f'
 
-    callbacks.add_message_callback(ExtendedReceive(None, None, 0x11, None, Userdata({'d1':0x02})), callbacktest)
+    callbacks.add(ExtendedReceive(None, None, 0x11, None, Userdata({'d1':0x02})), callbacktest)
     msg1 = ExtendedReceive(address, target, 0x11, 0xff, Userdata({'d1':0x02}))
     msg2 = ExtendedReceive(address, target, 0x11, 0xff, Userdata({'d1':0x03, 'd2':0x02}))
 
@@ -82,3 +82,25 @@ def test_message_callback_extended():
 
     assert callback1[0] == callbacktest
     assert len(callback2) == 0
+
+def test_delete_callback():
+    
+    callbacks = MessageCallback()
+    callbacktest1 = "test callback 1"
+    callbacktest2 = "test callback 2"
+    callbacktest3 = "test callback 3"
+    address = '1a2b3c'
+    target = '4d5e6f'
+
+    callbacks.add(StandardSend(None, None, None, None), callbacktest1)
+    callbacks.add(StandardSend(None, None, None, None), callbacktest2)
+    callbacks.add(StandardSend(None, None, None, None, acknak=MESSAGE_NAK), callbacktest3)
+
+    msg = StandardSend('333333', 0x00, COMMAND_LIGHT_ON_0X11_NONE['cmd1'], 0xff, MESSAGE_NAK)
+
+    callbackList = callbacks.get_callbacks_from_message(msg)
+    assert len(callbackList) == 3
+
+    callbacks.remove(StandardSend(None, None, None, None), callbacktest2)
+    callbackList = callbacks.get_callbacks_from_message(msg)
+    assert len(callbackList) == 2

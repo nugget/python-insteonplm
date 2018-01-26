@@ -48,6 +48,7 @@ class PLM(asyncio.Protocol, DeviceBase):
         self._aldb_response_queue = {}
         self.devices = ALDB()
         self._write_transport_lock = asyncio.Lock(loop=self._loop)
+        self._message_callbacks = MessageCallback()
 
         self.address = None
         self.category = None
@@ -83,6 +84,9 @@ class PLM(asyncio.Protocol, DeviceBase):
     @property
     def loop(self):
         return self._loop
+
+    def message_callbacks(self):
+        return self._message_callbacks
 
     def connection_made(self, transport):
         """Called when asyncio.Protocol establishes the network connection."""

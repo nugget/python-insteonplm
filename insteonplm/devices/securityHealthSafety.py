@@ -28,13 +28,13 @@ class SecurityHealthSafety(DeviceBase):
         # This is likely the case for all devices in this category 
         self._product_data_in_aldb = True
 
-        self._message_callbacks.add_message_callback(MESSAGE_STANDARD_MESSAGE_RECEIVED_0X50, COMMAND_LIGHT_ON_0X11_NONE, self._sensor_on_command_received)
-        self._message_callbacks.add_message_callback(MESSAGE_EXTENDED_MESSAGE_RECEIVED_0X51, COMMAND_LIGHT_ON_0X11_NONE, self._sensor_on_command_received)
-        self._message_callbacks.add_message_callback(MESSAGE_STANDARD_MESSAGE_RECEIVED_0X50, COMMAND_LIGHT_OFF_0X13_0X00, self._sensor_off_command_received)
-        self._message_callbacks.add_message_callback(MESSAGE_EXTENDED_MESSAGE_RECEIVED_0X51, COMMAND_LIGHT_OFF_0X13_0X00, self._sensor_off_command_received)
+        self._message_callbacks.add(MESSAGE_STANDARD_MESSAGE_RECEIVED_0X50, COMMAND_LIGHT_ON_0X11_NONE, self._sensor_on_command_received)
+        self._message_callbacks.add(MESSAGE_EXTENDED_MESSAGE_RECEIVED_0X51, COMMAND_LIGHT_ON_0X11_NONE, self._sensor_on_command_received)
+        self._message_callbacks.add(MESSAGE_STANDARD_MESSAGE_RECEIVED_0X50, COMMAND_LIGHT_OFF_0X13_0X00, self._sensor_off_command_received)
+        self._message_callbacks.add(MESSAGE_EXTENDED_MESSAGE_RECEIVED_0X51, COMMAND_LIGHT_OFF_0X13_0X00, self._sensor_off_command_received)
         # Motion Sensor 2842-222 sends cmd1:0x13 cmd2: 0x01 for an off command. Not sure about other devices in this devcat.
-        self._message_callbacks.add_message_callback(MESSAGE_STANDARD_MESSAGE_RECEIVED_0X50, {'cmd1':0x13, 'cmd2':0x01}, self._sensor_off_command_received)
-        self._message_callbacks.add_message_callback(MESSAGE_EXTENDED_MESSAGE_RECEIVED_0X51, {'cmd1':0x13, 'cmd2':0x01}, self._sensor_off_command_received)
+        self._message_callbacks.add(MESSAGE_STANDARD_MESSAGE_RECEIVED_0X50, {'cmd1':0x13, 'cmd2':0x01}, self._sensor_off_command_received)
+        self._message_callbacks.add(MESSAGE_EXTENDED_MESSAGE_RECEIVED_0X51, {'cmd1':0x13, 'cmd2':0x01}, self._sensor_off_command_received)
 
 
     def _sensor_on_command_received(self, msg):
@@ -60,8 +60,8 @@ class SecurityHealthSafety_2982_222(SecurityHealthSafety):
     def __init__(self, plm, address, cat, subcat, product_key=None, description=None, model=None, groupbutton=0x01):
         super().__init__(plm, address, cat, subcat, product_key, description, model, groupbutton)
         
-        self._message_callbacks.add_message_callback(MESSAGE_STANDARD_MESSAGE_RECEIVED_0X50, COMMAND_LIGHT_ON_0X11_NONE, self._sensor_state_received)
-        self._message_callbacks.add_message_callback(MESSAGE_EXTENDED_MESSAGE_RECEIVED_0X51, COMMAND_LIGHT_ON_0X11_NONE, self._sensor_state_received)
+        self._message_callbacks.add(MESSAGE_STANDARD_MESSAGE_RECEIVED_0X50, COMMAND_LIGHT_ON_0X11_NONE, self._sensor_state_received)
+        self._message_callbacks.add(MESSAGE_EXTENDED_MESSAGE_RECEIVED_0X51, COMMAND_LIGHT_ON_0X11_NONE, self._sensor_state_received)
 
     def _sensor_state_received(self, msg):
         self.log.debug('Starting SecurityHealthSafety_2982_222._sensor_on_command_received')

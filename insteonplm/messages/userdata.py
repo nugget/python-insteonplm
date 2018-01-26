@@ -79,6 +79,11 @@ class Userdata(object):
         userdata_dict = cls._normalize(empty, userdata)
         return Userdata(userdata_dict)
 
+    @classmethod
+    def create(cls):
+        empty = cls._create_empty(0x00)
+        return Userdata(empty)
+
     def matches_pattern(self, other):
         ismatch = False
         if isinstance(other, Userdata):

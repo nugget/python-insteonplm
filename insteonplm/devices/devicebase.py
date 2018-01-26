@@ -1,17 +1,24 @@
 import logging
 import asyncio
+import datetime
 
 from insteonplm.address import Address
-from insteonplm.messages.messageBase import MessageBase
+from insteonplm.messages import (StandardReceive, StandardSend,
+                                 ExtendedReceive, ExtendedSend,
+                                 MessageBase)
 from insteonplm.constants import *
 from insteonplm.messagecallback import MessageCallback
-from insteonplm.statechangesignal import StateChangeSignal
+from .stateList import StateList
+from .states.stateBase import StateBase
 
 class DeviceBase(object):
     """INSTEON Device"""
 
-    def __init__(self, plm, address, cat, subcat, product_key=0x00, description='', model='', groupbutton=0x01):
+    def __init__(self, plm, address, cat, subcat, product_key=0x00, description='', model=''):
+        self.log = logging.getLogger(__name__)
+
         self._plm = plm
+
         self._address = Address(address)
         self._cat = cat
         self._subcat = subcat
@@ -22,14 +29,13 @@ class DeviceBase(object):
             self._product_key = 0x00
         self._description = description
         self._model = model 
-        self._groupbutton = groupbutton
 
-        self.log = logging.getLogger(__name__)
-
+        self._last_communication_received = datetime.datetime(1,1,1,1,1,1)
         self._product_data_in_aldb = False
-        self._message_callbacks = MessageCallback()
-        self._state_status_callback = None
-        self._state_status_lock = asyncio.Lock(loop=self._plm.loop)
+        self._stateList = StateList()
+        self._send_msg_lock = asyncio.Lock(loop=self._plm.loop)
+
+        self._plm.message_callbacks.add(StandardReceive(self._address, None, None, None, None), self._receive_message)
 
     @property
     def address(self):
@@ -56,12 +62,12 @@ class DeviceBase(object):
         return self._model
 
     @property
-    def groupbutton(self):
-        return self._groupbutton
+    def id(self):
+        return self._address
 
     @property
-    def id(self):
-        return self._get_device_id(self._groupbutton)
+    def states(self):
+        return self._stateList
 
     @property 
     def state_status_lock(self):
@@ -75,44 +81,26 @@ class DeviceBase(object):
             Very few devices store their product data in the ALDB, therefore False is the default.
             The common reason to store product data in the ALDB is for one way devices or battery opperated devices where 
             the ability to send a command request is limited."""
-
         return self._product_data_in_aldb
 
     @classmethod
     def create(cls, plm, address, cat, subcat, product_key=None, description=None, model=None, groupbutton=0x01):
         return cls(plm, address, cat, subcat, product_key, description, model, groupbutton)
 
-    def receive_message(self, msg):
+    def _receive_message(self, msg):
         self.log.debug('Starting DeviceBase.receive_message')
-        # if msg.isnakflag or msg.isgroupflag:  #Need to work on this more. In this case the high bite, 0x04 bit indicates cleanup
-        #    pass
-        # else:
-        self.log.debug('Total callbacks: %d', len(self._message_callbacks))
-        callbacks = self._message_callbacks.get_callback_from_message(msg)
-        if len(callbacks) == 0:
-            if hasattr(msg, 'cmd1'):
-                if msg.acknak is None:
-                    self.log.debug('No callback found in device %s for message code %02x with cmd1 %02x and cmd2 %02x and acknak %s', self.id, msg.code, msg.cmd1, msg.cmd2, 'None')
-                else:
-                    self.log.debug('No callback found in device %s for message code %02x with cmd1 %02x and cmd2 %02x and acknak %02x', self.id, msg.code, msg.cmd1, msg.cmd2, msg.acknak)
-            else:
-                self.log.debug('No call back found in device %s for message %s', self.id, msg.hex)
-        else:
-            for callback in _message_callbacks:
-                callback(msg)
+        self._last_communication_received = datetime.datetime.now()
         self.log.debug('Ending DeviceBase.receive_message')
 
     def async_refresh_state(self):
-        for prop in dir(self):
-            propAttr = getattr(self, prop)
-            if type(propAttr) == StateChangeSignal:
-                propAttr.async_refresh_state()
+        for state in self._stateList:
+            state.async_refresh_state()
 
-    def set_status_callback(self, callback):
-        self._state_status_callback = callback
+    #def set_status_callback(self, callback):
+    #    self._state_status_callback = callback
 
-    def add_message_callback(self, msg, callback, override=False):
-        self._message_callbacks.add_message_callback(msg, callback, override)
+    #def add_message_callback(self, msg, callback, override=False):
+    #    self._message_callbacks.add(msg, callback, override)
 
     def id_request(self):
         """Request a device ID from a device"""
@@ -180,9 +168,3 @@ class DeviceBase(object):
 
     def write_aldb(self):
         raise NotImplemented
-
-    def _get_device_id(self, groupbutton=0x01):
-        if groupbutton == 0x01:
-            return self._address.hex
-        else:
-            return '{}_{:d}'.format(self._address.hex, groupbutton)
