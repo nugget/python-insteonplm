@@ -30,5 +30,5 @@ class SwitchedLightingControl_2663_222(DeviceBase):
     def __init__(self, plm, address, cat, subcat, product_key=None, description=None, model=None):
         super().__init__(plm, address, cat, subcat, product_key, description, model)
         
-        self._stateList[0x01] = OnOffSwitch_OutletTop(self._address, "lightOnOff", 0x01, self._plm.send_msg, self._plm.message_callbacks, 0x00)
-        self._stateList[0x02] = OnOffSwitch_OutletBottom(self._address, "lightOnOff", 0x02, self._plm.send_msg, self._plm.message_callbacks, 0x00)
+        self._stateList[0x01] = OnOffSwitch_OutletTop(self._address, "outletTopOnOff", 0x01, self._plm.send_msg, self._plm.message_callbacks, 0x00)
+        self._stateList[0x02] = OnOffSwitch_OutletBottom(self._address, "outletBottomOnOff", 0x02, self._plm.send_msg, self._plm.message_callbacks, 0x00)

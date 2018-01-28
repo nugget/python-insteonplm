@@ -14,6 +14,7 @@ class AllLinkCleanupFailureReport(MessageBase):
     def __init__(self, group, address):
         self._group = group
         self._address = Address(address)
+        self._failedFlag = 0x01
 
     @classmethod
     def from_raw_message(cls, rawmessage):
@@ -28,6 +29,6 @@ class AllLinkCleanupFailureReport(MessageBase):
         return self._address
 
     def _message_properties(self):
-        return {'failedFlag': 0x01,
-                'group': self.group,
-                'address': self.address}
+        return {'failedFlag': self._failedFlag,
+                'group': self._group,
+                'address': self._address}

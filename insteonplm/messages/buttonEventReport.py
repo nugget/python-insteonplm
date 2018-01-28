@@ -37,4 +37,4 @@ class ButtonEventReport(MessageBase):
         return self._events.get(self.event, None)
 
     def _message_properties(self):
-        return {'event': self.event}
+        return {'event': self._event}

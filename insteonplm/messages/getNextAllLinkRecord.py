@@ -38,6 +38,6 @@ class GetNextAllLinkRecord(MessageBase):
             return False
 
     def _message_properties(self):
-        return {'acknak': self.acknak}
+        return {'acknak': self._acknak}
 
 

@@ -29,6 +29,7 @@ class MessageBase(metaclass=ClassPropertyMetaClass):
     _sendSize = None
     _receivedSize = None
     _description = "Empty message"
+    log = logging.getLogger(__name__)
 
     def __str__(self):
         props = self._message_properties()
@@ -98,11 +99,12 @@ class MessageBase(metaclass=ClassPropertyMetaClass):
         props = self._message_properties()
         msg = bytearray([MESSAGE_START_CODE_0X02, self._code])
         i = 0
+        cmd2 = 0
         for key in props:
             val = props[key]
             if val is None:
                 pass
-            elif isinstance(val,int):
+            elif isinstance(val, int):
                 msg.append(val)
             elif isinstance(val, Address):
                 if val.addr == None:
@@ -142,6 +144,8 @@ class MessageBase(metaclass=ClassPropertyMetaClass):
                         else:
                             ismatch = False
                             break
+                    if not ismatch:
+                        break
                 else:
                     ismatch = False
                     break

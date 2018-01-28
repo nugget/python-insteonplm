@@ -35,8 +35,10 @@ class Address(object):
         if hasattr(other, 'addr'):
             if self.addr == None or other.addr == None:
                 return True
-            return self.addr == other.addr
-        return False
+            else:
+                return self.addr == other.addr
+        else:
+            return False
 
     def normalize(self, addr):
         """Take any format of address and turn it into a hex string."""

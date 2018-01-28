@@ -12,7 +12,7 @@ class MockPLM(object):
         return self._message_callbacks
 
     def send_msg(self, msg):
-        self.sentmessage = str(msg)
+        self.sentmessage = msg.to_hex()
 
     def send_standard(self, device, command, cmd2=None, flags=None):
         """Send an INSTEON Standard message to the PLM.
@@ -63,7 +63,10 @@ class MockPLM(object):
         self.sentmessage = msg.hex
 
     def message_received(self, msg):
-        print('Callback search: %s', str(msg))
+        for key in self._message_callbacks:
+            #print(len(self._message_callbacks[key]), ' callbacks in key ', key)
+            for callback in self._message_callbacks[key]:
+                print(key, callback.__name__)
         for callback in self._message_callbacks.get_callbacks_from_message(msg):
             print('Calling: ', callback.__name__)
             callback(msg)

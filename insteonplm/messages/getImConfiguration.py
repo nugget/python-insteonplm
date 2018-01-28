@@ -52,7 +52,7 @@ class GetImConfiguration(MessageBase):
         else:
             self._spare1 = None
             self._spare2 = None
-        return {'imConfigurationFlags': self.imConfigurationFlags,
+        return {'imConfigurationFlags': self._imConfigurationFlags,
                 'spare1': self._spare1,
                 'spare2': self._spare2,
                 'acknak': self.acknak}

@@ -35,7 +35,7 @@ class DeviceBase(object):
         self._stateList = StateList()
         self._send_msg_lock = asyncio.Lock(loop=self._plm.loop)
 
-        self._plm.message_callbacks.add(StandardReceive(self._address, None, None, None, None), self._receive_message)
+        self._plm.message_callbacks.add(StandardReceive.template(address=self._address), self._receive_message)
 
     @property
     def address(self):
@@ -84,8 +84,8 @@ class DeviceBase(object):
         return self._product_data_in_aldb
 
     @classmethod
-    def create(cls, plm, address, cat, subcat, product_key=None, description=None, model=None, groupbutton=0x01):
-        return cls(plm, address, cat, subcat, product_key, description, model, groupbutton)
+    def create(cls, plm, address, cat, subcat, product_key=None, description=None, model=None):
+        return cls(plm, address, cat, subcat, product_key, description, model)
 
     def _receive_message(self, msg):
         self.log.debug('Starting DeviceBase.receive_message')

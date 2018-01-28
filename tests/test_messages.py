@@ -98,7 +98,7 @@ def test_extendedReceive():
         userdata.update({key:0xe0})
         userdatatest.append(0xe0)
 
-    msg = ExtendedReceive(address, target, cmd1, cmd2, userdata, flags=flags)
+    msg = ExtendedReceive(address, target, {'cmd1':cmd1, 'cmd2':cmd2}, userdata, flags=flags)
     assert msg.to_hex() == hexmsg(0x02, 0x51, Address(address), Address(target), flags, cmd1, cmd2, userdatatest)
     print(msg.to_hex())
     print(len(msg.to_hex()))
@@ -108,7 +108,7 @@ def test_extendedReceive():
 
 def test_extendedSend():
     address = bytearray([0x11, 0x22, 0x33])
-    flags = 0x44
+    flags = 0x44 | 0x10
     cmd1 = 0x55
     cmd2 = 0x66
     userdata = {}
@@ -120,19 +120,19 @@ def test_extendedSend():
         val = 0xe0 + i
         userdata.update({key:val})
 
-    msg = ExtendedSend(address, cmd1, cmd2, userdata, flags)
+    msg = ExtendedSend(address, {'cmd1':cmd1, 'cmd2':cmd2}, userdata, flags=flags)
     assert msg.to_hex() == hexmsg(0x02, 0x62, Address(address), flags | 0x10, cmd1, cmd2, userdata)
     assert not msg.isack 
     assert not msg.isnak
     assert len(msg.to_hex())/2 == msg.sendSize
 
-    msg = ExtendedSend(address, cmd1, cmd2, userdata, flags=flags, acknak=ack)
+    msg = ExtendedSend(address, {'cmd1':cmd1, 'cmd2':cmd2}, userdata, flags=flags, acknak=ack)
     assert msg.to_hex() == hexmsg(0x02, 0x62, Address(address), flags | 0x10, cmd1, cmd2, userdata,  ack)
     assert msg.isack 
     assert not msg.isnak
     assert len(msg.to_hex())/2 == msg.receivedSize
     
-    msg = ExtendedSend(address, cmd1, cmd2, userdata, flags=flags, acknak=nak)
+    msg = ExtendedSend(address, {'cmd1':cmd1, 'cmd2':cmd2}, userdata, flags=flags, acknak=nak)
     assert msg.to_hex() == hexmsg(0x02, 0x62, Address(address), flags | 0x10, cmd1, cmd2, userdata, nak)
     assert not msg.isack 
     assert msg.isnak
@@ -283,7 +283,7 @@ def test_standardReceive():
     cmd1 = 0x88
     cmd2 = 0x99
 
-    msg =StandardReceive(address, target, flags, cmd1, cmd2)
+    msg =StandardReceive(address, target, {'cmd1':cmd1, 'cmd2':cmd2}, flags=flags)
     assert msg.to_hex() == hexmsg(0x02, 0x50, Address(address), Address(target), flags, cmd1, cmd2)
     assert len(msg.to_hex())/2 == msg.sendSize
     assert len(msg.to_hex())/2 == msg.receivedSize
@@ -297,19 +297,19 @@ def test_standardSend():
     ack = 0x06
     nak = 0x15
 
-    msg = StandardSend(address, cmd1, cmd2, flags)
+    msg = StandardSend(address, {'cmd1':cmd1, 'cmd2':cmd2}, flags=flags)
     assert msg.to_hex() == hexmsg(0x02, 0x62, Address(address), flags, cmd1, cmd2)
     assert not msg.isack 
     assert not msg.isnak
     assert len(msg.to_hex())/2 == msg.sendSize
 
-    msg = StandardSend(address, cmd1, cmd2, flags, ack)
+    msg = StandardSend(address, {'cmd1':cmd1, 'cmd2':cmd2}, flags=flags, acknak=ack)
     assert msg.to_hex() == hexmsg(0x02, 0x62, Address(address), flags, cmd1, cmd2, ack)
     assert msg.isack 
     assert not msg.isnak
     assert len(msg.to_hex())/2 == msg.receivedSize
     
-    msg = StandardSend(address, cmd1, cmd2, flags, nak)
+    msg = StandardSend(address, {'cmd1':cmd1, 'cmd2':cmd2}, flags=flags, acknak=nak)
     assert msg.to_hex() == hexmsg(0x02, 0x62, Address(address), flags, cmd1, cmd2, nak)
     assert not msg.isack 
     assert msg.isnak

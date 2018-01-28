@@ -69,9 +69,9 @@ class MessageCallback(object):
                 self.add(msg, cb, True)
 
     def get_callbacks_from_message(self, msg):
-        foundKeys = self._find_matching_keys(msg)
         callbacks = []
-        for key in foundKeys:
+        for key in self._find_matching_keys(msg):
+            print('Found ', len(self[key]), ' callback in ', key)
             for callback in self[key]:
                 callbacks.append(callback)
         return callbacks

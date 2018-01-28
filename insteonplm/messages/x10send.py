@@ -48,9 +48,9 @@ class X10Send(MessageBase):
             return False
 
     def _message_properties(self):
-        return {'rawX10': self.rawX10,
-                'flag': self.flag,
-                'acknak': self.acknak}
+        return {'rawX10': self._rawX10,
+                'flag': self._flag,
+                'acknak': self._acknak}
 
 
 

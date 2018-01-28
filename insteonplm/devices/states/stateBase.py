@@ -31,6 +31,7 @@ class StateBase(object):
     def __init__(self, address, statename, group, send_message_method, message_callbacks, defaultvalue=None):
 
         self.log = logging.getLogger(__name__)
+
         self._address = Address(address)
         self._observer_callbacks = []
         self._stateName = statename
@@ -40,18 +41,6 @@ class StateBase(object):
         self._update_method = None
         self._send_method = send_message_method
         self._message_callbacks = message_callbacks
-        
-        self._log = logging.getLogger(__name__)
-
-    def register_updates(self, callback):
-        self._log.debug("Registered callback for state: %s", self._stateName)
-        self._observer_callbacks.append(callback)
-
-    def _update_subscribers(self, val):
-        """Save value to state.value property and notify listeners of the change"""
-        self._value = val
-        for callback in self._observer_callbacks:
-            callback(self._address, self._stateName, val)
 
     @property
     def value(self):
@@ -60,9 +49,19 @@ class StateBase(object):
         return self._value
 
     @property
-    def stateName(self):
+    def name(self):
         return self._stateName
 
     def async_refresh_state(self):
         if self._updatemethod is not None:
             self._updatemethod()
+
+    def register_updates(self, callback):
+        self.log.debug("Registered callback for state: %s", self._stateName)
+        self._observer_callbacks.append(callback)
+
+    def _update_subscribers(self, val):
+        """Save value to state.value property and notify listeners of the change"""
+        self._value = val
+        for callback in self._observer_callbacks:
+            callback(self._address, self._stateName, val)

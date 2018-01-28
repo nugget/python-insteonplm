@@ -6,12 +6,14 @@ from insteonplm.messages.standardSend import StandardSend
 from insteonplm.messages.extendedSend import ExtendedSend 
 from insteonplm.messages.standardReceive import StandardReceive
 from insteonplm.messages.extendedReceive import ExtendedReceive
+from insteonplm.messages.messageFlags import MessageFlags
 from insteonplm.devices.switchedLightingControl import SwitchedLightingControl
 from insteonplm.devices.switchedLightingControl import SwitchedLightingControl_2663_222 
 from insteonplm.devices.dimmableLightingControl import DimmableLightingControl_2475F
 from insteonplm.devices.securityHealthSafety import SecurityHealthSafety 
 from insteonplm.devices.securityHealthSafety import SecurityHealthSafety_2982_222
 from insteonplm.devices.sensorsActuators import SensorsActuators_2450 
+from .mockPLM import MockPLM
 
 def test_switchedLightingControl():
     plm = MockPLM()
@@ -21,9 +23,8 @@ def test_switchedLightingControl():
     product_key = None
     description = 'ToggleLinc Relay'
     model = '2466S'
-    groupbutton = 0x01
 
-    device = SwitchedLightingControl(plm, address, cat, subcat, product_key, description, model, groupbutton)
+    device = SwitchedLightingControl(plm, address, cat, subcat, product_key, description, model)
 
     assert device.address.hex == address
     assert device.cat == cat
@@ -31,10 +32,9 @@ def test_switchedLightingControl():
     assert device.product_key == 0x00 # Product key should not be None
     assert device.description == description
     assert device.model == model
-    #assert device.groupbutton == groupbutton
-    assert device.id == address
+    assert device.id == Address(address)
 
-    device.light_on()
+    device.states[0x01].on()
     assert plm.sentmessage == '02621a2b3c0011ff'
 
 def test_switchedLightingControl_group():
@@ -47,7 +47,7 @@ def test_switchedLightingControl_group():
     model = '2466S'
     groupbutton = 0x02
 
-    device = SwitchedLightingControl(plm, address, cat, subcat, product_key, description, model, groupbutton)
+    device = SwitchedLightingControl_2663_222(plm, address, cat, subcat, product_key, description, model)
 
     assert device.address.hex == address
     assert device.cat == cat
@@ -55,10 +55,9 @@ def test_switchedLightingControl_group():
     assert device.product_key == 0x00 # Product key should not be None
     assert device.description == description
     assert device.model == model
-    #assert device.groupbutton == groupbutton
-    assert device.id == address+'_2'
+    assert device.id == Address(address)
 
-    device.light_on()
+    device.states[0x02].on()
     assert plm.sentmessage == '02621a2b3c1011ff0200000000000000000000000000'
 
 def test_switchedLightingControl_2663_222():
@@ -70,27 +69,26 @@ def test_switchedLightingControl_2663_222():
     description = 'ToggleLinc Relay'
     model = '2466S'
     groupbutton = 0x02
-    devices = SwitchedLightingControl_2663_222.create(plm, address, cat, subcat, product_key,description, model)
-    assert isinstance(devices, list)
+    device = SwitchedLightingControl_2663_222.create(plm, address, cat, subcat, product_key,description, model)
+    assert len(device.states) == 2
 
 def test_switchedLightingControl_2663_222_status():
 
     class lightStatus(object):
-        light1OnLevel = None
-        light2OnLevel = None
+        lightOnLevel1 = None
+        lightOnLevel2 = None
 
-        def device1_status_callback(self, id, state, value):
+        def device_status_callback1(self, id, state, value):
             print('Called device 1 callback')
-            self.light1OnLevel = value
+            self.lightOnLevel1 = value
     
-        def device2_status_callback(self, id, state, value):
+        def device_status_callback2(self, id, state, value):
             print('Called device 2 callback')
-            self.light2OnLevel = value
+            self.lightOnLevel2 = value
 
     mockPLM = MockPLM()
     address = '1a2b3c'
-    id1 = '1a2b3c'
-    id2 = '1a2b3c_2'
+    target = '4d5e6f'
 
     cat = 0x02
     subcat = 0x0d
@@ -100,42 +98,38 @@ def test_switchedLightingControl_2663_222_status():
 
     callbacks = lightStatus()
 
-    devices = SwitchedLightingControl_2663_222.create(mockPLM, address, cat, subcat, product_key, description, model)
+    device = SwitchedLightingControl_2663_222.create(mockPLM, address, cat, subcat, product_key, description, model)
     
-    assert devices[0].id == id1
-    assert devices[1].id == id2
+    assert device.states[0x01].name == 'outletTopOnOff'
+    assert device.states[0x02].name == 'outletBottomOnOff'
 
-    for device in devices:
-        mockPLM.devices[device.id] = device
-    mockPLM.devices[id1].lightOnLevel.connect(callbacks.device1_status_callback)
-    mockPLM.devices[id2].lightOnLevel.connect(callbacks.device2_status_callback)
+    device.states[0x01].register_updates(callbacks.device_status_callback1)
+    device.states[0x02].register_updates(callbacks.device_status_callback2)
 
-    ackmsg = StandardSend(address, COMMAND_LIGHT_STATUS_REQUEST_0X19_0X00['cmd1'], COMMAND_LIGHT_STATUS_REQUEST_0X19_0X00['cmd2'], 0x01, MESSAGE_ACK)
-    statusmsg = StandardSend(address, 0x03, 0x01)
+    ackmsg = StandardSend(address, COMMAND_LIGHT_STATUS_REQUEST_0X19_0X01, acknak=MESSAGE_ACK)
+    statusmsg = StandardReceive(address, target,  {'cmd1':0x03, 'cmd2':0x01}, flags=MessageFlags.create(MESSAGE_TYPE_DIRECT_MESSAGE_ACK, 0))
 
-    mockPLM.devices[address].receive_message(ackmsg)
-    mockPLM.devices[address].receive_message(statusmsg)
-    assert callbacks.light1OnLevel == 0xff
-    assert callbacks.light2OnLevel == 0x00
+    mockPLM.message_received(ackmsg)
+    mockPLM.message_received(statusmsg)
+    assert callbacks.lightOnLevel1 == 0xff
+    assert callbacks.lightOnLevel2 == 0x00
 
-def test_switchedLightingControl_2663_222_status():
+def test_switchedLightingControl_2475F_status():
 
     class fanLincStatus(object):
         lightOnLevel = None
         fanOnLevel = None
 
-        def device1_status_callback(self, id, state, value):
+        def device_status_callback1(self, id, state, value):
             print('Called device 1 callback')
             self.lightOnLevel = value
     
-        def device2_status_callback(self, id, state, value):
+        def device_status_callback2(self, id, state, value):
             print('Called device 2 callback')
             self.fanOnLevel = value
 
     mockPLM = MockPLM()
     address = '1a2b3c'
-    id1 = '1a2b3c'
-    id2 = '1a2b3c_2'
 
     cat = 0x01
     subcat = 0x2e
@@ -145,31 +139,28 @@ def test_switchedLightingControl_2663_222_status():
 
     callbacks = fanLincStatus()
 
-    devices = DimmableLightingControl_2475F.create(mockPLM, address, cat, subcat, product_key, description, model)
+    device = DimmableLightingControl_2475F.create(mockPLM, address, cat, subcat, product_key, description, model)
     
-    assert devices[0].id == id1
-    assert devices[1].id == id2
+    assert device.states[0x01].name == 'lightOnLevel'
+    assert device.states[0x02].name == 'fanOnLevel'
 
-    for device in devices:
-        mockPLM.devices[device.id] = device
-    mockPLM.devices[id1].lightOnLevel.connect(callbacks.device1_status_callback)
-    mockPLM.devices[id2].fanSpeed.connect(callbacks.device2_status_callback)
+    mockPLM.devices[address].states[0x01].register_updates(callbacks.device_status_callback2)
+    mockPLM.devices[address].states[0x02].register_updates(callbacks.device_status_callback2)
 
-    ackmsg = StandardSend(address, COMMAND_LIGHT_STATUS_REQUEST_0X19_0X00['cmd1'], COMMAND_LIGHT_STATUS_REQUEST_0X19_0X00['cmd2'], None, MESSAGE_ACK)
-    statusmsg = StandardSend(address, 0x03, 0x55)
-    mockPLM.devices[address].receive_message(ackmsg)
-    mockPLM.devices[address].receive_message(statusmsg)
+    ackmsg = StandardSend(address, COMMAND_LIGHT_STATUS_REQUEST_0X19_0X00, acknak=MESSAGE_ACK)
+    statusmsg = StandardReceive(address, {'cmd1':0x03, 'cmd2':0x55}, MessageFlags.create(MESSAGE_TYPE_DIRECT_MESSAGE_ACK, 0))
+    mockPLM.receive_message(ackmsg)
+    mockPLM.receive_message(statusmsg)
 
     assert callbacks.lightOnLevel == 0x55
     
     ackmsg = StandardSend(address, COMMAND_LIGHT_STATUS_REQUEST_0X19_0X00['cmd1'], 0x03, None, MESSAGE_ACK)
     statusmsg = StandardSend(address, 0x03, 0x77)
-    mockPLM.devices[address].receive_message(ackmsg)
-    mockPLM.devices[address].receive_message(statusmsg)
+    mockPLM.receive_message(ackmsg)
+    mockPLM.receive_message(statusmsg)
 
     assert callbacks.lightOnLevel == 0x55
     assert callbacks.fanOnLevel == 0x77
-
 
 def test_securityhealthsafety():
     
@@ -183,8 +174,6 @@ def test_securityhealthsafety():
     mockPLM = MockPLM()
     address = '1a2b3c'
     target = '4d5e6f'
-    id1 = '1a2b3c'
-    id2 = '1a2b3c_2'
     cmd1 = 0x11
     cmd2 = 0x04
 
@@ -201,7 +190,6 @@ def test_securityhealthsafety():
     msg = StandardReceive(address, target, 0x00, cmd1, cmd2)
     device.receive_message(msg)
     assert callbacks.sensor == cmd2
-
 
 def test_securityhealthsafety_2982_222():
     

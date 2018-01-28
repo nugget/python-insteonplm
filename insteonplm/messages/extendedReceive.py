@@ -13,13 +13,26 @@ class ExtendedReceive(MessageBase):
     _description = 'INSTEON Extended Message Received'
 
 
-    def __init__(self, address, target, cmd1, cmd2, userdata, flags=0x10):
+    def __init__(self, address, target, commandtuple, userdata, cmd2=None, flags=0x10):
+        
+        if commandtuple.get('cmd1', None) is not None:
+            cmd1 = commandtuple['cmd1']
+            cmd2out = commandtuple['cmd2']
+        else:
+            raise ValueError
+
+        if cmd2 is not None:
+            cmd2out = cmd2
+
+        if cmd2out is None:
+            raise ValueError
+
         self._address = Address(address)
         self._target = Address(target)
         self._messageFlags = MessageFlags(flags)
         # self._messageFlags.extended = 1
         self._cmd1 = cmd1
-        self._cmd2 = cmd2
+        self._cmd2 = cmd2out
         self._userdata = Userdata(userdata)
 
     @classmethod
@@ -27,10 +40,31 @@ class ExtendedReceive(MessageBase):
         userdata = Userdata.from_raw_message(rawmessage[11:25])
         return ExtendedReceive(rawmessage[2:5], 
                                rawmessage[5:8],
-                               rawmessage[9],
-                               rawmessage[10],
+                               {'cmd1':rawmessage[9],
+                                'cmd2':rawmessage[10]},
                                userdata,
                                flags=rawmessage[8])
+
+    @classmethod
+    def template(cls, address=None, target=None, commandtuple={}, userdata=None, cmd2=-1, flags=None,  acknak = None):
+        msgraw = bytearray([0x02, cls._code])
+        msgraw.extend(bytes(cls._receivedSize))
+        msg = ExtendedReceive.from_raw_message(msgraw)
+        
+        cmd1 = commandtuple.get('cmd1', None)
+        cmd2out = commandtuple.get('cmd2', None)
+
+        if cmd2 is not -1:
+            cmd2out = cmd2
+
+        msg._address = Address(address)
+        msg._target = Address(target)
+        msg._messageFlags = MessageFlags(flags)
+        msg._cmd1 = cmd1
+        msg._cmd2 = cmd2out
+        msg._userdata = Userdata(userdata)
+        msg._acknak = acknak
+        return msg
 
     @property
     def address(self):
@@ -78,9 +112,9 @@ class ExtendedReceive(MessageBase):
             return None
 
     def _message_properties(self):
-        return {'address': self.address, 
-                'target': self.target, 
-                'flags': self.flags,
-                'cmd1': self.cmd1,
-                'cmd2': self.cmd2,
-                'userdata': self.userdata}
+        return {'address': self._address, 
+                'target': self._target, 
+                'flags': self._messageFlags,
+                'cmd1': self._cmd1,
+                'cmd2': self._cmd2,
+                'userdata': self._userdata}

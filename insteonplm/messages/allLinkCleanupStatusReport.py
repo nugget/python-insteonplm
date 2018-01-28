@@ -29,5 +29,5 @@ class AllLinkCleanupStatusReport(MessageBase):
         return (self._acknak & MESSAGE_NAK) == MESSAGE_NAK
     
     def _message_properties(self):
-        return {'acknak': self.acknak}
+        return {'acknak': self._acknak}
 
