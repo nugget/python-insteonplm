@@ -53,7 +53,6 @@ class MockConnection():
 @asyncio.coroutine
 def do_plm(loop, log, devicelist):
     
-    logging.basicConfig(level=logging.DEBUG)
     log.info('Connecting to Insteon PLM')
 
     conn = yield from MockConnection.create(loop=loop)

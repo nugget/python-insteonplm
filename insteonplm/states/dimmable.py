@@ -5,7 +5,6 @@ from insteonplm.messages import (StandardSend, ExtendedSend,
                                  StandardReceive, ExtendedReceive, 
                                  MessageFlags)
 
-logging.basicConfig(level=logging.DEBUG)
 class DimmableSwitch(StateBase):
     """Device state representing an On/Off switch that is controllable.
 
