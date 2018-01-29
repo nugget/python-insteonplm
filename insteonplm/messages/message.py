@@ -91,8 +91,6 @@ class Message(object):
             log.error('Unable to find an receivedSize for code 0x%x', rawmessage[1])
             return ValueError
 
-        print('receivedSize: ', expectedSize)
-        print('rawmessage: ', binascii.hexlify(rawmessage).decode())
         if len(rawmessage) >= expectedSize:
             return True
         else:
