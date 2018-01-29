@@ -31,6 +31,10 @@ class AllLinkRecordResponse(MessageBase):
                                      rawmessage[9])
 
     @property
+    def controlFlags(self):
+        return self._controlFlags
+
+    @property
     def group(self):
         return self._group
 

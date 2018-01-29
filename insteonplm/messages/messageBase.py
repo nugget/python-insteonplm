@@ -135,7 +135,6 @@ class MessageBase(metaclass=ClassPropertyMetaClass):
                     self.log.debug('Checking key: %s %s', key, str(p))
                     if hasattr(other, key):
                         k =  getattr(other, key)
-                        #if k is not None:
                         if isinstance(p, MessageFlags):
                             ismatch = p.matches_pattern(k)
                         elif isinstance(p, Address):
@@ -144,11 +143,12 @@ class MessageBase(metaclass=ClassPropertyMetaClass):
                             if p is None or k is None:
                                 ismatch = True
                             else:
+                                self.log.debug('Comparing key: %s values %s %s', key, str(p), str(k))
                                 ismatch = p == k
                     else:
                         ismatch = False
                     if not ismatch:
-
+                        self.log.debug('Message failed on key: %s', key)
                         break
                 if not ismatch:
                     break

@@ -3,6 +3,9 @@ from insteonplm.constants import *
 from insteonplm.messages.standardReceive import StandardReceive
 from insteonplm.messages.standardSend import StandardSend
 from insteonplm.messages.extendedReceive import ExtendedReceive
+from insteonplm.messages.allLinkRecordResponse import AllLinkRecordResponse
+from insteonplm.messages.getIMInfo import GetImInfo
+from insteonplm.messages.getNextAllLinkRecord import GetNextAllLinkRecord
 from insteonplm.messages.userdata import Userdata
 
 
@@ -98,6 +101,7 @@ def test_delete_callback():
     callbacktest1 = "test callback 1"
     callbacktest2 = "test callback 2"
     callbacktest3 = "test callback 3"
+
     address = '1a2b3c'
     target = '4d5e6f'
 
@@ -113,3 +117,32 @@ def test_delete_callback():
     callbacks.remove(StandardSend.template(), callbacktest2)
     callbackList = callbacks.get_callbacks_from_message(msg)
     assert len(callbackList) == 2
+
+def test_misc_messages():
+    
+    callbacks = MessageCallback()
+    callbacktest1 = "test callback 1"
+    callbacktest2 = "test callback 2"
+    callbacktest3 = "test callback 3"
+
+    msgtemplate1 = AllLinkRecordResponse(None, None, None, None, None, None)
+    msgtemplate2 = GetImInfo()
+    msgtemplate3 = GetNextAllLinkRecord(acknak=MESSAGE_NAK)
+    callbacks.add(msgtemplate1, callbacktest1)
+    callbacks.add(msgtemplate2, callbacktest2)
+    callbacks.add(msgtemplate3, callbacktest3)
+
+    msg1 = AllLinkRecordResponse(0x00, 0x01, '1a2b3c', 0x01, 0x02, 0x03)
+    msg2 = GetImInfo()
+    msg3 = GetNextAllLinkRecord(acknak=MESSAGE_ACK)
+    msg4 = GetNextAllLinkRecord(acknak=MESSAGE_NAK)
+
+    callbacklist1 = callbacks.get_callbacks_from_message(msg1)
+    callbacklist2 = callbacks.get_callbacks_from_message(msg2)
+    callbacklist3 = callbacks.get_callbacks_from_message(msg3)
+    callbacklist4 = callbacks.get_callbacks_from_message(msg4)
+
+    assert callbacklist1[0] == callbacktest1
+    assert callbacklist2[0] == callbacktest2
+    assert len(callbacklist3) == 0
+    assert callbacklist4[0] == callbacktest3

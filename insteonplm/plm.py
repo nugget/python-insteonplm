@@ -58,28 +58,28 @@ class PLM(asyncio.Protocol, DeviceBase):
         self.log = logging.getLogger(__name__)
         self.transport = None
         
-        self.add_message_callback(StandardReceive(None, None, None, None, None), 
-                                  self._handle_standard_or_extended_message_received)
+        #self.add_message_callback(StandardReceive(None, None, None, None, None), 
+        #                          self._handle_standard_or_extended_message_received)
 
-        self.add_message_callback(ExtendedReceive(None, None, None, None, None), 
-                                  self._handle_standard_or_extended_message_received)
+        #self.add_message_callback(ExtendedReceive(None, None, None, None, None), 
+        #                          self._handle_standard_or_extended_message_received)
 
-        self.add_message_callback(StandardSend(None, None, None, None, acknak=MESSAGE_ACK), 
-                                  self._handle_standard_or_extended_message_received)
+        #self.add_message_callback(StandardSend(None, None, None, None, acknak=MESSAGE_ACK), 
+        #                          self._handle_standard_or_extended_message_received)
 
-        self.add_message_callback(StandardSend(None, None, None, None, acknak=MESSAGE_NAK),
-                                  self._handle_standard_or_extended_message_nak)
+        self._message_callbacks.add(StandardSend.template(acknak=MESSAGE_NAK),
+                                    self._handle_standard_or_extended_message_nak)
 
-        self.add_message_callback(StandardReceive(None, None, None, COMMAND_ASSIGN_TO_ALL_LINK_GROUP_0X01_NONE['cmd1'], None), 
-                                  self._handle_assign_to_all_link_group)
+        self._message_callbacks.add(StandardReceive(commandtuple=COMMAND_ASSIGN_TO_ALL_LINK_GROUP_0X01_NONE), 
+                                    self._handle_assign_to_all_link_group)
 
-        self.add_message_callback(AllLinkRecordResponse(None, None, None, None, None, None, None), 
-                                  elf._handle_all_link_record_response)
+        self._message_callbacks.add(AllLinkRecordResponse(None, None, None, None, None, None, None), 
+                                    self._handle_all_link_record_response)
 
-        self.add_message_callback(GetImInfo(), self._handle_get_plm_info)
+        self._message_callbacks.add(GetImInfo(), self._handle_get_plm_info)
 
-        self.add_message_callback(GetNextAllLinkRecord(acknak=MESSAGE_NAK),
-                                  self._handle_get_next_all_link_record_nak)
+        self._message_callbacks.add(GetNextAllLinkRecord(acknak=MESSAGE_NAK),
+                                    self._handle_get_next_all_link_record_nak)
 
     @property
     def loop(self):
