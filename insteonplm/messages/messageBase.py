@@ -36,19 +36,20 @@ class MessageBase(metaclass=ClassPropertyMetaClass):
         msgstr = "{'code': 0x" + binascii.hexlify(bytes([self._code])).decode()
         first = True
         for prop in props:
-            msgstr = msgstr + ', '
-            if isinstance(props[prop], Address):
-                msgstr = msgstr + "'" + prop + "': " + props[prop].human
-            elif isinstance(props[prop], MessageFlags):
-                msgstr = msgstr + "'" + prop + "': 0x" + props[prop].to_hex()
-            elif isinstance(props[prop], int):
-                msgstr = msgstr + "'" + prop + "': 0x" + binascii.hexlify(bytes([props[prop]])).decode()
-            elif isinstance(props[prop], bytearray):
-                msgstr = msgstr + "'" + prop + "': 0x" + binascii.hexlify(props[prop]).decode()
-            elif isinstance(props[prop], bytes):
-                msgstr = msgstr + "'" + prop + "': 0x" + binascii.hexlify(props[prop]).decode()
-            else:
-                msgstr = msgstr + "'" + prop + "': " + str(props[prop])
+            for key, val in prop.items():
+                msgstr = msgstr + ', '
+                if isinstance(val, Address):
+                    msgstr = msgstr + "'" + key + "': " + val.human
+                elif isinstance(val, MessageFlags):
+                    msgstr = msgstr + "'" + key + "': 0x" + val.to_hex()
+                elif isinstance(val, int):
+                    msgstr = msgstr + "'" + key + "': 0x" + binascii.hexlify(bytes([val])).decode()
+                elif isinstance(val, bytearray):
+                    msgstr = msgstr + "'" + key + "': 0x" + binascii.hexlify(val).decode()
+                elif isinstance(val, bytes):
+                    msgstr = msgstr + "'" + key + "': 0x" + binascii.hexlify(val).decode()
+                else:
+                    msgstr = msgstr + "'" + key + "': " + str(val)
         msgstr = msgstr + '}'
         return msgstr
 
@@ -100,26 +101,25 @@ class MessageBase(metaclass=ClassPropertyMetaClass):
         msg = bytearray([MESSAGE_START_CODE_0X02, self._code])
         i = 0
         cmd2 = 0
-        for key in props:
-            val = props[key]
-            if val is None:
-                pass
-            elif isinstance(val, int):
-                msg.append(val)
-            elif isinstance(val, Address):
-                if val.addr == None:
+        for prop in props:
+            for key, val in prop.items():
+                if val is None:
                     pass
-                else:
+                elif isinstance(val, int):
+                    msg.append(val)
+                elif isinstance(val, Address):
+                    if val.addr == None:
+                        pass
+                    else:
+                        msg.extend(val.bytes)
+                elif isinstance(val, MessageFlags):
+                    msg.extend(val.to_byte())
+                elif isinstance(val, bytearray):
+                    msg.extend(val)
+                elif isinstance(val, bytes):
+                    msg.extend(val)
+                elif isinstance(val, Userdata):
                     msg.extend(val.bytes)
-            elif isinstance(val, MessageFlags):
-                print('got a MessageFlags object: ', val)
-                msg.extend(val.to_byte())
-            elif isinstance(val, bytearray):
-                msg.extend(val)
-            elif isinstance(val, bytes):
-                msg.extend(val)
-            elif isinstance(val, Userdata):
-                msg.extend(val.bytes)
             
         return binascii.hexlify(msg).decode()
 
@@ -131,24 +131,30 @@ class MessageBase(metaclass=ClassPropertyMetaClass):
         ismatch = False
         if isinstance(other, MessageBase) and self.code == other.code:
             for property in properties:
-                p = properties[property]
-                if hasattr(other, property):    
-                    k =  getattr(other, property)
-                    if k is not None:
+                for key, p in property.items():
+                    self.log.debug('Checking key: %s %s', key, str(p))
+                    if hasattr(other, key):
+                        k =  getattr(other, key)
+                        #if k is not None:
                         if isinstance(p, MessageFlags):
                             ismatch = p.matches_pattern(k)
                         elif isinstance(p, Address):
                             ismatch = p.matches_pattern(k)
-                        elif p == k:
-                            ismatch = True
                         else:
-                            ismatch = False
-                            break
+                            if p is None or k is None:
+                                ismatch = True
+                            else:
+                                ismatch = p == k
+                    else:
+                        ismatch = False
                     if not ismatch:
+
                         break
-                else:
-                    ismatch = False
+                if not ismatch:
                     break
+        self.log.debug('Messages are match: %s', str(ismatch))
+        self.log.debug(self)
+        self.log.debug(other)
         return ismatch
     
     def fromDevice(self, devices):

@@ -63,9 +63,9 @@ class AllLinkRecordResponse(MessageBase):
         return not self.iscontroller
 
     def _message_properties(self):
-        return {'controlFlags': self._controlFlags,
-                'group': self._group,
-                'address': self._address,
-                'linkdata1': self._linkdata1,
-                'linkdata2': self._linkdata2,
-                'linkdata3': self._linkdata3}
+        return [{'controlFlags': self._controlFlags},
+                {'group': self._group},
+                {'address': self._address},
+                {'linkdata1': self._linkdata1},
+                {'linkdata2': self._linkdata2},
+                {'linkdata3': self._linkdata3}]

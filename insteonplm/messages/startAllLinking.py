@@ -48,8 +48,8 @@ class StartAllLinking(MessageBase):
             return False
 
     def _message_properties(self):
-        return {'linkCode': self._linkCode,
-                'group': self._group,
-                'acknak': self._acknak}
+        return [{'linkCode': self._linkCode},
+                {'group': self._group},
+                {'acknak': self._acknak}]
 
 

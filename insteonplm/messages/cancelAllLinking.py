@@ -38,6 +38,6 @@ class CancelAllLinking(MessageBase):
             return False
 
     def _message_properties(self):
-        return {'acknak': self._acknak}
+        return [{'acknak': self._acknak}]
 
 

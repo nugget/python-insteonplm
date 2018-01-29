@@ -104,8 +104,8 @@ class StandardSend(MessageBase):
             return False
 
     def _message_properties(self):
-        return {'address': self._address,
-                'flags': self._messageFlags,
-                'cmd1': self._cmd1,
-                'cmd2': self._cmd2,
-                'acknak': self._acknak}
+        return [{'address': self._address},
+                {'flags': self._messageFlags},
+                {'cmd1': self._cmd1},
+                {'cmd2': self._cmd2},
+                {'acknak': self._acknak}]

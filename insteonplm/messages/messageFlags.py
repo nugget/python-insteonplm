@@ -127,8 +127,41 @@ class MessageFlags(object):
             raise ValueError
 
     @classmethod
-    def create(cls, messageType, extended, hopsleft=None, hopsmax=None):
+    def create(cls, messageType, extended, hopsleft=3, hopsmax=3):
         """Create message flags.
+        messageType: integter 0 to 7:
+                        MESSAGE_TYPE_DIRECT_MESSAGE = 0
+                        MESSAGE_TYPE_DIRECT_MESSAGE_ACK = 1
+                        MESSAGE_TYPE_ALL_LINK_CLEANUP = 2
+                        MESSAGE_TYPE_ALL_LINK_CLEANUP_ACK = 3
+                        MESSAGE_TYPE_BROADCAST_MESSAGE = 4
+                        MESSAGE_TYPE_DIRECT_MESSAGE_NAK = 5 
+                        MESSAGE_TYPE_ALL_LINK_BROADCAST = 6 
+                        MESSAGE_TYPE_ALL_LINK_CLEANUP_NAK = 7   
+        extended: 1 for extended, 0 for standard
+        hopsleft: int  0 - 3
+        hopsmax:  int  0 - 3
+        """
+        flags = MessageFlags(None)
+        if messageType < 8:
+            flags._messageType = messageType
+        else:
+           flags._messageType = messageType >> 5
+        if extended in [0, 1, True, False]:
+            if extended:
+                flags._extended = 1
+            else:
+                flags._extended = 0
+        else:
+            flags._extended = extended >> 4
+        flags._hopsLeft = hopsleft
+        flags._hopsMax = hopsmax        
+        return flags
+
+    @classmethod
+    def template(cls, messageType = None, extended=None, hopsleft=None, hopsmax=None):
+        
+        """Create message flags template.
         messageType: integter 0 to 7 or None:
                         MESSAGE_TYPE_DIRECT_MESSAGE = 0
                         MESSAGE_TYPE_DIRECT_MESSAGE_ACK = 1
@@ -143,8 +176,21 @@ class MessageFlags(object):
         hopsmax:  int  0 - 3
         """
         flags = MessageFlags(None)
-        flags._messageType = messageType
-        flags._extended = 1 if extended else 0
+        if messageType is None:
+            flags._messageType = None
+        elif messageType < 8:
+            flags._messageType = messageType
+        else:
+           flags._messageType = messageType >> 5
+        if extended is None:
+            flags._extended = None
+        elif extended in [0, 1, True, False]:
+            if extended:
+                flags._extended = 1
+            else:
+                flags._extended = 0
+        else:
+            flags._extended = extended >> 4
         flags._hopsLeft = hopsleft
         flags._hopsMax = hopsmax        
         return flags

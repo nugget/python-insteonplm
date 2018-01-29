@@ -10,8 +10,7 @@ class OnOffSwitch(StateBase):
     Available methods are:
     on()
     off()
-    connect()
-    update(self, val)
+    register_updates()
     async_refresh_state()
     """
     
@@ -33,34 +32,44 @@ class OnOffSwitch(StateBase):
                                     self._status_request_ack_received)
 
     def on(self):
+        self.log.debug('Starting OnOffSwitch.on')
         self._send_method(StandardSend(self._address, COMMAND_LIGHT_ON_0X11_NONE, 0xff))
+        self.log.debug('Ending OnOffSwitch.on')
 
     def off(self):
+        self.log.debug('Starting OnOffSwitch.off')
         self._send_method(StandardSend(self._address, COMMAND_LIGHT_OFF_0X13_0X00))
+        self.log.debug('Ending OnOffSwitch.off')
 
     def _on_message_received(self, msg):
+        self.log.debug('Starting OnOffSwitch._on_message_received')
         self._update_subscribers(0xff)
+        self.log.debug('Ending OnOffSwitch._on_message_received')
 
     def _off_message_received(self, msg):
+        self.log.debug('Starting OnOffSwitch._off_message_received')
         self._update_subscribers(0x00)
+        self.log.debug('Ending OnOffSwitch._off_message_received')
 
     def _send_status_request(self):
+        self.log.debug('Starting OnOffSwitch._send_status_request')
         self._send_method(StandardSend(self._address, COMMAND_LIGHT_STATUS_REQUEST_0X19_0X00))
+        self.log.debug('Ending OnOffSwitch._send_status_request')
 
     def _status_request_ack_received(self, msg):
         self.log.debug('Starting OnOffSwitch._status_request_ack_received')
         self._message_callbacks.add(StandardReceive.template(address = self._address,
-                                                             flags = MessageFlags.create(MESSAGE_TYPE_DIRECT_MESSAGE_ACK, None)), 
+                                                             flags = MessageFlags.template(MESSAGE_TYPE_DIRECT_MESSAGE_ACK, None)), 
                                     self._status_message_received, True)
         self.log.debug('Ending OnOffSwitch._status_request_ack_received')
 
     def _status_message_received(self, msg):
         self.log.debug('Starting OnOffSwitch._status_message_received')
         self._message_callbacks.remove(StandardReceive.template(address = self._address,
-                                                                flags = MessageFlags.create(MESSAGE_TYPE_DIRECT_MESSAGE_ACK, None)), 
+                                                                flags = MessageFlags.template(MESSAGE_TYPE_DIRECT_MESSAGE_ACK, None)), 
                                           self._status_message_received)
         self._update_subscribers(msg.cmd2)
-        self.log.debug('Starting OnOffSwitch._status_message_received')
+        self.log.debug('Ending OnOffSwitch._status_message_received')
 
 class OnOffSwitch_OutletTop(OnOffSwitch):
     """Device state representing a the top outlet On/Off switch that is controllable.
@@ -68,8 +77,7 @@ class OnOffSwitch_OutletTop(OnOffSwitch):
     Available methods are:
     on(self)
     off(self)
-    connect(self, call_back)
-    update(self, val)
+    register_updates(self, call_back)
     async_refresh_state(self)
     """
     
@@ -92,7 +100,7 @@ class OnOffSwitch_OutletTop(OnOffSwitch):
         self.log.debug('Starting OnOffSwitch_OutletTop._status_message_0x01_received')
 
         self._message_callbacks.remove(StandardReceive.template(address = self._address,
-                                                                flags = MessageFlags.create(MESSAGE_TYPE_DIRECT_MESSAGE_ACK, None)), 
+                                                                flags = MessageFlags.template(MESSAGE_TYPE_DIRECT_MESSAGE_ACK, None)), 
                                        self._status_message_0x01_received)
 
         if msg.cmd2 == 0x00 or msg.cmd2 == 0x02:
@@ -108,7 +116,7 @@ class OnOffSwitch_OutletTop(OnOffSwitch):
     def _status_request_0x01_ack_received(self, msg):
         self.log.debug('Starting OnOffSwitch_OutletTop._status_request_0x01_ack_received')
         self._message_callbacks.add(StandardReceive.template(address = self._address,
-                                                             flags = MessageFlags.create(MESSAGE_TYPE_DIRECT_MESSAGE_ACK, None)), 
+                                                             flags = MessageFlags.template(MESSAGE_TYPE_DIRECT_MESSAGE_ACK, None)), 
                                     self._status_message_0x01_received)
         self.log.debug('Ending OnOffSwitch_OutletTop._status_request_0x01_ack_received')
         
@@ -118,9 +126,7 @@ class OnOffSwitch_OutletBottom(StateBase):
     Available methods are:
     on(self)
     off(self)
-    async_refresh_state(self)
-    connect(self, call_back)
-    update(self, val)
+    register_upodates(self, call_back)
     async_refresh_state(self)
     """
 
@@ -184,7 +190,7 @@ class OnOffSwitch_OutletBottom(StateBase):
         self.log.debug('Starting OnOffSwitch_OutletBottom._status_message_received')
 
         self._message_callbacks.add(StandardReceive.template(address = self._address,
-                                                             flags = MessageFlags.create(MESSAGE_TYPE_DIRECT_MESSAGE_ACK, None)), 
+                                                             flags = MessageFlags.template(MESSAGE_TYPE_DIRECT_MESSAGE_ACK, None)), 
                                     self._status_message_received)
 
         if msg.cmd2 == 0x00 or msg.cmd2 == 0x01:
@@ -200,9 +206,78 @@ class OnOffSwitch_OutletBottom(StateBase):
     def _status_request_ack_received(self, msg):
         self.log.debug('Starting OnOffSwitch_OutletBottom._status_request_ack_received')
         self._message_callbacks.add(StandardReceive.template(address = self._address,
-                                                             flags = MessageFlags.create(MESSAGE_TYPE_DIRECT_MESSAGE_ACK, None)), 
+                                                             flags = MessageFlags.template(MESSAGE_TYPE_DIRECT_MESSAGE_ACK, None)), 
                                     self._status_message_received)
         self.log.debug('Ending OnOffSwitch_OutletBottom._status_request_ack_received')
 
     def _on_off_message_ack(self, msg):
         self._status_request()
+
+class OpenClosedRelay(StateBase):
+    """Device state representing an On/Off switch that is controllable.
+
+    Available methods are:
+    open()
+    close()
+    register_updates()
+    async_refresh_state()
+    """
+    
+    def __init__(self, address, statename, group, send_message_method, message_callbacks, defaultvalue=None):
+        super().__init__(address, statename, group, send_message_method, message_callbacks, defaultvalue)
+
+        self._updatemethod = self._send_status_request
+
+        self._message_callbacks.add(StandardReceive.template(address = self._address,
+                                                             commandtuple = COMMAND_LIGHT_ON_0X11_NONE),
+                                   self._open_message_received)
+        self._message_callbacks.add(StandardReceive.template(address = self._address,
+                                                             commandtuple = COMMAND_LIGHT_OFF_0X13_0X00, 
+                                                             cmd2 = None),
+                                    self._close_message_received)
+        self._message_callbacks.add(StandardSend.template(address = self._address,
+                                                          commandtuple = COMMAND_LIGHT_STATUS_REQUEST_0X19_0X00, 
+                                                          acknak = MESSAGE_ACK), 
+                                    self._status_request_ack_received)
+
+    def open(self):
+        self.log.debug('Starting OpenCloseRelay.open')
+        self._send_method(StandardSend(self._address, COMMAND_LIGHT_ON_0X11_NONE, 0xff))
+        self.log.debug('Ending OpenCloseRelay.open')
+
+    def close(self):
+        self.log.debug('Starting OpenCloseRelay.close')
+        self._send_method(StandardSend(self._address, COMMAND_LIGHT_OFF_0X13_0X00))
+        self.log.debug('Ending OpenCloseRelay.close')
+
+    def _open_message_received(self, msg):
+        self.log.debug('Starting OpenCloseRelay._open_message_received')
+        if msg.flags.isDirectACK:
+            self._update_subscribers(0xff)
+        self.log.debug('Ending OpenCloseRelay._open_message_received')
+
+    def _close_message_received(self, msg):
+        self.log.debug('Starting OpenCloseRelay._close_message_received')
+        if msg.flags.isDirectACK:
+            self._update_subscribers(0x00)
+        self.log.debug('Ending OpenCloseRelay._close_message_received')
+
+    def _send_status_request(self):
+        self.log.debug('Starting OpenCloseRelay._send_status_request')
+        self._send_method(StandardSend(self._address, COMMAND_LIGHT_STATUS_REQUEST_0X19_0X00))
+        self.log.debug('Ending OpenCloseRelay._send_status_request')
+
+    def _status_request_ack_received(self, msg):
+        self.log.debug('Starting OpenCloseRelay._status_request_ack_received')
+        self._message_callbacks.add(StandardReceive.template(address = self._address,
+                                                             flags = MessageFlags.template(MESSAGE_TYPE_DIRECT_MESSAGE_ACK)), 
+                                    self._status_message_received, True)
+        self.log.debug('Ending OpenCloseRelay._status_request_ack_received')
+
+    def _status_message_received(self, msg):
+        self.log.debug('Starting OpenCloseRelay._status_message_received')
+        self._message_callbacks.remove(StandardReceive.template(address = self._address,
+                                                                flags = MessageFlags.template(MESSAGE_TYPE_DIRECT_MESSAGE_ACK)), 
+                                          self._status_message_received)
+        self._update_subscribers(msg.cmd2)
+        self.log.debug('Starting OpenCloseRelay._status_message_received')

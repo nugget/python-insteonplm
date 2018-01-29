@@ -130,6 +130,7 @@ def test_switchedLightingControl_2475F_status():
 
     mockPLM = MockPLM()
     address = '1a2b3c'
+    target = '4d5e6f'
 
     cat = 0x01
     subcat = 0x2e
@@ -144,20 +145,22 @@ def test_switchedLightingControl_2475F_status():
     assert device.states[0x01].name == 'lightOnLevel'
     assert device.states[0x02].name == 'fanOnLevel'
 
-    mockPLM.devices[address].states[0x01].register_updates(callbacks.device_status_callback2)
-    mockPLM.devices[address].states[0x02].register_updates(callbacks.device_status_callback2)
+    device.states[0x01].register_updates(callbacks.device_status_callback1)
+    device.states[0x02].register_updates(callbacks.device_status_callback2)
 
+    print('-------------------------------------------------------------------------')
     ackmsg = StandardSend(address, COMMAND_LIGHT_STATUS_REQUEST_0X19_0X00, acknak=MESSAGE_ACK)
-    statusmsg = StandardReceive(address, {'cmd1':0x03, 'cmd2':0x55}, MessageFlags.create(MESSAGE_TYPE_DIRECT_MESSAGE_ACK, 0))
-    mockPLM.receive_message(ackmsg)
-    mockPLM.receive_message(statusmsg)
+    statusmsg = StandardReceive(address, target, {'cmd1':0xdf, 'cmd2':0x55}, flags=MessageFlags.create(MESSAGE_TYPE_DIRECT_MESSAGE_ACK, 0, 2,3))
+    mockPLM.message_received(ackmsg)
+    mockPLM.message_received(statusmsg)
 
     assert callbacks.lightOnLevel == 0x55
-    
-    ackmsg = StandardSend(address, COMMAND_LIGHT_STATUS_REQUEST_0X19_0X00['cmd1'], 0x03, None, MESSAGE_ACK)
-    statusmsg = StandardSend(address, 0x03, 0x77)
-    mockPLM.receive_message(ackmsg)
-    mockPLM.receive_message(statusmsg)
+
+    print('-------------------------------------------------------------------------')
+    ackmsg = StandardSend(address, {'cmd1':0x19, 'cmd2':0x03}, flags=0x00, acknak=MESSAGE_ACK)
+    statusmsg = StandardReceive(address, target, {'cmd1':0xab, 'cmd2':0x77}, flags=MessageFlags.create(MESSAGE_TYPE_DIRECT_MESSAGE_ACK, 0, 2,3))
+    mockPLM.message_received(ackmsg)
+    mockPLM.message_received(statusmsg)
 
     assert callbacks.lightOnLevel == 0x55
     assert callbacks.fanOnLevel == 0x77
@@ -186,9 +189,9 @@ def test_securityhealthsafety():
     callbacks = sensorState()
 
     device = SecurityHealthSafety.create(mockPLM, address, cat, subcat, product_key, description, model)
-    device.sensor.connect(callbacks.sensor_status_callback)
-    msg = StandardReceive(address, target, 0x00, cmd1, cmd2)
-    device.receive_message(msg)
+    device.states[0x01].register_updates(callbacks.sensor_status_callback)
+    msg = StandardReceive(address, target, COMMAND_LIGHT_ON_0X11_NONE, cmd2=cmd2)
+    mockPLM.message_received(msg)
     assert callbacks.sensor == cmd2
 
 def test_securityhealthsafety_2982_222():
@@ -217,9 +220,9 @@ def test_securityhealthsafety_2982_222():
     callbacks = sensorState()
 
     device = SecurityHealthSafety_2982_222.create(mockPLM, address, cat, subcat, product_key, description, model)
-    device.sensor.connect(callbacks.sensor_status_callback)
-    msg = StandardReceive(address, target, 0x80, cmd1, cmd2)
-    device.receive_message(msg)
+    device.states[0x01].register_updates(callbacks.sensor_status_callback)
+    msg = StandardReceive(address, target, COMMAND_LIGHT_ON_0X11_NONE, cmd2=cmd2, flags=MessageFlags.create(MESSAGE_FLAG_BROADCAST_0X80, 0, 0, 0))
+    mockPLM.message_received(msg)
     assert callbacks.sensor == 0x6f
 
 def test_SensorsActuators_2450():
@@ -228,18 +231,17 @@ def test_SensorsActuators_2450():
         relayOnLevel = None
         sensorOnLevel = None
 
-        def device1_status_callback(self, id, state, value):
-            print('Called device 1 callback')
+        def device_status_callback1(self, id, state, value):
+            print('Called state 1 callback ', value)
             self.relayOnLevel = value
     
-        def device2_status_callback(self, id, state, value):
-            print('Called device 2 callback')
+        def device_status_callback2(self, id, state, value):
+            print('Called state 2 callback ', value)
             self.sensorOnLevel = value
 
     mockPLM = MockPLM()
     address = '1a2b3c'
-    id1 = '1a2b3c'
-    id2 = '1a2b3c_2'
+    target = '4d5e6f'
 
     cat = 0x07
     subcat = 0x00
@@ -249,25 +251,27 @@ def test_SensorsActuators_2450():
 
     callbacks = IOLincStatus()
 
-    devices = SensorsActuators_2450.create(mockPLM, address, cat, subcat, product_key, description, model)
+    device = SensorsActuators_2450.create(mockPLM, address, cat, subcat, product_key, description, model)
     
-    assert devices[0].id == id1
-    assert devices[1].id == id2
+    assert device.states[0x01].name == 'relayOpenClosed'    
+    assert device.states[0x02].name == 'sensorOpenClosed'
 
-    for device in devices:
-        mockPLM.devices[device.id] = device
-    mockPLM.devices[id1].relay.connect(callbacks.device1_status_callback)
-    mockPLM.devices[id2].sensor.connect(callbacks.device2_status_callback)
+    device.states[0x01].register_updates(callbacks.device_status_callback1)
+    device.states[0x02].register_updates(callbacks.device_status_callback2)
 
-    mockPLM.devices[id1].relay_status_request()
-    ackmsg = StandardSend(address, COMMAND_LIGHT_STATUS_REQUEST_0X19_0X00['cmd1'], 0x55, None, MESSAGE_ACK)
-    mockPLM.devices[address].receive_message(ackmsg)
+    device.async_refresh_state()
+    assert mockPLM.sentmessage == StandardSend(address, COMMAND_LIGHT_STATUS_REQUEST_0X19_0X01).to_hex()
+
+    ackmsg = StandardSend(address, COMMAND_LIGHT_STATUS_REQUEST_0X19_0X00, acknak=MESSAGE_ACK)
+    statusmsg = StandardReceive(address, target, COMMAND_LIGHT_ON_0X11_NONE, cmd2=0x55, flags=MessageFlags.create(MESSAGE_TYPE_DIRECT_MESSAGE_ACK, 0))
+    mockPLM.message_received(ackmsg)
+    mockPLM.message_received(statusmsg)
     assert callbacks.relayOnLevel == 0x55
     
-    mockPLM.devices[id2].sensor_status_request()
-    ackmsg = StandardSend(address, COMMAND_LIGHT_STATUS_REQUEST_0X19_0X00['cmd1'], 0x77, None, MESSAGE_ACK)
-    statusmsg = StandardSend(address, 0x03, 0x77)
-    mockPLM.devices[address].receive_message(ackmsg)
+    ackmsg = StandardSend(address, COMMAND_LIGHT_STATUS_REQUEST_0X19_0X01, acknak=MESSAGE_ACK)
+    statusmsg = StandardReceive(address, target, COMMAND_LIGHT_ON_0X11_NONE, cmd2=0x33, flags=MessageFlags.create(MESSAGE_TYPE_BROADCAST_MESSAGE, 0))
+    mockPLM.message_received(ackmsg)
+    mockPLM.message_received(statusmsg)
 
     assert callbacks.relayOnLevel == 0x55
-    assert callbacks.sensorOnLevel == 0x77
+    assert callbacks.sensorOnLevel == 1

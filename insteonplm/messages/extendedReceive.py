@@ -112,9 +112,9 @@ class ExtendedReceive(MessageBase):
             return None
 
     def _message_properties(self):
-        return {'address': self._address, 
-                'target': self._target, 
-                'flags': self._messageFlags,
-                'cmd1': self._cmd1,
-                'cmd2': self._cmd2,
-                'userdata': self._userdata}
+        return [{'address': self._address}, 
+                {'target': self._target}, 
+                {'flags': self._messageFlags},
+                {'cmd1': self._cmd1},
+                {'cmd2': self._cmd2},
+                {'userdata': self._userdata}]

@@ -94,7 +94,7 @@ class DeviceBase(object):
 
     def async_refresh_state(self):
         for state in self._stateList:
-            state.async_refresh_state()
+            self._stateList[state].async_refresh_state()
 
     #def set_status_callback(self, callback):
     #    self._state_status_callback = callback

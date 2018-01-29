@@ -49,10 +49,10 @@ class SendAllLinkCommand(MessageBase):
             return False
 
     def _message_properties(self):
-        return {'group': self._group,
-                'allLinkCommand': self._allLinkCommmand,
-                'broadcastCommand': self._broadcastCommand,
-                'acknak': self._acknak}
+        return [{'group': self._group},
+                {'allLinkCommand': self._allLinkCommmand},
+                {'broadcastCommand': self._broadcastCommand},
+                {'acknak': self._acknak}]
 
 
 

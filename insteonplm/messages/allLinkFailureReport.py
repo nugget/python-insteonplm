@@ -29,6 +29,6 @@ class AllLinkCleanupFailureReport(MessageBase):
         return self._address
 
     def _message_properties(self):
-        return {'failedFlag': self._failedFlag,
-                'group': self._group,
-                'address': self._address}
+        return [{'failedFlag': self._failedFlag},
+                {'group': self._group},
+                {'address': self._address}]

@@ -5,6 +5,10 @@ from insteonplm.messages.standardSend import StandardSend
 from insteonplm.messages.extendedReceive import ExtendedReceive
 from insteonplm.messages.userdata import Userdata
 
+
+import logging
+log = logging.getLogger(__name__)
+
 def test_messagecallback_basic():
     callbacks = MessageCallback()
     callbacktest1 = "test callback 1"
@@ -53,18 +57,22 @@ def test_messagecallback_acknak():
     callbacks.add(StandardSend.template(), callbacktest3)
     callbacks.add(StandardSend.template(acknak=MESSAGE_NAK), callbacktest4)
 
-    msg1 = StandardSend(address, COMMAND_LIGHT_ON_0X11_NONE, cmd2=0xcd)
+    msg1 = StandardSend(address,  COMMAND_LIGHT_ON_0X11_NONE, cmd2=0xcd)
     msg2 = StandardSend('222222', COMMAND_LIGHT_ON_0X11_NONE, cmd2=0xff)
     msg3 = StandardSend('333333', COMMAND_LIGHT_ON_0X11_NONE, cmd2=0xff, acknak=MESSAGE_NAK)
     msg4 = StandardSend('444444', COMMAND_LIGHT_ON_0X11_NONE, cmd2=0xff, acknak=MESSAGE_ACK)
 
+    log.debug('Getting callbacks for message 1')
     callback1 = callbacks.get_callbacks_from_message(msg1)
+    log.debug('Getting callbacks for message 2')
     callback2 = callbacks.get_callbacks_from_message(msg2)
+    log.debug('Getting callbacks for message 3')
     callback3 = callbacks.get_callbacks_from_message(msg3)
+    log.debug('Getting callbacks for message 4')
     callback4 = callbacks.get_callbacks_from_message(msg4)
     
-    assert len(callback1) == 2
-    assert len(callback2) == 1
+    assert len(callback1) == 4
+    assert len(callback2) == 2
     assert len(callback3) == 2
     assert len(callback4) == 1
 

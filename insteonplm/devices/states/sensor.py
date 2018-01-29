@@ -15,11 +15,12 @@ class OnOffSensor(StateBase):
     def __init__(self, address, statename, group, send_message_method, message_callbacks, defaultvalue=None):
         super().__init__(address, statename, group, send_message_method, message_callbacks, defaultvalue)
 
-        self._message_callbacks.add(StandardReceive.tempate(commandtuple = COMMAND_LIGHT_ON_0X11_NONE), 
-                                                            self._sensor_on_command_received)
-        self._message_callbacks.add(StandardReceive.tempate(commandtuple = COMMAND_LIGHT_OFF_0X13_0X00, cmd2 = None), 
-                                                            self._sensor_off_command_received)
-
+        self._message_callbacks.add(StandardReceive.template(address = self._address,
+                                                             commandtuple = COMMAND_LIGHT_ON_0X11_NONE),
+                                    self._sensor_on_command_received)
+        self._message_callbacks.add(StandardReceive.template(address = self._address,
+                                                             commandtuple = COMMAND_LIGHT_OFF_0X13_0X00, cmd2 = None),
+                                    self._sensor_off_command_received)
 
     def _sensor_on_command_received(self, msg):
         """
@@ -48,10 +49,68 @@ class SmokeCO2Sensor(StateBase):
     def __init__(self, address, statename, group, send_message_method, message_callbacks, defaultvalue=None):
         super().__init__(address, statename, group, send_message_method, message_callbacks, defaultvalue)
         
-        self._message_callbacks.add(StandardReceive.template(commandtuple = COMMAND_LIGHT_ON_0X11_NONE,
-                                                             flags = MessageFlags.create(MESSAGE_FLAG_BROADCAST_0X80, None)), self._sensor_state_received)
+        self._message_callbacks.add(StandardReceive.template(address=self._address,
+                                                             commandtuple = COMMAND_LIGHT_ON_0X11_NONE,
+                                                             flags = MessageFlags.template(MESSAGE_TYPE_BROADCAST_MESSAGE, None)), 
+                                    self._sensor_state_received)
 
     def _sensor_state_received(self, msg):
         self.log.debug('Starting SecurityHealthSafety_2982_222._sensor_on_command_received')
-        self.sensor.update(self.id, msg.targetHi)
+        self._update_subscribers(msg.targetHi)
         self.log.debug('Ending SecurityHealthSafety_2982_222._sensor_on_command_received')
+
+class IoLincSensor(StateBase):
+    def __init__(self, address, statename, group, send_message_method, message_callbacks, defaultvalue=None):
+        super().__init__(address, statename, group, send_message_method, message_callbacks, defaultvalue)
+
+        self._updatemethod = self._send_status_request
+        
+        self._message_callbacks.add(StandardReceive.template(address = self._address,
+                                                             commandtuple = COMMAND_LIGHT_ON_0X11_NONE),
+                                   self._open_message_received)
+        self._message_callbacks.add(StandardReceive.template(address = self._address,
+                                                             commandtuple = COMMAND_LIGHT_OFF_0X13_0X00, 
+                                                             cmd2 = None), 
+                                    self._close_message_received)
+        self._message_callbacks.add(StandardSend.template(address = self._address,
+                                                          commandtuple = COMMAND_LIGHT_STATUS_REQUEST_0X19_0X01, 
+                                                          acknak = MESSAGE_ACK), 
+                                    self._status_request_ack_received)
+
+    def sensor_status_request(self):
+        """Request status of the device sensor"""
+        self.log.debug('Starting IoLincSensor.sensor_status_request')
+        self._send_message(StandardSend(self._address, COMMAND_LIGHT_STATUS_REQUEST_0X19_0X01))
+        self.log.debug('Ending IoLincSensor.sensor_status_request')
+
+    def _send_status_request(self):
+        self.log.debug('Starting IoLincSensor._send_status_request')
+        self._send_method(StandardSend(self._address, COMMAND_LIGHT_STATUS_REQUEST_0X19_0X01))
+        self.log.debug('Ending IoLincSensor._send_status_request')
+
+    def _open_message_received(self, msg):
+        self.log.debug('Starting IoLincSensor._open_message_received')
+        if not msg.flags.isDirectACK:
+            self._update_subscribers(0x01)
+        self.log.debug('Ending IoLincSensor._open_message_received')
+
+    def _close_message_received(self, msg):
+        self.log.debug('Starting IoLincSensor._close_message_received')
+        if not msg.flags.isDirectACK:
+            self._update_subscribers(0x00)
+        self.log.debug('Ending IoLincSensor._close_message_received')
+
+    def _status_request_ack_received(self, msg):
+        self.log.debug('Starting IoLincSensor._status_request_ack_received')
+        self._message_callbacks.add(StandardReceive.template(address = self._address,
+                                                             flags = MessageFlags.template(MESSAGE_TYPE_DIRECT_MESSAGE_ACK)), 
+                                    self._status_message_received, True)
+        self.log.debug('Ending IoLincSensor._status_request_ack_received')
+    
+    def _status_message_received(self, msg):
+        self.log.debug('Starting IoLincSensor._status_message_received')
+        self._message_callbacks.remove(StandardReceive.template(address = self._address,
+                                                                flags = MessageFlags.template(MESSAGE_TYPE_DIRECT_MESSAGE_ACK)), 
+                                          self._status_message_received)
+        self._update_subscribers(msg.cmd2)
+        self.log.debug('Starting IoLincSensor._status_message_received')

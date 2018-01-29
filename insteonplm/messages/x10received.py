@@ -28,8 +28,8 @@ class X10Received(MessageBase):
         return self._flag
 
     def _message_properties(self):
-        return {'rawX10': self._rawX10,
-                'flag': self._flag}
+        return [{'rawX10': self._rawX10},
+                {'flag': self._flag}]
 
 
 

@@ -38,7 +38,7 @@ class StateBase(object):
         self._group = group
         self._value = defaultvalue
 
-        self._update_method = None
+        self._updatemethod = None
         self._send_method = send_message_method
         self._message_callbacks = message_callbacks
 

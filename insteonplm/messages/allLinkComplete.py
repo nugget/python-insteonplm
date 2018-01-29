@@ -75,11 +75,11 @@ class AllLinkComplete(MessageBase):
             return False
 
     def _message_properties(self):
-        return {'linkcode': self._linkcode,
-                'group': self._group,
-                'address': self._address,
-                'category': self._category,
-                'subcategory': self._subcategory, 
-                'firmware': self._firmware}
+        return [{'linkcode': self._linkcode},
+                {'group': self._group},
+                {'address': self._address},
+                {'category': self._category},
+                {'subcategory': self._subcategory}, 
+                {'firmware': self._firmware}]
 
 

@@ -62,10 +62,10 @@ class GetImInfo(MessageBase):
             return False
 
     def _message_properties(self):
-        return {'address': self._address,
-                'category': self._category,
-                'subcategory': self._subcategory,
-                'firmware': self._firmware,
-                'acknak': self._acknak}
+        return [{'address': self._address},
+                {'category': self._category},
+                {'subcategory': self._subcategory},
+                {'firmware': self._firmware},
+                {'acknak': self._acknak}]
 
 
