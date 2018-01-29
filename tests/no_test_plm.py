@@ -180,7 +180,7 @@ def test_plm1():
     logging.basicConfig(level=logging.DEBUG)
     loop = asyncio.get_event_loop()
     asyncio.async(do_plm(loop, log, devicelist))
-    loop.run_forever()kk
+    loop.run_forever()
     loop.close()
 
 if __name__ == "__main__":
