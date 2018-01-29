@@ -183,10 +183,10 @@ class PLM(asyncio.Protocol, DeviceBase):
         if cmd2out is None:
             raise ValueError
 
-        msg = StandardSend(addr, cmd1, cmd2out, flags, acknak)
+        msg = StandardSend(addr, {'cmd1':cmd1, 'cmd2':cmd2out}, flags=flags, acknak=acknak) 
         self.send_msg(msg)
 
-    def send_extended(self, addr, commandtuple, cmd2=None, flags=0x00, acknak=None, **userdata):
+    def send_extended(self, addr, commandtuple, userdata, cmd2=None, flags=0x00, acknak=None):
         if commandtuple.get('cmd1', False):
             cmd1 = commandtuple['cmd1']
             cmd2out = commandtuple['cmd2']
@@ -199,7 +199,7 @@ class PLM(asyncio.Protocol, DeviceBase):
         if cmd2out is None:
             raise ValueError
 
-        msg = ExtendedSend(addr, cmd1, cmd2out,flags,  acknak, **userdata)
+        msg = ExtendedSend(addr, {'cmd1':cmd1, 'cmd2':cmd2out}, userdata, flags=flags,  acknak=acknak)
         self.send_msg(msg)
 
     @asyncio.coroutine
@@ -358,7 +358,7 @@ class PLM(asyncio.Protocol, DeviceBase):
 
     def _handle_standard_or_extended_message_nak(self, msg):
         if msg.flags.isExtended:
-            self.send_extended(msg.address, {'cmd1':msg.cmd1, 'cmd2':msg.cmd2}, MESSAGE_FLAG_EXTENDED_0X10, msg.userdata)
+            self.send_extended(msg.address, {'cmd1':msg.cmd1, 'cmd2':msg.cmd2},  msg.userdata, flags=MESSAGE_FLAG_EXTENDED_0X10)
         else:
             self.send_standard(msg.address, {'cmd1':msg.cmd1, 'cmd2':msg.cmd2})
 
