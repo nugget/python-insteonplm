@@ -14,10 +14,10 @@ class MessageFlags(object):
             self._set_properties(flags)
         
     def __repr__(self):
-        return self.to_hex()
+        return self.hex
 
     def __str__(self):
-        return self.to_hex()
+        return self.hex
 
     def __eq__(self, other):
         if hasattr(other, 'messageType'):
@@ -195,7 +195,8 @@ class MessageFlags(object):
         flags._hopsMax = hopsmax        
         return flags
 
-    def to_byte(self):
+    @property
+    def bytes(self):
         flagByte = 0x00
         messageType = 0 if self._messageType is None else (self._messageType << 5)
         extendedBit = 0 if self._extended is None else self._extended << 4
@@ -204,13 +205,14 @@ class MessageFlags(object):
         flagByte = flagByte | messageType | extendedBit | hopsLeft | hopsMax
         return bytes([flagByte])
 
-    def to_hex(self):
-        return binascii.hexlify(self.to_byte()).decode()
+    @property
+    def hex(self):
+        return binascii.hexlify(self.bytes).decode()
 
     def _normalize(self, flags):
         """Take any format of flags and turn it into a hex string."""
         if isinstance(flags, MessageFlags):
-            return flags.to_byte()
+            return flags.bytes
         if isinstance(flags, bytearray):
             return binascii.hexlify(flags)
         if isinstance(flags, int):

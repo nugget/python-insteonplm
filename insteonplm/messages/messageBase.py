@@ -41,7 +41,7 @@ class MessageBase(metaclass=ClassPropertyMetaClass):
                 if isinstance(val, Address):
                     msgstr = msgstr + "'" + key + "': " + val.human
                 elif isinstance(val, MessageFlags):
-                    msgstr = msgstr + "'" + key + "': 0x" + val.to_hex()
+                    msgstr = msgstr + "'" + key + "': 0x" + val.hex
                 elif isinstance(val, int):
                     msgstr = msgstr + "'" + key + "': 0x" + binascii.hexlify(bytes([val])).decode()
                 elif isinstance(val, bytearray):
@@ -96,7 +96,8 @@ class MessageBase(metaclass=ClassPropertyMetaClass):
     def description(self):
         return self._description
 
-    def to_hex(self):
+    @property
+    def hex(self):
         props = self._message_properties()
         msg = bytearray([MESSAGE_START_CODE_0X02, self._code])
         i = 0
@@ -113,7 +114,7 @@ class MessageBase(metaclass=ClassPropertyMetaClass):
                     else:
                         msg.extend(val.bytes)
                 elif isinstance(val, MessageFlags):
-                    msg.extend(val.to_byte())
+                    msg.extend(val.bytes)
                 elif isinstance(val, bytearray):
                     msg.extend(val)
                 elif isinstance(val, bytes):
@@ -123,8 +124,9 @@ class MessageBase(metaclass=ClassPropertyMetaClass):
             
         return binascii.hexlify(msg).decode()
 
-    def to_bytes(self):
-        return binascii.unhexlify(self.to_hex())
+    @property
+    def bytes(self):
+        return binascii.unhexlify(self.hex)
 
     def matches_pattern(self, other):
         properties = self._message_properties()

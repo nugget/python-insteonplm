@@ -25,7 +25,7 @@ def test_messagecallback_basic():
     callback1 = callbacks.get_callbacks_from_message(msg)
     print('Callback: ', callback1)
     print('MT Code: {:x}'.format(msg.code))
-    print('msg: ', msg.to_hex())
+    print('msg: ', msg.hex)
 
     assert len(callback1) == 1
     assert callback1[0] == callbacktest1

@@ -260,7 +260,7 @@ def test_SensorsActuators_2450():
     device.states[0x02].register_updates(callbacks.device_status_callback2)
 
     device.async_refresh_state()
-    assert mockPLM.sentmessage == StandardSend(address, COMMAND_LIGHT_STATUS_REQUEST_0X19_0X01).to_hex()
+    assert mockPLM.sentmessage == StandardSend(address, COMMAND_LIGHT_STATUS_REQUEST_0X19_0X01).hex
 
     ackmsg = StandardSend(address, COMMAND_LIGHT_STATUS_REQUEST_0X19_0X00, acknak=MESSAGE_ACK)
     statusmsg = StandardReceive(address, target, COMMAND_LIGHT_ON_0X11_NONE, cmd2=0x55, flags=MessageFlags.create(MESSAGE_TYPE_DIRECT_MESSAGE_ACK, 0))

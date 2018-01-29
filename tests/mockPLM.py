@@ -12,7 +12,7 @@ class MockPLM(object):
         return self._message_callbacks
 
     def send_msg(self, msg):
-        self.sentmessage = msg.to_hex()
+        self.sentmessage = msg.hex
 
     def send_standard(self, device, command, cmd2=None, flags=None):
         """Send an INSTEON Standard message to the PLM.

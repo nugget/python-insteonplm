@@ -12,7 +12,7 @@ def test_switchedLightingControl_basic():
     plm = MockPLM()
     light = SwitchedLightingControl(plm, Address('1a2b3c'), 0x02, 0x04, 0x0, 'Some switch', 'ABC123')
     light.states[0x01].on()
-    assert plm.sentmessage == StandardSend(Address('1a2b3c'), COMMAND_LIGHT_ON_0X11_NONE, cmd2=0xff).to_hex()
+    assert plm.sentmessage == StandardSend(Address('1a2b3c'), COMMAND_LIGHT_ON_0X11_NONE, cmd2=0xff).hex
 
 def test_switchedLightingControl_callback():
     
