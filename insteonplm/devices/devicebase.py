@@ -63,7 +63,7 @@ class DeviceBase(object):
 
     @property
     def id(self):
-        return self._address
+        return self._address.hex
 
     @property
     def states(self):
