@@ -137,8 +137,8 @@ def do_plm(loop, log, devicelist):
     asyncio.sleep(.5)
     msg = insteonplm.messages.standardReceive.StandardReceive(address='4d5e6f', 
                                                               target='1a2b3c', 
-                                                              commandtuple={'cmd1':0x19, 'cmd2':0xff}, 
-                                                              flags=0x00)
+                                                              commandtuple={'cmd1':0x17, 'cmd2':0xff}, 
+                                                              flags=0x20)
     plm.data_received(msg.bytes)
     yield from asyncio.sleep(15)
 
@@ -146,7 +146,7 @@ def do_plm(loop, log, devicelist):
         assert plm.devices['4d5e6f'].states[0x01].value == 0xff
         print('Light On Level test passed')
     except:
-        print('Light On Level test failed')
+        print('Light On Level test failed ', plm.devices['4d5e6f'].states[0x01].value)
 
     msg = insteonplm.messages.standardSend.StandardSend(address='4d5e6f', commandtuple={'cmd1':0x011,'cmd2':0xff}, flags=0x00, acknak=0x15)
     plm.data_received(msg.bytes)
@@ -180,7 +180,7 @@ def test_plm1():
     logging.basicConfig(level=logging.DEBUG)
     loop = asyncio.get_event_loop()
     asyncio.async(do_plm(loop, log, devicelist))
-    loop.run_forever()
+    loop.run_forever()kk
     loop.close()
 
 if __name__ == "__main__":
