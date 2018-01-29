@@ -31,6 +31,21 @@ class Address(object):
         else:
             return true
 
+    def __lt__(self, other):
+        if isinstance(other, Address):
+            return str(self) < str(other)
+        else:
+            return TypeError
+
+    def __gt__(self, other):
+        if isinstance(other, Address):
+            return str(self) > str(other)
+        else:
+            return TypeError
+
+    def __hash__(self):
+        return hash(self.hex)
+
     def matches_pattern(self, other):
         if hasattr(other, 'addr'):
             if self.addr == None or other.addr == None:
