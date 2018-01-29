@@ -116,7 +116,7 @@ def do_plm(loop, log, devicelist):
     log.info('__________________________________')
     msg = insteonplm.messages.getNextAllLinkRecord.GetNextAllLinkRecord(0x15)
     plm.data_received(msg.bytes)
-    yield from asyncio.sleep(8)
+    yield from asyncio.sleep(4)
     
     log.info('Replying with Device Info Record')
     log.info('________________________________')
@@ -126,7 +126,8 @@ def do_plm(loop, log, devicelist):
                                                               flags=MESSAGE_FLAG_BROADCAST_0X80)
     plm.data_received(msg.bytes)
     yield from asyncio.sleep(14)
-    
+    for addr in plm.devices:
+        print('Device: ', addr)
     log.info('Replying with Device Status Record')
     log.info('__________________________________')
     msg = insteonplm.messages.standardSend.StandardSend(address='4d5e6f', 
