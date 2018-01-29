@@ -11,7 +11,7 @@ from .aldb import ALDB
 from .address import Address
 from .messagecallback import MessageCallback 
 from .messages import *
-from .messages.messageBase import MessageBase
+from .messages.message import Message
 from .devices.devicebase import DeviceBase
 
 __all__ = ('PLM')
