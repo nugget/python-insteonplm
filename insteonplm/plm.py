@@ -73,7 +73,7 @@ class PLM(asyncio.Protocol, DeviceBase):
         self._message_callbacks.add(StandardReceive.template(commandtuple=COMMAND_ASSIGN_TO_ALL_LINK_GROUP_0X01_NONE), 
                                     self._handle_assign_to_all_link_group)
 
-        self._message_callbacks.add(AllLinkRecordResponse(None, None, None, None, None, None, None), 
+        self._message_callbacks.add(AllLinkRecordResponse(None, None, None, None, None, None), 
                                     self._handle_all_link_record_response)
 
         self._message_callbacks.add(GetImInfo(), self._handle_get_plm_info)
