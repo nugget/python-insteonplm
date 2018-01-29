@@ -50,10 +50,10 @@ class PLM(asyncio.Protocol, DeviceBase):
         self._write_transport_lock = asyncio.Lock(loop=self._loop)
         self._message_callbacks = MessageCallback()
 
-        self.address = None
-        self.category = None
-        self.subcategory = None
-        self.firmware = None
+        self._address = None
+        self._cat = None
+        self._subcat = None
+        self._product_key = None
 
         self.log = logging.getLogger(__name__)
         self.transport = None
@@ -363,9 +363,9 @@ class PLM(asyncio.Protocol, DeviceBase):
     def _handle_get_plm_info(self, msg):
         self.log.debug('Starting _handle_get_plm_info')
         self.address = msg.address
-        self.category = msg.category
-        self.subcategory = msg.subcategory
-        self.firmware = msg.firmware
+        self._cat = msg.category
+        self._subcat = msg.subcategory
+        self._product_key = msg.firmware
         self.log.debug('Ending _handle_get_plm_info')
 
     def _load_all_link_database(self):
