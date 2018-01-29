@@ -86,7 +86,7 @@ class PLM(asyncio.Protocol, DeviceBase):
     def loop(self):
         return self._loop
 
-    @propery
+    @property
     def message_callbacks(self):
         return self._message_callbacks
 
