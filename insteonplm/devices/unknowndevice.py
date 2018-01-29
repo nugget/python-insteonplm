@@ -17,5 +17,5 @@ class UnKnownDevice(DeviceBase):
         read_aldb()
         write_aldb()
     """
-    def __init__(self, plm, address, cat=None, subcat=None, product_key=0x00, description='', model='', groupbutton=0x01):
-        super().__init__(plm, address, cat, subcat, product_key, description, model, groupbutton)
+    def __init__(self, plm, address, cat=None, subcat=None, product_key=0x00, description='', model=''):
+        super().__init__(plm, address, cat, subcat, product_key, description, model)

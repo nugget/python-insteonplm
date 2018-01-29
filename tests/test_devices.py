@@ -45,7 +45,6 @@ def test_switchedLightingControl_group():
     product_key = None
     description = 'ToggleLinc Relay'
     model = '2466S'
-    groupbutton = 0x02
 
     device = SwitchedLightingControl_2663_222(plm, address, cat, subcat, product_key, description, model)
 
@@ -68,7 +67,6 @@ def test_switchedLightingControl_2663_222():
     product_key = 0x00
     description = 'ToggleLinc Relay'
     model = '2466S'
-    groupbutton = 0x02
     device = SwitchedLightingControl_2663_222.create(plm, address, cat, subcat, product_key,description, model)
     assert len(device.states) == 2
 
