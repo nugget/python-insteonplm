@@ -279,5 +279,8 @@ class OpenClosedRelay(StateBase):
         self._message_callbacks.remove(StandardReceive.template(address = self._address,
                                                                 flags = MessageFlags.template(MESSAGE_TYPE_DIRECT_MESSAGE_ACK)), 
                                           self._status_message_received)
-        self._update_subscribers(msg.cmd2)
+        if msg.cmd2 == 0x00:
+            self._update_subscribers(0x00)
+        else:
+            self._update_subscribers(0xff)
         self.log.debug('Starting OpenCloseRelay._status_message_received')

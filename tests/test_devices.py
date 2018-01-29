@@ -266,12 +266,12 @@ def test_SensorsActuators_2450():
     statusmsg = StandardReceive(address, target, COMMAND_LIGHT_ON_0X11_NONE, cmd2=0x55, flags=MessageFlags.create(MESSAGE_TYPE_DIRECT_MESSAGE_ACK, 0))
     mockPLM.message_received(ackmsg)
     mockPLM.message_received(statusmsg)
-    assert callbacks.relayOnLevel == 0x55
+    assert callbacks.relayOnLevel == 0xff
     
     ackmsg = StandardSend(address, COMMAND_LIGHT_STATUS_REQUEST_0X19_0X01, acknak=MESSAGE_ACK)
     statusmsg = StandardReceive(address, target, COMMAND_LIGHT_ON_0X11_NONE, cmd2=0x33, flags=MessageFlags.create(MESSAGE_TYPE_BROADCAST_MESSAGE, 0))
     mockPLM.message_received(ackmsg)
     mockPLM.message_received(statusmsg)
 
-    assert callbacks.relayOnLevel == 0x55
+    assert callbacks.relayOnLevel == 0xff
     assert callbacks.sensorOnLevel == 1
