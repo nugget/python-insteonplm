@@ -1,6 +1,6 @@
 from .devicebase import DeviceBase
 from insteonplm.constants import *
-from .states.sensor import OnOffSensor, MotionSensor, SmokeCO2Sensor
+from insteonplm.states.sensor import OnOffSensor, MotionSensor, SmokeCO2Sensor
 
 class SecurityHealthSafety(DeviceBase):
     """Security Health Safety Control Device Class 0x10

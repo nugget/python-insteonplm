@@ -1,6 +1,6 @@
 from .devicebase import DeviceBase
 from insteonplm.constants import *
-from .states.onOff import OnOffSwitch, OnOffSwitch_OutletTop, OnOffSwitch_OutletBottom
+from insteonplm.states.onOff import OnOffSwitch, OnOffSwitch_OutletTop, OnOffSwitch_OutletBottom
 
 class SwitchedLightingControl(DeviceBase):
     def __init__(self, plm, address, cat, subcat, product_key=0x00, description='', model=''):

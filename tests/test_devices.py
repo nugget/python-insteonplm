@@ -32,7 +32,7 @@ def test_switchedLightingControl():
     assert device.product_key == 0x00 # Product key should not be None
     assert device.description == description
     assert device.model == model
-    assert device.id == Address(address)
+    assert device.id == address
 
     device.states[0x01].on()
     assert plm.sentmessage == '02621a2b3c0011ff'
@@ -54,7 +54,7 @@ def test_switchedLightingControl_group():
     assert device.product_key == 0x00 # Product key should not be None
     assert device.description == description
     assert device.model == model
-    assert device.id == Address(address)
+    assert device.id == address
 
     device.states[0x02].on()
     assert plm.sentmessage == '02621a2b3c1011ff0200000000000000000000000000'

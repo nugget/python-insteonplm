@@ -1,7 +1,7 @@
 from .devicebase import DeviceBase
 from insteonplm.constants import *
-from insteonplm.devices.states.onOff import OpenClosedRelay
-from insteonplm.devices.states.sensor import IoLincSensor
+from insteonplm.states.onOff import OpenClosedRelay
+from insteonplm.states.sensor import IoLincSensor
 
 class SensorsActuators(DeviceBase):
     """Sensors And Actuator Device Class 0x07

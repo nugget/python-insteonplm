@@ -3,13 +3,13 @@ import asyncio
 import datetime
 
 from insteonplm.address import Address
+from insteonplm.states.stateBase import StateBase
 from insteonplm.messages import (StandardReceive, StandardSend,
                                  ExtendedReceive, ExtendedSend,
                                  MessageBase)
 from insteonplm.constants import *
 from insteonplm.messagecallback import MessageCallback
 from .stateList import StateList
-from .states.stateBase import StateBase
 
 class DeviceBase(object):
     """INSTEON Device"""

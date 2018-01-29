@@ -1,6 +1,6 @@
 from .devicebase import DeviceBase
 from insteonplm.constants import *
-from .states.dimmable import DimmableSwitch, DimmableSwitch_Fan
+from insteonplm.states.dimmable import DimmableSwitch, DimmableSwitch_Fan
 
 class DimmableLightingControl(DeviceBase):
     """Dimmable Lighting Controller 0x01

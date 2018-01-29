@@ -1,4 +1,4 @@
-from .states.stateBase import StateBase
+from insteonplm.states.stateBase import StateBase
 
 class StateList(object):
     """Internal class used to hold a list of device states."""
