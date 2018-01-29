@@ -86,6 +86,7 @@ class PLM(asyncio.Protocol, DeviceBase):
     def loop(self):
         return self._loop
 
+    @propery
     def message_callbacks(self):
         return self._message_callbacks
 
@@ -363,7 +364,7 @@ class PLM(asyncio.Protocol, DeviceBase):
 
     def _handle_get_plm_info(self, msg):
         self.log.debug('Starting _handle_get_plm_info')
-        self.address = msg.address
+        self._address = msg.address
         self._cat = msg.category
         self._subcat = msg.subcategory
         self._product_key = msg.firmware
