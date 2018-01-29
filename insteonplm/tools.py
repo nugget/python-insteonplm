@@ -42,7 +42,10 @@ def console(loop, log, devicelist):
         """Log that our new device callback worked."""
         log.warn('New Device: %s %02x %02x %s, %s', device.id, device.cat, device.subcat, device.description, device.model)
 
-    def async_light_on_level_callback(id, state, value):
+    def async_light_on_level_callback_1(id, state, value):
+        log.info('Device %s state %s value is changed to %02x', id, state, value)
+
+    def async_light_on_level_callback_2(id, state, value):
         log.info('Device %s state %s value is changed to %02x', id, state, value)
 
     criteria = {}
@@ -54,7 +57,7 @@ def console(loop, log, devicelist):
 
     if 1 == 0:
         device = conn.protocol.devices['14627a']
-        device.lightOnLevel.connect(async_light_on_level_callback)
+        device.states[0x01].register_updates(async_light_on_level_callback_1)
         device.light_off()
 
         log.debug('Sent light off request')
@@ -73,8 +76,8 @@ def console(loop, log, devicelist):
     if 1 == 0:
         # Test Top Outlet
         device = conn.protocol.devices['4189cf']
-        device.lightOnLevel.connect(async_light_on_level_callback)
-        device.light_off()
+        device.states[0x01].register_updates(async_light_on_level_callback_1)
+        device.states[0x01].off()
 
         log.debug('Sent light off request')
         log.debug('----------------------')
@@ -85,9 +88,9 @@ def console(loop, log, devicelist):
         log.debug('----------------------')
         
         # Test Bottom Outlet
-        device = conn.protocol.devices['4189cf_2']
-        device.lightOnLevel.connect(async_light_on_level_callback)
-        device.light_off()
+        #device = conn.protocol.devices['4189cf_2']
+        device.states[0x02].register_updates(async_light_on_level_callback_2)
+        device.states[0x02].off()
 
         log.debug('Sent light off request')
         log.debug('----------------------')
@@ -97,17 +100,17 @@ def console(loop, log, devicelist):
         log.debug('Sent light on request')
         log.debug('----------------------')
 
-    if 1 == 1:
+    if 1 == 0:
         # Test Status Request message
-        device1 = conn.protocol.devices['4189cf']
-        device2 = conn.protocol.devices['4189cf_2']
-        device1.lightOnLevel.connect(async_light_on_level_callback)
-        device2.lightOnLevel.connect(async_light_on_level_callback)
+        state1 = conn.protocol.devices['4189cf'].states[0x01]
+        state2 = conn.protocol.devices['4189cf'].states[0x02]
+        state1.register_updates(async_light_on_level_callback_1)
+        state2.register_updates(async_light_on_level_callback_2)
 
         log.debug('Setting top outlet off and bottom outlet on')
         log.debug('----------------------')
-        device1.light_off()
-        device2.light_on()
+        state1.off()
+        state2.on()
         yield from asyncio.sleep(5, loop=loop)
         
         log.debug('Sent light status request')
@@ -117,19 +120,20 @@ def console(loop, log, devicelist):
 
         log.debug('Turn Bottom outlet off')
         log.debug('----------------------')
-        device2.light_off()
+        state2.off()
         yield from asyncio.sleep(5, loop=loop)
 
         
         log.debug('Sent light status request')
         log.debug('----------------------')
-        device2.light_status_request()
+        state2.async_refresh_state()
+
         yield from asyncio.sleep(5, loop=loop)
 
 
         log.debug('Turn Bottom outlet on')
         log.debug('----------------------')
-        device2.light_on()
+        state2.on()
 
 
 def monitor():
