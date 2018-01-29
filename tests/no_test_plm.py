@@ -84,19 +84,19 @@ def do_plm(loop, log, devicelist):
         print('Address check failed')
 
     try:
-        assert plm.category == 0x03
+        assert plm.cat == 0x03
         print('Category check passed')
     except:
         print('Category check failed')
 
     try:
-        assert plm.subcategory == 0x20
+        assert plm.subcat == 0x20
         print('Subcategory check passed')
     except:
         print('Subcategory check failed')
 
     try:
-        assert plm.firmware == 0x00
+        assert plm.product_key == 0x00
         print('Firmware check passed')
     except:
         print('Firmware check failed.')
@@ -143,7 +143,7 @@ def do_plm(loop, log, devicelist):
     yield from asyncio.sleep(15)
 
     try:
-        assert plm.devices['4d5e6f'].lightOnLevel.value == 0xff
+        assert plm.devices['4d5e6f'].states[0x01].value == 0xff
         print('Light On Level test passed')
     except:
         print('Light On Level test failed')
@@ -156,7 +156,7 @@ def do_plm(loop, log, devicelist):
         assert plm.transport.lastmessage == msg.bytes[:-1]
         print('NAK test passed')
     except:
-        print('NAK test failed')
+        print('NAK test failed: ', plm.transport.lastmessage)
 
     loop.stop()
 
