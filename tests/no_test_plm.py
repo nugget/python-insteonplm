@@ -74,6 +74,7 @@ def do_plm(loop, log, devicelist):
     log.info('Replying with IM Info')
     log.info('_____________________')
     msg = insteonplm.messages.getIMInfo.GetImInfo(address='1a2b3c', cat=0x03, subcat=0x20, firmware=0x00, acknak = 0x06)
+    print('GetIMInfo message: ', msg.hex)
     plm.data_received(msg.bytes)
     yield from asyncio.sleep(10)
     try:
