@@ -60,7 +60,8 @@ class Userdata(object):
         """Emit the address in bytes format (b'\xaabbcc')."""
         byteout = bytearray()
         first = True
-        for key in self._userdata:
+        for i in range(1, 15):
+            key = 'd' + str(i)
             if self._userdata[key] is not None:
                 byteout.append(self._userdata[key])
             else:
