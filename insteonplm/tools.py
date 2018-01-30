@@ -42,7 +42,7 @@ def console(loop, log, devicelist):
         """Log that our new device callback worked."""
         log.warn('New Device: %s %02x %02x %s, %s', device.id, device.cat, device.subcat, device.description, device.model)
         for state in device.states:
-            state.register_updates(async_state_change_callback)
+            device.states[state].register_updates(async_state_change_callback)
 
     def async_state_change_callback(id, state, value):
         log.info('Device %s state %s value is changed to %02x', id, state, value)
