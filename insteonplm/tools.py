@@ -36,7 +36,7 @@ def console(loop, log, devicelist):
 
     log.info('Connecting to Insteon PLM at %s', device)
 
-    conn = yield from insteonplm.Connection.create(device=device, loop=loop, userdefined=devicelist)
+    conn = insteonplm.Connection.create(device=device, loop=loop, userdefined=devicelist)
 
     def async_insteonplm_add_device_callback(device):
         """Log that our new device callback worked."""
@@ -52,7 +52,7 @@ def console(loop, log, devicelist):
 
     plm = conn.protocol
 
-    #yield from asyncio.sleep(120, loop=loop)
+    yield from asyncio.sleep(180, loop=loop)
 
     if 1 == 1:
         device = conn.protocol.devices['14627a']
