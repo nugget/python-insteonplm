@@ -35,7 +35,8 @@ class DeviceBase(object):
         self._stateList = StateList()
         self._send_msg_lock = asyncio.Lock(loop=self._plm.loop)
 
-        self._plm.message_callbacks.add(StandardReceive.template(address=self._address), self._receive_message)
+        if not hasattr(self, '_noRegisterCallback'):
+            self._plm.message_callbacks.add(StandardReceive.template(address=self._address), self._receive_message)
 
     @property
     def address(self):

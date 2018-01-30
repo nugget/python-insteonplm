@@ -2,7 +2,7 @@
 import logging
 import collections
 
-from .unknowndevice import UnKnownDevice 
+from .unknowndevice import UnknownDevice 
 from .generalController import GeneralController
 from .dimmableLightingControl import DimmableLightingControl
 from .dimmableLightingControl import DimmableLightingControl_2475F
@@ -22,7 +22,7 @@ class IPDB(object):
     """Embodies the INSTEON Product Database static data and access methods."""
 
     products = [
-        Product(None, None, None, '', '', UnKnownDevice),
+        Product(None, None, None, '', '', UnknownDevice),
         
         Product(0x00, None, None, 'Generic General Controller', '', GeneralController),
         Product(0x00, 0x04, None, 'ControLinc', '2430', GeneralController),

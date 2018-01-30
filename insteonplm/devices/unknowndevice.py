@@ -1,7 +1,7 @@
 from .devicebase import DeviceBase
 from insteonplm.constants import *
 
-class UnKnownDevice(DeviceBase):
+class UnknownDevice(DeviceBase):
     """
     Unknown Device used when only the device address is known but no other information.
     Available methods:
@@ -18,4 +18,5 @@ class UnKnownDevice(DeviceBase):
         write_aldb()
     """
     def __init__(self, plm, address, cat=None, subcat=None, product_key=0x00, description='', model=''):
+        self._noRegisterCallback = False
         super().__init__(plm, address, cat, subcat, product_key, description, model)
