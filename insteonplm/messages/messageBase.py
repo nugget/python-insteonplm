@@ -151,8 +151,6 @@ class MessageBase(metaclass=ClassPropertyMetaClass):
                         break
                 if not ismatch:
                     break
-        self.log.debug(self)
-        self.log.debug(other)
         return ismatch
     
     def fromDevice(self, devices):
