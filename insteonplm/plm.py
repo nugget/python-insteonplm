@@ -222,7 +222,7 @@ class PLM(asyncio.Protocol, DeviceBase):
                     self.log.debug('No new messages received.')
                     break
                 # process the item
-                self.log.debug('Writing %d byte message to transport: %s', len(msg.bytes), msg.hex)
+                self.log.debug('Writing message: %s', msg)
                 self.transport.write(msg.bytes)
                 yield from asyncio.sleep(1, loop=self._loop)
             self.log.debug('Lock status: %r', self._write_transport_lock.locked())
