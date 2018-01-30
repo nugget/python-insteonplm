@@ -162,7 +162,7 @@ class OnOffSwitch_OutletBottom(StateBase):
         self._send_method(ExtendedSend(self._address, COMMAND_LIGHT_ON_0X11_NONE, self._udata, 0xff))
 
     def off(self):
-        self._send_method(ExtendedSend(self._address, COMMAND_LIGHT_OFF_0X13_0x00, self._udata))
+        self._send_method(ExtendedSend(self._address, COMMAND_LIGHT_OFF_0X13_0X00, self._udata))
 
     def _on_message_received(self, msg):
         self.log.debug('Starting OnOffSwitch_OutletBottom._on_message_received')
