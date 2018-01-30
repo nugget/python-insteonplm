@@ -52,9 +52,9 @@ def console(loop, log, devicelist):
 
     plm = conn.protocol
 
-    yield from asyncio.sleep(120, loop=loop)
+    #yield from asyncio.sleep(120, loop=loop)
 
-    if 1 == 0:
+    if 1 == 1:
         device = conn.protocol.devices['14627a']
         device.light_off()
 
@@ -71,7 +71,7 @@ def console(loop, log, devicelist):
             log.debug('Address: %s', key)
         yield from asyncio.sleep(5, loop=loop)
 
-    if 1 == 0:
+    if 1 == 1:
         # Test Top Outlet
         device = conn.protocol.devices['4189cf']
         device.states[0x01].off()
@@ -95,7 +95,7 @@ def console(loop, log, devicelist):
         log.debug('Sent light on request')
         log.debug('----------------------')
 
-    if 1 == 0:
+    if 1 == 1:
         # Test Status Request message
         state1 = conn.protocol.devices['4189cf'].states[0x01]
         state2 = conn.protocol.devices['4189cf'].states[0x02]

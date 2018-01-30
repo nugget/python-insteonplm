@@ -8,8 +8,7 @@ from .dimmableLightingControl import DimmableLightingControl
 from .dimmableLightingControl import DimmableLightingControl_2475F
 from .switchedLightingControl import SwitchedLightingControl
 from .switchedLightingControl import SwitchedLightingControl_2663_222 
-from .securityHealthSafety import SecurityHealthSafety 
-from .securityHealthSafety import SecurityHealthSafety_2982_222
+from .securityHealthSafety import SecurityHealthSafety, SecurityHealthSafety_2842_222,SecurityHealthSafety_2982_222
 from .sensorsActuators import SensorsActuators
 from .sensorsActuators import SensorsActuators_2450
 
@@ -107,7 +106,7 @@ class IPDB(object):
 
         
         Product(0x10, None, None, 'Generic Security, Heath and Safety Device', '', SecurityHealthSafety),
-        Product(0x10, 0x01, None, 'Motion Sensor', '2842-222', SecurityHealthSafety),
+        Product(0x10, 0x01, None, 'Motion Sensor', '2842-222', SecurityHealthSafety_2842_222),
         Product(0x10, 0x02, None, 'TriggerLinc', '2421', SecurityHealthSafety),
         Product(0x10, 0x08, None, 'Water Leak Sensor', '2852-222', SecurityHealthSafety),
         Product(0x10, 0x0a, None, 'Smoke Bridge', '2982-222', SecurityHealthSafety_2982_222),
