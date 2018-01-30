@@ -123,7 +123,7 @@ class PLM(asyncio.Protocol, DeviceBase):
                 callbacks = self._message_callbacks.get_callbacks_from_message(msg)
                 if len(callbacks) > 0:
                     for callback in callbacks:
-                        self.log.debug('Calling method %s on device %s', callback.__func__, msg.address)
+                        self.log.debug('Calling method %s', callback.__func__)
                         self._loop.call_soon(callback, msg)
                 else:
                     self.log.debug('No callback found for message %s', str(msg))
