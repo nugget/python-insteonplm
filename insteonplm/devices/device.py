@@ -16,9 +16,9 @@ class Device(object):
 
         ipdb = IPDB()
         product = ipdb[[cat, subcat]]
-        deviceclass = product[5]
+        deviceclass = product.deviceclass
         if deviceclass is not None:
-            return deviceclass.create(plm, address, cat, subcat, product[2], product[3], product[4])
+            return deviceclass.create(plm, address, cat, subcat, product.product_key, product.description, product.model)
         else:
             return None
 
