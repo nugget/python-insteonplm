@@ -63,7 +63,7 @@ def console(loop, log, devicelist):
         log.debug('----------------------')
         yield from asyncio.sleep(5, loop=loop)
 
-        device.light_on()
+        device.states[0x01].on()
         log.debug('Sent light on request')
         log.debug('----------------------')
 
