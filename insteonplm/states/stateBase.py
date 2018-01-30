@@ -56,6 +56,10 @@ class StateBase(object):
     def address(self):
         return self._address
 
+    @property
+    def group(self):
+        return self._group
+
     def async_refresh_state(self):
         if self._updatemethod is not None:
             self._updatemethod()
