@@ -24,6 +24,8 @@ class SecurityHealthSafety_2842_222(DeviceBase):
     
     def __init__(self, plm, address, cat, subcat, product_key=None, description=None, model=None):
         super().__init__(plm, address, cat, subcat, product_key, description, model)
+
+        self._product_data_in_aldb = True
         
         self._stateList[0x01] = MotionSensor(self._address, "motionSensor", 0x01, self._plm.send_msg, self._plm.message_callbacks, 0x00)
             
