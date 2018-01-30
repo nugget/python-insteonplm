@@ -119,16 +119,14 @@ class PLM(asyncio.Protocol, DeviceBase):
         while worktodo:
             try:
                 msg = self._recv_queue.pop()
-                self.log.debug('Processing message %s', msg.hex)
+                self.log.debug('Processing message %s', msg)
                 callbacks = self._message_callbacks.get_callbacks_from_message(msg)
                 if len(callbacks) > 0:
                     for callback in callbacks:
+                        self.log.debug('Calling method %s on device %s', callback.__func__, msg.address)
                         self._loop.call_soon(callback, msg)
-                else:             
-                    if hasattr(msg, 'cmd1'):
-                        self.log.debug('No callback found for message code %02x with cmd1 %02x and cmd2 %02x and acknak %02x', msg.code, msg.cmd1, msg.cmd2, msg.acknak)
-                    else:
-                        self.log.debug('No call back found for message %s', msg.hex)
+                else:
+                    self.log.debug('No callback found for message %s', str(msg))
             except IndexError:
                 self.log.debug('Last item in self._recv_queue reached.')
                 worktodo = False
