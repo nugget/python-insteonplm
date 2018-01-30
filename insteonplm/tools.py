@@ -57,7 +57,7 @@ def console(loop, log, devicelist):
 
     if 1 == 1:
         device = conn.protocol.devices['14627a']
-        device.light_off()
+        device.states[0x01].off()
 
         log.debug('Sent light off request')
         log.debug('----------------------')

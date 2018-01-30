@@ -38,7 +38,7 @@ class OnOffSensor(StateBase):
         When a message is received any state listeners are updated with the 
         return 0x00 for off
         """
-        self.sensor.update(self.id, 0x00)
+        self._update_subscribers(0x00)
 
 class MotionSensor(OnOffSensor):
     
