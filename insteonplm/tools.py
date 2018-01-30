@@ -52,54 +52,53 @@ def console(loop, log, devicelist):
 
     plm = conn.protocol
 
-    log.warning('Got here, now waiting')
-    yield from asyncio.sleep(180, loop=loop)
+    yield from asyncio.sleep(240, loop=loop)
 
     if 1 == 1:
-        device = conn.protocol.devices['14627a']
+        device = plm.devices['14627a']
         device.states[0x01].off()
 
-        log.debug('Sent light off request')
+        log.debug('Sent office light off request')
         log.debug('----------------------')
         yield from asyncio.sleep(5, loop=loop)
 
         device.states[0x01].on()
-        log.debug('Sent light on request')
+        log.debug('Sent office light on request')
         log.debug('----------------------')
 
-    if 1 == 1:
-        for key in conn.protocol.devices:
+    if 1 == 0:
+        for key in plm.devices:
             log.debug('Address: %s', key)
         yield from asyncio.sleep(5, loop=loop)
 
     if 1 == 1:
         # Test Top Outlet
-        device = conn.protocol.devices['4189cf']
+        device = plm.devices['4189cf']
         device.states[0x01].off()
 
-        log.debug('Sent light off request')
+        log.debug('Sent top outlet off request')
         log.debug('----------------------')
         yield from asyncio.sleep(5, loop=loop)
 
-        device.light_on()
-        log.debug('Sent light on request')
+        device.states[0x01].on()
+        log.debug('Sent top outlet on request')
         log.debug('----------------------')
         
         # Test Bottom Outlet
         device.states[0x02].off()
 
-        log.debug('Sent light off request')
+        log.debug('Sent bottom outlet off request')
         log.debug('----------------------')
         yield from asyncio.sleep(5, loop=loop)
-
-        device.light_on()
-        log.debug('Sent light on request')
+        
+        device.states[0x02].on()
+        log.debug('Sent bottom outlet on request')
         log.debug('----------------------')
 
     if 1 == 1:
         # Test Status Request message
-        state1 = conn.protocol.devices['4189cf'].states[0x01]
-        state2 = conn.protocol.devices['4189cf'].states[0x02]
+        state1 = plm.devices['4189cf'].states[0x01]
+        state2 = plm.devices['4189cf'].states[0x02]
 
         log.debug('Setting top outlet off and bottom outlet on')
         log.debug('----------------------')
@@ -107,9 +106,14 @@ def console(loop, log, devicelist):
         state2.on()
         yield from asyncio.sleep(5, loop=loop)
         
-        log.debug('Sent light status request')
+        log.debug('Sent top outlet status request')
         log.debug('----------------------')
-        device1.light_status_request()
+        state1.async_refresh_state()
+        yield from asyncio.sleep(5, loop=loop)
+        
+        log.debug('Sent top and bottom outlet status request')
+        log.debug('----------------------')
+        state2.async_refresh_state()
         yield from asyncio.sleep(5, loop=loop)
 
         log.debug('Turn Bottom outlet off')
