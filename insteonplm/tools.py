@@ -38,18 +38,17 @@ def console(loop, log, devicelist):
 
     conn = yield from insteonplm.Connection.create(device=device, loop=loop, userdefined=devicelist)
 
-    def async_insteonplm_light_callback(device):
+    def async_insteonplm_add_device_callback(device):
         """Log that our new device callback worked."""
         log.warn('New Device: %s %02x %02x %s, %s', device.id, device.cat, device.subcat, device.description, device.model)
+        for state in device.states:
+            state.register_updates(async_state_change_callback)
 
-    def async_light_on_level_callback_1(id, state, value):
-        log.info('Device %s state %s value is changed to %02x', id, state, value)
-
-    def async_light_on_level_callback_2(id, state, value):
+    def async_state_change_callback(id, state, value):
         log.info('Device %s state %s value is changed to %02x', id, state, value)
 
     criteria = {}
-    conn.protocol.add_device_callback(async_insteonplm_light_callback)
+    conn.protocol.add_device_callback(async_insteonplm_add_device_callback)
 
     plm = conn.protocol
 
@@ -57,7 +56,6 @@ def console(loop, log, devicelist):
 
     if 1 == 0:
         device = conn.protocol.devices['14627a']
-        device.states[0x01].register_updates(async_light_on_level_callback_1)
         device.light_off()
 
         log.debug('Sent light off request')
@@ -76,7 +74,6 @@ def console(loop, log, devicelist):
     if 1 == 0:
         # Test Top Outlet
         device = conn.protocol.devices['4189cf']
-        device.states[0x01].register_updates(async_light_on_level_callback_1)
         device.states[0x01].off()
 
         log.debug('Sent light off request')
@@ -88,8 +85,6 @@ def console(loop, log, devicelist):
         log.debug('----------------------')
         
         # Test Bottom Outlet
-        #device = conn.protocol.devices['4189cf_2']
-        device.states[0x02].register_updates(async_light_on_level_callback_2)
         device.states[0x02].off()
 
         log.debug('Sent light off request')
@@ -104,8 +99,6 @@ def console(loop, log, devicelist):
         # Test Status Request message
         state1 = conn.protocol.devices['4189cf'].states[0x01]
         state2 = conn.protocol.devices['4189cf'].states[0x02]
-        state1.register_updates(async_light_on_level_callback_1)
-        state2.register_updates(async_light_on_level_callback_2)
 
         log.debug('Setting top outlet off and bottom outlet on')
         log.debug('----------------------')
