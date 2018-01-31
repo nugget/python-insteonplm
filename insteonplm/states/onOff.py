@@ -56,7 +56,7 @@ class OnOffSwitch(StateBase):
 
     def _send_status_request(self):
         self.log.debug('Starting OnOffSwitch._send_status_request')
-        self._send_method(StandardSend(self._address, COMMAND_LIGHT_STATUS_REQUEST_0X19_0X00), _status_message_received)
+        self._send_method(StandardSend(self._address, COMMAND_LIGHT_STATUS_REQUEST_0X19_0X00), self._status_message_received)
 
     def _status_message_received(self, msg):
         self.log.debug('Starting OnOffSwitch._status_message_received')
