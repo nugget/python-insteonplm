@@ -84,10 +84,17 @@ class OnOffSwitch_OutletTop(OnOffSwitch):
     def __init__(self, address, statename, group, send_message_method, message_callbacks, defaultvalue=None):
         super().__init__(address, statename, group, send_message_method, message_callbacks, defaultvalue)
         
+        self._updatemethod = self._send_status_0x01_request
+
         self._message_callbacks.add(StandardSend.template(address = self._address,
                                                           commandtuple = COMMAND_LIGHT_STATUS_REQUEST_0X19_0X01, 
                                                           acknak=MESSAGE_ACK ), 
                                     self._status_request_0x01_ack_received)
+
+    def _send_status_0x01_request(self):
+        self.log.debug('Starting OnOffSwitch_OutletBottom._status_request')
+        self._send_method(StandardSend(self._address, COMMAND_LIGHT_STATUS_REQUEST_0X19_0X01))
+        self.log.debug('Ending OnOffSwitch_OutletBottom._status_request')
 
     def _status_message_0x01_received(self, msg):
         """
@@ -133,7 +140,7 @@ class OnOffSwitch_OutletBottom(StateBase):
     def __init__(self, address, statename, group, send_message_method, set_message_callback_method, defaultvalue=None):
         super().__init__(address, statename, group, send_message_method, set_message_callback_method, defaultvalue)
 
-        self._updatemethod = self._status_request
+        self._updatemethod = self._send_status_0x01_request
         self._udata = {'d1': self._group}
         self._message_callbacks.add(ExtendedReceive.template(address = self._address, 
                                                              commandtuple = COMMAND_LIGHT_ON_0X11_NONE, 
@@ -174,7 +181,7 @@ class OnOffSwitch_OutletBottom(StateBase):
         self._update_subscribers(0xff)
         self.log.debug('Ending OnOffSwitch_OutletBottom._off_message_received')
 
-    def _status_request(self):
+    def _send_status_0x01_request(self):
         self.log.debug('Starting OnOffSwitch_OutletBottom._status_request')
         self._send_method(StandardSend(self._address, COMMAND_LIGHT_STATUS_REQUEST_0X19_0X01))
         self.log.debug('Ending OnOffSwitch_OutletBottom._status_request')
