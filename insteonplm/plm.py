@@ -102,6 +102,7 @@ class PLM(asyncio.Protocol, DeviceBase):
         # self.transport.set_write_buffer_limits(128)
         # limit = self.transport.get_write_buffer_size()
         # self.log.debug('Write buffer size is %d', limit)
+        self._load_known_devices()
         self._get_plm_info()
         self._load_all_link_database()
 
@@ -419,5 +420,8 @@ class PLM(asyncio.Protocol, DeviceBase):
             lastlooplen = len(self._buffer)
 
         self.log.debug("Finishing: _peel_messages_from_buffer")
+
+    def _load_known_devices(self):
+        pass
 
 
