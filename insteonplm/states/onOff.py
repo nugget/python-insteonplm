@@ -270,7 +270,7 @@ class OnOffSwitch_OutletBottom(StateBase):
         """
         self.log.debug('Starting OnOffSwitch_OutletBottom._status_message_received')
 
-        self._message_callbacks.add(StandardReceive.template(address = self._address,
+        self._message_callbacks.remove(StandardReceive.template(address = self._address,
                                                              flags = MessageFlags.template(MESSAGE_TYPE_DIRECT_MESSAGE_ACK, None)), 
                                     self._status_message_received)
 
