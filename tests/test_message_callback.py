@@ -3,10 +3,12 @@ from insteonplm.constants import *
 from insteonplm.messages.standardReceive import StandardReceive
 from insteonplm.messages.standardSend import StandardSend
 from insteonplm.messages.extendedReceive import ExtendedReceive
+from insteonplm.messages.extendedSend import ExtendedSend
 from insteonplm.messages.allLinkRecordResponse import AllLinkRecordResponse
 from insteonplm.messages.getIMInfo import GetImInfo
 from insteonplm.messages.getNextAllLinkRecord import GetNextAllLinkRecord
 from insteonplm.messages.userdata import Userdata
+from .mockCallbacks import MockCallbacks
 
 
 import logging
@@ -146,3 +148,22 @@ def test_misc_messages():
     assert callbacklist2[0] == callbacktest2
     assert len(callbacklist3) == 0
     assert callbacklist4[0] == callbacktest3
+
+def test_extended_ack():
+    callbacks = MockCallbacks()
+    callbacks.callbackvalue1 = "Callback 1"
+    callbacks.callbackvalue2 = "Callback 2"
+    message_callbacks = MessageCallback()
+    address = '1a2b3c'
+    
+    message_callbacks.add(ExtendedSend.template(address, acknak=MESSAGE_ACK), callbacks.callbackvalue1)
+    message_callbacks.add(StandardSend.template(address, acknak=MESSAGE_ACK), callbacks.callbackvalue2)
+    extmsg = ExtendedSend(address, COMMAND_LIGHT_ON_0X11_NONE, {'d1':0x02}, cmd2=0xff, acknak=MESSAGE_ACK)
+    stdmsg = StandardSend(address, COMMAND_LIGHT_ON_0X11_NONE, cmd2=0xff, acknak=MESSAGE_ACK)
+    result1 = message_callbacks.get_callbacks_from_message(extmsg)
+    result2 = message_callbacks.get_callbacks_from_message(stdmsg)
+
+    assert result2 == [callbacks.callbackvalue2]
+    assert result1 == [callbacks.callbackvalue1]
+
+    

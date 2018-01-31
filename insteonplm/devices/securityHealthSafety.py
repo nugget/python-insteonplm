@@ -18,7 +18,7 @@ class SecurityHealthSafety(DeviceBase):
     def __init__(self, plm, address, cat, subcat, product_key=None, description=None, model=None):
         super().__init__(plm, address, cat, subcat, product_key, description, model)
         
-        self._stateList[0x01] = OnOffSensor(self._address, "onOffSensor", 0x01, self._plm.send_msg, self._plm.message_callbacks, 0x00)
+        self._stateList[0x01] = OnOffSensor(self._address, "onOffSensor", 0x01, self._send_msg, self._plm.message_callbacks, 0x00)
 
 class SecurityHealthSafety_2842_222(DeviceBase):
     
@@ -27,11 +27,11 @@ class SecurityHealthSafety_2842_222(DeviceBase):
 
         self._product_data_in_aldb = True
         
-        self._stateList[0x01] = MotionSensor(self._address, "motionSensor", 0x01, self._plm.send_msg, self._plm.message_callbacks, 0x00)
+        self._stateList[0x01] = MotionSensor(self._address, "motionSensor", 0x01, sself._send_msg, self._plm.message_callbacks, 0x00)
             
 class SecurityHealthSafety_2982_222(DeviceBase):
     
     def __init__(self, plm, address, cat, subcat, product_key=None, description=None, model=None):
         super().__init__(plm, address, cat, subcat, product_key, description, model)
         
-        self._stateList[0x01] = SmokeCO2Sensor(self._address, "smokeCO2Sensor", 0x01, self._plm.send_msg, self._plm.message_callbacks, 0x00)
+        self._stateList[0x01] = SmokeCO2Sensor(self._address, "smokeCO2Sensor", 0x01, self._send_msg, self._plm.message_callbacks, 0x00)

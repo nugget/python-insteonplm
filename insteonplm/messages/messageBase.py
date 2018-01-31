@@ -140,6 +140,8 @@ class MessageBase(metaclass=ClassPropertyMetaClass):
                             ismatch = p.matches_pattern(k)
                         elif isinstance(p, Address):
                             ismatch = p.matches_pattern(k)
+                        elif isinstance(p, Userdata):
+                            ismatch = p.matches_pattern(k)
                         else:
                             if p is None or k is None:
                                 ismatch = True

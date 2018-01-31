@@ -1,11 +1,11 @@
 from insteonplm.messagecallback import MessageCallback
 
 class MockPLM(object):
-    def __init__(self):
+    def __init__(self, loop=None):
         self.sentmessage = ''
         #self.devices = ALDB()
         self._message_callbacks = MessageCallback()
-        self.loop = None
+        self.loop = loop
 
     @property
     def message_callbacks(self):
@@ -68,5 +68,5 @@ class MockPLM(object):
         #    for callback in self._message_callbacks[key]:
         #        print(key, callback.__name__)
         for callback in self._message_callbacks.get_callbacks_from_message(msg):
-            print('Calling: ', callback.__name__)
+            print('PLM calling: ', callback)
             callback(msg)

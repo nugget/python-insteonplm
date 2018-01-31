@@ -23,25 +23,24 @@ class DimmableSwitch(StateBase):
 
         self._updatemethod = self._send_status_request
 
-        self._message_callbacks.add(StandardReceive.template(address = self._address,
-                                                             commandtuple = COMMAND_LIGHT_ON_0X11_NONE), 
-                                    self._on_message_received)
-        self._message_callbacks.add(StandardReceive.template(address = self._address,
-                                                             commandtuple = COMMAND_LIGHT_OFF_0X13_0X00, cmd2 = None), 
-                                    self._off_message_received)
-        self._message_callbacks.add(StandardSend.template(address = self._address,
-                                                          commandtuple = COMMAND_LIGHT_STATUS_REQUEST_0X19_0X00,
-                                                          acknak = MESSAGE_ACK), 
-                                    self._status_request_ack_received)
+        self._message_callbacks.add(StandardReceive.template(address=self._address, 
+                                                             commandtuple=COMMAND_LIGHT_STOP_MANUAL_CHANGE_0X18_0X00), 
+                                    self._manual_change_received)
+        self._message_callbacks.add(StandardReceive.template(address=self._address, 
+                                                             commandtuple=COMMAND_LIGHT_MANUALLY_TURNED_OFF_0X22_0X00), 
+                                    self._manual_change_received)
+        self._message_callbacks.add(StandardReceive.template(address=self._address, 
+                                                             commandtuple=COMMAND_LIGHT_MANUALLY_TURNED_ON_0X23_0X00), 
+                                    self._manual_change_received)
 
     def on(self):
         self.log.debug('Starting DimmableSwitch.on')
-        self._send_method(StandardSend(self._address, COMMAND_LIGHT_ON_0X11_NONE, cmd2 = 0xff))
+        self._send_method(StandardSend(self._address, COMMAND_LIGHT_ON_0X11_NONE, cmd2 = 0xff), self._on_message_received)
         self.log.debug('Ending DimmableSwitch.on')
 
     def off(self):
         self.log.debug('Starting DimmableSwitch.off')
-        self._send_method(StandardSend(self._address, COMMAND_LIGHT_OFF_0X13_0X00))
+        self._send_method(StandardSend(self._address, COMMAND_LIGHT_OFF_0X13_0X00), self._off_message_received)
         self.log.debug('Ending DimmableSwitch._off')
 
     def set_level(self, val):
@@ -54,7 +53,7 @@ class DimmableSwitch(StateBase):
                 setlevel = val*100
             elif val <= 0xff:
                 setlevel = val
-            self._send_method(StandardSend(self._address, COMMAND_LIGHT_ON_0X11_NONE, cmd2 = setlevel))
+            self._send_method(StandardSend(self._address, COMMAND_LIGHT_ON_0X11_NONE, cmd2 = setlevel), self._on_message_received)
         self.log.debug('Ending DimmableSwitch.set_level')
 
     def brighten(self):
@@ -77,23 +76,16 @@ class DimmableSwitch(StateBase):
         self._update_subscribers(0x00)
         self.log.debug('Starting DimmableSwitch._off_message_received')
 
+    def _manual_change_received(self, msg):
+        self._send_status_request()
+
     def _send_status_request(self):
         self.log.debug('Starting DimmableSwitch._send_status_request')
-        self._send_method(StandardSend(self._address, COMMAND_LIGHT_STATUS_REQUEST_0X19_0X00))
+        self._send_method(StandardSend(self._address, COMMAND_LIGHT_STATUS_REQUEST_0X19_0X00), self._status_message_received)
         self.log.debug('Ending DimmableSwitch._send_status_request')
-
-    def _status_request_ack_received(self, msg):
-        self.log.debug('Starting DimmableSwitch._status_request_ack_received')
-        self._message_callbacks.add(StandardReceive.template(address = self._address,
-                                                             flags = MessageFlags.template(MESSAGE_TYPE_DIRECT_MESSAGE_ACK, None)), 
-                                    self._status_message_received, True)
-        self.log.debug('Ending DimmableSwitch._status_request_ack_received')
 
     def _status_message_received(self, msg):
         self.log.debug('Starting DimmableSwitch._status_message_received')
-        self._message_callbacks.remove(StandardReceive.template(address = self._address,
-                                                                flags = MessageFlags.template(MESSAGE_TYPE_DIRECT_MESSAGE_ACK, None)), 
-                                       self._status_message_received)
         self._update_subscribers(msg.cmd2)
         self.log.debug('Starting DimmableSwitch._status_message_received')
 
@@ -114,23 +106,10 @@ class DimmableSwitch_Fan(StateBase):
 
         self._updatemethod = self._status_request
         self._udata = {'d1': self._group}
-        self._message_callbacks.add(ExtendedReceive.template(address = self._address, 
-                                                             commandtuple = COMMAND_LIGHT_ON_0X11_NONE, 
-                                                             userdata = self._udata), 
-                                    self._on_message_received)
-        self._message_callbacks.add(ExtendedReceive.template(address = self._address, 
-                                                             commandtuple = COMMAND_LIGHT_OFF_0X13_0X00, 
-                                                             userdata = self._udata), 
-                                    self._off_message_received)
-        self._message_callbacks.add(StandardSend.template(address = self._address,
-                                                          commandtuple = COMMAND_LIGHT_STATUS_REQUEST_0X19_NONE,
-                                                          cmd2=0x03,
-                                                          acknak=MESSAGE_ACK), 
-                                    self._status_request_ack_received)
 
     def on(self):
         self.log.debug('Starting DimmableSwitch_Fan.on')
-        self._send_method(ExtendedSend(self._address, COMMAND_LIGHT_ON_0X11_NONE, self._udata, cmd2 = FAN_SPEED_MEDIUM))
+        self._send_method(ExtendedSend(self._address, COMMAND_LIGHT_ON_0X11_NONE, self._udata, cmd2 = FAN_SPEED_MEDIUM), self._on_message_received)
         self.log.debug('Ending DimmableSwitch_Fan.on')
 
     def set_level(self, val):
@@ -139,12 +118,12 @@ class DimmableSwitch_Fan(StateBase):
         if val == 0:
             speed.off()
         else:
-            self._send_method(ExtendedSend(self._address, COMMAND_LIGHT_ON_0X11_NONE, self._udata, cmd2 = speed))
+            self._send_method(ExtendedSend(self._address, COMMAND_LIGHT_ON_0X11_NONE, self._udata, cmd2 = speed), self._on_message_received)
         self.log.debug('Ending DimmableSwitch_Fan.set_level')
 
     def off(self):
         self.log.debug('Starting DimmableSwitch_Fan.off')
-        self._send_method(ExtendedSend(self._address, COMMAND_LIGHT_OFF_0X13_0x00, self._udata))
+        self._send_method(ExtendedSend(self._address, COMMAND_LIGHT_OFF_0X13_0x00, self._udata), self._off_message_received)
         self.log.debug('Ending DimmableSwitch_Fan.off')
 
     def _on_message_received(self, msg):
@@ -159,7 +138,7 @@ class DimmableSwitch_Fan(StateBase):
 
     def _status_request(self):
         self.log.debug('Starting DimmableSwitch_Fan._status_request')
-        self._send_method(StandardSend(self._address, COMMAND_LIGHT_STATUS_REQUEST_0X19_NONE, cmd2=0x03))
+        self._send_method(StandardSend(self._address, COMMAND_LIGHT_STATUS_REQUEST_0X19_NONE, cmd2=0x03), self._status_message_received)
         self.log.debug('Ending DimmableSwitch_Fan._status_request')
 
     def _status_message_received(self, msg):
@@ -171,20 +150,8 @@ class DimmableSwitch_Fan(StateBase):
             0x03 = Both Outlets On 
         """
         self.log.debug('Starting DimmableSwitch_Fan._status_message_received')
-
-        self._message_callbacks.remove(StandardReceive.template(address = self._address,
-                                                                flags = MessageFlags.template(MESSAGE_TYPE_DIRECT_MESSAGE_ACK, None)), 
-                                       self._status_message_received)
-
         self._update_subscribers(msg.cmd2)
         self.log.debug('Ending DimmableSwitch_Fan._status_message_received')
-    
-    def _status_request_ack_received(self, msg):
-        self.log.debug('Starting DimmableSwitch_Fan._status_request_ack_received')
-        self._message_callbacks.add(StandardReceive.template(address = self._address,
-                                                             flags = MessageFlags.template(MESSAGE_TYPE_DIRECT_MESSAGE_ACK, None)), 
-                                    self._status_message_received)
-        self.log.debug('Ending DimmableSwitch_Fan._status_request_ack_received')
 
     def _value_to_fan_speed(self, speed):
         if speed > 0xfe:

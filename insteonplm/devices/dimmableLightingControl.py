@@ -21,7 +21,7 @@ class DimmableLightingControl(DeviceBase):
     def __init__(self, plm, address, cat, subcat, product_key=None, description=None, model=None):
         DeviceBase.__init__(self, plm, address, cat, subcat, product_key, description, model)
 
-        self._stateList[0x01] = DimmableSwitch(self._address, "lightOnLevel", 0x01, self._plm.send_msg, self._plm.message_callbacks, 0x00)
+        self._stateList[0x01] = DimmableSwitch(self._address, "lightOnLevel", 0x01, self._send_msg, self._plm.message_callbacks, 0x00)
 
 class DimmableLightingControl_2475F(DimmableLightingControl):
     
@@ -52,5 +52,5 @@ class DimmableLightingControl_2475F(DimmableLightingControl):
     def __init__(self, plm, address, cat, subcat, product_key=None, description=None, model=None):
         super().__init__(plm, address, cat, subcat, product_key, description, model)
 
-        self._stateList[0x01] = DimmableSwitch(self._address, "lightOnLevel", 0x01, self._plm.send_msg, self._plm.message_callbacks, 0x00)
-        self._stateList[0x02] = DimmableSwitch_Fan(self._address, "fanOnLevel", 0x02, self._plm.send_msg, self._plm.message_callbacks, 0x00)
+        self._stateList[0x01] = DimmableSwitch(self._address, "lightOnLevel", 0x01, self._send_msg, self._plm.message_callbacks, 0x00)
+        self._stateList[0x02] = DimmableSwitch_Fan(self._address, "fanOnLevel", 0x02, self._send_msg, self._plm.message_callbacks, 0x00)

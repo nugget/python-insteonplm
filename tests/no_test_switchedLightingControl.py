@@ -1,3 +1,4 @@
+import asyncio
 from insteonplm.devices.switchedLightingControl import SwitchedLightingControl, SwitchedLightingControl_2663_222
 from insteonplm.messages.standardSend import StandardSend 
 from insteonplm.messages.standardReceive import StandardReceive 
@@ -9,27 +10,35 @@ from insteonplm.constants import *
 from .mockPLM import MockPLM
 
 def test_switchedLightingControl_basic():
-    plm = MockPLM()
-    light = SwitchedLightingControl(plm, Address('1a2b3c'), 0x02, 0x04, 0x0, 'Some switch', 'ABC123')
-    light.states[0x01].on()
-    assert plm.sentmessage == StandardSend(Address('1a2b3c'), COMMAND_LIGHT_ON_0X11_NONE, cmd2=0xff).hex
+    def run_test(loop):
+        plm = MockPLM(loop)
+        light = SwitchedLightingControl(plm, Address('1a2b3c'), 0x02, 0x04, 0x0, 'Some switch', 'ABC123')
+        light.states[0x01].on()
+        assert plm.sentmessage == StandardSend(Address('1a2b3c'), COMMAND_LIGHT_ON_0X11_NONE, cmd2=0xff).hex
+        
+    loop = asyncio.get_event_loop()
+    loop.run_until_complete(run_test(loop))
 
 def test_switchedLightingControl_callback():
+    def run_test(loop):
+        class lightStatus(object):
+            lightOnLevel = None
+
+            def state_status_callback(self, id, state, value):
+                print('Called device callback')
+                self.lightOnLevel = value
+
+        plm = MockPLM(loop)
+        light = SwitchedLightingControl(plm, Address('1a2b3c'), 0x02, 0x04, 0x0, 'Some switch', 'ABC123')
+        callback = lightStatus()
+        light.states[0x01].register_updates(callback.state_status_callback)
+
+        plm.message_received(StandardReceive(Address('1a2b3c'), Address('4d5e6f'), COMMAND_LIGHT_ON_0X11_NONE, cmd2=0xff))
+        yield from asyncio.sleep(.1, loop=loop)
+        assert callback.lightOnLevel == 0xff
     
-    class lightStatus(object):
-        lightOnLevel = None
-
-        def state_status_callback(self, id, state, value):
-            print('Called device callback')
-            self.lightOnLevel = value
-
-    plm = MockPLM()
-    light = SwitchedLightingControl(plm, Address('1a2b3c'), 0x02, 0x04, 0x0, 'Some switch', 'ABC123')
-    callback = lightStatus()
-    light.states[0x01].register_updates(callback.state_status_callback)
-
-    plm.message_received(StandardReceive(Address('1a2b3c'), Address('4d5e6f'), COMMAND_LIGHT_ON_0X11_NONE, cmd2=0xff))
-    assert callback.lightOnLevel == 0xff
+    loop = asyncio.get_event_loop()
+    loop.run_until_complete(run_test(loop))
 
 def test_SwitchedLightingControl_2663_222():
     address = '1a2b3c'

@@ -3,7 +3,7 @@ import asyncio
 import logging
 import binascii
 import time
-from collections import deque
+from collections import deque, namedtuple
 import async_timeout
 
 from .constants import *
@@ -22,7 +22,7 @@ WAIT_TIMEOUT = 2
 class PLM(asyncio.Protocol, DeviceBase):
     """The Insteon PLM IP control protocol handler."""
 
-    def __init__(self, loop=None, connection_lost_callback=None, userdefineddevices=()):
+    def __init__(self, loop=None, connection_lost_callback=None, userdefineddevices=(), workdir=None):
         """Protocol handler that handles all status and changes on PLM.
 
         This class is expected to be wrapped inside a Connection class object
@@ -41,6 +41,7 @@ class PLM(asyncio.Protocol, DeviceBase):
         self._loop = loop
 
         self._connection_lost_callback = connection_lost_callback
+        self._workdir = workdir
 
         self._buffer = bytearray()
         self._recv_queue = deque([])
@@ -212,7 +213,6 @@ class PLM(asyncio.Protocol, DeviceBase):
         if not self._write_transport_lock.locked():
             self.log.debug('Aquiring write lock')
             yield from self._write_transport_lock.acquire()
-            self.log.debug(self._write_transport_lock.locked())
             while True:
                 self.log.debug(self._write_transport_lock.locked())
                 # wait for an item from the queue
@@ -226,8 +226,6 @@ class PLM(asyncio.Protocol, DeviceBase):
                 self.log.debug('Writing message: %s', msg)
                 self.transport.write(msg.bytes)
                 yield from asyncio.sleep(1, loop=self._loop)
-            self.log.debug('Lock status: %r', self._write_transport_lock.locked())
-            self.log.debug('Releasing write lock')
             self._write_transport_lock.release()
         else:
             pass
@@ -353,6 +351,7 @@ class PLM(asyncio.Protocol, DeviceBase):
             delay = num_devices_not_added*3
             self._loop.call_later(delay, self._handle_get_next_all_link_record_nak, None)
         else:
+            self._save_devices()
             self._loop.call_soon(self.poll_devices)
         self.log.debug('Ending _handle_get_next_all_link_record_nak')
 
@@ -423,5 +422,14 @@ class PLM(asyncio.Protocol, DeviceBase):
 
     def _load_known_devices(self):
         pass
+
+    def _save_devices(self):
+        if self._workdir is not None:
+            devices = []
+            DeviceInfo = namedtuple('DeviceInfo', 'address cat subcat product_key')
+            for device in self.devices:
+                deviceInfo = DeviceInfo(device.address, device.cat, device.subcat, device.product_key)
+                devices.append(deviceInfo)
+
 
 

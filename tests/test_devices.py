@@ -1,3 +1,4 @@
+import asyncio
 import insteonplm
 from insteonplm.constants import *
 from insteonplm.aldb import ALDB
@@ -14,50 +15,92 @@ from insteonplm.devices.securityHealthSafety import SecurityHealthSafety
 from insteonplm.devices.securityHealthSafety import SecurityHealthSafety_2982_222
 from insteonplm.devices.sensorsActuators import SensorsActuators_2450 
 from .mockPLM import MockPLM
+from .mockCallbacks import MockCallbacks 
 
 def test_switchedLightingControl():
-    plm = MockPLM()
-    address = '1a2b3c'
-    cat = 0x02
-    subcat = 0x0d
-    product_key = None
-    description = 'ToggleLinc Relay'
-    model = '2466S'
 
-    device = SwitchedLightingControl(plm, address, cat, subcat, product_key, description, model)
+    def run_test(loop):
+        plm = MockPLM(loop)
+        address = '1a2b3c'
+        cat = 0x02
+        subcat = 0x0d
+        product_key = None
+        description = 'ToggleLinc Relay'
+        model = '2466S'
 
-    assert device.address.hex == address
-    assert device.cat == cat
-    assert device.subcat == subcat
-    assert device.product_key == 0x00 # Product key should not be None
-    assert device.description == description
-    assert device.model == model
-    assert device.id == address
+        device = SwitchedLightingControl(plm, address, cat, subcat, product_key, description, model)
 
-    device.states[0x01].on()
-    assert plm.sentmessage == '02621a2b3c0011ff'
+        assert device.address.hex == address
+        assert device.cat == cat
+        assert device.subcat == subcat
+        assert device.product_key == 0x00 # Product key should not be None
+        assert device.description == description
+        assert device.model == model
+        assert device.id == address
+
+        device.states[0x01].on()
+        yield from asyncio.sleep(.1, loop=loop)
+        assert plm.sentmessage == '02621a2b3c0011ff'
+    
+    loop = asyncio.get_event_loop()
+    loop.run_until_complete(run_test(loop))
 
 def test_switchedLightingControl_group():
-    plm = MockPLM()
-    address = '1a2b3c'
-    cat = 0x02
-    subcat = 0x0d
-    product_key = None
-    description = 'ToggleLinc Relay'
-    model = '2466S'
+    @asyncio.coroutine
+    def run_test(loop):
+        plm = MockPLM(loop)
+        callbacks = MockCallbacks()
 
-    device = SwitchedLightingControl_2663_222(plm, address, cat, subcat, product_key, description, model)
+        address = '1a2b3c'
+        target = '4d5e6f'
+        cat = 0x02
+        subcat = 0x0d
+        product_key = None
+        description = 'ToggleLinc Relay'
+        model = '2466S'
 
-    assert device.address.hex == address
-    assert device.cat == cat
-    assert device.subcat == subcat
-    assert device.product_key == 0x00 # Product key should not be None
-    assert device.description == description
-    assert device.model == model
-    assert device.id == address
+        device = SwitchedLightingControl_2663_222(plm, address, cat, subcat, product_key, description, model)
 
-    device.states[0x02].on()
-    assert plm.sentmessage == '02621a2b3c1011ff0200000000000000000000000000'
+        assert device.address.hex == address
+        assert device.cat == cat
+        assert device.subcat == subcat
+        assert device.product_key == 0x00 # Product key should not be None
+        assert device.description == description
+        assert device.model == model
+        assert device.id == address
+    
+        device.states[0x01].register_updates(callbacks.callbackmethod1)
+        device.states[0x02].register_updates(callbacks.callbackmethod2)
+
+        device.states[0x01].on()
+        yield from asyncio.sleep(.1, loop=loop)
+        assert plm.sentmessage == StandardSend(address, COMMAND_LIGHT_ON_0X11_NONE, cmd2=0xff).hex
+        ackmsg = StandardSend(address, COMMAND_LIGHT_ON_0X11_NONE, cmd2=0xff, acknak=MESSAGE_ACK)
+        dirmsg = StandardReceive(address, target, COMMAND_LIGHT_ON_0X11_NONE, cmd2=0xff, flags=MessageFlags.create(MESSAGE_TYPE_DIRECT_MESSAGE_ACK, 0, 2, 3))
+        plm.message_received(ackmsg)
+        yield from asyncio.sleep(.1, loop=loop)
+        plm.message_received(dirmsg)
+        yield from asyncio.sleep(.1, loop=loop)
+        assert callbacks.callbackvalue1 == 0xff
+        
+        yield from asyncio.sleep(.1, loop=loop)
+        plm.sentmessage = None
+        device.states[0x02].on()
+        yield from asyncio.sleep(.1, loop=loop)
+        assert plm.sentmessage == ExtendedSend(address, COMMAND_LIGHT_ON_0X11_NONE, {'d1':0x02}, cmd2=0xff).hex
+
+        ackmsg = ExtendedSend(address, COMMAND_LIGHT_ON_0X11_NONE, {'d1':0x02}, cmd2=0xff, acknak=MESSAGE_ACK)
+        callbacksfound = plm.message_callbacks.get_callbacks_from_message(ackmsg)
+        dirmsg = StandardReceive(address, target, COMMAND_LIGHT_ON_0X11_NONE, cmd2=0xff, flags=MessageFlags.create(MESSAGE_TYPE_DIRECT_MESSAGE_ACK, 0, 2, 3))
+        plm.message_received(ackmsg)
+        yield from asyncio.sleep(.1, loop=loop)
+        plm.message_received(dirmsg)
+        yield from asyncio.sleep(.1, loop=loop)
+        assert callbacks.callbackvalue2 == 0xff
+        yield from asyncio.sleep(.1, loop=loop)
+
+    loop = asyncio.get_event_loop()
+    loop.run_until_complete(run_test(loop))
 
 def test_switchedLightingControl_2663_222():
     plm = MockPLM()
@@ -71,97 +114,115 @@ def test_switchedLightingControl_2663_222():
     assert len(device.states) == 2
 
 def test_switchedLightingControl_2663_222_status():
+    @asyncio.coroutine
+    def run_test(loop):
+        class lightStatus(object):
+            lightOnLevel1 = None
+            lightOnLevel2 = None
 
-    class lightStatus(object):
-        lightOnLevel1 = None
-        lightOnLevel2 = None
-
-        def device_status_callback1(self, id, state, value):
-            print('Called device 1 callback')
-            self.lightOnLevel1 = value
+            def device_status_callback1(self, id, state, value):
+                print('Called device 1 callback')
+                self.lightOnLevel1 = value
     
-        def device_status_callback2(self, id, state, value):
-            print('Called device 2 callback')
-            self.lightOnLevel2 = value
+            def device_status_callback2(self, id, state, value):
+                print('Called device 2 callback')
+                self.lightOnLevel2 = value
 
-    mockPLM = MockPLM()
-    address = '1a2b3c'
-    target = '4d5e6f'
+        mockPLM = MockPLM(loop)
+        address = '1a2b3c'
+        target = '4d5e6f'
 
-    cat = 0x02
-    subcat = 0x0d
-    product_key = None
-    description = 'ToggleLinc Relay'
-    model = '2466S'
+        cat = 0x02
+        subcat = 0x0d
+        product_key = None
+        description = 'ToggleLinc Relay'
+        model = '2466S'
 
-    callbacks = lightStatus()
+        callbacks = lightStatus()
 
-    device = SwitchedLightingControl_2663_222.create(mockPLM, address, cat, subcat, product_key, description, model)
+        device = SwitchedLightingControl_2663_222.create(mockPLM, address, cat, subcat, product_key, description, model)
     
-    assert device.states[0x01].name == 'outletTopOnOff'
-    assert device.states[0x02].name == 'outletBottomOnOff'
+        assert device.states[0x01].name == 'outletTopOnOff'
+        assert device.states[0x02].name == 'outletBottomOnOff'
 
-    device.states[0x01].register_updates(callbacks.device_status_callback1)
-    device.states[0x02].register_updates(callbacks.device_status_callback2)
+        device.states[0x01].register_updates(callbacks.device_status_callback1)
+        device.states[0x02].register_updates(callbacks.device_status_callback2)
 
-    ackmsg = StandardSend(address, COMMAND_LIGHT_STATUS_REQUEST_0X19_0X01, acknak=MESSAGE_ACK)
-    statusmsg = StandardReceive(address, target,  {'cmd1':0x03, 'cmd2':0x01}, flags=MessageFlags.create(MESSAGE_TYPE_DIRECT_MESSAGE_ACK, 0))
 
-    mockPLM.message_received(ackmsg)
-    mockPLM.message_received(statusmsg)
-    assert callbacks.lightOnLevel1 == 0xff
-    assert callbacks.lightOnLevel2 == 0x00
+        device.states[0x02].async_refresh_state()
+        yield from asyncio.sleep(.1, loop)
+        ackmsg = StandardSend(address, COMMAND_LIGHT_STATUS_REQUEST_0X19_0X01, acknak=MESSAGE_ACK)
+        statusmsg = StandardReceive(address, target,  {'cmd1':0x03, 'cmd2':0x01}, flags=MessageFlags.create(MESSAGE_TYPE_DIRECT_MESSAGE_ACK, 0, 2,3))
+        mockPLM.message_received(ackmsg)
+        yield from asyncio.sleep(.1, loop)
+        mockPLM.message_received(statusmsg)
+        yield from asyncio.sleep(.1, loop)
+        #assert callbacks.lightOnLevel1 == 0xff
+        assert callbacks.lightOnLevel2 == 0x00
+
+    loop = asyncio.get_event_loop()
+    loop.run_until_complete(run_test(loop))
 
 def test_switchedLightingControl_2475F_status():
 
-    class fanLincStatus(object):
-        lightOnLevel = None
-        fanOnLevel = None
+    def run_test(loop):
+        class fanLincStatus(object):
+            lightOnLevel = None
+            fanOnLevel = None
 
-        def device_status_callback1(self, id, state, value):
-            print('Called device 1 callback')
-            self.lightOnLevel = value
+            def device_status_callback1(self, id, state, value):
+                print('Called device 1 callback')
+                self.lightOnLevel = value
     
-        def device_status_callback2(self, id, state, value):
-            print('Called device 2 callback')
-            self.fanOnLevel = value
+            def device_status_callback2(self, id, state, value):
+                print('Called device 2 callback')
+                self.fanOnLevel = value
 
-    mockPLM = MockPLM()
-    address = '1a2b3c'
-    target = '4d5e6f'
+        mockPLM = MockPLM(loop)
+        address = '1a2b3c'
+        target = '4d5e6f'
 
-    cat = 0x01
-    subcat = 0x2e
-    product_key = 0x00
-    description = 'FanLinc Dual Band'
-    model = '2475F'
+        cat = 0x01
+        subcat = 0x2e
+        product_key = 0x00
+        description = 'FanLinc Dual Band'
+        model = '2475F'
 
-    callbacks = fanLincStatus()
+        callbacks = fanLincStatus()
 
-    device = DimmableLightingControl_2475F.create(mockPLM, address, cat, subcat, product_key, description, model)
+        device = DimmableLightingControl_2475F.create(mockPLM, address, cat, subcat, product_key, description, model)
     
-    assert device.states[0x01].name == 'lightOnLevel'
-    assert device.states[0x02].name == 'fanOnLevel'
+        assert device.states[0x01].name == 'lightOnLevel'
+        assert device.states[0x02].name == 'fanOnLevel'
 
-    device.states[0x01].register_updates(callbacks.device_status_callback1)
-    device.states[0x02].register_updates(callbacks.device_status_callback2)
+        device.states[0x01].register_updates(callbacks.device_status_callback1)
+        device.states[0x02].register_updates(callbacks.device_status_callback2)
 
-    print('-------------------------------------------------------------------------')
-    ackmsg = StandardSend(address, COMMAND_LIGHT_STATUS_REQUEST_0X19_0X00, acknak=MESSAGE_ACK)
-    statusmsg = StandardReceive(address, target, {'cmd1':0xdf, 'cmd2':0x55}, flags=MessageFlags.create(MESSAGE_TYPE_DIRECT_MESSAGE_ACK, 0, 2,3))
-    mockPLM.message_received(ackmsg)
-    mockPLM.message_received(statusmsg)
+        device.states[0x01].async_refresh_state()
+        yield from asyncio.sleep(.1, loop=loop)
+        ackmsg = StandardSend(address, COMMAND_LIGHT_STATUS_REQUEST_0X19_0X00, acknak=MESSAGE_ACK)
+        statusmsg = StandardReceive(address, target, {'cmd1':0xdf, 'cmd2':0x55}, flags=MessageFlags.create(MESSAGE_TYPE_DIRECT_MESSAGE_ACK, 0, 2,3))
+        mockPLM.message_received(ackmsg)
+        yield from asyncio.sleep(.1, loop=loop)
+        mockPLM.message_received(statusmsg)
+        yield from asyncio.sleep(.1, loop=loop)
 
-    assert callbacks.lightOnLevel == 0x55
+        assert callbacks.lightOnLevel == 0x55
 
-    print('-------------------------------------------------------------------------')
-    ackmsg = StandardSend(address, {'cmd1':0x19, 'cmd2':0x03}, flags=0x00, acknak=MESSAGE_ACK)
-    statusmsg = StandardReceive(address, target, {'cmd1':0xab, 'cmd2':0x77}, flags=MessageFlags.create(MESSAGE_TYPE_DIRECT_MESSAGE_ACK, 0, 2,3))
-    mockPLM.message_received(ackmsg)
-    mockPLM.message_received(statusmsg)
+        device.states[0x02].async_refresh_state()
+        yield from asyncio.sleep(.1, loop=loop)
+        ackmsg = StandardSend(address, {'cmd1':0x19, 'cmd2':0x03}, flags=0x00, acknak=MESSAGE_ACK)
+        statusmsg = StandardReceive(address, target, {'cmd1':0xab, 'cmd2':0x77}, flags=MessageFlags.create(MESSAGE_TYPE_DIRECT_MESSAGE_ACK, 0, 2,3))
+        mockPLM.message_received(ackmsg)
+        yield from asyncio.sleep(.1, loop=loop)
+        mockPLM.message_received(statusmsg)
+        yield from asyncio.sleep(.1, loop=loop)
 
-    assert callbacks.lightOnLevel == 0x55
-    assert callbacks.fanOnLevel == 0x77
+        assert callbacks.lightOnLevel == 0x55
+        assert callbacks.fanOnLevel == 0x77
+
+    loop = asyncio.get_event_loop()
+    loop.run_until_complete(run_test(loop))
 
 def test_securityhealthsafety():
     
@@ -225,51 +286,63 @@ def test_securityhealthsafety_2982_222():
 
 def test_SensorsActuators_2450():
 
-    class IOLincStatus(object):
-        relayOnLevel = None
-        sensorOnLevel = None
+    def run_test(loop):
+        class IOLincStatus(object):
+            relayOnLevel = None
+            sensorOnLevel = None
 
-        def device_status_callback1(self, id, state, value):
-            print('Called state 1 callback ', value)
-            self.relayOnLevel = value
+            def device_status_callback1(self, id, state, value):
+                print('Called state 1 callback ', value)
+                self.relayOnLevel = value
     
-        def device_status_callback2(self, id, state, value):
-            print('Called state 2 callback ', value)
-            self.sensorOnLevel = value
+            def device_status_callback2(self, id, state, value):
+                print('Called state 2 callback ', value)
+                self.sensorOnLevel = value
 
-    mockPLM = MockPLM()
-    address = '1a2b3c'
-    target = '4d5e6f'
+        mockPLM = MockPLM()
+        address = '1a2b3c'
+        target = '4d5e6f'
 
-    cat = 0x07
-    subcat = 0x00
-    product_key = 0x00
-    description = 'I/O Linc'
-    model = '2450'
+        cat = 0x07
+        subcat = 0x00
+        product_key = 0x00
+        description = 'I/O Linc'
+        model = '2450'
 
-    callbacks = IOLincStatus()
+        callbacks = IOLincStatus()
 
-    device = SensorsActuators_2450.create(mockPLM, address, cat, subcat, product_key, description, model)
+        device = SensorsActuators_2450.create(mockPLM, address, cat, subcat, product_key, description, model)
     
-    assert device.states[0x01].name == 'relayOpenClosed'    
-    assert device.states[0x02].name == 'sensorOpenClosed'
+        assert device.states[0x01].name == 'relayOpenClosed'    
+        assert device.states[0x02].name == 'sensorOpenClosed'
 
-    device.states[0x01].register_updates(callbacks.device_status_callback1)
-    device.states[0x02].register_updates(callbacks.device_status_callback2)
+        device.states[0x01].register_updates(callbacks.device_status_callback1)
+        device.states[0x02].register_updates(callbacks.device_status_callback2)
 
-    device.async_refresh_state()
-    assert mockPLM.sentmessage == StandardSend(address, COMMAND_LIGHT_STATUS_REQUEST_0X19_0X01).hex
+        device.async_refresh_state()
+        yield from asyncio.sleep(.1, loop=loop)
+        assert mockPLM.sentmessage == StandardSend(address, COMMAND_LIGHT_STATUS_REQUEST_0X19_0X00).hex
 
-    ackmsg = StandardSend(address, COMMAND_LIGHT_STATUS_REQUEST_0X19_0X00, acknak=MESSAGE_ACK)
-    statusmsg = StandardReceive(address, target, COMMAND_LIGHT_ON_0X11_NONE, cmd2=0x55, flags=MessageFlags.create(MESSAGE_TYPE_DIRECT_MESSAGE_ACK, 0))
-    mockPLM.message_received(ackmsg)
-    mockPLM.message_received(statusmsg)
-    assert callbacks.relayOnLevel == 0xff
+        ackmsg = StandardSend(address, COMMAND_LIGHT_STATUS_REQUEST_0X19_0X00, acknak=MESSAGE_ACK)
+        statusmsg = StandardReceive(address, target, COMMAND_LIGHT_ON_0X11_NONE, cmd2=0x55, flags=MessageFlags.create(MESSAGE_TYPE_DIRECT_MESSAGE_ACK, 0))
+        mockPLM.message_received(ackmsg)
+        yield from asyncio.sleep(.1, loop=loop)
+        mockPLM.message_received(statusmsg)
+        yield from asyncio.sleep(.3, loop=loop)
+        assert callbacks.relayOnLevel == 0xff
+
+        
+        assert mockPLM.sentmessage == StandardSend(address, COMMAND_LIGHT_STATUS_REQUEST_0X19_0X01).hex
     
-    ackmsg = StandardSend(address, COMMAND_LIGHT_STATUS_REQUEST_0X19_0X01, acknak=MESSAGE_ACK)
-    statusmsg = StandardReceive(address, target, COMMAND_LIGHT_ON_0X11_NONE, cmd2=0x33, flags=MessageFlags.create(MESSAGE_TYPE_BROADCAST_MESSAGE, 0))
-    mockPLM.message_received(ackmsg)
-    mockPLM.message_received(statusmsg)
+        ackmsg = StandardSend(address, COMMAND_LIGHT_STATUS_REQUEST_0X19_0X01, acknak=MESSAGE_ACK)
+        statusmsg = StandardReceive(address, target, COMMAND_LIGHT_ON_0X11_NONE, cmd2=0x33, flags=MessageFlags.create(MESSAGE_TYPE_BROADCAST_MESSAGE, 0))
+        mockPLM.message_received(ackmsg)
+        yield from asyncio.sleep(.1, loop=loop)
+        mockPLM.message_received(statusmsg)
+        yield from asyncio.sleep(.1, loop=loop)
 
-    assert callbacks.relayOnLevel == 0xff
-    assert callbacks.sensorOnLevel == 1
+        assert callbacks.relayOnLevel == 0xff
+        assert callbacks.sensorOnLevel == 1
+
+    loop = asyncio.get_event_loop()
+    loop.run_until_complete(run_test(loop))

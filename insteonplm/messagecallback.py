@@ -49,7 +49,7 @@ class MessageCallback(object):
         else:
             cb = self[msg]
             cb.append(callback)
-            self.log.debug('%d total callbacks for template: %s', len(cb), str(msg))
+            #self.log.debug('%d total callbacks for template: %s', len(cb), str(msg))
             self._dict[msg] = cb
 
     def remove(self, msg, callback):
@@ -77,7 +77,10 @@ class MessageCallback(object):
 
     def _find_matching_keys(self, msg):
         for key in self._dict:
+            print('Key ', key)
+            print('Msg ', msg)
             if key.matches_pattern(msg) and msg.matches_pattern(key):
+                print('Matches')
                 yield key
 
     def _dict_to_key(self, dictkey):

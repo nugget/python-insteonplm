@@ -1,5 +1,6 @@
 import logging
 import asyncio
+import async_timeout
 import datetime
 
 from insteonplm.address import Address
@@ -10,6 +11,7 @@ from insteonplm.messages import (StandardReceive, StandardSend,
 from insteonplm.constants import *
 from insteonplm.messagecallback import MessageCallback
 from .stateList import StateList
+WAIT_TIMEOUT = 2
 
 class DeviceBase(object):
     """INSTEON Device"""
@@ -34,9 +36,15 @@ class DeviceBase(object):
         self._product_data_in_aldb = False
         self._stateList = StateList()
         self._send_msg_lock = asyncio.Lock(loop=self._plm.loop)
+        self._send_queue =  asyncio.Queue(loop=self._plm.loop)
+        self._sent_msg_wait_for_directACK = {}
+        self._directACK_received_queue = asyncio.Queue(loop=self._plm.loop)
 
         if not hasattr(self, '_noRegisterCallback'):
             self._plm.message_callbacks.add(StandardReceive.template(address=self._address), self._receive_message)
+            self._plm.message_callbacks.add(ExtendedReceive.template(address=self._address), self._receive_message)
+            self._plm.message_callbacks.add(StandardSend.template(address=self._address, acknak=MESSAGE_ACK), self._receive_message)
+            self._plm.message_callbacks.add(ExtendedSend.template(address=self._address, acknak=MESSAGE_ACK), self._receive_message)
 
     @property
     def address(self):
@@ -89,19 +97,67 @@ class DeviceBase(object):
         return cls(plm, address, cat, subcat, product_key, description, model)
 
     def _receive_message(self, msg):
-        self.log.debug('Starting DeviceBase.receive_message')
+        self.log.debug('Starting DeviceBase._receive_message')
+        if hasattr(msg, 'isack') and msg.isack:
+            self.log.debug('Got Message ACK')
+            if self._sent_msg_wait_for_directACK.get('callback', None) is not None:
+                self.log.debug('Look for direct ACK')
+                coro = self._wait_for_direct_ACK()
+                asyncio.ensure_future(coro, loop=self._plm.loop)
+            else:
+                self.log.debug('Message ACK with no callback')
+        if hasattr(msg, 'flags') and hasattr(msg.flags, 'isDirectACK') and msg.flags.isDirectACK:
+            self.log.debug('Got Direct ACK message')
+            if self._send_msg_lock.locked():
+                self.log.debug('Lock is locked')
+                self._directACK_received_queue.put_nowait(msg)
         self._last_communication_received = datetime.datetime.now()
-        self.log.debug('Ending DeviceBase.receive_message')
+        self.log.debug('Ending DeviceBase._receive_message')
 
     def async_refresh_state(self):
         for state in self._stateList:
             self._stateList[state].async_refresh_state()
 
-    #def set_status_callback(self, callback):
-    #    self._state_status_callback = callback
+    def _send_msg(self, msg, directACK_Method=None):
+        self.log.debug('Starting DeviceBase._send_msg')
+        write_message_coroutine = self._process_send_queue(msg, directACK_Method)
+        self._send_queue.put_nowait(msg)
+        asyncio.ensure_future(write_message_coroutine, loop=self._plm.loop)
+        self.log.debug('Ending DeviceBase._send_msg')
 
-    #def add_message_callback(self, msg, callback, override=False):
-    #    self._message_callbacks.add(msg, callback, override)
+    @asyncio.coroutine
+    def _process_send_queue(self, msg, directACK_Method=None):
+        self.log.debug('Starting DeviceBase._process_send_queue')
+        yield from self._send_msg_lock
+        if directACK_Method is not None:
+            self._sent_msg_wait_for_directACK = {'msg': msg, 'callback':directACK_Method} 
+            self.log.debug('Attempt to acquire lock')
+            lock_acquired = self._send_msg_lock.acquire()
+            self.log.debug('Lock acquired')
+        self._plm.send_msg(msg)
+        self.log.debug('Ending DeviceBase._process_send_queue')
+
+    @asyncio.coroutine
+    def _wait_for_direct_ACK(self):
+        self.log.debug('Starting DeviceBase._wait_for_direct_ACK')
+        msg = None
+        while True:
+            # wait for an item from the queue
+            try:
+                with async_timeout.timeout(WAIT_TIMEOUT):
+                    msg = yield from self._directACK_received_queue.get()
+                    break
+            except asyncio.TimeoutError:
+                self.log.debug('No direct ACK messages received.')
+                break
+        self.log.debug('Releasing lock')
+        self._send_msg_lock.release()
+        if msg is not None:
+            callback = self._sent_msg_wait_for_directACK.get('callback', None)
+            if callback is not None:
+                callback(msg)
+        self._sent_msg_wait_for_directACK = {}
+        self.log.debug('Ending DeviceBase._wait_for_direct_ACK')
 
     def id_request(self):
         """Request a device ID from a device"""

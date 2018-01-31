@@ -71,9 +71,10 @@ class ExtendedSend(MessageBase):
 
         msg._address = Address(address)
         msg._messageFlags = MessageFlags(flags)
+        msg._messageFlags.extended=1
         msg._cmd1 = cmd1
         msg._cmd2 = cmd2out
-        msg._userdata = Userdata(userdata)
+        msg._userdata = Userdata.template(userdata)
         msg._acknak = acknak
         return msg
 

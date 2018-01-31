@@ -3,7 +3,7 @@ import binascii
 from insteonplm.constants import *
 
 class Userdata(object):
-    def __init__(self, userdata):
+    def __init__(self, userdata={}):
         self.log = logging.getLogger(__name__)
         self._userdata = self._normalize(self._create_empty(0x00), userdata)
 
@@ -85,10 +85,21 @@ class Userdata(object):
         empty = cls._create_empty(0x00)
         return Userdata(empty)
 
+    @classmethod
+    def template(cls, userdata):
+        ud = Userdata()
+        ud._userdata = cls._normalize(cls._create_empty(None), userdata)
+        return ud
+
+
     def matches_pattern(self, other):
         ismatch = False
         if isinstance(other, Userdata):
+            print('Testing userdata')
             for key in self._userdata:
+                print('Checking ', key)
+                print('Key ', self[key])
+                print('Msg ', other[key])
                 if self._userdata[key] == None or other[key] == None:
                     ismatch = True
                 elif self._userdata[key] == other[key]:
@@ -96,6 +107,9 @@ class Userdata(object):
                 else:
                     ismatch = False
                     break
+        else:
+            print('Other is not Userdata')
+        print(ismatch)
         return ismatch
 
     @classmethod
@@ -135,3 +149,5 @@ class Userdata(object):
         elif userdata is None:
             return empty
         raise ValueError
+
+
