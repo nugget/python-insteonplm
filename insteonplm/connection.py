@@ -25,7 +25,7 @@ class Connection:
     @classmethod
     @asyncio.coroutine
     def create(cls, device='/dev/ttyUSB0',
-               auto_reconnect=True, loop=None, protocol_class=PLM, userdefined=()):
+               auto_reconnect=True, loop=None, protocol_class=PLM, userdefined=(), workdir=None):
         """Initiate a connection to a specific device.
 
         Here is where we supply the device and callback callables we
@@ -65,7 +65,8 @@ class Connection:
         conn.protocol = protocol_class(
             connection_lost_callback=connection_lost, 
             loop=conn._loop, 
-            userdefineddevices=userdefined)
+            userdefineddevices=userdefined,
+            workdir=workdir)
 
         yield from conn._reconnect()
 

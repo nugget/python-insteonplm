@@ -16,6 +16,7 @@ from .devices.devicebase import DeviceBase
 
 __all__ = ('PLM')
 WAIT_TIMEOUT = 2
+DEVICE_INFO_FILE = 'insteon_plm_device_info.dat'
 
 #PP = PLMProtocol()
 
@@ -51,6 +52,7 @@ class PLM(asyncio.Protocol, DeviceBase):
         self.devices = ALDB()
         self._write_transport_lock = asyncio.Lock(loop=self._loop)
         self._message_callbacks = MessageCallback()
+        self._saved_device_info = []
 
         self._address = None
         self._cat = None
@@ -60,16 +62,10 @@ class PLM(asyncio.Protocol, DeviceBase):
         self.log = logging.getLogger(__name__)
         self.transport = None
         
-        #self.add_message_callback(StandardReceive(None, None, None, None, None), 
-        #                          self._handle_standard_or_extended_message_received)
-
-        #self.add_message_callback(ExtendedReceive(None, None, None, None, None), 
-        #                          self._handle_standard_or_extended_message_received)
-
-        #self.add_message_callback(StandardSend(None, None, None, None, acknak=MESSAGE_ACK), 
-        #                          self._handle_standard_or_extended_message_received)
 
         self._message_callbacks.add(StandardSend.template(acknak=MESSAGE_NAK),
+                                    self._handle_standard_or_extended_message_nak)
+        self._message_callbacks.add(ExtendedSend.template(acknak=MESSAGE_NAK),
                                     self._handle_standard_or_extended_message_nak)
 
         self._message_callbacks.add(StandardReceive.template(commandtuple=COMMAND_ASSIGN_TO_ALL_LINK_GROUP_0X01_NONE), 
@@ -97,15 +93,14 @@ class PLM(asyncio.Protocol, DeviceBase):
         self.transport = transport
         
         # Testing to see if this fixes the 2413S issue
-        self.transport.serial.timeout = 1 
-        self.transport.serial.write_timeout = 1
+        #self.transport.serial.timeout = 1 
+        #self.transport.serial.write_timeout = 1
 
         # self.transport.set_write_buffer_limits(128)
         # limit = self.transport.get_write_buffer_size()
         # self.log.debug('Write buffer size is %d', limit)
-        self._load_known_devices()
-        self._get_plm_info()
-        self._load_all_link_database()
+        coro = self._setup_devices()
+        asyncio.ensure_future(coro, loop=self._loop)
 
     def data_received(self, data):
         """Called when asyncio.Protocol detects received data from network."""
@@ -206,6 +201,12 @@ class PLM(asyncio.Protocol, DeviceBase):
     def async_sleep(self, seconds):
         """Utility method to allow devices or message handlers to pause execution and yeild back time to the asyncio loop"""
         yield from asyncio.sleep(seconds, loop=self._loop)
+
+    @asyncio.coroutine
+    def _setup_devices(self):
+        self._saved_device_info = yield from self._load_saved_device_info()
+        self._get_plm_info()
+        self._load_all_link_database()
 
     @asyncio.coroutine
     def _write_message_from_send_queue(self):
@@ -351,7 +352,7 @@ class PLM(asyncio.Protocol, DeviceBase):
             delay = num_devices_not_added*3
             self._loop.call_later(delay, self._handle_get_next_all_link_record_nak, None)
         else:
-            self._save_devices()
+            self._save_device_info()
             self._loop.call_soon(self.poll_devices)
         self.log.debug('Ending _handle_get_next_all_link_record_nak')
 
@@ -420,16 +421,32 @@ class PLM(asyncio.Protocol, DeviceBase):
 
         self.log.debug("Finishing: _peel_messages_from_buffer")
 
-    def _load_known_devices(self):
-        pass
+    @asyncio.coroutine
+    def _load_saved_device_info(self):
+        deviceinfo = []
+        if self._workdir is not None:
+            try:
+                with open(self._workdir + '/' + DEVICE_INFO_FILE, 'r') as infile:
+                    deviceinfo = json.load(infile)
+            except:
+                pass
+        return deviceinfo
 
-    def _save_devices(self):
+    def _save_device_info(self):
         if self._workdir is not None:
             devices = []
             DeviceInfo = namedtuple('DeviceInfo', 'address cat subcat product_key')
             for device in self.devices:
                 deviceInfo = DeviceInfo(device.address, device.cat, device.subcat, device.product_key)
                 devices.append(deviceInfo)
+            coro = self._
+            asyncio.ensure_future(self._write_device_file)
+
+    @asyncio.coroutine
+    def _write_device_info_file(self, devices):
+        if self._workdir is not None:
+            with open(self._workdir + '/' + DEVICE_INFO_FILE, 'w') as outfile:
+                json.dump(devices, outfile)
 
 
 
