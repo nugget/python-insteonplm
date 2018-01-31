@@ -88,22 +88,22 @@ class OnOffSwitch_OutletTop(OnOffSwitch):
 
         self._message_callbacks.add(StandardReceive.template(address = self._address,
                                                              commandtuple = COMMAND_LIGHT_ON_0X11_NONE,
-                                                             flags=MessageFlags.create(None, 0)),
+                                                             flags=MessageFlags.template(None, 0)),
                                    self._on_message_received)
         self._message_callbacks.add(StandardReceive.template(address = self._address,
                                                              commandtuple = COMMAND_LIGHT_OFF_0X13_0X00, 
                                                              cmd2 = None,
-                                                             flags=MessageFlags.create(None, 0)), 
+                                                             flags=MessageFlags.template(None, 0)), 
                                     self._off_message_received)
         self._message_callbacks.add(StandardSend.template(address = self._address,
                                                           commandtuple = COMMAND_LIGHT_ON_0X11_NONE,
-                                                          flags=MessageFlags.create(None, 0),
+                                                          flags=MessageFlags.template(None, 0),
                                                           acknak=MESSAGE_ACK),
                                     self._on_message_received)
         self._message_callbacks.add(StandardSend.template(address = self._address,
                                                           commandtuple = COMMAND_LIGHT_OFF_0X13_0X00, 
                                                           cmd2 = None,
-                                                          flags=MessageFlags.create(None, 0),
+                                                          flags=MessageFlags.template(None, 0),
                                                           acknak=MESSAGE_ACK),
                                     self._off_message_received)
         self._message_callbacks.add(StandardSend.template(address = self._address,
@@ -204,12 +204,12 @@ class OnOffSwitch_OutletBottom(StateBase):
 
         self._message_callbacks.add(StandardReceive.template(address = self._address,
                                                              commandtuple = COMMAND_LIGHT_ON_0X11_NONE,
-                                                             flags=MessageFlags.create(None, 0)),
+                                                             flags=MessageFlags.template(None, 0)),
                                    self._on_message_received)
         self._message_callbacks.add(StandardReceive.template(address = self._address,
                                                              commandtuple = COMMAND_LIGHT_OFF_0X13_0X00, 
                                                              cmd2 = None,
-                                                             flags=MessageFlags.create(None, 0)), 
+                                                             flags=MessageFlags.template(None, 0)), 
                                     self._off_message_received)
         self._message_callbacks.add(ExtendedReceive.template(address = self._address, 
                                                              commandtuple = COMMAND_LIGHT_ON_0X11_NONE, 
