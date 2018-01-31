@@ -54,13 +54,12 @@ def test_SwitchedLightingControl_2663_222():
     light.states[0x02].register_updates(callback.state_bot_status_callback)
 
     plm.message_received(StandardReceive(address, target, COMMAND_LIGHT_ON_0X11_NONE, cmd2=0xff))
-    assert callback.lightOnLevelTop == 0xff
-    assert callback.lightOnLevelBot == None
+    assert plm.sentmessage == StandardSend(address, COMMAND_LIGHT_STATUS_REQUEST_0X19_0X01).hex
 
     userdata = Userdata.create()
     userdata['d1'] = 0x02
     plm.message_received(ExtendedReceive(address, target, COMMAND_LIGHT_ON_0X11_NONE, userdata, cmd2=0xaa))
-    assert callback.lightOnLevelBot == 0xff
+    assert plm.sentmessage == StandardSend(address, COMMAND_LIGHT_STATUS_REQUEST_0X19_0X01).hex
 
     
     callback.lightOnLevelTop = 0x11

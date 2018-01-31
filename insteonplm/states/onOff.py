@@ -292,7 +292,7 @@ class OnOffSwitch_OutletBottom(StateBase):
         self.log.debug('Ending OnOffSwitch_OutletBottom._status_request_ack_received')
 
     def _on_off_message_ack(self, msg):
-        self._status_request()
+        self._send_status_0x01_request()
 
 class OpenClosedRelay(StateBase):
     """Device state representing an On/Off switch that is controllable.
