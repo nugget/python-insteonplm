@@ -1,6 +1,6 @@
 from .devicebase import DeviceBase
 from insteonplm.constants import *
-from insteonplm.states.sensor import OnOffSensor, MotionSensor, SmokeCO2Sensor
+from insteonplm.states.sensor import VariableSensor, MotionSensor, SmokeCO2Sensor
 
 class SecurityHealthSafety(DeviceBase):
     """Security Health Safety Control Device Class 0x10
@@ -18,7 +18,7 @@ class SecurityHealthSafety(DeviceBase):
     def __init__(self, plm, address, cat, subcat, product_key=None, description=None, model=None):
         super().__init__(plm, address, cat, subcat, product_key, description, model)
         
-        self._stateList[0x01] = OnOffSensor(self._address, "onOffSensor", 0x01, self._send_msg, self._plm.message_callbacks, 0x00)
+        self._stateList[0x01] = VariableSensor(self._address, "onOffSensor", 0x01, self._send_msg, self._plm.message_callbacks, 0x00)
 
 class SecurityHealthSafety_2842_222(DeviceBase):
     

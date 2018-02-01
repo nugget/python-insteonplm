@@ -55,7 +55,7 @@ class VariableSensor(StateBase):
         """
         self._update_subscribers(0x00)
 
-class MotionSensor(OnOffSensor):
+class MotionSensor(StateBase):
     
     def __init__(self, address, statename, group, send_message_method, message_callbacks, defaultvalue=None):
         super().__init__(address, statename, group, send_message_method, message_callbacks, defaultvalue)
