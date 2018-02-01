@@ -438,7 +438,7 @@ class PLM(asyncio.Protocol, DeviceBase):
             DeviceInfo = namedtuple('DeviceInfo', 'address cat subcat product_key')
             for addr in self.devices:
                 device = self.devices[addr]
-                deviceInfo = DeviceInfo(device.address, device.cat, device.subcat, device.product_key)
+                deviceInfo = DeviceInfo(device.address.hex, device.cat, device.subcat, device.product_key)
                 self.log.debug('Device info:')
                 self.log.debug(deviceInfo)
                 devices.append(deviceInfo)

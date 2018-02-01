@@ -8,6 +8,7 @@ from insteonplm.states.stateBase import StateBase
 from insteonplm.messages import (StandardReceive, StandardSend,
                                  ExtendedReceive, ExtendedSend,
                                  MessageBase)
+from insteonplm.messages.messageFlags import MessageFlags
 from insteonplm.constants import *
 from insteonplm.messagecallback import MessageCallback
 from .stateList import StateList
@@ -41,10 +42,19 @@ class DeviceBase(object):
         self._directACK_received_queue = asyncio.Queue(loop=self._plm.loop)
 
         if not hasattr(self, '_noRegisterCallback'):
-            self._plm.message_callbacks.add(StandardReceive.template(address=self._address), self._receive_message)
-            self._plm.message_callbacks.add(ExtendedReceive.template(address=self._address), self._receive_message)
-            self._plm.message_callbacks.add(StandardSend.template(address=self._address, acknak=MESSAGE_ACK), self._receive_message)
-            self._plm.message_callbacks.add(ExtendedSend.template(address=self._address, acknak=MESSAGE_ACK), self._receive_message)
+            self._plm.message_callbacks.add(StandardReceive.template(address=self._address,
+                                                                     flags=MessageFlags.template(extended=0)), 
+                                            self._receive_message)
+            self._plm.message_callbacks.add(ExtendedReceive.template(address=self._address,
+                                                                     flags=MessageFlags.template(extended=1)), 
+                                            self._receive_message)
+            self._plm.message_callbacks.add(StandardSend.template(address=self._address,
+                                                                     flags=MessageFlags.template(extended=0), 
+                                                                  acknak=MESSAGE_ACK), self._receive_message)
+            self._plm.message_callbacks.add(ExtendedSend.template(address=self._address,
+                                                                     flags=MessageFlags.template(extended=0), 
+                                                                     acknak=MESSAGE_ACK), 
+                                            self._receive_message)
 
     @property
     def address(self):
