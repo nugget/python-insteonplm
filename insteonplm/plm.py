@@ -442,6 +442,7 @@ class PLM(asyncio.Protocol, DeviceBase):
                               'cat': device.cat, 
                               'subcat': device.subcat, 
                               'product_key': device.product_key}
+                devices.append(deviceInfo)
             coro = self._write_device_info_file(devices)
             asyncio.ensure_future(coro, loop=self._loop)
 
