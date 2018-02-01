@@ -48,8 +48,6 @@ class SensorsActuators_2450(SensorsActuators):
         - callback(self, device_id, state, state_value)
     """
 
-    _status_callback = None
-
     def __init__(self, plm, address, cat, subcat, product_key=None, description=None, model=None):
         super().__init__(plm, address, cat, subcat, product_key, description, model)
 

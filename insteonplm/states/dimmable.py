@@ -23,6 +23,7 @@ class DimmableSwitch(StateBase):
 
         self._updatemethod = self._send_status_request
 
+        self.log.debug('Registering callbacks for DimmableSwitch device %s', self._address.human)
         self._message_callbacks.add(StandardReceive.template(commandtuple=COMMAND_LIGHT_ON_0X11_NONE,
                                                              address=self._address,
                                                              flags=MessageFlags.template(MESSAGE_TYPE_ALL_LINK_CLEANUP, None)), 

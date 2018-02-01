@@ -42,6 +42,7 @@ class DeviceBase(object):
         self._directACK_received_queue = asyncio.Queue(loop=self._plm.loop)
 
         if not hasattr(self, '_noRegisterCallback'):
+            self.log.debug('Registering DeviceBase._receive_message callbacks for device %s', self._address.human)
             self._plm.message_callbacks.add(StandardReceive.template(address=self._address), 
                                             self._receive_message)
             self._plm.message_callbacks.add(ExtendedReceive.template(address=self._address), 
