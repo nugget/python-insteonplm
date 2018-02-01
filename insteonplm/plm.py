@@ -5,6 +5,7 @@ import binascii
 import time
 from collections import deque, namedtuple
 import async_timeout
+import json
 
 from .constants import *
 from .aldb import ALDB
