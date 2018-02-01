@@ -436,7 +436,8 @@ class PLM(asyncio.Protocol, DeviceBase):
         if self._workdir is not None:
             devices = []
             DeviceInfo = namedtuple('DeviceInfo', 'address cat subcat product_key')
-            for device in self.devices:
+            for addr in self.devices:
+                device = self.devices[addr]
                 deviceInfo = DeviceInfo(device.address, device.cat, device.subcat, device.product_key)
                 devices.append(deviceInfo)
             coro = self._
