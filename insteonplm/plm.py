@@ -93,10 +93,9 @@ class PLM(asyncio.Protocol, DeviceBase):
         self.transport = transport
         
         # Testing to see if this fixes the 2413S issue
-        #self.transport.serial.timeout = 1 
-        #self.transport.serial.write_timeout = 1
-
-        # self.transport.set_write_buffer_limits(128)
+        self.transport.serial.timeout = 1 
+        self.transport.serial.write_timeout = 1
+        self.transport.set_write_buffer_limits(128)
         # limit = self.transport.get_write_buffer_size()
         # self.log.debug('Write buffer size is %d', limit)
         coro = self._setup_devices()
