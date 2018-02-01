@@ -121,7 +121,8 @@ class PLM(asyncio.Protocol, DeviceBase):
                 if len(callbacks) > 0:
                     for callback in callbacks:
                         self.log.debug('Calling method %s', callback.__func__)
-                        self._loop.call_soon(callback, msg)
+                        coro = self._execute_callback(callback, msg)
+                        yield from asyncio.ensure_future(coro, loop=loop)
                 else:
                     self.log.debug('No callback found for message %s', str(msg))
             except IndexError:
@@ -207,6 +208,10 @@ class PLM(asyncio.Protocol, DeviceBase):
         self._saved_device_info = yield from self._load_saved_device_info()
         self._get_plm_info()
         self._load_all_link_database()
+
+    @asyncio.coroutine
+    def _execute_callback(self, callback, msg):
+        callback(msg)
 
     @asyncio.coroutine
     def _write_message_from_send_queue(self):
@@ -435,13 +440,12 @@ class PLM(asyncio.Protocol, DeviceBase):
     def _save_device_info(self):
         if self._workdir is not None:
             devices = []
-            DeviceInfo = namedtuple('DeviceInfo', 'address cat subcat product_key')
             for addr in self.devices:
                 device = self.devices[addr]
-                deviceInfo = DeviceInfo(device.address.hex, device.cat, device.subcat, device.product_key)
-                self.log.debug('Device info:')
-                self.log.debug(deviceInfo)
-                devices.append(deviceInfo)
+                deviceInfo = {'address': device.address.hex, 
+                              'cat': device.cat, 
+                              'subcat': device.subcat, 
+                              'product_key': device.product_key}
             coro = self._write_device_info_file(devices)
             asyncio.ensure_future(coro, loop=self._loop)
 
