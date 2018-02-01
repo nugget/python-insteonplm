@@ -122,7 +122,8 @@ class PLM(asyncio.Protocol, DeviceBase):
                     for callback in callbacks:
                         self.log.debug('Calling method %s', callback.__func__)
                         coro = self._execute_callback(callback, msg)
-                        yield from asyncio.ensure_future(coro, loop=loop)
+                        asyncio.ensure_future(coro, loop=loop)
+                        yield from asyncio.sleep(.01, loop=loop)
                 else:
                     self.log.debug('No callback found for message %s', str(msg))
             except IndexError:
