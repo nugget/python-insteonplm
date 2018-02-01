@@ -121,8 +121,7 @@ class PLM(asyncio.Protocol, DeviceBase):
                 if len(callbacks) > 0:
                     for callback in callbacks:
                         self.log.debug('Calling method %s', callback.__func__)
-                        coro = self._execute_callback(callback, msg)
-                        asyncio.ensure_future(coro, loop=loop)
+                        self._loop.call_soon(callback, msg)
                         yield from asyncio.sleep(.01, loop=loop)
                 else:
                     self.log.debug('No callback found for message %s', str(msg))
@@ -209,10 +208,6 @@ class PLM(asyncio.Protocol, DeviceBase):
         self._saved_device_info = yield from self._load_saved_device_info()
         self._get_plm_info()
         self._load_all_link_database()
-
-    @asyncio.coroutine
-    def _execute_callback(self, callback, msg):
-        callback(msg)
 
     @asyncio.coroutine
     def _write_message_from_send_queue(self):
