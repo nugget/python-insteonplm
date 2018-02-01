@@ -122,7 +122,6 @@ class PLM(asyncio.Protocol, DeviceBase):
                     for callback in callbacks:
                         self.log.debug('Calling method %s', callback.__func__)
                         self._loop.call_soon(callback, msg)
-                        yield from asyncio.sleep(.01, loop=loop)
                 else:
                     self.log.debug('No callback found for message %s', str(msg))
             except IndexError:
