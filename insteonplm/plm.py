@@ -440,8 +440,8 @@ class PLM(asyncio.Protocol, DeviceBase):
                 device = self.devices[addr]
                 deviceInfo = DeviceInfo(device.address, device.cat, device.subcat, device.product_key)
                 devices.append(deviceInfo)
-            coro = self._
-            asyncio.ensure_future(self._write_device_file)
+            coro = self._write_device_info_file(devices)
+            asyncio.ensure_future(coro, loop=self._loop)
 
     @asyncio.coroutine
     def _write_device_info_file(self, devices):
