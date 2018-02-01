@@ -204,7 +204,9 @@ class PLM(asyncio.Protocol, DeviceBase):
 
     @asyncio.coroutine
     def _setup_devices(self):
-        self._saved_device_info = yield from self._load_saved_device_info()
+        saved_device_info = yield from self._load_saved_device_info()
+        for savedDevice in saved_device_info:
+            self.devices.add_saved_device_info(savedDevice)
         self.log.debug('Found %d saved devices', len(self._saved_device_info))
         self._get_plm_info()
         self._load_all_link_database()
@@ -250,21 +252,11 @@ class PLM(asyncio.Protocol, DeviceBase):
             product_key = msg.targetHi
             self.log.info('Received Device ID with address: %s  cat: 0x%x  subcat: 0x%x  firmware: 0x%x', 
                             msg.address, cat, subcat, product_key)
-                           # msg.address.hex, binascii.hexlify(cat), binascii.hexlify(subcat), binascii.hexlify(product_key))
             device = self.devices.create_device_from_category(self, msg.address, cat, subcat, product_key)
-                                                              #int.from_bytes(cat, byteorder='big'), 
-                                                              #int.from_bytes(subcat, byteorder='big'), 
-                                                              #int.from_bytes(product_key, byteorder='big'))
             if device is not None:
-                if isinstance(device, list):
-                    for currdev in device:
-                        if self.devices[currdev] == None:
-                            self.devices[currdev.id] = currdev
-                            self.log.info('Device with id %s added to device list.', currdev.id)
-                else:
-                    if self.devices[device.id] == None:
-                        self.devices[device.id] = device
-                        self.log.info('Device with id %s added to device list.', device.id)
+                if self.devices[device.id] == None:
+                    self.devices[device.id] = device
+                    self.log.info('Device with id %s added to device list.', device.id)
             else:
                 self.log.error('Did not add device to list because the device came back None')
             self.log.info('Total Devices Found: %d', len(self.devices))
@@ -298,17 +290,10 @@ class PLM(asyncio.Protocol, DeviceBase):
             # we can use that as the device type for this record
             # Otherwise we need to request the device ID.
             if device is not None:
-                if isinstance(device, list):
-                    for currdev in device:
-                        if currdev.prod_data_in_aldb or self.devices.has_override(currdev.address.hex):
-                            if self.devices[currdev.id] == None:
-                                self.devices[currdev.id] = currdev
-                                self.log.info('Device with id %s added to device list from ALDB Data.', currdev.id)
-                else:
-                    if device.prod_data_in_aldb or self.devices.has_override(device.address.hex):
-                        if self.devices[device.id] == None:
-                            self.devices[device.id] = device
-                            self.log.info('Device with id %s added to device list from ALDB data.', device.id)
+                if device.prod_data_in_aldb or self.devices.has_override(device.address.hex) or self.devices.has_saved(device.address.hex):
+                    if self.devices[device.id] == None:
+                        self.devices[device.id] = device
+                        self.log.info('Device with id %s added to device list from ALDB data.', device.id)
         #Check again that the device is not alreay added, otherwise queue it up for Get ID request
         if self.devices[msg.address.hex] is None:
             unknowndevice = self.devices.create_device_from_category(self, msg.address.hex, None, None, None)

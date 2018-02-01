@@ -21,6 +21,7 @@ class ALDB(object):
         self._devices = {}
         self._cb_new_device = []
         self._overrides = {}
+        self._saved_devices = {}
 
     def __len__(self):
         """Return the number of devices in the ALDB."""
@@ -69,10 +70,21 @@ class ALDB(object):
         device_override[key] = value
         self._overrides[address] = device_override
 
-        if address in self._devices:
-            self._apply_overrides(address)
+    def add_saved_device_info(self, **kwarg):
+        addr = kwarg.get('address', None)
+        info = {}
+        if addr is not None:
+            info['cat'] = kwarg.get('cat', None)
+            info['subcat'] = kwarg.get('subcat', None)
+            info['product_key'] = kwarg.get('product_key', None)
+        self._saved_devices[addr] = info
 
     def create_device_from_category(self, plm, addr, cat, subcat, product_key=0x00):
+        saved_device = self._saved_devices.get(Address(addr).hex, {})
+        cat = saved_device.get('cat', cat)
+        subcat = saved_device.get('subcat', subcat)
+        product_key = saved_device.get('product_key', product_key)
+
         device_override = self._overrides.get(Address(addr).hex, {})
         cat = device_override.get('cat', cat)
         subcat = device_override.get('subcat', subcat)
@@ -80,6 +92,12 @@ class ALDB(object):
         product_key = device_override.get('product_key', product_key)
         
         return Device.create(plm, addr, cat, subcat, product_key)
+
+    def has_saved(self, addr):
+        if self._saved_devices.get(addr, None) is not None:
+            return True
+        else:
+            return False
 
     def has_override(self, addr):
         if self._overrides.get(addr, None) is not None:
