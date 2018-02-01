@@ -26,12 +26,12 @@ class DimmableSwitch(StateBase):
         self._message_callbacks.add(StandardReceive.template(address=self._address, 
                                                              commandtuple=COMMAND_LIGHT_STOP_MANUAL_CHANGE_0X18_0X00), 
                                     self._manual_change_received)
-        self._message_callbacks.add(StandardReceive.template(address=self._address, 
-                                                             commandtuple=COMMAND_LIGHT_MANUALLY_TURNED_OFF_0X22_0X00), 
-                                    self._manual_change_received)
-        self._message_callbacks.add(StandardReceive.template(address=self._address, 
-                                                             commandtuple=COMMAND_LIGHT_MANUALLY_TURNED_ON_0X23_0X00), 
-                                    self._manual_change_received)
+        #self._message_callbacks.add(StandardReceive.template(address=self._address, 
+        #                                                     commandtuple=COMMAND_LIGHT_MANUALLY_TURNED_OFF_0X22_0X00), 
+        #                            self._manual_change_received)
+        #self._message_callbacks.add(StandardReceive.template(address=self._address, 
+        #                                                     commandtuple=COMMAND_LIGHT_MANUALLY_TURNED_ON_0X23_0X00), 
+        #                            self._manual_change_received)
 
     def on(self):
         self.log.debug('Starting DimmableSwitch.on')
