@@ -438,6 +438,8 @@ class PLM(asyncio.Protocol, DeviceBase):
             for addr in self.devices:
                 device = self.devices[addr]
                 deviceInfo = DeviceInfo(device.address, device.cat, device.subcat, device.product_key)
+                self.log.debug('Device info:')
+                self.log.debug(deviceInfo)
                 devices.append(deviceInfo)
             coro = self._write_device_info_file(devices)
             asyncio.ensure_future(coro, loop=self._loop)
@@ -445,6 +447,7 @@ class PLM(asyncio.Protocol, DeviceBase):
     @asyncio.coroutine
     def _write_device_info_file(self, devices):
         if self._workdir is not None:
+            self.log.debug('Writing %d devices to save file', len(devices))
             with open(self._workdir + '/' + DEVICE_INFO_FILE, 'w') as outfile:
                 json.dump(devices, outfile)
 
