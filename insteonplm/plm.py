@@ -205,7 +205,7 @@ class PLM(asyncio.Protocol, DeviceBase):
     @asyncio.coroutine
     def _setup_devices(self):
         self._saved_device_info = yield from self._load_saved_device_info()
-        self.log.debug('Found %d saved devices', len(self._save_device_info))
+        self.log.debug('Found %d saved devices', len(self._saved_device_info))
         self._get_plm_info()
         self._load_all_link_database()
 
