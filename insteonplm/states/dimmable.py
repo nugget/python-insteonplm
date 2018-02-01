@@ -23,15 +23,91 @@ class DimmableSwitch(StateBase):
 
         self._updatemethod = self._send_status_request
 
-        self._message_callbacks.add(StandardReceive.template(address=self._address, 
-                                                             commandtuple=COMMAND_LIGHT_STOP_MANUAL_CHANGE_0X18_0X00), 
+        self._message_callbacks.add(StandardReceive.template(commandtuple=COMMAND_LIGHT_ON_0X11_NONE,
+                                                             address=self._address,
+                                                             flags=MessageFlags.template(MESSAGE_TYPE_ALL_LINK_CLEANUP, None)), 
+                                    self._on_message_received)
+        self._message_callbacks.add(StandardReceive.template(commandtuple=COMMAND_LIGHT_ON_FAST_0X12_NONE,
+                                                             address=self._address,
+                                                             flags=MessageFlags.template(MESSAGE_TYPE_ALL_LINK_CLEANUP, None)), 
+                                    self._on_message_received)
+        self._message_callbacks.add(StandardReceive.template(commandtuple=COMMAND_LIGHT_OFF_0X13_0X00,
+                                                             address=self._address,
+                                                             flags=MessageFlags.template(MESSAGE_TYPE_ALL_LINK_CLEANUP, None),
+                                                             cmd2=None), 
+                                    self._off_message_received)
+        self._message_callbacks.add(StandardReceive.template(commandtuple=COMMAND_LIGHT_OFF_FAST_0X14_0X00,
+                                                             address=self._address,
+                                                             flags=MessageFlags.template(MESSAGE_TYPE_ALL_LINK_CLEANUP, None),
+                                                             cmd2=None), 
+                                    self._off_message_received)
+        self._message_callbacks.add(StandardReceive.template(commandtuple=COMMAND_LIGHT_STOP_MANUAL_CHANGE_0X18_0X00,
+                                                             address=self._address, 
+                                                             flags=MessageFlags.template(MESSAGE_TYPE_ALL_LINK_CLEANUP, None),
+                                                             cmd2=None), 
                                     self._manual_change_received)
-        #self._message_callbacks.add(StandardReceive.template(address=self._address, 
-        #                                                     commandtuple=COMMAND_LIGHT_MANUALLY_TURNED_OFF_0X22_0X00), 
-        #                            self._manual_change_received)
-        #self._message_callbacks.add(StandardReceive.template(address=self._address, 
-        #                                                     commandtuple=COMMAND_LIGHT_MANUALLY_TURNED_ON_0X23_0X00), 
-        #                            self._manual_change_received)
+        self._message_callbacks.add(StandardReceive.template(commandtuple=COMMAND_LIGHT_INSTANT_CHANGE_0X21_NONE,
+                                                             address=self._address, 
+                                                             flags=MessageFlags.template(MESSAGE_TYPE_ALL_LINK_CLEANUP, None),
+                                                             cmd2=None), 
+                                    self._manual_change_received)
+        self._message_callbacks.add(StandardReceive.template(commandtuple=COMMAND_LIGHT_MANUALLY_TURNED_OFF_0X22_0X00,
+                                                             address=self._address, 
+                                                             flags=MessageFlags.template(MESSAGE_TYPE_ALL_LINK_CLEANUP, None),
+                                                             cmd2=None), 
+                                    self._manual_change_received)
+        self._message_callbacks.add(StandardReceive.template(commandtuple=COMMAND_LIGHT_MANUALLY_TURNED_ON_0X23_0X00,
+                                                             address=self._address, 
+                                                             flags=MessageFlags.template(MESSAGE_TYPE_ALL_LINK_CLEANUP, None),
+                                                             cmd2=None), 
+                                    self._manual_change_received)
+
+        self._message_callbacks.add(StandardReceive.template(commandtuple=COMMAND_LIGHT_ON_0X11_NONE,
+                                                             address=self._address, 
+                                                             target=bytearray([0x00, 0x00, self._group]),
+                                                             flags=MessageFlags.template(MESSAGE_TYPE_ALL_LINK_BROADCAST, None)), 
+                                    self._on_message_received)
+        self._message_callbacks.add(StandardReceive.template(commandtuple=COMMAND_LIGHT_ON_FAST_0X12_NONE,
+                                                             address=self._address, 
+                                                             target=bytearray([0x00, 0x00, self._group]),
+                                                             flags=MessageFlags.template(MESSAGE_TYPE_ALL_LINK_BROADCAST, None)), 
+                                    self._on_message_received)
+        self._message_callbacks.add(StandardReceive.template(commandtuple=COMMAND_LIGHT_OFF_0X13_0X00,
+                                                             address=self._address, 
+                                                             target=bytearray([0x00, 0x00, self._group]),
+                                                             flags=MessageFlags.template(MESSAGE_TYPE_ALL_LINK_BROADCAST, None),
+                                                             cmd2=None), 
+                                    self._off_message_received)
+        self._message_callbacks.add(StandardReceive.template(commandtuple=COMMAND_LIGHT_OFF_FAST_0X14_0X00,
+                                                             address=self._address, 
+                                                             target=bytearray([0x00, 0x00, self._group]),
+                                                             flags=MessageFlags.template(MESSAGE_TYPE_ALL_LINK_BROADCAST, None),
+                                                             cmd2=None), 
+                                    self._off_message_received)
+        self._message_callbacks.add(StandardReceive.template(commandtuple=COMMAND_LIGHT_STOP_MANUAL_CHANGE_0X18_0X00,
+                                                             address=self._address, 
+                                                             target=bytearray([0x00, 0x00, self._group]),
+                                                             flags=MessageFlags.template(MESSAGE_TYPE_ALL_LINK_BROADCAST, None),
+                                                             cmd2=None), 
+                                    self._manual_change_received)
+        self._message_callbacks.add(StandardReceive.template(commandtuple=COMMAND_LIGHT_INSTANT_CHANGE_0X21_NONE,
+                                                             address=self._address, 
+                                                             target=bytearray([0x00, 0x00, self._group]),
+                                                             flags=MessageFlags.template(MESSAGE_TYPE_ALL_LINK_BROADCAST, None),
+                                                             cmd2=None), 
+                                    self._manual_change_received)
+        self._message_callbacks.add(StandardReceive.template(commandtuple=COMMAND_LIGHT_MANUALLY_TURNED_OFF_0X22_0X00,
+                                                             address=self._address, 
+                                                             target=bytearray([0x00, 0x00, self._group]),
+                                                             flags=MessageFlags.template(MESSAGE_TYPE_ALL_LINK_BROADCAST, None),
+                                                             cmd2=None), 
+                                    self._manual_change_received)
+        self._message_callbacks.add(StandardReceive.template(commandtuple=COMMAND_LIGHT_MANUALLY_TURNED_ON_0X23_0X00,
+                                                             address=self._address, 
+                                                             target=bytearray([0x00, 0x00, self._group]),
+                                                             flags=MessageFlags.template(MESSAGE_TYPE_ALL_LINK_BROADCAST, None),
+                                                             cmd2=None), 
+                                    self._manual_change_received)
 
     def on(self):
         self.log.debug('Starting DimmableSwitch.on')
@@ -68,7 +144,7 @@ class DimmableSwitch(StateBase):
 
     def _on_message_received(self, msg):
         self.log.debug('Starting DimmableSwitch._on_message_received')
-        self._update_subscribers(0xff)
+        self._update_subscribers(msg.cmd2)
         self.log.debug('Ending DimmableSwitch._on_message_received')
 
     def _off_message_received(self, msg):

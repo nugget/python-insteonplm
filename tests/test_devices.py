@@ -226,32 +226,37 @@ def test_switchedLightingControl_2475F_status():
 
 def test_securityhealthsafety():
     
-    class sensorState(object):
-        sensor = None
+    def run_test(loop):
+        class sensorState(object):
+            sensor = None
 
-        def sensor_status_callback(self, id, state, value):
-            print('Called sensor callback')
-            self.sensor = value
+            def sensor_status_callback(self, id, state, value):
+                print('Called sensor callback')
+                self.sensor = value
 
-    mockPLM = MockPLM()
-    address = '1a2b3c'
-    target = '4d5e6f'
-    cmd1 = 0x11
-    cmd2 = 0x04
+        mockPLM = MockPLM()
+        address = '1a2b3c'
+        target = '4d5e6f'
+        cmd1 = 0x11
+        cmd2 = 0x04
 
-    cat = 0x10
-    subcat = 0x00
-    product_key = 0x00
-    description = 'Generic Security, Heath and Safety Device'
-    model = ''
+        cat = 0x10
+        subcat = 0x00
+        product_key = 0x00
+        description = 'Generic Security, Heath and Safety Device'
+        model = ''
 
-    callbacks = sensorState()
+        callbacks = sensorState()
 
-    device = SecurityHealthSafety.create(mockPLM, address, cat, subcat, product_key, description, model)
-    device.states[0x01].register_updates(callbacks.sensor_status_callback)
-    msg = StandardReceive(address, target, COMMAND_LIGHT_ON_0X11_NONE, cmd2=cmd2)
-    mockPLM.message_received(msg)
-    assert callbacks.sensor == cmd2
+        device = SecurityHealthSafety.create(mockPLM, address, cat, subcat, product_key, description, model)
+        device.states[0x01].register_updates(callbacks.sensor_status_callback)
+        msg = StandardReceive(address, target, COMMAND_LIGHT_ON_0X11_NONE, cmd2=cmd2)
+        mockPLM.message_received(msg)
+        asyncio.sleep(.1, loop=loop)
+        assert callbacks.sensor == cmd2
+        
+    loop = asyncio.get_event_loop()
+    loop.run_until_complete(run_test(loop))
 
 def test_securityhealthsafety_2982_222():
     
