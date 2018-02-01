@@ -100,7 +100,7 @@ class OnOffSwitch_OutletTop(StateBase):
 
     def _send_status_0x01_request(self):
         self.log.debug('Starting OnOffSwitch_OutletTop._status_request')
-        self._send_method(StandardSend(self._address, COMMAND_LIGHT_STATUS_REQUEST_0X19_0X01, self._status_message_0x01_received))
+        self._send_method(StandardSend(self._address, COMMAND_LIGHT_STATUS_REQUEST_0X19_0X01), self._status_message_0x01_received)
         self.log.debug('Ending OnOffSwitch_OutletTop._status_request')
         
     def _status_message_0x01_received(self, msg):
@@ -140,7 +140,6 @@ class OnOffSwitch_OutletBottom(StateBase):
 
     def on(self):
         self.log.debug('Starting OnOffSwitch_OutletBottom.on')
-        print(self._send_method)
         self._send_method(ExtendedSend(self._address, COMMAND_LIGHT_ON_0X11_NONE, self._udata, cmd2=0xff), self._on_message_received)
         self.log.debug('Ending OnOffSwitch_OutletBottom.on')
 
@@ -203,12 +202,12 @@ class OpenClosedRelay(StateBase):
         
     def open(self):
         self.log.debug('Starting OpenCloseRelay.open')
-        self._send_method(StandardSend(self._address, COMMAND_LIGHT_ON_0X11_NONE, 0xff))
+        self._send_method(StandardSend(self._address, COMMAND_LIGHT_ON_0X11_NONE, 0xff), self._open_message_received)
         self.log.debug('Ending OpenCloseRelay.open')
 
     def close(self):
         self.log.debug('Starting OpenCloseRelay.close')
-        self._send_method(StandardSend(self._address, COMMAND_LIGHT_OFF_0X13_0X00))
+        self._send_method(StandardSend(self._address, COMMAND_LIGHT_OFF_0X13_0X00), self._close_message_received)
         self.log.debug('Ending OpenCloseRelay.close')
 
     def _open_message_received(self, msg):

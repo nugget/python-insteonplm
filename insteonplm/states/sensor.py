@@ -72,20 +72,11 @@ class IoLincSensor(StateBase):
                                                              commandtuple = COMMAND_LIGHT_OFF_0X13_0X00, 
                                                              cmd2 = None), 
                                     self._close_message_received)
-        self._message_callbacks.add(StandardSend.template(address = self._address,
-                                                          commandtuple = COMMAND_LIGHT_STATUS_REQUEST_0X19_0X01, 
-                                                          acknak = MESSAGE_ACK), 
-                                    self._status_request_ack_received)
 
-    def sensor_status_request(self):
-        """Request status of the device sensor"""
-        self.log.debug('Starting IoLincSensor.sensor_status_request')
-        self._send_message(StandardSend(self._address, COMMAND_LIGHT_STATUS_REQUEST_0X19_0X01))
-        self.log.debug('Ending IoLincSensor.sensor_status_request')
 
     def _send_status_request(self):
         self.log.debug('Starting IoLincSensor._send_status_request')
-        self._send_method(StandardSend(self._address, COMMAND_LIGHT_STATUS_REQUEST_0X19_0X01))
+        self._send_method(StandardSend(self._address, COMMAND_LIGHT_STATUS_REQUEST_0X19_0X01), self._status_message_received)
         self.log.debug('Ending IoLincSensor._send_status_request')
 
     def _open_message_received(self, msg):
