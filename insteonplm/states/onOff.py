@@ -342,7 +342,7 @@ class OnOffSwitch_OutletBottom(StateBase):
 
     def _off_message_received(self, msg):
         self.log.debug('Starting OnOffSwitch_OutletBottom._off_message_received')
-        self._update_subscribers(0xff)
+        self._update_subscribers(0x00)
         self.log.debug('Ending OnOffSwitch_OutletBottom._off_message_received')
 
     def _manual_change_received(self, msg):
