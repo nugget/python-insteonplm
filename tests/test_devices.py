@@ -225,7 +225,7 @@ def test_switchedLightingControl_2475F_status():
     loop.run_until_complete(run_test(loop))
 
 def test_securityhealthsafety():
-    
+    @asyncio.coroutine
     def run_test(loop):
         class sensorState(object):
             sensor = None
@@ -250,7 +250,7 @@ def test_securityhealthsafety():
 
         device = SecurityHealthSafety.create(mockPLM, address, cat, subcat, product_key, description, model)
         device.states[0x01].register_updates(callbacks.sensor_status_callback)
-        msg = StandardReceive(address, target, COMMAND_LIGHT_ON_0X11_NONE, cmd2=cmd2)
+        msg = StandardReceive(address, target, COMMAND_LIGHT_ON_0X11_NONE, cmd2=cmd2, flags=MessageFlags.create(MESSAGE_TYPE_ALL_LINK_CLEANUP, 0, 3, 3))
         mockPLM.message_received(msg)
         asyncio.sleep(.1, loop=loop)
         assert callbacks.sensor == cmd2
