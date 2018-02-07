@@ -181,19 +181,9 @@ class IoLincSensor(StateBase):
         if not msg.flags.isDirectACK:
             self._update_subscribers(0x00)
         self.log.debug('Ending IoLincSensor._close_message_received')
-
-    def _status_request_ack_received(self, msg):
-        self.log.debug('Starting IoLincSensor._status_request_ack_received')
-        self._message_callbacks.add(StandardReceive.template(address = self._address,
-                                                             flags = MessageFlags.template(MESSAGE_TYPE_DIRECT_MESSAGE_ACK)), 
-                                    self._status_message_received, True)
-        self.log.debug('Ending IoLincSensor._status_request_ack_received')
     
     def _status_message_received(self, msg):
         self.log.debug('Starting IoLincSensor._status_message_received')
-        self._message_callbacks.remove(StandardReceive.template(address = self._address,
-                                                                flags = MessageFlags.template(MESSAGE_TYPE_DIRECT_MESSAGE_ACK)), 
-                                          self._status_message_received)
         if msg.cmd2 == 0x00:
             self._update_subscribers(0x00)
         else:

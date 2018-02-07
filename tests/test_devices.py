@@ -1,4 +1,5 @@
 import asyncio
+import logging
 import insteonplm
 from insteonplm.constants import *
 from insteonplm.aldb import ALDB

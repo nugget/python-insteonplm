@@ -56,11 +56,12 @@ class MessageCallback(object):
         if callback is None:
             removed = self._dict.pop(msg, None)
         else:
-            cb = self._dict[msg]
-            try:
-                cb.remove(callback)
-            except:
-                pass
+            cb = self._dict.get(msg, None)
+            if cb is not None:
+                try:
+                    cb.remove(callback)
+                except:
+                    pass
             if len(cb) == 0:
                 removed = self._dict.pop(msg, None)
                 self.log.debug('Removed all callbacks for message: %s', msg)
