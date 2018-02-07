@@ -56,7 +56,7 @@ class MessageCallback(object):
         if callback is None:
             removed = self._dict.pop(msg, None)
         else:
-            cb = self._dict[msg]
+            cb = self._dict.get(msg, [])
             try:
                 cb.remove(callback)
             except:
