@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-from setuptools import setup
+from setuptools import setup, find_packages
 import sys
 
 try:
@@ -15,12 +15,12 @@ if len(long_description) < 100:
 
 setup(
     name='insteonplm',
-    version='0.7.5',
+    version='0.8.0',
     author='David McNett',
     author_email='nugget@macnugget.org',
     url='https://github.com/nugget/python-insteonplm',
     license="LICENSE",
-    packages=['insteonplm'],
+    packages=find_packages(),
     scripts=[],
     description='Python API for controlling Insteon PowerLinc Modems',
     long_description=long_description,
@@ -36,7 +36,8 @@ setup(
     zip_safe=True,
     install_requires=[
         'pyserial==3.2.0',
-        'pyserial-asyncio'
+        'pyserial-asyncio',
+        'async_timeout'
     ],
     entry_points={
         'console_scripts': [ 'insteonplm_monitor = insteonplm.tools:monitor', ]

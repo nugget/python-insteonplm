@@ -36,106 +36,103 @@ def console(loop, log, devicelist):
 
     log.info('Connecting to Insteon PLM at %s', device)
 
-    conn = yield from insteonplm.Connection.create(
-        device=device, loop=loop, userdefined=devicelist)
+    conn = yield from insteonplm.Connection.create(device=device, loop=loop, userdefined=devicelist)
 
-    def async_insteonplm_light_callback(device):
+    def async_insteonplm_add_device_callback(device):
         """Log that our new device callback worked."""
-        log.warn('New Device: %s', device)
+        log.warn('New Device: %s %02x %02x %s, %s', device.id, device.cat, device.subcat, device.description, device.model)
+        for state in device.states:
+            device.states[state].register_updates(async_state_change_callback)
+
+    def async_state_change_callback(id, state, value):
+        log.info('Device %s state %s value is changed to %02x', id, state, value)
 
     criteria = {}
-    conn.protocol.add_device_callback(async_insteonplm_light_callback, criteria)
+    conn.protocol.add_device_callback(async_insteonplm_add_device_callback)
 
     plm = conn.protocol
 
-    # yield from asyncio.sleep(5, loop=loop)
-    #  Successfully turns off the light in my computer room (yay)
-    #  conn.protocol._send_raw(binascii.unhexlify('02624095e6001300'))
-    #
-    # conn.protocol._send_raw(binascii.unhexlify('02624095e6000300'))
-    # conn.protocol.product_data_request('15c3ab')
-    # yield from asyncio.sleep(10, loop=loop)
-
-    yield from asyncio.sleep(20, loop=loop)
-
-    if 1 == 0:
-        # conn.protocol.send_insteon_extended('4095e6', '2e', '00', '0000000000000000000000000000')
-        # INFO:insteonplm.protocol:INSTEON extended 40.95.E6->39.55.37: cmd1:2e
-        # cmd2:00 flags:15 data:b'0101000020201cff1f0001000000'
-        # d2: 01
-        #
-        conn.protocol.extended_status_request('4095e6')
-        yield from asyncio.sleep(5, loop=loop)
-
-        conn.protocol.update_setlevel('4095e6', 127)
-        conn.protocol.update_ramprate('4095e6', 27)
-        yield from asyncio.sleep(5, loop=loop)
-
-        conn.protocol.extended_status_request('4095e6')
-        yield from asyncio.sleep(5, loop=loop)
-
-    if 1 == 0:
-        conn.protocol.turn_on('4095e6', ramprate=2)
-        yield from asyncio.sleep(5, loop=loop)
-
-    if 1 == 0:
-        conn.protocol.text_string_request('4095e6')
-
-    if 1 == 0:
-        conn.protocol.product_data_request('395fa4')
-
-    if 1 == 0:
-        conn.protocol.product_data_request('4095e6')
-        conn.protocol.product_data_request('395fa4')
-        conn.protocol.text_string_request('4095e6')
-        yield from asyncio.sleep(5, loop=loop)
-
-    # conn.protocol._send_raw(binascii.unhexlify('02624095e6150300000000000000ffff000000000000'))
-    # yield from asyncio.sleep(5, loop=loop)
-
-    if 1 == 0:
-        print('-- ')
-        conn.protocol.relay_request('395fa4')
-        conn.protocol.relay_request('395ecb')
-        print('-- ')
-        conn.protocol.turn_off('395fa4')
-        conn.protocol.turn_off('395ecb')
-        print('-- ')
-        conn.protocol.turn_on('395fa4', 1)
-        yield from asyncio.sleep(5, loop=loop)
-        print('-- ')
-        conn.protocol.turn_on('395ecb', 1)
-        yield from asyncio.sleep(5, loop=loop)
-
-    if 1 == 0:
-        yield from asyncio.sleep(5, loop=loop)
-        conn.protocol.dump_all_link_database()
-        yield from asyncio.sleep(5, loop=loop)
-
-    if 1 == 0:
-        addr = '395fa4'
-        addr = '424356'
-        addr = '395ecb'
-        log.info('Are you ready to rumble?')
-        yield from asyncio.sleep(2, loop=loop)
-        plm.status_request(addr)
-        yield from asyncio.sleep(5, loop=loop)
-        plm.turn_on(addr)
-        yield from asyncio.sleep(5, loop=loop)
-        plm.status_request(addr)
-        yield from asyncio.sleep(5, loop=loop)
-        plm.status_request(addr)
+    yield from asyncio.sleep(240, loop=loop)
 
     if 1 == 1:
-        for addr in ['395ecb', '395fa4']:
-            log.info('Are you ready to rumble?')
-            yield from asyncio.sleep(2, loop=loop)
-            log.info('Relay Status')
-            plm.status_request(addr)
-            yield from asyncio.sleep(2, loop=loop)
-            log.info('Sensor Status')
-            plm.status_request(addr, '01')
-            yield from asyncio.sleep(10, loop=loop)
+        device = plm.devices['14627a']
+        device.states[0x01].off()
+
+        log.debug('Sent office light off request')
+        log.debug('----------------------')
+        yield from asyncio.sleep(5, loop=loop)
+
+        device.states[0x01].on()
+        log.debug('Sent office light on request')
+        log.debug('----------------------')
+
+    if 1 == 0:
+        for key in plm.devices:
+            log.debug('Address: %s', key)
+        yield from asyncio.sleep(5, loop=loop)
+
+    if 1 == 1:
+        # Test Top Outlet
+        device = plm.devices['4189cf']
+        device.states[0x01].off()
+
+        log.debug('Sent top outlet off request')
+        log.debug('----------------------')
+        yield from asyncio.sleep(5, loop=loop)
+
+        device.states[0x01].on()
+        log.debug('Sent top outlet on request')
+        log.debug('----------------------')
+        
+        # Test Bottom Outlet
+        device.states[0x02].off()
+
+        log.debug('Sent bottom outlet off request')
+        log.debug('----------------------')
+        yield from asyncio.sleep(5, loop=loop)
+        
+        device.states[0x02].on()
+        log.debug('Sent bottom outlet on request')
+        log.debug('----------------------')
+
+    if 1 == 1:
+        # Test Status Request message
+        state1 = plm.devices['4189cf'].states[0x01]
+        state2 = plm.devices['4189cf'].states[0x02]
+
+        log.debug('Setting top outlet off and bottom outlet on')
+        log.debug('----------------------')
+        state1.off()
+        state2.on()
+        yield from asyncio.sleep(5, loop=loop)
+        
+        log.debug('Sent top outlet status request')
+        log.debug('----------------------')
+        state1.async_refresh_state()
+        yield from asyncio.sleep(5, loop=loop)
+        
+        log.debug('Sent top and bottom outlet status request')
+        log.debug('----------------------')
+        state2.async_refresh_state()
+        yield from asyncio.sleep(5, loop=loop)
+
+        log.debug('Turn Bottom outlet off')
+        log.debug('----------------------')
+        state2.off()
+        yield from asyncio.sleep(5, loop=loop)
+
+        
+        log.debug('Sent light status request')
+        log.debug('----------------------')
+        state2.async_refresh_state()
+
+        yield from asyncio.sleep(5, loop=loop)
+
+
+        log.debug('Turn Bottom outlet on')
+        log.debug('----------------------')
+        state2.on()
+
 
 def monitor():
     """Wrapper to call console with a loop."""
