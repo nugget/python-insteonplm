@@ -78,10 +78,7 @@ class MessageCallback(object):
 
     def _find_matching_keys(self, msg):
         for key in self._dict:
-            print('Key ', key)
-            print('Msg ', msg)
             if key.matches_pattern(msg) and msg.matches_pattern(key):
-                print('Matches')
                 yield key
 
     def _dict_to_key(self, dictkey):

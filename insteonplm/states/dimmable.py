@@ -232,9 +232,9 @@ class DimmableSwitch_Fan(StateBase):
 
     def _value_to_fan_speed(self, speed):
         if speed > 0xfe:
-            return SPEED_HIGH
+            return FAN_SPEED_HIGH
         elif speed > 0x7f:
-            return SPEED_MEDIUM
+            return FAN_SPEED_MEDIUM
         elif speed > 0:
-            return SPEED_LOW
-        return SPEED_OFF
+            return FAN_SPEED_LOW
+        return FAN_SPEED_OFF
