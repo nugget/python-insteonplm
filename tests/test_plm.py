@@ -158,7 +158,6 @@ def do_plm(loop, log, devicelist):
     except:
         print('NAK test failed: ', plm.transport.lastmessage)
 
-    loop.stop()
 
 def test_plm1():
     devicelist = (
@@ -179,9 +178,7 @@ def test_plm1():
     log = logging.getLogger(__name__)
     logging.basicConfig(level=logging.DEBUG)
     loop = asyncio.get_event_loop()
-    asyncio.async(do_plm(loop, log, devicelist))
-    loop.run_forever()
-    loop.close()
+    loop.run_until_complete(do_plm(loop, log, devicelist))
 
 if __name__ == "__main__":
     test_plm1()

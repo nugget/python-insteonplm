@@ -1,6 +1,6 @@
 from .devicebase import DeviceBase
 from insteonplm.constants import *
-from insteonplm.states.sensor import VariableSensor, MotionSensor, SmokeCO2Sensor
+from insteonplm.states.sensor import (VariableSensor, OnOffSensor, SmokeCO2Sensor)
 
 class SecurityHealthSafety(DeviceBase):
     """Security Health Safety Control Device Class 0x10
@@ -17,9 +17,20 @@ class SecurityHealthSafety(DeviceBase):
 
     def __init__(self, plm, address, cat, subcat, product_key=None, description=None, model=None):
         super().__init__(plm, address, cat, subcat, product_key, description, model)
-        
-        self._stateList[0x01] = VariableSensor(self._address, "onOffSensor", 0x01, self._send_msg, self._plm.message_callbacks, 0x00)
 
+        self._product_data_in_aldb = True
+        
+        self._stateList[0x01] = VariableSensor(self._address, "generalSensor", 0x01, self._send_msg, self._plm.message_callbacks, 0x00)
+
+class SecurityHealthSafety_2421(DeviceBase):
+    
+    def __init__(self, plm, address, cat, subcat, product_key=None, description=None, model=None):
+        super().__init__(plm, address, cat, subcat, product_key, description, model)
+
+        self._product_data_in_aldb = True
+        
+        self._stateList[0x01] = OnOffSensor(self._address, "openClosedSensor", 0x01, self._send_msg, self._plm.message_callbacks, 0x00)
+       
 class SecurityHealthSafety_2842_222(DeviceBase):
     
     def __init__(self, plm, address, cat, subcat, product_key=None, description=None, model=None):
@@ -27,11 +38,34 @@ class SecurityHealthSafety_2842_222(DeviceBase):
 
         self._product_data_in_aldb = True
         
-        self._stateList[0x01] = MotionSensor(self._address, "motionSensor", 0x01, self._send_msg, self._plm.message_callbacks, 0x00)
-            
+        self._stateList[0x01] = OnOffSensor(self._address, "motionSensor", 0x01, self._send_msg, self._plm.message_callbacks, 0x00)
+                
+class SecurityHealthSafety_2845_2222(DeviceBase):
+    
+    def __init__(self, plm, address, cat, subcat, product_key=None, description=None, model=None):
+        super().__init__(plm, address, cat, subcat, product_key, description, model)
+
+        self._product_data_in_aldb = True
+        
+        self._stateList[0x01] = OnOffSensor(self._address, "doorSensor", 0x01, self._send_msg, self._plm.message_callbacks, 0x00)
+
+class SecurityHealthSafety_2852_222(DeviceBase):
+    
+    def __init__(self, plm, address, cat, subcat, product_key=None, description=None, model=None):
+        super().__init__(plm, address, cat, subcat, product_key, description, model)
+
+        self._product_data_in_aldb = True
+        
+        self._stateList[0x01] = OnOffSensor(self._address, "leakSensor", 0x01, self._send_msg, self._plm.message_callbacks, 0x00)
+                
 class SecurityHealthSafety_2982_222(DeviceBase):
     
     def __init__(self, plm, address, cat, subcat, product_key=None, description=None, model=None):
         super().__init__(plm, address, cat, subcat, product_key, description, model)
+
+        self._product_data_in_aldb = True
         
         self._stateList[0x01] = SmokeCO2Sensor(self._address, "smokeCO2Sensor", 0x01, self._send_msg, self._plm.message_callbacks, 0x00)
+
+
+        
