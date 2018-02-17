@@ -25,6 +25,8 @@ class SensorsActuators(DeviceBase):
     def __init__(self, plm, address, cat, subcat, product_key = 0, description = '', model = ''):
         return super().__init__(plm, address, cat, subcat, product_key, description, model)
 
+        self._stateList[0x01] = OpenClosedRelay(self._address, "openClosedRelay", 0x01, self._send_msg, self._plm.message_callbacks, 0x00)
+
 class SensorsActuators_2450(SensorsActuators):
     """I/O Linc [2450] & [2450-50-60] Device Class 0x07 subcat 0x00
         
@@ -51,5 +53,5 @@ class SensorsActuators_2450(SensorsActuators):
     def __init__(self, plm, address, cat, subcat, product_key=None, description=None, model=None):
         super().__init__(plm, address, cat, subcat, product_key, description, model)
 
-        self._stateList[0x01] = OpenClosedRelay(self._address, "relayOpenClosed", 0x01, self._send_msg, self._plm.message_callbacks, 0x00)
-        self._stateList[0x02] = IoLincSensor(self._address, "sensorOpenClosed", 0x02, self._send_msg, self._plm.message_callbacks, 0x00)
+        self._stateList[0x01] = OpenClosedRelay(self._address, "openClosedRelay", 0x01, self._send_msg, self._plm.message_callbacks, 0x00)
+        self._stateList[0x02] = IoLincSensor(self._address, "openClosedSensor", 0x02, self._send_msg, self._plm.message_callbacks, 0x00)

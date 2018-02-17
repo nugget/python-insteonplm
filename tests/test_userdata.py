@@ -11,8 +11,6 @@ def test_userdata_basic():
     ud = Userdata(userdata)
     chk = Userdata.create_pattern(userdata)
     chk2 = Userdata.create_pattern({'d1': 0x11})
-    print(ud._userdata)
-    print(chk._userdata)
     assert chk == ud
     assert ud.matches_pattern(chk2)
     assert chk2.matches_pattern(ud)

@@ -200,7 +200,7 @@ class DimmableSwitch_Fan(StateBase):
 
     def off(self):
         self.log.debug('Starting DimmableSwitch_Fan.off')
-        self._send_method(ExtendedSend(self._address, COMMAND_LIGHT_OFF_0X13_0x00, self._udata), self._off_message_received)
+        self._send_method(ExtendedSend(self._address, COMMAND_LIGHT_OFF_0X13_0X00, self._udata), self._off_message_received)
         self.log.debug('Ending DimmableSwitch_Fan.off')
 
     def _on_message_received(self, msg):
@@ -232,9 +232,9 @@ class DimmableSwitch_Fan(StateBase):
 
     def _value_to_fan_speed(self, speed):
         if speed > 0xfe:
-            return SPEED_HIGH
+            return FAN_SPEED_HIGH
         elif speed > 0x7f:
-            return SPEED_MEDIUM
+            return FAN_SPEED_MEDIUM
         elif speed > 0:
-            return SPEED_LOW
-        return SPEED_OFF
+            return FAN_SPEED_LOW
+        return FAN_SPEED_OFF

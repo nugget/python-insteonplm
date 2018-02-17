@@ -95,11 +95,7 @@ class Userdata(object):
     def matches_pattern(self, other):
         ismatch = False
         if isinstance(other, Userdata):
-            print('Testing userdata')
             for key in self._userdata:
-                print('Checking ', key)
-                print('Key ', self[key])
-                print('Msg ', other[key])
                 if self._userdata[key] == None or other[key] == None:
                     ismatch = True
                 elif self._userdata[key] == other[key]:
@@ -107,9 +103,6 @@ class Userdata(object):
                 else:
                     ismatch = False
                     break
-        else:
-            print('Other is not Userdata')
-        print(ismatch)
         return ismatch
 
     @classmethod

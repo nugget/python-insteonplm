@@ -5,8 +5,6 @@ def test_textstring():
     addr = Address('1a2b3c')
     chk = Address('000000')
     chk.addr = b'\x1a\x2b\x3c'
-    print(addr.addr)
-    print(chk.addr)
     assert addr == chk
     assert addr.human == '1A.2B.3C'
     assert addr.hex == '1a2b3c'

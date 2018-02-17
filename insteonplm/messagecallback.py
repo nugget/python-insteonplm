@@ -56,12 +56,11 @@ class MessageCallback(object):
         if callback is None:
             removed = self._dict.pop(msg, None)
         else:
-            cb = self._dict.get(msg, None)
-            if cb is not None:
-                try:
-                    cb.remove(callback)
-                except:
-                    pass
+            cb = self._dict.get(msg, [])
+            try:
+                cb.remove(callback)
+            except:
+                pass
             if len(cb) == 0:
                 removed = self._dict.pop(msg, None)
                 self.log.debug('Removed all callbacks for message: %s', msg)
@@ -78,10 +77,7 @@ class MessageCallback(object):
 
     def _find_matching_keys(self, msg):
         for key in self._dict:
-            print('Key ', key)
-            print('Msg ', msg)
             if key.matches_pattern(msg) and msg.matches_pattern(key):
-                print('Matches')
                 yield key
 
     def _dict_to_key(self, dictkey):
