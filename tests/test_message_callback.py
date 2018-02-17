@@ -25,9 +25,6 @@ def test_messagecallback_basic():
     msg = StandardReceive('1a2b3c', '4d5e6f', COMMAND_LIGHT_ON_0X11_NONE, cmd2=0xff, flags=0x80)
 
     callback1 = callbacks.get_callbacks_from_message(msg)
-    print('Callback: ', callback1)
-    print('MT Code: {:x}'.format(msg.code))
-    print('msg: ', msg.hex)
 
     assert len(callback1) == 1
     assert callback1[0] == callbacktest1

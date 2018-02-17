@@ -157,11 +157,9 @@ def test_switchedLightingControl_2475F():
             fanOnLevel = None
 
             def device_status_callback1(self, id, state, value):
-                print('Called device 1 callback')
                 self.lightOnLevel = value
     
             def device_status_callback2(self, id, state, value):
-                print('Called device 2 callback')
                 self.fanOnLevel = value
 
         mockPLM = MockPLM(loop)

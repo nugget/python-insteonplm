@@ -100,9 +100,6 @@ def test_extendedReceive():
 
     msg = ExtendedReceive(address, target, {'cmd1':cmd1, 'cmd2':cmd2}, userdata, flags=flags)
     assert msg.hex == hexmsg(0x02, 0x51, Address(address), Address(target), flags, cmd1, cmd2, userdatatest)
-    print(msg.hex)
-    print(len(msg.hex))
-    print(msg.sendSize)
     assert len(msg.hex)/2 == msg.sendSize
     assert len(msg.hex)/2 == msg.receivedSize
 

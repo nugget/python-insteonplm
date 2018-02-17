@@ -56,7 +56,6 @@ def test_securityhealthsafety():
             sensor = None
 
             def sensor_status_callback(self, id, state, value):
-                print('Called sensor callback')
                 self.sensor = value
 
         plm = MockPLM()

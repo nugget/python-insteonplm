@@ -73,32 +73,31 @@ def do_plm(loop, log, devicelist):
     log.info('Replying with IM Info')
     log.info('_____________________')
     msg = insteonplm.messages.getIMInfo.GetImInfo(address='1a2b3c', cat=0x03, subcat=0x20, firmware=0x00, acknak = 0x06)
-    print('GetIMInfo message: ', msg.hex)
     plm.data_received(msg.bytes)
     yield from asyncio.sleep(10)
     try:
         assert plm.address == Address('1a2b3c')
-        print('Address check passed')
+        log.info('Address check passed')
     except:
-        print('Address check failed')
+        log.info('Address check failed')
 
     try:
         assert plm.cat == 0x03
-        print('Category check passed')
+        log.info('Category check passed')
     except:
-        print('Category check failed')
+        log.info('Category check failed')
 
     try:
         assert plm.subcat == 0x20
-        print('Subcategory check passed')
+        log.info('Subcategory check passed')
     except:
-        print('Subcategory check failed')
+        log.info('Subcategory check failed')
 
     try:
         assert plm.product_key == 0x00
-        print('Firmware check passed')
+        log.info('Firmware check passed')
     except:
-        print('Firmware check failed.')
+        log.info('Firmware check failed.')
 
     log.info('Replying with an All-Link Record')
     log.info('________________________________')
@@ -126,7 +125,7 @@ def do_plm(loop, log, devicelist):
     plm.data_received(msg.bytes)
     yield from asyncio.sleep(14)
     for addr in plm.devices:
-        print('Device: ', addr)
+        log.info('Device: ', addr)
     log.info('Replying with Device Status Record')
     log.info('__________________________________')
     msg = insteonplm.messages.standardSend.StandardSend(address='4d5e6f', 
@@ -144,9 +143,9 @@ def do_plm(loop, log, devicelist):
 
     try:
         assert plm.devices['4d5e6f'].states[0x01].value == 0xff
-        print('Light On Level test passed')
+        log.info('Light On Level test passed')
     except:
-        print('Light On Level test failed ', plm.devices['4d5e6f'].states[0x01].value)
+        log.info('Light On Level test failed ', plm.devices['4d5e6f'].states[0x01].value)
 
     msg = insteonplm.messages.standardSend.StandardSend(address='4d5e6f', commandtuple={'cmd1':0x011,'cmd2':0xff}, flags=0x00, acknak=0x15)
     plm.data_received(msg.bytes)
@@ -154,9 +153,9 @@ def do_plm(loop, log, devicelist):
 
     try:
         assert plm.transport.lastmessage == msg.bytes[:-1]
-        print('NAK test passed')
+        log.info('NAK test passed')
     except:
-        print('NAK test failed: ', plm.transport.lastmessage)
+        log.info('NAK test failed: ', plm.transport.lastmessage)
 
 
 def test_plm1():

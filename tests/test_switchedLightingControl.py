@@ -245,12 +245,12 @@ def test_switchedLightingControl_2663_222_manual_change():
         yield from asyncio.sleep(.1, loop=loop)
         assert callbacks.callbackvalue1 == 0x00
 
-        plm.message_received(ExtendedReceive(address, '000002', COMMAND_LIGHT_ON_0X11_NONE, {'d1':0x02}, cmd2=0x66,
+        plm.message_received(StandardReceive(address, '000002', COMMAND_LIGHT_ON_0X11_NONE, cmd2=0x66,
                                              flags=MessageFlags.create(MESSAGE_TYPE_ALL_LINK_BROADCAST, 0, 2, 3)))
         yield from asyncio.sleep(.1, loop=loop)
         assert callbacks.callbackvalue2 == 0xff
         
-        plm.message_received(ExtendedReceive(address, '000002', COMMAND_LIGHT_OFF_0X13_0X00, {'d1':0x02},
+        plm.message_received(StandardReceive(address, '000002', COMMAND_LIGHT_OFF_0X13_0X00,
                                              flags=MessageFlags.create(MESSAGE_TYPE_ALL_LINK_BROADCAST, 0, 2, 3)))
         yield from asyncio.sleep(.1, loop=loop)
         assert callbacks.callbackvalue2 == 0x00
@@ -266,11 +266,9 @@ def test_switchedLightingControl_2663_222_status():
             lightOnLevel2 = None
 
             def device_status_callback1(self, id, state, value):
-                print('Called device 1 callback')
                 self.lightOnLevel1 = value
     
             def device_status_callback2(self, id, state, value):
-                print('Called device 2 callback')
                 self.lightOnLevel2 = value
 
         mockPLM = MockPLM(loop)
