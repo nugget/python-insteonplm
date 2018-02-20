@@ -32,8 +32,8 @@ def test_SensorsActuators_2450_status():
 
         device = SensorsActuators_2450.create(plm, address, cat, subcat, product_key, description, model)
     
-        assert device.states[0x01].name == 'relayOpenClosed'    
-        assert device.states[0x02].name == 'sensorOpenClosed'
+        assert device.states[0x01].name == 'openClosedRelay'    
+        assert device.states[0x02].name == 'openClosedSensor'
 
         device.states[0x01].register_updates(callbacks.callbackmethod1)
         device.states[0x02].register_updates(callbacks.callbackmethod2)

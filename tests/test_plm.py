@@ -74,7 +74,7 @@ def do_plm(loop, log, devicelist):
     log.info('_____________________')
     msg = insteonplm.messages.getIMInfo.GetImInfo(address='1a2b3c', cat=0x03, subcat=0x20, firmware=0x00, acknak = 0x06)
     plm.data_received(msg.bytes)
-    yield from asyncio.sleep(10)
+    yield from asyncio.sleep(.1)
     try:
         assert plm.address == Address('1a2b3c')
         log.info('Address check passed')
@@ -108,13 +108,13 @@ def do_plm(loop, log, devicelist):
                                                                           linkdata2=0x0b, 
                                                                           linkdata3=0x000050)
     plm.data_received(msg.bytes)
-    yield from asyncio.sleep(3)
+    yield from asyncio.sleep(.1)
     
     log.info('Replying with Last All-Link Record')
     log.info('__________________________________')
     msg = insteonplm.messages.getNextAllLinkRecord.GetNextAllLinkRecord(0x15)
     plm.data_received(msg.bytes)
-    yield from asyncio.sleep(4)
+    yield from asyncio.sleep(.1)
     
     log.info('Replying with Device Info Record')
     log.info('________________________________')
@@ -123,7 +123,7 @@ def do_plm(loop, log, devicelist):
                                                               commandtuple={'cmd1':0x01,'cmd2':0x00}, 
                                                               flags=MESSAGE_FLAG_BROADCAST_0X80)
     plm.data_received(msg.bytes)
-    yield from asyncio.sleep(14)
+    yield from asyncio.sleep(.1)
     for addr in plm.devices:
         log.info('Device: ', addr)
     log.info('Replying with Device Status Record')
@@ -133,13 +133,13 @@ def do_plm(loop, log, devicelist):
                                                         flags=0x00,
                                                         acknak=0x06)
     plm.data_received(msg.bytes)
-    asyncio.sleep(.5)
+    asyncio.sleep(.1)
     msg = insteonplm.messages.standardReceive.StandardReceive(address='4d5e6f', 
                                                               target='1a2b3c', 
                                                               commandtuple={'cmd1':0x17, 'cmd2':0xff}, 
                                                               flags=0x20)
     plm.data_received(msg.bytes)
-    yield from asyncio.sleep(15)
+    yield from asyncio.sleep(.1)
 
     try:
         assert plm.devices['4d5e6f'].states[0x01].value == 0xff
@@ -149,7 +149,7 @@ def do_plm(loop, log, devicelist):
 
     msg = insteonplm.messages.standardSend.StandardSend(address='4d5e6f', commandtuple={'cmd1':0x011,'cmd2':0xff}, flags=0x00, acknak=0x15)
     plm.data_received(msg.bytes)
-    yield from asyncio.sleep(8)
+    yield from asyncio.sleep(.1)
 
     try:
         assert plm.transport.lastmessage == msg.bytes[:-1]
