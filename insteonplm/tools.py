@@ -7,7 +7,6 @@ import insteonplm
 
 __all__ = ('console', 'monitor')
 
-
 @asyncio.coroutine
 def console(loop, log, devicelist):
     """Connect to receiver and show events as they occur.
@@ -54,7 +53,7 @@ def console(loop, log, devicelist):
 
     yield from asyncio.sleep(240, loop=loop)
 
-    if 1 == 1:
+    if 1 == 0:
         device = plm.devices['14627a']
         device.states[0x01].off()
 
@@ -71,7 +70,7 @@ def console(loop, log, devicelist):
             log.debug('Address: %s', key)
         yield from asyncio.sleep(5, loop=loop)
 
-    if 1 == 1:
+    if 1 == 0:
         # Test Top Outlet
         device = plm.devices['4189cf']
         device.states[0x01].off()
@@ -95,7 +94,7 @@ def console(loop, log, devicelist):
         log.debug('Sent bottom outlet on request')
         log.debug('----------------------')
 
-    if 1 == 1:
+    if 1 == 0:
         # Test Status Request message
         state1 = plm.devices['4189cf'].states[0x01]
         state2 = plm.devices['4189cf'].states[0x02]
@@ -132,7 +131,6 @@ def console(loop, log, devicelist):
         log.debug('Turn Bottom outlet on')
         log.debug('----------------------')
         state2.on()
-
 
 def monitor():
     """Wrapper to call console with a loop."""
