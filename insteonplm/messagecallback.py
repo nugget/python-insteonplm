@@ -25,8 +25,8 @@ class MessageCallback(object):
                1) Any cmd2 value
                2) Any cmd1 value
                3) Any Ack/Nak value
-           For example, if the key is {'code':0x50, 'cmd1':None, 'cmd2':None, 'acknak':None} 
-           (i.e. any Standard Message (0x50)) and the message is {'code':0x50, 'cmd1':0x11, 'cmd2:0xff, 'acknak':None}
+           For example, if the key is {'code':0x50, 'cmd1':None, 'cmd2': None, 'acknak':None} 
+           (i.e. any Standard Message (0x50)) and the message is {'code':0x50, 'cmd1': 0x11, 'cmd2:0xff, 'acknak':None}
            this will be a match.
         """
         return self._dict.get(key, [])

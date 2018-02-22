@@ -120,7 +120,7 @@ def do_plm(loop, log, devicelist):
     log.info('________________________________')
     msg = insteonplm.messages.standardReceive.StandardReceive(address='4d5e6f', 
                                                               target='010b00', 
-                                                              commandtuple={'cmd1':0x01,'cmd2':0x00}, 
+                                                              commandtuple={'cmd1': 0x01,'cmd2': 0x00}, 
                                                               flags=MESSAGE_FLAG_BROADCAST_0X80)
     plm.data_received(msg.bytes)
     yield from asyncio.sleep(.1)
@@ -129,14 +129,14 @@ def do_plm(loop, log, devicelist):
     log.info('Replying with Device Status Record')
     log.info('__________________________________')
     msg = insteonplm.messages.standardSend.StandardSend(address='4d5e6f', 
-                                                        commandtuple={'cmd1':0x19, 'cmd2':0x00}, 
+                                                        commandtuple={'cmd1': 0x19, 'cmd2': 0x00}, 
                                                         flags=0x00,
                                                         acknak=0x06)
     plm.data_received(msg.bytes)
     asyncio.sleep(.1)
     msg = insteonplm.messages.standardReceive.StandardReceive(address='4d5e6f', 
                                                               target='1a2b3c', 
-                                                              commandtuple={'cmd1':0x17, 'cmd2':0xff}, 
+                                                              commandtuple={'cmd1': 0x17, 'cmd2': 0xff}, 
                                                               flags=0x20)
     plm.data_received(msg.bytes)
     yield from asyncio.sleep(.1)
@@ -147,7 +147,7 @@ def do_plm(loop, log, devicelist):
     except:
         log.info('Light On Level test failed ', plm.devices['4d5e6f'].states[0x01].value)
 
-    msg = insteonplm.messages.standardSend.StandardSend(address='4d5e6f', commandtuple={'cmd1':0x011,'cmd2':0xff}, flags=0x00, acknak=0x15)
+    msg = insteonplm.messages.standardSend.StandardSend(address='4d5e6f', commandtuple={'cmd1': 0x011,'cmd2': 0xff}, flags=0x00, acknak=0x15)
     plm.data_received(msg.bytes)
     yield from asyncio.sleep(.1)
 

@@ -140,7 +140,7 @@ def test_dimmableLightingControl_status():
         yield from asyncio.sleep(.1, loop=loop)
         plm.message_received(StandardSend(address, COMMAND_LIGHT_STATUS_REQUEST_0X19_0X00, acknak=MESSAGE_ACK))
         yield from asyncio.sleep(.1, loop=loop)
-        plm.message_received(StandardReceive(address, target, {'cmd1': 0x08, 'cmd2':0x27}, 
+        plm.message_received(StandardReceive(address, target, {'cmd1': 0x08, 'cmd2': 0x27}, 
                                              flags=MessageFlags.create(MESSAGE_TYPE_DIRECT_MESSAGE_ACK, 0, 2, 3)))
         yield from asyncio.sleep(.1, loop=loop)
         assert plm.sentmessage == StandardSend(address, COMMAND_LIGHT_STATUS_REQUEST_0X19_0X00).hex
@@ -185,7 +185,7 @@ def test_switchedLightingControl_2475F():
         device.states[0x01].async_refresh_state()
         yield from asyncio.sleep(.1, loop=loop)
         ackmsg = StandardSend(address, COMMAND_LIGHT_STATUS_REQUEST_0X19_0X00, acknak=MESSAGE_ACK)
-        statusmsg = StandardReceive(address, target, {'cmd1':0xdf, 'cmd2':0x55}, flags=MessageFlags.create(MESSAGE_TYPE_DIRECT_MESSAGE_ACK, 0, 2,3))
+        statusmsg = StandardReceive(address, target, {'cmd1': 0xdf, 'cmd2': 0x55}, flags=MessageFlags.create(MESSAGE_TYPE_DIRECT_MESSAGE_ACK, 0, 2,3))
         mockPLM.message_received(ackmsg)
         yield from asyncio.sleep(.1, loop=loop)
         mockPLM.message_received(statusmsg)
@@ -195,8 +195,8 @@ def test_switchedLightingControl_2475F():
 
         device.states[0x02].async_refresh_state()
         yield from asyncio.sleep(.1, loop=loop)
-        ackmsg = StandardSend(address, {'cmd1':0x19, 'cmd2':0x03}, flags=0x00, acknak=MESSAGE_ACK)
-        statusmsg = StandardReceive(address, target, {'cmd1':0xab, 'cmd2':0x77}, flags=MessageFlags.create(MESSAGE_TYPE_DIRECT_MESSAGE_ACK, 0, 2,3))
+        ackmsg = StandardSend(address, {'cmd1': 0x19, 'cmd2': 0x03}, flags=0x00, acknak=MESSAGE_ACK)
+        statusmsg = StandardReceive(address, target, {'cmd1': 0xab, 'cmd2': 0x77}, flags=MessageFlags.create(MESSAGE_TYPE_DIRECT_MESSAGE_ACK, 0, 2,3))
         mockPLM.message_received(ackmsg)
         yield from asyncio.sleep(.1, loop=loop)
         mockPLM.message_received(statusmsg)
@@ -231,7 +231,7 @@ def test_dimmableLightingControl_2475F_status():
         yield from asyncio.sleep(.1, loop=loop)
         plm.message_received(StandardSend(address, COMMAND_LIGHT_STATUS_REQUEST_0X19_NONE, cmd2=0x03, acknak=MESSAGE_ACK))
         yield from asyncio.sleep(.1, loop=loop)
-        plm.message_received(StandardReceive(address, target, {'cmd1': 0x08, 'cmd2':0x27}, 
+        plm.message_received(StandardReceive(address, target, {'cmd1': 0x08, 'cmd2': 0x27}, 
                                              flags=MessageFlags.create(MESSAGE_TYPE_DIRECT_MESSAGE_ACK, 0, 2, 3)))
         yield from asyncio.sleep(.1, loop=loop)
         assert plm.sentmessage == StandardSend(address, COMMAND_LIGHT_STATUS_REQUEST_0X19_NONE, cmd2=0x03).hex

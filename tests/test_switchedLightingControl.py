@@ -169,7 +169,7 @@ def test_switchedLightingControl_2663_222():
         assert plm.sentmessage == StandardSend(address, COMMAND_LIGHT_ON_0X11_NONE, cmd2=0xff).hex
         plm.message_received(StandardSend(address, COMMAND_LIGHT_ON_0X11_NONE, cmd2=0xff, acknak=MESSAGE_ACK))
         yield from asyncio.sleep(.1, loop=loop)
-        plm.message_received(StandardReceive(address, target, {'cmd1': 0x09, 'cmd2':0xff}, 
+        plm.message_received(StandardReceive(address, target, {'cmd1': 0x09, 'cmd2': 0xff}, 
                                              flags=MessageFlags.create(MESSAGE_TYPE_DIRECT_MESSAGE_ACK, 0, 2, 3)))
         yield from asyncio.sleep(.1, loop=loop)
         assert callbacks.callbackvalue1 == 0xff
@@ -178,7 +178,7 @@ def test_switchedLightingControl_2663_222():
         yield from asyncio.sleep(.1, loop=loop)
         plm.message_received(ExtendedSend(address, COMMAND_LIGHT_ON_0X11_NONE, {'d1':0x02}, cmd2=0xff, acknak=MESSAGE_ACK))
         yield from asyncio.sleep(.1, loop=loop)
-        plm.message_received(StandardReceive(address, target, {'cmd1': 0x09, 'cmd2':0xff}, 
+        plm.message_received(StandardReceive(address, target, {'cmd1': 0x09, 'cmd2': 0xff}, 
                                              flags=MessageFlags.create(MESSAGE_TYPE_DIRECT_MESSAGE_ACK, 0, 2, 3)))
         yield from asyncio.sleep(.1, loop=loop)
         assert plm.sentmessage == ExtendedSend(address, COMMAND_LIGHT_ON_0X11_NONE, {'d1':0x02}, cmd2=0xff).hex
@@ -189,7 +189,7 @@ def test_switchedLightingControl_2663_222():
         assert plm.sentmessage == StandardSend(address, COMMAND_LIGHT_OFF_0X13_0X00).hex
         plm.message_received(StandardSend(address, COMMAND_LIGHT_OFF_0X13_0X00, acknak=MESSAGE_ACK))
         yield from asyncio.sleep(.1, loop=loop)
-        plm.message_received(StandardReceive(address, target, {'cmd1': 0x09, 'cmd2':0x00}, 
+        plm.message_received(StandardReceive(address, target, {'cmd1': 0x09, 'cmd2': 0x00}, 
                                              flags=MessageFlags.create(MESSAGE_TYPE_DIRECT_MESSAGE_ACK, 0, 2, 3)))
         yield from asyncio.sleep(.1, loop=loop)
         assert plm.sentmessage == StandardSend(address, COMMAND_LIGHT_OFF_0X13_0X00).hex
@@ -199,7 +199,7 @@ def test_switchedLightingControl_2663_222():
         yield from asyncio.sleep(.1, loop=loop)
         plm.message_received(ExtendedSend(address, COMMAND_LIGHT_OFF_0X13_0X00, {'d1':0x02}, acknak=MESSAGE_ACK))
         yield from asyncio.sleep(.1, loop=loop)
-        plm.message_received(StandardReceive(address, target, {'cmd1': 0x09, 'cmd2':0x00}, 
+        plm.message_received(StandardReceive(address, target, {'cmd1': 0x09, 'cmd2': 0x00}, 
                                              flags=MessageFlags.create(MESSAGE_TYPE_DIRECT_MESSAGE_ACK, 0, 2, 3)))
         yield from asyncio.sleep(.1, loop=loop)
         assert plm.sentmessage == ExtendedSend(address, COMMAND_LIGHT_OFF_0X13_0X00, {'d1':0x02}).hex
@@ -295,7 +295,7 @@ def test_switchedLightingControl_2663_222_status():
         device.states[0x02].async_refresh_state()
         yield from asyncio.sleep(.1, loop)
         ackmsg = StandardSend(address, COMMAND_LIGHT_STATUS_REQUEST_0X19_0X01, acknak=MESSAGE_ACK)
-        statusmsg = StandardReceive(address, target,  {'cmd1':0x03, 'cmd2':0x01}, flags=MessageFlags.create(MESSAGE_TYPE_DIRECT_MESSAGE_ACK, 0, 2,3))
+        statusmsg = StandardReceive(address, target,  {'cmd1': 0x03, 'cmd2': 0x01}, flags=MessageFlags.create(MESSAGE_TYPE_DIRECT_MESSAGE_ACK, 0, 2,3))
         mockPLM.message_received(ackmsg)
         yield from asyncio.sleep(.1, loop)
         mockPLM.message_received(statusmsg)
