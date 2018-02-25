@@ -58,6 +58,7 @@ class PLM(asyncio.Protocol, DeviceBase):
         self._write_transport_lock = asyncio.Lock(loop=self._loop)
         self._message_callbacks = MessageCallback()
         self._saved_device_info = []
+        self._cb_load_all_link_db_done = []
 
         self._address = None
         self._cat = None
@@ -162,6 +163,12 @@ class PLM(asyncio.Protocol, DeviceBase):
     def add_device_callback(self, callback):
         """Register a callback for when a matching new device is seen."""
         self.devices.add_device_callback(callback)
+
+    def add_all_link_done_callback(self, callback):
+        """Register a callback to be invoked when a all link database is done."""
+        self.log.debug('Added new callback %s ',
+                      callback)
+        self._cb_load_all_link_db_done.append(callback)
 
     def poll_devices(self):
         """Request status updates from each device."""
@@ -376,7 +383,10 @@ class PLM(asyncio.Protocol, DeviceBase):
                                   self._handle_get_next_all_link_record_nak,
                                   None)
         else:
-            self._save_device_info()
+            self._save_device_info()            
+            while len(self._cb_load_all_link_db_done) > 0:
+                callback = self._cb_load_all_link_db_done.pop()
+                callback()
             self._loop.call_soon(self.poll_devices)
         self.log.debug('Ending _handle_get_next_all_link_record_nak')
 
