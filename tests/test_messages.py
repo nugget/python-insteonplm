@@ -1,11 +1,34 @@
+"""Test all message classes"""
+import binascii
 import sys
+from insteonplm.address import Address
+from insteonplm.messages import (AllLinkCleanupFailureReport,
+                                 AllLinkCleanupStatusReport,
+                                 AllLinkComplete,
+                                 AllLinkRecordResponse,
+                                 ButtonEventReport,
+                                 CancelAllLinking,
+                                 ExtendedReceive,
+                                 ExtendedSend,
+                                 GetFirstAllLinkRecord,
+                                 GetImConfiguration,
+                                 GetImInfo,
+                                 GetNextAllLinkRecord,
+                                 ResetIM,
+                                 SendAllLinkCommand,
+                                 StandardReceive,
+                                 StandardSend,
+                                 StartAllLinking,
+                                 UserReset,
+                                 X10Received,
+                                 X10Send)
+
 sys.path.append('../')
 
-from insteonplm.address import Address
-from insteonplm.messages import *
-import binascii
 
 def test_allLinkCleanupStatusReport():
+    """Test AllLinkCleanupStatusReport"""
+
     msg = AllLinkCleanupStatusReport(0x11)
     assert msg.acknak == 0x11
     assert msg.hex == hexmsg(0x02, 0x58, 0x11)
@@ -13,6 +36,7 @@ def test_allLinkCleanupStatusReport():
     assert len(msg.hex)/2 == msg.receivedSize
 
 def test_allLinkComplete():
+    """test AllLinkComplete"""
     linkcode = 0x11
     group = 0x22
     address = bytearray([0x33, 0x44, 0x55])
@@ -30,8 +54,9 @@ def test_allLinkComplete():
     assert len(msg.hex)/2 == msg.receivedSize
 
 def test_allLinkFailureReport():
+    """test AllLinkFailureReport"""
     group = 0x11
-    addr = bytearray([0x22,0x33,0x44])
+    addr = bytearray([0x22, 0x33, 0x44])
     msg = AllLinkCleanupFailureReport(group, addr)
 
     assert msg.address == Address(addr)
@@ -41,6 +66,7 @@ def test_allLinkFailureReport():
     assert len(msg.hex)/2 == msg.receivedSize
 
 def test_allLinkRecordResponse():
+    """test AllLinkRecordResponse"""
     flag = 0x11
     group = 0x22
     addr = bytearray([0x33, 0x44, 0x55])
@@ -58,6 +84,7 @@ def test_allLinkRecordResponse():
     assert len(msg.hex)/2 == msg.receivedSize
 
 def test_buttonEventReport():
+    """test ButtonEventReport"""
     event = 0x03
     msg = ButtonEventReport(event)
     assert msg.event == event
@@ -66,6 +93,7 @@ def test_buttonEventReport():
     assert len(msg.hex)/2 == msg.receivedSize
 
 def test_cancelAllLinking():
+    """test CancelAllLinking"""
     msg = CancelAllLinking()
     assert msg.hex == hexmsg(0x02, 0x65)
     assert not msg.isack
@@ -74,17 +102,18 @@ def test_cancelAllLinking():
 
     msg = CancelAllLinking(0x06)
     assert msg.hex == hexmsg(0x02, 0x65, 0x06)
-    assert msg.isack 
+    assert msg.isack
     assert not msg.isnak
     assert len(msg.hex)/2 == msg.receivedSize
 
     msg = CancelAllLinking(0x15)
     assert msg.hex == hexmsg(0x02, 0x65, 0x15)
-    assert not msg.isack 
+    assert not msg.isack
     assert msg.isnak
     assert len(msg.hex)/2 == msg.receivedSize
 
 def test_extendedReceive():
+    """test ExtendedReceive"""
     address = bytearray([0x11, 0x22, 0x33])
     target = bytearray([0x44, 0x55, 0x66])
     flags = 0x77
@@ -93,17 +122,20 @@ def test_extendedReceive():
     userdata = {}
     userdatatest = bytearray()
 
-    for i in range(1,15):
+    for i in range(1, 15):
         key = 'd' + str(i)
-        userdata.update({key:0xe0})
+        userdata.update({key: 0xe0})
         userdatatest.append(0xe0)
 
-    msg = ExtendedReceive(address, target, {'cmd1':cmd1, 'cmd2':cmd2}, userdata, flags=flags)
-    assert msg.hex == hexmsg(0x02, 0x51, Address(address), Address(target), flags, cmd1, cmd2, userdatatest)
+    msg = ExtendedReceive(address, target, {'cmd1': cmd1, 'cmd2': cmd2},
+                          userdata, flags=flags)
+    assert msg.hex == hexmsg(0x02, 0x51, Address(address), Address(target),
+                             flags, cmd1, cmd2, userdatatest)
     assert len(msg.hex)/2 == msg.sendSize
     assert len(msg.hex)/2 == msg.receivedSize
 
 def test_extendedSend():
+    """test ExtendedSend"""
     address = bytearray([0x11, 0x22, 0x33])
     flags = 0x44 | 0x10
     cmd1 = 0x55
@@ -112,73 +144,82 @@ def test_extendedSend():
     ack = 0x06
     nak = 0x15
 
-    for i in range(1,15):
+    for i in range(1, 15):
         key = 'd'+str(i)
         val = 0xe0 + i
         userdata.update({key:val})
 
-    msg = ExtendedSend(address, {'cmd1':cmd1, 'cmd2':cmd2}, userdata, flags=flags)
-    assert msg.hex == hexmsg(0x02, 0x62, Address(address), flags | 0x10, cmd1, cmd2, userdata)
-    assert not msg.isack 
+    msg = ExtendedSend(address, {'cmd1': cmd1, 'cmd2': cmd2},
+                       userdata, flags=flags)
+    assert msg.hex == hexmsg(0x02, 0x62, Address(address),
+                             flags | 0x10, cmd1, cmd2, userdata)
+    assert not msg.isack
     assert not msg.isnak
     assert len(msg.hex)/2 == msg.sendSize
 
-    msg = ExtendedSend(address, {'cmd1':cmd1, 'cmd2':cmd2}, userdata, flags=flags, acknak=ack)
-    assert msg.hex == hexmsg(0x02, 0x62, Address(address), flags | 0x10, cmd1, cmd2, userdata,  ack)
-    assert msg.isack 
+    msg = ExtendedSend(address, {'cmd1':cmd1, 'cmd2':cmd2},
+                       userdata, flags=flags, acknak=ack)
+    assert msg.hex == hexmsg(0x02, 0x62, Address(address),
+                             flags | 0x10, cmd1, cmd2, userdata, ack)
+    assert msg.isack
     assert not msg.isnak
     assert len(msg.hex)/2 == msg.receivedSize
-    
-    msg = ExtendedSend(address, {'cmd1':cmd1, 'cmd2':cmd2}, userdata, flags=flags, acknak=nak)
-    assert msg.hex == hexmsg(0x02, 0x62, Address(address), flags | 0x10, cmd1, cmd2, userdata, nak)
-    assert not msg.isack 
+
+    msg = ExtendedSend(address, {'cmd1':cmd1, 'cmd2':cmd2},
+                       userdata, flags=flags, acknak=nak)
+    assert msg.hex == hexmsg(0x02, 0x62, Address(address),
+                             flags | 0x10, cmd1, cmd2, userdata, nak)
+    assert not msg.isack
     assert msg.isnak
     assert len(msg.hex)/2 == msg.receivedSize
 
 def test_getFirstAllLinkRecord():
+    """test GetFirstAllLinkRecord"""
     ack = 0x06
     nak = 0x15
     msg = GetFirstAllLinkRecord()
-    assert msg.hex  == hexmsg(0x02, 0x69)
+    assert msg.hex == hexmsg(0x02, 0x69)
     assert not msg.isack
     assert not msg.isnak
     assert len(msg.hex)/2 == msg.sendSize
 
     msg = GetFirstAllLinkRecord(ack)
-    assert msg.hex  == hexmsg(0x02, 0x69, ack)
+    assert msg.hex == hexmsg(0x02, 0x69, ack)
     assert msg.isack
     assert not msg.isnak
     assert len(msg.hex)/2 == msg.receivedSize
 
     msg = GetFirstAllLinkRecord(nak)
-    assert msg.hex  == hexmsg(0x02, 0x69, nak)
+    assert msg.hex == hexmsg(0x02, 0x69, nak)
     assert not msg.isack
     assert msg.isnak
     assert len(msg.hex)/2 == msg.receivedSize
 
 def test_getImConfiguration():
+    """test GetImConfiguration"""
     ack = 0x06
     nak = 0x15
     flags = 0x11
     msg = GetImConfiguration()
-    assert msg.hex  == hexmsg(0x02, 0x73)
+    assert msg.hex == hexmsg(0x02, 0x73)
     assert not msg.isack
     assert not msg.isnak
     assert len(msg.hex)/2 == msg.sendSize
 
     msg = GetImConfiguration(flags, ack)
-    assert msg.hex  == hexmsg(0x02, 0x73, flags, 0x00, 0x00, ack)
+    assert msg.hex == hexmsg(0x02, 0x73, flags, 0x00, 0x00, ack)
     assert msg.isack
     assert not msg.isnak
     assert len(msg.hex)/2 == msg.receivedSize
 
     msg = GetImConfiguration(flags, nak)
-    assert msg.hex  == hexmsg(0x02, 0x73, flags, 0x00, 0x00, nak)
+    assert msg.hex == hexmsg(0x02, 0x73, flags, 0x00, 0x00, nak)
     assert not msg.isack
     assert msg.isnak
     assert len(msg.hex)/2 == msg.receivedSize
 
 def test_getIMInfo():
+    """test GetIMInfo"""
     addr = bytearray([0x11, 0x22, 0x33])
     cat = 0x44
     subcat = 0x55
@@ -205,50 +246,53 @@ def test_getIMInfo():
     assert len(msg.hex)/2 == msg.receivedSize
 
 def test_getNextAllLinkRecord():
+    """test GetNextAllLinkRecord"""
     ack = 0x06
     nak = 0x15
 
     msg = GetNextAllLinkRecord()
-    assert msg.hex  == hexmsg(0x02, 0x6a)
+    assert msg.hex == hexmsg(0x02, 0x6a)
     assert not msg.isack
     assert not msg.isnak
     assert len(msg.hex)/2 == msg.sendSize
 
     msg = GetNextAllLinkRecord(ack)
-    assert msg.hex  == hexmsg(0x02, 0x6a, ack)
+    assert msg.hex == hexmsg(0x02, 0x6a, ack)
     assert msg.isack
     assert not msg.isnak
     assert len(msg.hex)/2 == msg.receivedSize
 
     msg = GetNextAllLinkRecord(nak)
-    assert msg.hex  == hexmsg(0x02, 0x6a, nak)
+    assert msg.hex == hexmsg(0x02, 0x6a, nak)
     assert not msg.isack
     assert msg.isnak
     assert len(msg.hex)/2 == msg.receivedSize
 
 def test_resetIM():
+    """test ResetIM"""
     ack = 0x06
     nak = 0x15
 
     msg = ResetIM()
-    assert msg.hex  == hexmsg(0x02, 0x67)
+    assert msg.hex == hexmsg(0x02, 0x67)
     assert not msg.isack
     assert not msg.isnak
     assert len(msg.hex)/2 == msg.sendSize
 
     msg = ResetIM(ack)
-    assert msg.hex  == hexmsg(0x02, 0x67, ack)
+    assert msg.hex == hexmsg(0x02, 0x67, ack)
     assert msg.isack
     assert not msg.isnak
     assert len(msg.hex)/2 == msg.receivedSize
 
     msg = ResetIM(nak)
-    assert msg.hex  == hexmsg(0x02, 0x67, nak)
+    assert msg.hex == hexmsg(0x02, 0x67, nak)
     assert not msg.isack
     assert msg.isnak
     assert len(msg.hex)/2 == msg.receivedSize
 
 def test_sendAlllinkCommand():
+    """test SendAlllinkCommand"""
     group = 0x11
     cmd1 = 0x22
     cmd2 = 0x33
@@ -256,63 +300,71 @@ def test_sendAlllinkCommand():
     nak = 0x15
 
     msg = SendAllLinkCommand(group, cmd1, cmd2)
-    assert msg.hex  == hexmsg(0x02, 0x61, group, cmd1, cmd2)
+    assert msg.hex == hexmsg(0x02, 0x61, group, cmd1, cmd2)
     assert not msg.isack
     assert not msg.isnak
     assert len(msg.hex)/2 == msg.sendSize
 
     msg = SendAllLinkCommand(group, cmd1, cmd2, ack)
-    assert msg.hex  == hexmsg(0x02, 0x61, group, cmd1, cmd2, ack)
+    assert msg.hex == hexmsg(0x02, 0x61, group, cmd1, cmd2, ack)
     assert msg.isack
     assert not msg.isnak
     assert len(msg.hex)/2 == msg.receivedSize
 
     msg = SendAllLinkCommand(group, cmd1, cmd2, nak)
-    assert msg.hex  == hexmsg(0x02, 0x61, group, cmd1, cmd2, nak)
+    assert msg.hex == hexmsg(0x02, 0x61, group, cmd1, cmd2, nak)
     assert not msg.isack
     assert msg.isnak
     assert len(msg.hex)/2 == msg.receivedSize
 
 def test_standardReceive():
+    """test StandardReceive"""
     address = bytearray([0x11, 0x22, 0x33])
     target = bytearray([0x44, 0x55, 0x66])
     flags = 0x77
     cmd1 = 0x88
     cmd2 = 0x99
 
-    msg =StandardReceive(address, target, {'cmd1':cmd1, 'cmd2':cmd2}, flags=flags)
-    assert msg.hex == hexmsg(0x02, 0x50, Address(address), Address(target), flags, cmd1, cmd2)
+    msg = StandardReceive(address, target, {'cmd1': cmd1, 'cmd2': cmd2},
+                          flags=flags)
+    assert msg.hex == hexmsg(0x02, 0x50, Address(address), Address(target),
+                             flags, cmd1, cmd2)
     assert len(msg.hex)/2 == msg.sendSize
     assert len(msg.hex)/2 == msg.receivedSize
 
 def test_standardSend():
+    """test StandardSend"""
     address = bytearray([0x11, 0x22, 0x33])
     flags = 0x44
     cmd1 = 0x55
     cmd2 = 0x66
-    userdata = bytearray([])
     ack = 0x06
     nak = 0x15
 
     msg = StandardSend(address, {'cmd1':cmd1, 'cmd2':cmd2}, flags=flags)
     assert msg.hex == hexmsg(0x02, 0x62, Address(address), flags, cmd1, cmd2)
-    assert not msg.isack 
+    assert not msg.isack
     assert not msg.isnak
     assert len(msg.hex)/2 == msg.sendSize
 
-    msg = StandardSend(address, {'cmd1':cmd1, 'cmd2':cmd2}, flags=flags, acknak=ack)
-    assert msg.hex == hexmsg(0x02, 0x62, Address(address), flags, cmd1, cmd2, ack)
-    assert msg.isack 
+    msg = StandardSend(address, {'cmd1':cmd1, 'cmd2':cmd2},
+                       flags=flags, acknak=ack)
+    assert msg.hex == hexmsg(0x02, 0x62, Address(address),
+                             flags, cmd1, cmd2, ack)
+    assert msg.isack
     assert not msg.isnak
     assert len(msg.hex)/2 == msg.receivedSize
-    
-    msg = StandardSend(address, {'cmd1':cmd1, 'cmd2':cmd2}, flags=flags, acknak=nak)
-    assert msg.hex == hexmsg(0x02, 0x62, Address(address), flags, cmd1, cmd2, nak)
-    assert not msg.isack 
+
+    msg = StandardSend(address, {'cmd1':cmd1, 'cmd2':cmd2},
+                       flags=flags, acknak=nak)
+    assert msg.hex == hexmsg(0x02, 0x62, Address(address),
+                             flags, cmd1, cmd2, nak)
+    assert not msg.isack
     assert msg.isnak
     assert len(msg.hex)/2 == msg.receivedSize
 
 def test_startAllLinking():
+    """test StartAllLinking"""
     group = 0x11
     code = 0x03
     ack = 0x06
@@ -337,12 +389,14 @@ def test_startAllLinking():
     assert len(msg.hex)/2 == msg.receivedSize
 
 def test_userReset():
+    """test UserReset"""
     msg = UserReset()
     assert msg.hex == hexmsg(0x02, 0x55)
     assert len(msg.hex)/2 == msg.sendSize
     assert len(msg.hex)/2 == msg.receivedSize
 
 def test_x10received():
+    """test X10Received"""
     rawX10 = 0x11
     flag = 0x22
     msg = X10Received(rawX10, flag)
@@ -351,6 +405,7 @@ def test_x10received():
     assert len(msg.hex)/2 == msg.receivedSize
 
 def test_x10send():
+    """test X10Send"""
     rawX10 = 0x11
     flag = 0x22
     ack = 0x06
@@ -375,11 +430,12 @@ def test_x10send():
     assert len(msg.hex)/2 == msg.receivedSize
 
 def hexmsg(*arg):
+    """Utility method to convert a message to hex"""
     msg = bytearray([])
     for b in arg:
         if b is None:
             pass
-        elif isinstance(b,int):
+        elif isinstance(b, int):
             msg.append(b)
         elif isinstance(b, Address):
             msg.extend(b.bytes)
@@ -388,11 +444,11 @@ def hexmsg(*arg):
         elif isinstance(b, bytes):
             msg.extend(b)
         elif isinstance(b, dict):
-            for i in range(1,15):
+            for i in range(1, 15):
                 key = 'd' + str(i)
                 val = b[key]
                 msg.append(val)
-            
+
     return binascii.hexlify(msg).decode()
 
 

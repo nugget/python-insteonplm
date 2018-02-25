@@ -1,7 +1,7 @@
 """On/Off states."""
 
-from .stateBase import StateBase
-from insteonplm.constants import (COMMAND_LIGHT_MANUALLY_TURNED_OFF_0X22_0X00,
+from insteonplm.constants import (COMMAND_LIGHT_MANUALLY_TURNED_ON_0X23_0X00,
+                                  COMMAND_LIGHT_MANUALLY_TURNED_OFF_0X22_0X00,
                                   COMMAND_LIGHT_OFF_0X13_0X00,
                                   COMMAND_LIGHT_OFF_FAST_0X14_0X00,
                                   COMMAND_LIGHT_ON_0X11_NONE,
@@ -10,9 +10,11 @@ from insteonplm.constants import (COMMAND_LIGHT_MANUALLY_TURNED_OFF_0X22_0X00,
                                   COMMAND_LIGHT_STATUS_REQUEST_0X19_0X01,
                                   MESSAGE_TYPE_ALL_LINK_BROADCAST,
                                   MESSAGE_TYPE_ALL_LINK_CLEANUP)
-from insteonplm.messages import (StandardSend, ExtendedSend,
-                                 StandardReceive, ExtendedReceive,
+from insteonplm.messages import (StandardSend,
+                                 ExtendedSend,
+                                 StandardReceive,
                                  MessageFlags)
+from .stateBase import StateBase
 
 
 class OnOffStateBase(StateBase):
@@ -54,7 +56,7 @@ class OnOffStateBase(StateBase):
     def _send_status_request(self):
         """Send a status request message to the device."""
         status_command = StandardSend(self._address,
-                                       COMMAND_LIGHT_STATUS_REQUEST_0X19_0X00)
+                                      COMMAND_LIGHT_STATUS_REQUEST_0X19_0X00)
         self._send_method(status_command,
                           self._status_message_received)
 
@@ -65,7 +67,7 @@ class OnOffStateBase(StateBase):
         else:
             self._update_subscribers(0xff)
 
-    def _register_messages():
+    def _register_messages(self):
         """Register messages to listen for."""
         template_on_group = StandardReceive.template(
             commandtuple=COMMAND_LIGHT_ON_0X11_NONE,
@@ -146,11 +148,11 @@ class OnOffStateBase(StateBase):
         self._message_callbacks.add(template_manual_off_group,
                                     self._manual_change_received)
 
-        self._message_callbacks.add(template_manual_on_cleanup,
+        self._message_callbacks.add(template_on_cleanup,
                                     self._on_message_received)
         self._message_callbacks.add(template_fast_on_cleanup,
                                     self._on_message_received)
-        self._message_callbacks.add(template_manual_off_cleanup,
+        self._message_callbacks.add(template_off_cleanup,
                                     self._off_message_received)
         self._message_callbacks.add(template_fast_off_cleanup,
                                     self._off_message_received)
@@ -175,12 +177,6 @@ class OnOffSwitch(OnOffStateBase):
       register_updates()
       async_refresh_state()
     """
-
-    def __init__(self, address, statename, group, send_message_method,
-                 message_callbacks, defaultvalue=None):
-        """Initialize the OnOffSwitch."""
-        super().__init__(address, statename, group, send_message_method,
-                         message_callbacks, defaultvalue)
 
     def on(self):
         """Send ON command to device."""
@@ -221,16 +217,19 @@ class OnOffSwitch_OutletTop(OnOffStateBase):
         self._updatemethod = self._send_status_0x01_request
 
     def on(self):
+        """Send ON command to device."""
         on_command = StandardSend(self._address,
                                   COMMAND_LIGHT_ON_0X11_NONE, 0xff)
         self._send_method(on_command, self._on_message_received)
 
     def off(self):
+        """Send OFF command to device."""
         self._send_method(StandardSend(self._address,
                                        COMMAND_LIGHT_OFF_0X13_0X00),
                           self._off_message_received)
 
     def _send_status_0x01_request(self):
+        """Sent status request to device."""
         status_command = StandardSend(self._address,
                                       COMMAND_LIGHT_STATUS_REQUEST_0X19_0X01)
         self._send_method(status_command, self._status_message_0x01_received)
@@ -329,11 +328,6 @@ class OpenClosedRelay(OnOffStateBase):
       register_updates()
       async_refresh_state()
     """
-
-    def __init__(self, address, statename, group, send_message_method,
-                 message_callbacks, defaultvalue=None):
-        super().__init__(address, statename, group, send_message_method,
-                         message_callbacks, defaultvalue)
 
     def open(self):
         """Send OPEN command to device."""

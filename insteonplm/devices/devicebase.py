@@ -1,15 +1,26 @@
-import logging
+"""INSTEON Device base."""
+
 import asyncio
-import async_timeout
 import datetime
+import logging
+import async_timeout
 
 from insteonplm.address import Address
 from insteonplm.states.stateBase import StateBase
 from insteonplm.messages import (StandardReceive, StandardSend,
-                                 ExtendedReceive, ExtendedSend,
-                                 MessageBase)
+                                 ExtendedReceive, ExtendedSend, MessageBase)
 from insteonplm.messages.messageFlags import MessageFlags
-from insteonplm.constants import *
+from insteonplm.constants import (
+    MESSAGE_ACK, COMMAND_ID_REQUEST_0X10_0X00,
+    COMMAND_PRODUCT_DATA_REQUEST_0X03_0X00,
+    COMMAND_ASSIGN_TO_ALL_LINK_GROUP_0X01_NONE,
+    COMMAND_DELETE_FROM_ALL_LINK_GROUP_0X02_NONE,
+    COMMAND_FX_USERNAME_0X03_0X01,
+    COMMAND_ENTER_LINKING_MODE_0X09_NONE,
+    COMMAND_ENTER_UNLINKING_MODE_0X0A_NONE,
+    COMMAND_GET_INSTEON_ENGINE_VERSION_0X0D_0X00,
+    COMMAND_PING_0X0F_0X00
+)
 from insteonplm.messagecallback import MessageCallback
 from .stateList import StateList
 WAIT_TIMEOUT = 2
@@ -17,7 +28,8 @@ WAIT_TIMEOUT = 2
 class DeviceBase(object):
     """INSTEON Device"""
 
-    def __init__(self, plm, address, cat, subcat, product_key=0x00, description='', model=''):
+    def __init__(self, plm, address, cat, subcat, product_key=0x00,
+                 description='', model=''):
         self.log = logging.getLogger(__name__)
 
         self._plm = plm
@@ -31,76 +43,93 @@ class DeviceBase(object):
         if self._product_key is None:
             self._product_key = 0x00
         self._description = description
-        self._model = model 
+        self._model = model
 
-        self._last_communication_received = datetime.datetime(1,1,1,1,1,1)
+        self._last_communication_received = datetime.datetime(1, 1, 1, 1, 1, 1)
         self._product_data_in_aldb = False
         self._stateList = StateList()
         self._send_msg_lock = asyncio.Lock(loop=self._plm.loop)
-        self._send_queue =  asyncio.Queue(loop=self._plm.loop)
+        self._send_queue = asyncio.Queue(loop=self._plm.loop)
         self._sent_msg_wait_for_directACK = {}
         self._directACK_received_queue = asyncio.Queue(loop=self._plm.loop)
 
         if not hasattr(self, '_noRegisterCallback'):
-            self.log.debug('Registering DeviceBase._receive_message callbacks for device %s', self._address.human)
-            self._plm.message_callbacks.add(StandardReceive.template(address=self._address), 
+            std_msg_recd = StandardReceive.template(address=self._address)
+            ext_msg_recd = ExtendedReceive.template(address=self._address)
+            std_msg_ack_recd = StandardSend.template(address=self._address,
+                                                     acknak=MESSAGE_ACK)
+            ext_msg_ack_recd = ExtendedSend.template(address=self._address,
+                                                     acknak=MESSAGE_ACK)
+
+            self._plm.message_callbacks.add(std_msg_recd,
                                             self._receive_message)
-            self._plm.message_callbacks.add(ExtendedReceive.template(address=self._address), 
+            self._plm.message_callbacks.add(ext_msg_recd,
                                             self._receive_message)
-            self._plm.message_callbacks.add(StandardSend.template(address=self._address, acknak=MESSAGE_ACK), 
+            self._plm.message_callbacks.add(std_msg_ack_recd,
                                             self._receive_message)
-            self._plm.message_callbacks.add(ExtendedSend.template(address=self._address, acknak=MESSAGE_ACK), 
+            self._plm.message_callbacks.add(ext_msg_ack_recd,
                                             self._receive_message)
 
     @property
     def address(self):
+        """Return the INSTEON device address."""
         return self._address
 
     @property
     def cat(self):
+        """Return the INSTEON device category."""
         return self._cat
 
     @property
     def subcat(self):
+        """Return the INSTEON device subcategory."""
         return self._subcat
 
     @property
     def product_key(self):
+        """Return the INSTEON product key."""
         return self._product_key
 
     @property
     def description(self):
+        """Return the INSTEON device description."""
         return self._description
 
     @property
     def model(self):
+        """Return the INSTEON device model number."""
         return self._model
 
     @property
     def id(self):
+        """Return the ID of the device."""
         return self._address.hex
 
     @property
     def states(self):
+        """Returns the device states/groups."""
         return self._stateList
 
-    @property 
-    def state_status_lock(self):
-        return self._state_status_lock 
-    
     @property
     def prod_data_in_aldb(self):
-        """True if Product data (cat, subcat, product_key) is stored in the PLM ALDB.
-            False if product data must be aquired via a Device ID message or from a Product Data Request command.
-           
-            Very few devices store their product data in the ALDB, therefore False is the default.
-            The common reason to store product data in the ALDB is for one way devices or battery opperated devices where 
-            the ability to send a command request is limited."""
+        """Indicates if the PLM use the ALDB data to setup the device.
+
+        True if Product data (cat, subcat, product_key) is stored in the PLM ALDB.
+        False if product data must be aquired via a Device ID message or from a
+        Product Data Request command.
+
+        Very few devices store their product data in the ALDB, therefore False is the default.
+        The common reason to store product data in the ALDB is for one way devices or battery
+        opperated devices where the ability to send a command request is limited.
+        """
         return self._product_data_in_aldb
 
     @classmethod
-    def create(cls, plm, address, cat, subcat, product_key=None, description=None, model=None):
-        return cls(plm, address, cat, subcat, product_key, description, model)
+    def create(cls, plm, address, cat, subcat, product_key=None,
+               description=None, model=None):
+        """Factory method to create a device."""
+        return cls(plm, address, cat, subcat, product_key,
+                   description, model)
 
     def _receive_message(self, msg):
         self.log.debug('Starting DeviceBase._receive_message')
@@ -121,14 +150,17 @@ class DeviceBase(object):
         self.log.debug('Ending DeviceBase._receive_message')
 
     def async_refresh_state(self):
+        """Request each state to provide status update."""
         for state in self._stateList:
             self._stateList[state].async_refresh_state()
 
     def _send_msg(self, msg, directACK_Method=None):
         self.log.debug('Starting DeviceBase._send_msg')
-        write_message_coroutine = self._process_send_queue(msg, directACK_Method)
+        write_message_coroutine = self._process_send_queue(msg,
+                                                           directACK_Method)
         self._send_queue.put_nowait(msg)
-        asyncio.ensure_future(write_message_coroutine, loop=self._plm.loop)
+        asyncio.ensure_future(write_message_coroutine,
+                              loop=self._plm.loop)
         self.log.debug('Ending DeviceBase._send_msg')
 
     @asyncio.coroutine
@@ -136,7 +168,8 @@ class DeviceBase(object):
         self.log.debug('Starting DeviceBase._process_send_queue')
         yield from self._send_msg_lock
         if directACK_Method is not None:
-            self._sent_msg_wait_for_directACK = {'msg': msg, 'callback':directACK_Method} 
+            self._sent_msg_wait_for_directACK = {'msg': msg,
+                                                 'callback':directACK_Method}
             self.log.debug('Attempt to acquire lock')
             lock_acquired = self._send_msg_lock.acquire()
             self.log.debug('Lock acquired')
@@ -167,67 +200,82 @@ class DeviceBase(object):
 
     def id_request(self):
         """Request a device ID from a device"""
-        self.log.debug("Starting: devicebase.Id_Request")
-        self._plm.send_standard(self._address, COMMAND_ID_REQUEST_0X10_0X00)
-        self.log.debug("Ending: devicebase.Id_Request")
+        self._plm.send_standard(self._address,
+                                COMMAND_ID_REQUEST_0X10_0X00)
 
     def product_data_request(self):
-        """equest product data from a device. \nNot supported by all devices. \nRequired after 01-Feb-2007.
+        """Request product data from a device.
+
+        Not supported by all devices.
+        Required after 01-Feb-2007.
         """
-        self.log.debug("Starting: devicebase.product_data_request")
-        self._plm.send_standard(self._address, COMMAND_PRODUCT_DATA_REQUEST_0X03_0X00)
-        self.log.debug("Ending: devicebase.product_data_request")
+        self._plm.send_standard(self._address,
+                                COMMAND_PRODUCT_DATA_REQUEST_0X03_0X00)
 
     def assign_to_all_link_group(self, group=0x01):
-        """Assign a device to an All-Link Group. \nThe default is group 0x01."""
-        self.log.debug("Starting: devicebase.assign_to_all_link_group")
-        self._plm.send_standard(self._address, COMMAND_ASSIGN_TO_ALL_LINK_GROUP_0X01_NONE, group)
-        self.log.debug("Ending: devicebase.assign_to_all_link_group")
+        """Assign a device to an All-Link Group.
+
+        The default is group 0x01.
+        """
+        self._plm.send_standard(self._address,
+                                COMMAND_ASSIGN_TO_ALL_LINK_GROUP_0X01_NONE,
+                                group)
 
     def delete_from_all_link_group(self, group):
         """Delete a device to an All-Link Group."""
-        self.log.debug("Starting: devicebase.delete_from_all_link_group")
-        self._plm.send_standard(self._address, COMMAND_DELETE_FROM_ALL_LINK_GROUP_0X02_NONE, group)
-        self.log.debug("Ending: devicebase.delete_from_all_link_group")
+        self._plm.send_standard(self._address,
+                                COMMAND_DELETE_FROM_ALL_LINK_GROUP_0X02_NONE,
+                                group)
 
     def fx_username(self):
-        """Get FX Username. \nOnly required for devices that support FX Commands. \nFX Addressee responds with an ED 0x0301 FX Username Response message"""
-        self.log.debug("Starting: devicebase.fx_username")
+        """Get FX Username.
+
+        Only required for devices that support FX Commands.
+        FX Addressee responds with an ED 0x0301 FX Username Response message
+        """
         self._plm.send_standard(self._address, COMMAND_FX_USERNAME_0X03_0X01)
-        self.log.debug("Ending: devicebase.fx_username")
 
     def device_text_string_request(self):
-        """Get FX Username. \nOnly required for devices that support FX Commands. \nFX Addressee responds with an ED 0x0301 FX Username Response message"""
+        """Get FX Username.
+
+        Only required for devices that support FX Commands.
+        FX Addressee responds with an ED 0x0301 FX Username Response message.
+        """
         self.log.debug("Starting: devicebase.device_text_string_request")
         self._plm.send_standard(self._address, COMMAND_FX_USERNAME_0X03_0X01)
-        self.log.debug("Ending: devicebase.device_text_string_request")
 
     def enter_linking_mode(self, group=0x01):
-        """Tell a device to enter All-Linking Mode.\nSame as holding down the Set button for 10 sec.\nDefault group is 0x01. \nNot supported by i1 devices."""
-        self.log.debug("Starting: devicebase.enter_linking_mode")
-        self._plm.send_standard(self._address, COMMAND_ENTER_LINKING_MODE_0X09_NONE, group)
-        self.log.debug("Ending: devicebase.enter_linking_mode")
+        """Tell a device to enter All-Linking Mode.
+
+        Same as holding down the Set button for 10 sec.
+        Default group is 0x01. \nNot supported by i1 devices.
+        """
+        self._plm.send_standard(self._address,
+                                COMMAND_ENTER_LINKING_MODE_0X09_NONE,
+                                group)
 
     def enter_unlinking_mode(self, group):
-        """Unlink a device from an All-Link group. \nNot supported by i1 devices."""
-        self.log.debug("Starting: devicebase.enter_unlinking_mode")
-        self._plm.send_standard(self._address, COMMAND_ENTER_UNLINKING_MODE_0X0A_NONE, group)
-        self.log.debug("Ending: devicebase.enter_unlinking_mode")
+        """Unlink a device from an All-Link group.
+
+        Not supported by i1 devices.
+        """
+        self._plm.send_standard(self._address,
+                                COMMAND_ENTER_UNLINKING_MODE_0X0A_NONE,
+                                group)
 
     def get_engine_version(self):
         """Get the device engine version."""
-        self.log.debug("Starting: devicebase.get_engine_version")
-        self._plm.send_standard(self._address, COMMAND_GET_INSTEON_ENGINE_VERSION_0X0D_0X00)
-        self.log.debug("Ending: devicebase.get_engine_version")
+        self._plm.send_standard(self._address,
+                                COMMAND_GET_INSTEON_ENGINE_VERSION_0X0D_0X00)
 
     def ping(self):
         """Ping a device."""
-        self.log.debug("Starting: devicebase.ping")
         self._plm.send_standard(self._address, COMMAND_PING_0X0F_0X00)
-        self.log.debug("Ending: devicebase.ping")
 
     def read_aldb(self):
-        raise NotImplemented
+        """Read the device All-Link Database."""
+        raise NotImplementedError
 
     def write_aldb(self):
-        raise NotImplemented
+        """Write to the device All-Link Database."""
+        raise NotImplementedError
