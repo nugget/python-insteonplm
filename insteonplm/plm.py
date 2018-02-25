@@ -10,7 +10,7 @@ import json
 from .constants import *
 from .aldb import ALDB
 from .address import Address
-from .messagecallback import MessageCallback 
+from .messagecallback import MessageCallback
 from .messages import *
 from .messages.message import Message
 from .devices.devicebase import DeviceBase
@@ -54,6 +54,7 @@ class PLM(asyncio.Protocol, DeviceBase):
         self._write_transport_lock = asyncio.Lock(loop=self._loop)
         self._message_callbacks = MessageCallback()
         self._saved_device_info = []
+        self._cb_load_all_link_db_done = []
 
         self._address = None
         self._cat = None
@@ -62,17 +63,17 @@ class PLM(asyncio.Protocol, DeviceBase):
 
         self.log = logging.getLogger(__name__)
         self.transport = None
-        
+
 
         self._message_callbacks.add(StandardSend.template(acknak=MESSAGE_NAK),
                                     self._handle_standard_or_extended_message_nak)
         self._message_callbacks.add(ExtendedSend.template(acknak=MESSAGE_NAK),
                                     self._handle_standard_or_extended_message_nak)
 
-        self._message_callbacks.add(StandardReceive.template(commandtuple=COMMAND_ASSIGN_TO_ALL_LINK_GROUP_0X01_NONE), 
+        self._message_callbacks.add(StandardReceive.template(commandtuple=COMMAND_ASSIGN_TO_ALL_LINK_GROUP_0X01_NONE),
                                     self._handle_assign_to_all_link_group)
 
-        self._message_callbacks.add(AllLinkRecordResponse(None, None, None, None, None, None), 
+        self._message_callbacks.add(AllLinkRecordResponse(None, None, None, None, None, None),
                                     self._handle_all_link_record_response)
 
         self._message_callbacks.add(GetImInfo(), self._handle_get_plm_info)
@@ -92,9 +93,9 @@ class PLM(asyncio.Protocol, DeviceBase):
         """Called when asyncio.Protocol establishes the network connection."""
         self.log.info('Connection established to PLM')
         self.transport = transport
-        
+
         # Testing to see if this fixes the 2413S issue
-        self.transport.serial.timeout = 1 
+        self.transport.serial.timeout = 1
         self.transport.serial.write_timeout = 1
         self.transport.set_write_buffer_limits(128)
         # limit = self.transport.get_write_buffer_size()
@@ -148,6 +149,12 @@ class PLM(asyncio.Protocol, DeviceBase):
         self.devices.add_device_callback(callback)
         self.log.debug("Ending: add_device_callback")
 
+    def add_all_link_done_callback(self, callback):
+        """Register a callback to be invoked when a all link database is done."""
+        self.log.debug('Added new callback %s ',
+                      callback)
+        self._cb_load_all_link_db_done.append(callback)
+
     def poll_devices(self):
         self.log.debug("Starting: poll_devices")
         delay = 0
@@ -178,7 +185,7 @@ class PLM(asyncio.Protocol, DeviceBase):
         if cmd2out is None:
             raise ValueError
 
-        msg = StandardSend(addr, {'cmd1':cmd1, 'cmd2':cmd2out}, flags=flags, acknak=acknak) 
+        msg = StandardSend(addr, {'cmd1':cmd1, 'cmd2':cmd2out}, flags=flags, acknak=acknak)
         self.send_msg(msg)
 
     def send_extended(self, addr, commandtuple, userdata, cmd2=None, flags=0x00, acknak=None):
@@ -279,7 +286,7 @@ class PLM(asyncio.Protocol, DeviceBase):
             cat = msg.linkdata1
             subcat = msg.linkdata2
             product_key = msg.linkdata3
-            
+
             self.log.debug('Product data: address %s cat: %02x subcat: %02x product_key: %02x', 
                            msg.address.hex, cat, subcat, product_key)
 
@@ -300,7 +307,7 @@ class PLM(asyncio.Protocol, DeviceBase):
             self._aldb_response_queue[msg.address.hex] = {'device':unknowndevice, 'retries':0}
 
         self._get_next_all_link_record()
-        
+
         self.log.debug('Ending _handle_all_link_record_response')
 
     def _handle_get_next_all_link_record_nak(self, msg):
@@ -330,7 +337,7 @@ class PLM(asyncio.Protocol, DeviceBase):
 
         for addr in staleaddr:
             self._aldb_response_queue.pop(addr)
-        
+
         num_devices_not_added = len(self._aldb_response_queue)
 
         if num_devices_not_added > 0:
@@ -339,6 +346,9 @@ class PLM(asyncio.Protocol, DeviceBase):
             self._loop.call_later(delay, self._handle_get_next_all_link_record_nak, None)
         else:
             self._save_device_info()
+            while len(self._cb_load_all_link_db_done) > 0:
+                callback = self._cb_load_all_link_db_done.pop()
+                callback()
             self._loop.call_soon(self.poll_devices)
         self.log.debug('Ending _handle_get_next_all_link_record_nak')
 
@@ -378,7 +388,7 @@ class PLM(asyncio.Protocol, DeviceBase):
         msg = GetNextAllLinkRecord()
         self.send_msg(msg)
         self.log.debug("Ending: _get_next_all_link_recor")
-    
+
     def _peel_messages_from_buffer(self):
         self.log.debug("Starting: _peel_messages_from_buffer")
         lastlooplen = 0
@@ -423,9 +433,9 @@ class PLM(asyncio.Protocol, DeviceBase):
             devices = []
             for addr in self.devices:
                 device = self.devices[addr]
-                deviceInfo = {'address': device.address.hex, 
-                              'cat': device.cat, 
-                              'subcat': device.subcat, 
+                deviceInfo = {'address': device.address.hex,
+                              'cat': device.cat,
+                              'subcat': device.subcat,
                               'product_key': device.product_key}
                 devices.append(deviceInfo)
             coro = self._write_device_info_file(devices)

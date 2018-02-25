@@ -67,7 +67,7 @@ class Address(object):
             return addr
 
         if isinstance(addr, str):
-            addr.replace('.', '')
+            addr = addr.replace('.', '')
             addr = addr[0:6]
             return binascii.unhexlify(addr.lower())
 
