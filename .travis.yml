@@ -16,7 +16,14 @@ matrix:
       env: TOXENV=py35
     - python: 3.6
       env: TOXENV=py36
+  exclude:
+    - python: 3.5.3
+	  env: py35-36
+	- python: 3.6
+	  env: py35-36
   allow_failures:
+    - python: 3.5.3
+      env: TOXENV=lint
     - python: 3.5.3
       env: TOXENV=pylint
 
