@@ -16,10 +16,8 @@ matrix:
     - python: 3.6
       env: TOXENV=py36
   allow_failures:
-#    - python: "3.5.3"
-#      env: TOXENV=lint
-#  - python: 3.5.3
-#    env: TOXENV=pylint
+    - python: 3.5.3
+      env: TOXENV=pylint
 
 cache:
   directories:
