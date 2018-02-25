@@ -94,3 +94,5 @@ ENV/
 /python-insteonplm.pyproj
 /python-insteonplm.sln
 /insteonplm/plm.old
+/.mypy_cache/3.6
+/.pytest_cache/v/cache

@@ -25,9 +25,9 @@ class ClassPropertyMetaClass(type):
         return cls._description
 
 class MessageBase(metaclass=ClassPropertyMetaClass):    
-    _code = None
-    _sendSize = None
-    _receivedSize = None
+    _code = 0
+    _sendSize = 0
+    _receivedSize = 0
     _description = "Empty message"
     log = logging.getLogger(__name__)
 

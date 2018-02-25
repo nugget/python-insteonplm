@@ -1,17 +1,20 @@
 """Module to maintain PLM state information and network interface."""
+
 import asyncio
+import json
 import logging
 import binascii
-import time
-from collections import deque, namedtuple
-import async_timeout
-import json
+from collections import deque
 
-from .constants import *
+import async_timeout
+
+from .constants import (COMMAND_ASSIGN_TO_ALL_LINK_GROUP_0X01_NONE,
+                        MESSAGE_NAK, MESSAGE_FLAG_EXTENDED_0X10)
 from .aldb import ALDB
-from .address import Address
 from .messagecallback import MessageCallback
-from .messages import *
+from .messages import (
+    AllLinkRecordResponse, ExtendedSend, GetFirstAllLinkRecord, GetImInfo,
+    GetNextAllLinkRecord, StandardReceive, StandardSend)
 from .messages.message import Message
 from .devices.devicebase import DeviceBase
 
@@ -24,7 +27,8 @@ DEVICE_INFO_FILE = 'insteon_plm_device_info.dat'
 class PLM(asyncio.Protocol, DeviceBase):
     """The Insteon PLM IP control protocol handler."""
 
-    def __init__(self, loop=None, connection_lost_callback=None, userdefineddevices=(), workdir=None):
+    def __init__(self, loop=None, connection_lost_callback=None,
+                 userdefineddevices=(), workdir=None):
         """Protocol handler that handles all status and changes on PLM.
 
         This class is expected to be wrapped inside a Connection class object
@@ -64,29 +68,41 @@ class PLM(asyncio.Protocol, DeviceBase):
         self.log = logging.getLogger(__name__)
         self.transport = None
 
+        template_std_msg_nak = StandardSend.template(acknak=MESSAGE_NAK)
+        template_ext_msg_nak = ExtendedSend.template(acknak=MESSAGE_NAK)
 
-        self._message_callbacks.add(StandardSend.template(acknak=MESSAGE_NAK),
+        template_assign_all_link = StandardReceive.template(
+            commandtuple=COMMAND_ASSIGN_TO_ALL_LINK_GROUP_0X01_NONE)
+        template_all_link_response = AllLinkRecordResponse(None, None, None,
+                                                           None, None, None)
+        template_get_im_info = GetImInfo()
+        template_next_all_link_rec = GetNextAllLinkRecord(acknak=MESSAGE_NAK)
+
+
+        self._message_callbacks.add(template_std_msg_nak,
                                     self._handle_standard_or_extended_message_nak)
-        self._message_callbacks.add(ExtendedSend.template(acknak=MESSAGE_NAK),
+        self._message_callbacks.add(template_ext_msg_nak,
                                     self._handle_standard_or_extended_message_nak)
 
-        self._message_callbacks.add(StandardReceive.template(commandtuple=COMMAND_ASSIGN_TO_ALL_LINK_GROUP_0X01_NONE),
+        self._message_callbacks.add(template_assign_all_link,
                                     self._handle_assign_to_all_link_group)
 
-        self._message_callbacks.add(AllLinkRecordResponse(None, None, None, None, None, None),
+        self._message_callbacks.add(template_all_link_response,
                                     self._handle_all_link_record_response)
 
-        self._message_callbacks.add(GetImInfo(), self._handle_get_plm_info)
+        self._message_callbacks.add(template_get_im_info, self._handle_get_plm_info)
 
-        self._message_callbacks.add(GetNextAllLinkRecord(acknak=MESSAGE_NAK),
+        self._message_callbacks.add(template_next_all_link_rec,
                                     self._handle_get_next_all_link_record_nak)
 
     @property
     def loop(self):
+        """Return the asyncio loop."""
         return self._loop
 
     @property
     def message_callbacks(self):
+        """Return the list of message callbacks."""
         return self._message_callbacks
 
     def connection_made(self, transport):
@@ -118,13 +134,14 @@ class PLM(asyncio.Protocol, DeviceBase):
             try:
                 msg = self._recv_queue.pop()
                 self.log.debug('Processing message %s', msg)
-                callbacks = self._message_callbacks.get_callbacks_from_message(msg)
+                callbacks = \
+                        self._message_callbacks.get_callbacks_from_message(msg)
                 if len(callbacks) > 0:
                     for callback in callbacks:
-                        self.log.debug('Calling method %s', callback.__func__)
                         self._loop.call_soon(callback, msg)
                 else:
-                    self.log.debug('No callback found for message %s', str(msg))
+                    self.log.debug('No callback found for message %s',
+                                   str(msg))
             except IndexError:
                 self.log.debug('Last item in self._recv_queue reached.')
                 worktodo = False
@@ -145,9 +162,7 @@ class PLM(asyncio.Protocol, DeviceBase):
 
     def add_device_callback(self, callback):
         """Register a callback for when a matching new device is seen."""
-        self.log.debug("Starting: add_device_callback")
         self.devices.add_device_callback(callback)
-        self.log.debug("Ending: add_device_callback")
 
     def add_all_link_done_callback(self, callback):
         """Register a callback to be invoked when a all link database is done."""
@@ -156,23 +171,25 @@ class PLM(asyncio.Protocol, DeviceBase):
         self._cb_load_all_link_db_done.append(callback)
 
     def poll_devices(self):
-        self.log.debug("Starting: poll_devices")
-        delay = 0
+        """Request status updates from each device."""
         for addr in self.devices:
             device = self.devices[addr]
-            self._loop.call_later(delay, device.async_refresh_state)
-            delay += 0
-        self.log.debug("Ending: poll_devices")
+            device.async_refresh_state()
 
     def send_msg(self, msg):
-        """Places a message on the send queue for sending in the order they are placed in the queue."""
+        """Places a message on the send queue for sending.
+
+        Message are sent in the order they are placed in the queue.
+        """
         self.log.debug("Starting: send_msg")
         write_message_coroutine = self._write_message_from_send_queue()
         self._send_queue.put_nowait(msg)
         asyncio.ensure_future(write_message_coroutine)
         self.log.debug("Ending: send_msg")
 
-    def send_standard(self, addr, commandtuple, cmd2=None, flags=0x00, acknak=None):
+    def send_standard(self, addr, commandtuple, cmd2=None,
+                      flags=0x00, acknak=None):
+        """Send an INSTEON standard length message."""
         if commandtuple.get('cmd1', False):
             cmd1 = commandtuple['cmd1']
             cmd2out = commandtuple['cmd2']
@@ -185,10 +202,13 @@ class PLM(asyncio.Protocol, DeviceBase):
         if cmd2out is None:
             raise ValueError
 
-        msg = StandardSend(addr, {'cmd1':cmd1, 'cmd2':cmd2out}, flags=flags, acknak=acknak)
+        msg = StandardSend(addr, {'cmd1': cmd1, 'cmd2': cmd2out},
+                           flags=flags, acknak=acknak)
         self.send_msg(msg)
 
-    def send_extended(self, addr, commandtuple, userdata, cmd2=None, flags=0x00, acknak=None):
+    def send_extended(self, addr, commandtuple, userdata, cmd2=None,
+                      flags=0x00, acknak=None):
+        """Send an INSTEON extended length message."""
         if commandtuple.get('cmd1', False):
             cmd1 = commandtuple['cmd1']
             cmd2out = commandtuple['cmd2']
@@ -201,12 +221,15 @@ class PLM(asyncio.Protocol, DeviceBase):
         if cmd2out is None:
             raise ValueError
 
-        msg = ExtendedSend(addr, {'cmd1':cmd1, 'cmd2':cmd2out}, userdata, flags=flags,  acknak=acknak)
+        msg = ExtendedSend(addr, {'cmd1': cmd1, 'cmd2': cmd2out}, userdata,
+                           flags=flags, acknak=acknak)
         self.send_msg(msg)
 
     @asyncio.coroutine
     def async_sleep(self, seconds):
-        """Utility method to allow devices or message handlers to pause execution and yeild back time to the asyncio loop"""
+        """Utility method to allow devices or message handlers to pause execution
+       and yeild back time to the asyncio loop.
+       """
         yield from asyncio.sleep(seconds, loop=self._loop)
 
     @asyncio.coroutine
@@ -257,66 +280,75 @@ class PLM(asyncio.Protocol, DeviceBase):
             cat = msg.targetLow
             subcat = msg.targetMed
             product_key = msg.targetHi
-            self.log.info('Received Device ID with address: %s  cat: 0x%x  subcat: 0x%x  firmware: 0x%x', 
-                            msg.address, cat, subcat, product_key)
-            device = self.devices.create_device_from_category(self, msg.address, cat, subcat, product_key)
+            self.log.info('Received Device ID with address: %s  cat: 0x%x  subcat: 0x%x',
+                          msg.address, cat, subcat)
+            device = self.devices.create_device_from_category(
+                self, msg.address, cat, subcat, product_key)
             if device is not None:
-                if self.devices[device.id] == None:
+                if self.devices[device.id] is None:
                     self.devices[device.id] = device
-                    self.log.info('Device with id %s added to device list.', device.id)
+                    self.log.info('Device with id %s added to device list.',
+                                  device.id)
             else:
-                self.log.error('Did not add device to list because the device came back None')
+                self.log.error('Device %s not in the IPDB.',
+                               device.address.human)
             self.log.info('Total Devices Found: %d', len(self.devices))
         self.log.debug("Ending _handle_assign_to_all_link_group")
 
     def _handle_standard_or_extended_message_received(self, msg):
         self.log.debug("Starting: _handle_standard_or_extended_message_received")
-        # If it is not a broadcast message then it is device specific and we call the device's receive_message method
-        # TODO: Is there a situation where the PLM is the device? If this is the case the PLM device will not be in the ALDB (Why not?)
+        # If it is not a broadcast message then it is device specific and we
+        # call the device's receive_message method
         device = self.devices[msg.address.hex]
         if device is not None:
             device.receive_message(msg)
-
         self.log.debug("Ending: _handle_standard_or_extended_message_received")
 
     def _handle_all_link_record_response(self, msg):
         self.log.debug('Starting _handle_all_link_record_response')
-        self.log.info('Found all link record for device %s', msg.address.hex)
+        self.log.debug('Found all link record for device %s', msg.address.hex)
         if self.devices[msg.address.hex] is None:
             cat = msg.linkdata1
             subcat = msg.linkdata2
             product_key = msg.linkdata3
 
-            self.log.debug('Product data: address %s cat: %02x subcat: %02x product_key: %02x', 
+            self.log.debug('Product data: address %s cat: %02x subcat: %02x product_key: %02x',
                            msg.address.hex, cat, subcat, product_key)
 
             # Get a device from the ALDB based on cat, subcat and product_key
-            device = self.devices.create_device_from_category(self, msg.address, cat, subcat, product_key)
+            device = self.devices.create_device_from_category(
+                self, msg.address, cat, subcat, product_key)
 
-            # If a device is returned and that device is of a type tha stores the product data in the ALDB record
-            # we can use that as the device type for this record
-            # Otherwise we need to request the device ID.
+            # If a device is returned and that device is of a type tha stores
+            # the product data in the ALDB record we can use that as the device
+            # type for this record. Otherwise we need to request the device ID.
             if device is not None:
-                if device.prod_data_in_aldb or self.devices.has_override(device.address.hex) or self.devices.has_saved(device.address.hex):
-                    if self.devices[device.id] == None:
+                if device.prod_data_in_aldb or \
+                        self.devices.has_override(device.address.hex) or \
+                        self.devices.has_saved(device.address.hex):
+                    if self.devices[device.id] is None:
                         self.devices[device.id] = device
-                        self.log.info('Device with id %s added to device list from ALDB data.', device.id)
-        #Check again that the device is not alreay added, otherwise queue it up for Get ID request
+                        self.log.info('Device with id %s added to device list from ALDB data.',
+                                      device.id)
+        # Check again that the device is not alreay added, otherwise queue it
+        # up for Get ID request
         if self.devices[msg.address.hex] is None:
-            unknowndevice = self.devices.create_device_from_category(self, msg.address.hex, None, None, None)
-            self._aldb_response_queue[msg.address.hex] = {'device':unknowndevice, 'retries':0}
+            unknowndevice = self.devices.create_device_from_category(
+                self, msg.address.hex, None, None, None)
+            self._aldb_response_queue[msg.address.hex] = {'device':unknowndevice,
+                                                          'retries':0}
 
         self._get_next_all_link_record()
-
         self.log.debug('Ending _handle_all_link_record_response')
 
     def _handle_get_next_all_link_record_nak(self, msg):
         self.log.debug('Starting _handle_get_next_all_link_record_nak')
 
         # When the last All-Link record is reached the PLM sends a NAK
-        self.log.debug('All-Link device records found in ALDB: %d', len(self._aldb_response_queue))
+        self.log.debug('All-Link device records found in ALDB: %d',
+                       len(self._aldb_response_queue))
 
-        # Remove records for devices found in the ALDB 
+        # Remove records for devices found in the ALDB
         # or in previous calls to _handle_get_next_all_link_record_nak
         for addr in self.devices:
             try:
@@ -331,8 +363,11 @@ class PLM(asyncio.Protocol, DeviceBase):
                 self._aldb_response_queue[addr]['device'].id_request()
                 self._aldb_response_queue[addr]['retries'] = retries + 1
             else:
-                self.log.warn('Device %s found in the ALDB did not respond and is being removed from the list.', addr)
-                self.log.warn('If this device is still active you can add it to the device_override configuration.')
+                self.log.warning('Device %s found in the ALDB did not respond.',
+                                 addr)
+                self.log.warning('It is being removed from the device list. If this device')
+                self.log.warning('is still active you can add it to the device_override')
+                self.log.warning('configuration.')
                 staleaddr.append(addr)
 
         for addr in staleaddr:
@@ -341,11 +376,14 @@ class PLM(asyncio.Protocol, DeviceBase):
         num_devices_not_added = len(self._aldb_response_queue)
 
         if num_devices_not_added > 0:
-            # Schedule _handle_get_next_all_link_record_nak to run again later if some devices did not respond
+            # Schedule _handle_get_next_all_link_record_nak to run again later
+            # if some devices did not respond
             delay = num_devices_not_added*3
-            self._loop.call_later(delay, self._handle_get_next_all_link_record_nak, None)
+            self._loop.call_later(delay,
+                                  self._handle_get_next_all_link_record_nak,
+                                  None)
         else:
-            self._save_device_info()
+            self._save_device_info()            
             while len(self._cb_load_all_link_db_done) > 0:
                 callback = self._cb_load_all_link_db_done.pop()
                 callback()
@@ -354,7 +392,8 @@ class PLM(asyncio.Protocol, DeviceBase):
 
     def _handle_standard_or_extended_message_nak(self, msg):
         if msg.flags.isExtended:
-            self.send_extended(msg.address, {'cmd1':msg.cmd1, 'cmd2':msg.cmd2},  msg.userdata, flags=MESSAGE_FLAG_EXTENDED_0X10)
+            self.send_extended(msg.address, {'cmd1':msg.cmd1, 'cmd2':msg.cmd2},
+                               msg.userdata, flags=MESSAGE_FLAG_EXTENDED_0X10)
         else:
             self.send_standard(msg.address, {'cmd1':msg.cmd1, 'cmd2':msg.cmd2})
 
@@ -422,7 +461,8 @@ class PLM(asyncio.Protocol, DeviceBase):
         deviceinfo = []
         if self._workdir is not None:
             try:
-                with open(self._workdir + '/' + DEVICE_INFO_FILE, 'r') as infile:
+                device_file = '{}/{}'.format(self._workdir, DEVICE_INFO_FILE)
+                with open(device_file, 'r') as infile:
                     deviceinfo = json.load(infile)
             except:
                 pass
@@ -445,8 +485,6 @@ class PLM(asyncio.Protocol, DeviceBase):
     def _write_device_info_file(self, devices):
         if self._workdir is not None:
             self.log.debug('Writing %d devices to save file', len(devices))
-            with open(self._workdir + '/' + DEVICE_INFO_FILE, 'w') as outfile:
+            device_file = '{}/{}'.format(self._workdir, DEVICE_INFO_FILE)
+            with open(device_file, 'w') as outfile:
                 json.dump(devices, outfile)
-
-
-
