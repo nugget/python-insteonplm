@@ -1,8 +1,9 @@
 sudo: false
-#python:
-#- 3.5.3
-#- 3.6
-#env:
+python:
+- 3.5.3
+- 3.6
+env:
+- py35-36
 
 matrix:
   fast_finish: true
