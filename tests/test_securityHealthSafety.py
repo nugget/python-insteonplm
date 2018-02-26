@@ -7,7 +7,7 @@ from insteonplm.constants import (COMMAND_LIGHT_OFF_0X13_0X00,
                                   MESSAGE_TYPE_ALL_LINK_CLEANUP)
 from insteonplm.devices.securityHealthSafety import (
     SecurityHealthSafety, SecurityHealthSafety_2842_222,
-    SecurityHealthSafety_2845_2222, SecurityHealthSafety_2852_222,
+    SecurityHealthSafety_2845_222, SecurityHealthSafety_2852_222,
     SecurityHealthSafety_2982_222)
 from insteonplm.messages import StandardReceive
 from insteonplm.messages.messageFlags import MessageFlags
@@ -133,7 +133,7 @@ def test_securityHealthSafety_2845_2222():
     """Test device 2845-222"""
     loop = asyncio.get_event_loop()
     loop.run_until_complete(
-        _onOffSenorTest(SecurityHealthSafety_2845_2222, loop))
+        _onOffSenorTest(SecurityHealthSafety_2845_222, loop))
 
 def test_securityHealthSafety_2852_222():
     """Test device 2852-222"""

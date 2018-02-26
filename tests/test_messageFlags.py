@@ -1,36 +1,60 @@
-from insteonplm.constants import *
+"""Test the MessageFlags class."""
+
+from insteonplm.constants import (MESSAGE_TYPE_ALL_LINK_BROADCAST,
+                                  MESSAGE_TYPE_ALL_LINK_CLEANUP,
+                                  MESSAGE_TYPE_ALL_LINK_CLEANUP_ACK,
+                                  MESSAGE_TYPE_ALL_LINK_CLEANUP_NAK,
+                                  MESSAGE_TYPE_BROADCAST_MESSAGE,
+                                  MESSAGE_TYPE_DIRECT_MESSAGE,
+                                  MESSAGE_TYPE_DIRECT_MESSAGE_ACK,
+                                  MESSAGE_TYPE_DIRECT_MESSAGE_NAK)
 from insteonplm.messages.messageFlags import MessageFlags
 
 def test_messageType():
-    assert MessageFlags(MESSAGE_TYPE_DIRECT_MESSAGE << 5).messageType == MESSAGE_TYPE_DIRECT_MESSAGE
-    assert MessageFlags(MESSAGE_TYPE_DIRECT_MESSAGE << 5).isDirect
+    """Test message flags match the expected message type."""
+    direct = MessageFlags(MESSAGE_TYPE_DIRECT_MESSAGE << 5)
+    direct_ack = MessageFlags(MESSAGE_TYPE_DIRECT_MESSAGE_ACK << 5)
+    all_link_cleanup = MessageFlags(MESSAGE_TYPE_ALL_LINK_CLEANUP << 5)
+    all_link_cleanup_ack = MessageFlags(MESSAGE_TYPE_ALL_LINK_CLEANUP_ACK << 5)
+    broadcast = MessageFlags(MESSAGE_TYPE_BROADCAST_MESSAGE << 5)
+    direct_nak = MessageFlags(MESSAGE_TYPE_DIRECT_MESSAGE_NAK << 5)
+    all_link_broadcast = MessageFlags(MESSAGE_TYPE_ALL_LINK_BROADCAST << 5)
+    all_link_cleanup_nak = MessageFlags(MESSAGE_TYPE_ALL_LINK_CLEANUP_NAK << 5)
 
-    assert MessageFlags(MESSAGE_TYPE_DIRECT_MESSAGE_ACK << 5).messageType == MESSAGE_TYPE_DIRECT_MESSAGE_ACK
-    assert MessageFlags(MESSAGE_TYPE_DIRECT_MESSAGE_ACK << 5).isDirectACK
+    assert direct.messageType == MESSAGE_TYPE_DIRECT_MESSAGE
+    assert direct.isDirect
 
-    assert MessageFlags(MESSAGE_TYPE_ALL_LINK_CLEANUP << 5).messageType == MESSAGE_TYPE_ALL_LINK_CLEANUP
-    assert MessageFlags(MESSAGE_TYPE_ALL_LINK_CLEANUP << 5).isAllLinkCleanup
+    assert direct_ack.messageType == MESSAGE_TYPE_DIRECT_MESSAGE_ACK
+    assert direct_ack.isDirectACK
 
-    assert MessageFlags(MESSAGE_TYPE_ALL_LINK_CLEANUP_ACK << 5).messageType == MESSAGE_TYPE_ALL_LINK_CLEANUP_ACK
-    assert MessageFlags(MESSAGE_TYPE_ALL_LINK_CLEANUP_ACK << 5).isAllLinkCleanupACK
+    assert all_link_cleanup.messageType == MESSAGE_TYPE_ALL_LINK_CLEANUP
+    assert all_link_cleanup.isAllLinkCleanup
 
-    assert MessageFlags(MESSAGE_TYPE_BROADCAST_MESSAGE << 5).messageType == MESSAGE_TYPE_BROADCAST_MESSAGE
-    assert MessageFlags(MESSAGE_TYPE_BROADCAST_MESSAGE << 5).isBroadcast
+    assert (all_link_cleanup_ack.messageType ==
+            MESSAGE_TYPE_ALL_LINK_CLEANUP_ACK)
+    assert all_link_cleanup_ack.isAllLinkCleanupACK
 
-    assert MessageFlags(MESSAGE_TYPE_DIRECT_MESSAGE_NAK << 5).messageType == MESSAGE_TYPE_DIRECT_MESSAGE_NAK
-    assert MessageFlags(MESSAGE_TYPE_DIRECT_MESSAGE_NAK << 5).isDirectNAK
+    assert broadcast.messageType == MESSAGE_TYPE_BROADCAST_MESSAGE
+    assert broadcast.isBroadcast
 
-    assert MessageFlags(MESSAGE_TYPE_ALL_LINK_BROADCAST << 5).messageType == MESSAGE_TYPE_ALL_LINK_BROADCAST
-    assert MessageFlags(MESSAGE_TYPE_ALL_LINK_BROADCAST << 5).isAllLinkBroadcast
+    assert direct_nak.messageType == MESSAGE_TYPE_DIRECT_MESSAGE_NAK
+    assert direct_nak.isDirectNAK
 
-    assert MessageFlags(MESSAGE_TYPE_ALL_LINK_CLEANUP_NAK << 5).messageType == MESSAGE_TYPE_ALL_LINK_CLEANUP_NAK
-    assert MessageFlags(MESSAGE_TYPE_ALL_LINK_CLEANUP_NAK << 5).isAllLinkCleanupNAK
+    assert all_link_broadcast.messageType == MESSAGE_TYPE_ALL_LINK_BROADCAST
+    assert all_link_broadcast.isAllLinkBroadcast
+
+    assert (all_link_cleanup_nak.messageType ==
+            MESSAGE_TYPE_ALL_LINK_CLEANUP_NAK)
+    assert all_link_cleanup_nak.isAllLinkCleanupNAK
 
 def test_extended():
+    """Test the extended flag."""
     assert MessageFlags(0x10).extended == 1
     assert MessageFlags(0x10).isExtended
 
+# pylint: disable=too-many-statements
 def test_eq():
+    """Test comarision for equality."""
     flag1 = MessageFlags(0x80)
     flag2 = MessageFlags(0x25)
     flag3 = MessageFlags(0x27)
@@ -94,11 +118,3 @@ def test_eq():
     assert not flag4.matches_pattern(pattern7)
     assert flag5.matches_pattern(pattern7)
     assert not flag6.matches_pattern(pattern7)
-
-
-
-
-
- 
- 
-

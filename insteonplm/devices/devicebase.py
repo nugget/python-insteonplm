@@ -274,8 +274,8 @@ class DeviceBase(object):
 
     def read_aldb(self):
         """Read the device All-Link Database."""
-        raise NotImplementedError
+        pass
 
     def write_aldb(self):
         """Write to the device All-Link Database."""
-        raise NotImplementedError
+        passr
