@@ -2,17 +2,17 @@
 import logging
 import collections
 
-from .unknowndevice import UnknownDevice 
+from .unknowndevice import UnknownDevice
 from .generalController import GeneralController
 from .dimmableLightingControl import DimmableLightingControl
 from .dimmableLightingControl import DimmableLightingControl_2475F
 from .switchedLightingControl import SwitchedLightingControl
-from .switchedLightingControl import SwitchedLightingControl_2663_222 
-from .securityHealthSafety import (SecurityHealthSafety, 
+from .switchedLightingControl import SwitchedLightingControl_2663_222
+from .securityHealthSafety import (SecurityHealthSafety,
                                    SecurityHealthSafety_2421,
                                    SecurityHealthSafety_2842_222,
-                                   SecurityHealthSafety_2852_222, 
-                                   SecurityHealthSafety_2845_2222,
+                                   SecurityHealthSafety_2852_222,
+                                   SecurityHealthSafety_2845_222,
                                    SecurityHealthSafety_2982_222)
 
 from .sensorsActuators import SensorsActuators
@@ -26,10 +26,10 @@ Product = collections.namedtuple('Product', 'cat subcat product_key description 
 
 class IPDB(object):
     """Embodies the INSTEON Product Database static data and access methods."""
-
+    # pylint disable=line-too-long
     products = [
         Product(None, None, None, '', '', UnknownDevice),
-        
+
         Product(0x00, None, None, 'Generic General Controller', '', GeneralController),
         Product(0x00, 0x04, None, 'ControLinc', '2430', GeneralController),
         Product(0x00, 0x05, None, 'RemoteLink', '2440', GeneralController),
@@ -38,7 +38,7 @@ class IPDB(object):
         Product(0x00, 0x09, None, 'SignaLinc RF Signal Enhancer', '2442', GeneralController),
         Product(0x00, 0x0b, 0x000007, 'Balboa Instrument’s Poolux LCD Controller', '', GeneralController),
         Product(0x00, 0x0b, 0x000022, 'Access Point', '2443', GeneralController),
-        Product(0x00, 0x0c, 0x000028, 'IES Color Touchscreen','', GeneralController),
+        Product(0x00, 0x0c, 0x000028, 'IES Color Touchscreen', '', GeneralController),
 
         Product(0x01, None, None, 'Generic Dimmable Lighting', '', DimmableLightingControl),
         Product(0x01, 0x00, None, 'LampLinc 3-pin', '2456D3', DimmableLightingControl),
@@ -101,35 +101,40 @@ class IPDB(object):
 
         Product(0x03, None, None, 'Generic PLM', '', None),
         Product(0x03, 0x15, None, 'PowerLinc Modem (USB)', '2413U', None),  # PLM
-        Product(0x03, 0x20, None, 'USB Adapter', '2448A7', None), # PLM
+        Product(0x03, 0x20, None, 'USB Adapter', '2448A7', None),  # PLM
 
-        Product(0x05, 0x0b, None, 'Thermostat', '2441TH', None), #<- Coming Soon!
+        Product(0x05, 0x0b, None, 'Thermostat', '2441TH', None),  #<- Coming Soon!
 
+        Product(0x07, None, None, 'Generic Sensor Actuator Device', '', SensorsActuators),
         Product(0x07, 0x00, None, 'I/O Linc', '2450', SensorsActuators_2450),
 
         Product(0x09, 0x0a, None, '220/240V 30A Load Controller NO', '2477SA1', None),
         Product(0x09, 0x0b, None, '220/240V 30A Load Controller NC', '2477SA2', None),
-        
+
         Product(0x10, None, None, 'Generic Security, Heath and Safety Device', '', SecurityHealthSafety),
         Product(0x10, 0x01, None, 'Motion Sensor', '2842-222', SecurityHealthSafety_2842_222),
         Product(0x10, 0x02, None, 'TriggerLinc', '2421', SecurityHealthSafety_2421),
         Product(0x10, 0x08, None, 'Water Leak Sensor', '2852-222', SecurityHealthSafety_2852_222),
         Product(0x10, 0x0a, None, 'Smoke Bridge', '2982-222', SecurityHealthSafety_2982_222),
-        Product(0x10, 0x11, None, 'Hidden Door Sensor', '2845-222', SecurityHealthSafety_2845_2222),
+        Product(0x10, 0x11, None, 'Hidden Door Sensor', '2845-222', SecurityHealthSafety_2845_222),
         Product(0x0f, 0x06, None, 'MorningLinc', '2458A1', None),
     ]
 
     def __init__(self):
+        """Initialize the INSTEON Product Database (IPDB)."""
         self.log = logging.getLogger(__name__)
 
     def __len__(self):
+        """Return the length of the product database"""
         return len(self.products)
 
     def __iter__(self):
+        """Iterate through the product database."""
         for product in self.products:
             yield product
 
     def __getitem__(self, key):
+        """Return an item from the product database."""
         cat, subcat = key
 
         for product in self.products:
@@ -139,10 +144,10 @@ class IPDB(object):
         # We failed to find a device in the database, so we will make a best
         # guess from the cat and return the generic class
         #
-        
+
         for product in self.products:
-            if cat == product.cat and product.subcat == None:
+            if cat == product.cat and product.subcat is None:
                 return product
 
         # We did not find the device or even a generic device of that category
-        return Product(cat, subcat, None, None, None, None) 
+        return Product(cat, subcat, None, None, None, None)
