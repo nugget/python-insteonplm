@@ -1,23 +1,23 @@
-import asyncio
-import logging
-import insteonplm
-from insteonplm.constants import *
-from insteonplm.aldb import ALDB
-from insteonplm.address import Address
+"""Test INSTEON Sensor Actuator devices."""
 
-from insteonplm.messages import (StandardSend, StandardReceive,
-                                 ExtendedSend, ExtendedReceive)
+import asyncio
+from insteonplm.constants import (COMMAND_LIGHT_ON_0X11_NONE,
+                                  COMMAND_LIGHT_STATUS_REQUEST_0X19_0X00,
+                                  COMMAND_LIGHT_STATUS_REQUEST_0X19_0X01,
+                                  MESSAGE_ACK,
+                                  MESSAGE_TYPE_BROADCAST_MESSAGE,
+                                  MESSAGE_TYPE_DIRECT_MESSAGE_ACK)
+from insteonplm.devices.sensorsActuators import SensorsActuators_2450  # SensorsActuators,
+from insteonplm.messages import StandardSend, StandardReceive
 from insteonplm.messages.messageFlags import MessageFlags
-from insteonplm.devices.sensorsActuators import (SensorsActuators, 
-                                                 SensorsActuators_2450)
 from .mockPLM import MockPLM
-from .mockCallbacks import MockCallbacks 
+from .mockCallbacks import MockCallbacks
 
 
 def test_SensorsActuators_2450_status():
-
+    """Test SensorActuator device model 2450."""
     def run_test(loop):
-
+        """Asyncio test run."""
         plm = MockPLM()
         address = '1a2b3c'
         target = '4d5e6f'
@@ -30,9 +30,10 @@ def test_SensorsActuators_2450_status():
 
         callbacks = MockCallbacks()
 
-        device = SensorsActuators_2450.create(plm, address, cat, subcat, product_key, description, model)
-    
-        assert device.states[0x01].name == 'openClosedRelay'    
+        device = SensorsActuators_2450.create(plm, address, cat, subcat,
+                                              product_key, description, model)
+
+        assert device.states[0x01].name == 'openClosedRelay'
         assert device.states[0x02].name == 'openClosedSensor'
 
         device.states[0x01].register_updates(callbacks.callbackmethod1)
@@ -42,23 +43,35 @@ def test_SensorsActuators_2450_status():
         yield from asyncio.sleep(.1, loop=loop)
 
         # First state
-        assert plm.sentmessage == StandardSend(address, COMMAND_LIGHT_STATUS_REQUEST_0X19_0X00).hex
+        sentmsg = StandardSend(address, COMMAND_LIGHT_STATUS_REQUEST_0X19_0X00)
+        assert plm.sentmessage == sentmsg.hex
 
-        plm.message_received(StandardSend(address, COMMAND_LIGHT_STATUS_REQUEST_0X19_0X00, acknak=MESSAGE_ACK))
+        receivedmsg = StandardSend(address,
+                                   COMMAND_LIGHT_STATUS_REQUEST_0X19_0X00,
+                                   acknak=MESSAGE_ACK)
+        plm.message_received(receivedmsg)
         yield from asyncio.sleep(.1, loop=loop)
-        plm.message_received(StandardReceive(address, target, COMMAND_LIGHT_ON_0X11_NONE, cmd2=0x55, 
-                                             flags=MessageFlags.create(MESSAGE_TYPE_DIRECT_MESSAGE_ACK, 0)))
+        receivedmsg = StandardReceive(
+            address, target, COMMAND_LIGHT_ON_0X11_NONE, cmd2=0x55,
+            flags=MessageFlags.create(MESSAGE_TYPE_DIRECT_MESSAGE_ACK, 0))
+        plm.message_received(receivedmsg)
         yield from asyncio.sleep(.3, loop=loop)
         assert callbacks.callbackvalue1 == 0xff
 
         # Second state
-        plm.message_received(StandardSend(address, COMMAND_LIGHT_STATUS_REQUEST_0X19_0X01, acknak=MESSAGE_ACK))
+        receivedmsg = StandardSend(address,
+                                   COMMAND_LIGHT_STATUS_REQUEST_0X19_0X01,
+                                   acknak=MESSAGE_ACK)
+        plm.message_received(receivedmsg)
         yield from asyncio.sleep(.1, loop=loop)
-        plm.message_received(StandardReceive(address, target, COMMAND_LIGHT_ON_0X11_NONE, cmd2=0x33, 
-                                                 flags=MessageFlags.create(MESSAGE_TYPE_BROADCAST_MESSAGE, 0)))
+        receivedmsg = StandardReceive(
+            address, target, COMMAND_LIGHT_ON_0X11_NONE, cmd2=0x33,
+            flags=MessageFlags.create(MESSAGE_TYPE_BROADCAST_MESSAGE, 0))
+        plm.message_received(receivedmsg)
         yield from asyncio.sleep(.1, loop=loop)
 
-        assert plm.sentmessage == StandardSend(address, COMMAND_LIGHT_STATUS_REQUEST_0X19_0X01).hex
+        sentmsg = StandardSend(address, COMMAND_LIGHT_STATUS_REQUEST_0X19_0X01)
+        assert plm.sentmessage == sentmsg.hex
         assert callbacks.callbackvalue1 == 0xff
         assert callbacks.callbackvalue2 == 1
 

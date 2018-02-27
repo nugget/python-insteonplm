@@ -18,7 +18,6 @@ from .mockCallbacks import MockCallbacks
 
 def test_dimmableLightingControl():
     """Test generic Dimmable Lighting Control devices."""
-
     def run_test(loop):
         """Asyncio test to run."""
         plm = MockPLM(loop)
@@ -35,7 +34,7 @@ def test_dimmableLightingControl():
         assert device.address.hex == address
         assert device.cat == cat
         assert device.subcat == subcat
-        assert device.product_key == 0x00 # Product key should not be None
+        assert device.product_key == 0x00  # Product key should not be None
         assert device.description == description
         assert device.model == model
         assert device.id == address
@@ -93,9 +92,8 @@ def test_dimmableLightingControl():
 
 def test_dimmableLightingControl_manual_changes():
     """Test manual changes to Dimmable Lighting Controls."""
-
     def run_test(loop):
-        """Asyncio test method"""
+        """Asyncio test method."""
         plm = MockPLM(loop)
         address = '1a2b3c'
         cat = 0x01
@@ -109,7 +107,7 @@ def test_dimmableLightingControl_manual_changes():
         assert device.address.hex == address
         assert device.cat == cat
         assert device.subcat == subcat
-        assert device.product_key == 0x00 # Product key should not be None
+        assert device.product_key == 0x00  # Product key should not be None
         assert device.description == description
         assert device.model == model
         assert device.id == address
@@ -136,10 +134,9 @@ def test_dimmableLightingControl_manual_changes():
     loop.run_until_complete(run_test(loop))
 
 def test_dimmableLightingControl_status():
-    """Test status updates for Dimmable Lighting Controls"""
-
+    """Test status updates for Dimmable Lighting Controls."""
     def run_test(loop):
-        """Asyncio test to run"""
+        """Asyncio test to run."""
         plm = MockPLM(loop)
         address = '1a2b3c'
         target = '4d5e6f'
@@ -155,7 +152,7 @@ def test_dimmableLightingControl_status():
         assert device.address.hex == address
         assert device.cat == cat
         assert device.subcat == subcat
-        assert device.product_key == 0x00 # Product key should not be None
+        assert device.product_key == 0x00  # Product key should not be None
         assert device.description == description
         assert device.model == model
         assert device.id == address
@@ -182,21 +179,21 @@ def test_dimmableLightingControl_status():
     loop.run_until_complete(run_test(loop))
 
 def test_switchedLightingControl_2475F():
-    """Test device 2475F"""
-
+    """Test device 2475F."""
     def run_test(loop):
-        """Asyncio test"""
+        """Asyncio test."""
         class fanLincStatus(object):
-            """Callback class to capture sensor changes"""
+            """Callback class to capture sensor changes."""
+
             lightOnLevel = None
             fanOnLevel = None
 
             def device_status_callback1(self, device_id, state, value):
-                """Callback method to capture light changes"""
+                """Callback method to capture light changes."""
                 self.lightOnLevel = value
 
             def device_status_callback2(self, device_id, state, value):
-                """Callback method to capture fan changes"""
+                """Callback method to capture fan changes."""
                 self.fanOnLevel = value
 
         mockPLM = MockPLM(loop)
@@ -256,10 +253,9 @@ def test_switchedLightingControl_2475F():
 
 
 def test_dimmableLightingControl_2475F_status():
-    """Test device 2475F status updates"""
-
+    """Test device 2475F status updates."""
     def run_test(loop):
-        """Asyncio test"""
+        """Asyncio test."""
         plm = MockPLM(loop)
         address = '1a2b3c'
         target = '4d5e6f'

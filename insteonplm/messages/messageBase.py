@@ -1,30 +1,39 @@
+"""Base class for an INSTOEN message."""
+
 import logging
 import binascii
 from insteonplm.address import Address
-from insteonplm.constants import *
+from insteonplm.constants import MESSAGE_START_CODE_0X02
 from .messageFlags import MessageFlags
 from .userdata import Userdata
+
 
 class ClassPropertyMetaClass(type):
     """This is meta class magic to allow class attributes to also appear as an instance property."""
 
     @property
     def code(cls):
+        """Message code used to determine message type."""
         return cls._code
 
     @property
     def sendSize(cls):
+        """Size of the message sent in bytes."""
         return cls._sendSize
 
     @property
     def receivedSize(cls):
+        """Size of the message received in bytes."""
         return cls._receivedSize
 
     @property
     def description(cls):
+        """Description of the message type."""
         return cls._description
 
-class MessageBase(metaclass=ClassPropertyMetaClass):    
+
+class MessageBase(metaclass=ClassPropertyMetaClass):
+    """Base message class for an INSTEON message."""
     _code = 0
     _sendSize = 0
     _receivedSize = 0
@@ -32,84 +41,102 @@ class MessageBase(metaclass=ClassPropertyMetaClass):
     log = logging.getLogger(__name__)
 
     def __str__(self):
+        """String representation of an INSTEON message."""
         props = self._message_properties()
-        msgstr = "{'code': 0x" + binascii.hexlify(bytes([self._code])).decode()
-        first = True
+        msgstr = "{}'code': 0x{}".format(
+            "{", binascii.hexlify(bytes([self._code])).decode())
         for prop in props:
             for key, val in prop.items():
                 msgstr = msgstr + ', '
                 if isinstance(val, Address):
-                    msgstr = msgstr + "'" + key + "': " + val.human
+                    msgstr = "{}'{}': {}".format(msgstr, key, val.human)
                 elif isinstance(val, MessageFlags):
-                    msgstr = msgstr + "'" + key + "': 0x" + val.hex
+                    msgstr = "{}'{}': 0x{}".format(msgstr, key, val.hex)
                 elif isinstance(val, int):
-                    msgstr = msgstr + "'" + key + "': 0x" + binascii.hexlify(bytes([val])).decode()
+                    msgstr = "{}'{}': 0x{}".format(
+                        msgstr, key, binascii.hexlify(bytes([val])).decode())
                 elif isinstance(val, bytearray):
-                    msgstr = msgstr + "'" + key + "': 0x" + binascii.hexlify(val).decode()
+                    msgstr = "{}'{}': 0x{}".format(
+                        msgstr, key, binascii.hexlify(val).decode())
                 elif isinstance(val, bytes):
-                    msgstr = msgstr + "'" + key + "': 0x" + binascii.hexlify(val).decode()
+                    msgstr = "{}'{}': 0x{}".format(
+                        msgstr, key, binascii.hexlify(val).decode())
                 else:
-                    msgstr = msgstr + "'" + key + "': " + str(val)
-        msgstr = msgstr + '}'
+                    msgstr = "{}'{}': 0x{}".format(msgstr, key, str(val))
+        msgstr = "{}{}".format(msgstr, '}')
         return msgstr
 
     def __eq__(self, other):
+        """Test for equality."""
+        match = False
         if isinstance(other, MessageBase) and other.code == self._code:
-            return str(self) == str(other)
-        else:
-            return False
+            match = str(self) == str(other)
+        return match
 
     def __ne__(self, other):
+        """Test for inequality."""
+        match = True
         if isinstance(other, MessageBase) and other.code == self._code:
-            return str(self) != str(other)
-        else:
-            return True
+            match = str(self) != str(other)
+        return match
 
     def __lt__(self, other):
+        """Test for less than."""
+        less_than = False
         if isinstance(other, MessageBase):
-            return str(self) < str(other)
+            less_than = str(self) < str(other)
         else:
-            return TypeError
+            raise TypeError
+        return less_than
 
     def __gt__(self, other):
+        """Test for greater than."""
+        greater_than = False
         if isinstance(other, MessageBase):
-            return str(self) > str(other)
+            greater_than = str(self) > str(other)
         else:
-            return TypeError
+            raise TypeError
+        return greater_than
 
     def __hash__(self):
+        """Create a has of the message."""
         return hash(str(self))
 
     @property
     def code(self):
+        """Messasge code used to determine message type."""
         return self._code
 
     @property
     def sendSize(self):
+        """Size of the sent messsage in bytes."""
         return self._sendSize
 
     @property
     def receivedSize(self):
+        """Size of the received message in bytes."""
         return self._receivedSize
 
     @property
     def description(self):
+        """Description of the message type."""
         return self._description
 
     @property
     def hex(self):
+        """Hexideciaml representation of the message in bytes."""
         props = self._message_properties()
         msg = bytearray([MESSAGE_START_CODE_0X02, self._code])
-        i = 0
-        cmd2 = 0
+
         for prop in props:
+            # pylint: disable=unused-variable
             for key, val in prop.items():
                 if val is None:
                     pass
                 elif isinstance(val, int):
                     msg.append(val)
                 elif isinstance(val, Address):
-                    if val.addr == None:
+                    if val.addr is None:
                         pass
                     else:
                         msg.extend(val.bytes)
@@ -121,32 +148,24 @@ class MessageBase(metaclass=ClassPropertyMetaClass):
                     msg.extend(val)
                 elif isinstance(val, Userdata):
                     msg.extend(val.bytes)
-            
+
         return binascii.hexlify(msg).decode()
 
     @property
     def bytes(self):
+        """Bytes representation of the message."""
         return binascii.unhexlify(self.hex)
 
     def matches_pattern(self, other):
+        """Compare the current message to a template message to test matches to a pattern."""
         properties = self._message_properties()
         ismatch = False
         if isinstance(other, MessageBase) and self.code == other.code:
-            for property in properties:
-                for key, p in property.items():
+            for prop in properties:
+                for key, prop_val in prop.items():
                     if hasattr(other, key):
-                        k =  getattr(other, key)
-                        if isinstance(p, MessageFlags):
-                            ismatch = p.matches_pattern(k)
-                        elif isinstance(p, Address):
-                            ismatch = p.matches_pattern(k)
-                        elif isinstance(p, Userdata):
-                            ismatch = p.matches_pattern(k)
-                        else:
-                            if p is None or k is None:
-                                ismatch = True
-                            else:
-                                ismatch = p == k
+                        key_val = getattr(other, key)
+                        ismatch = self._test_match(prop_val, key_val)
                     else:
                         ismatch = False
                     if not ismatch:
@@ -154,28 +173,29 @@ class MessageBase(metaclass=ClassPropertyMetaClass):
                 if not ismatch:
                     break
         return ismatch
-    
-    def fromDevice(self, devices):
-        try:
-            device = devices[self.address.hex]
-        except:
-            device = None
-        return device
 
-    def toDevice(self, devices):
-        try:
-            device = devices[self.target.hex]
-        except:
-            device = None
-        return device
-
-    def _setacknak(self, acknak):
-        if isinstance(acknak, bytearray) and len(acknak) > 0:
-            return acknak[0]
-        else:
-            return acknak
+    @staticmethod
+    def _setacknak(acknak):
+        _acknak = acknak
+        if isinstance(acknak, bytearray) and acknak:
+            _acknak = acknak[0]
+        return _acknak
 
     def _message_properties(self):
         raise NotImplementedError
 
-
+    @staticmethod
+    def _test_match(prop_val, key_val):
+        ismatch = False
+        if isinstance(prop_val, MessageFlags):
+            ismatch = prop_val.matches_pattern(key_val)
+        elif isinstance(prop_val, Address):
+            ismatch = prop_val.matches_pattern(key_val)
+        elif isinstance(prop_val, Userdata):
+            ismatch = prop_val.matches_pattern(key_val)
+        else:
+            if prop_val is None or key_val is None:
+                ismatch = True
+            else:
+                ismatch = prop_val == key_val
+        return ismatch

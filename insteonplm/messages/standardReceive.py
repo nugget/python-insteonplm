@@ -1,11 +1,14 @@
-from insteonplm.constants import *
+"""INSTEON Standard Receive Message Type 0x50."""
+
+from insteonplm.constants import (MESSAGE_STANDARD_MESSAGE_RECEIVED_0X50,
+                                  MESSAGE_STANDARD_MESSAGE_RECIEVED_SIZE)
 from insteonplm.address import Address
 from .messageBase import MessageBase
 from .messageFlags import MessageFlags
 
 class StandardReceive(MessageBase):
     """Insteon Standard Length Message Received 0x50"""
-    
+
     _code = MESSAGE_STANDARD_MESSAGE_RECEIVED_0X50
     _sendSize = MESSAGE_STANDARD_MESSAGE_RECIEVED_SIZE
     _receivedSize = MESSAGE_STANDARD_MESSAGE_RECIEVED_SIZE
@@ -13,8 +16,8 @@ class StandardReceive(MessageBase):
 
 
     def __init__(self, address, target, commandtuple, cmd2=None, flags=0x00):
-        
-        if commandtuple.get('cmd1', None) is not None:
+        """Initialize the StandardReceive message class."""
+        if commandtuple.get('cmd1') is not None:
             cmd1 = commandtuple['cmd1']
             cmd2out = commandtuple['cmd2']
         else:
@@ -35,20 +38,24 @@ class StandardReceive(MessageBase):
 
     @classmethod
     def from_raw_message(cls, rawmessage):
-        return StandardReceive(rawmessage[2:5], 
-                               rawmessage[5:8], 
+        """Create message from a raw byte stream."""
+        return StandardReceive(rawmessage[2:5],
+                               rawmessage[5:8],
                                {'cmd1':rawmessage[9],
                                 'cmd2':rawmessage[10]},
                                flags=rawmessage[8])
 
+    # pylint: disable=protected-access
     @classmethod
-    def template(cls, address=None, target=None, commandtuple={}, cmd2=-1, flags=None):
+    def template(cls, address=None, target=None, commandtuple={},
+                 cmd2=-1, flags=None):
+        """Create a message template used for callbacks."""
         msgraw = bytearray([0x02, cls._code])
         msgraw.extend(bytes(cls._receivedSize))
         msg = StandardReceive.from_raw_message(msgraw)
-       
-        cmd1 = commandtuple.get('cmd1', None)
-        cmd2out = commandtuple.get('cmd2', None)
+
+        cmd1 = commandtuple.get('cmd1')
+        cmd2out = commandtuple.get('cmd2')
 
         if cmd2 is not -1:
             cmd2out = cmd2
@@ -62,47 +69,64 @@ class StandardReceive(MessageBase):
 
     @property
     def address(self):
+        """Return the address of the device."""
         return self._address
 
     @property
     def target(self):
+        """Return the address of the target device."""
         return self._target
 
     @property
     def cmd1(self):
+        """Return the cmd1 property of the message."""
         return self._cmd1
 
     @property
     def cmd2(self):
+        """Return the cmd2 property of the message."""
         return self._cmd2
 
     @property
     def flags(self):
+        """Return the message flags."""
         return self._messageFlags
 
     @property
     def targetLow(self):
+        """Return the low byte of the target message property.
+
+        Used in All-Link Cleanup message types.
+        """
+        low_byte = None
         if self.target.addr is not None and self._messageFlags.isBroadcast:
-            return self.target.bytes[0]
-        else:
-            return None
+            low_byte = self.target.bytes[0]
+        return low_byte
 
     @property
     def targetMed(self):
+        """Return the middle byte of the target message property.
+
+        Used in All-Link Cleanup message types.
+        """
+        med_byte = None
         if self.target.addr is not None and self._messageFlags.isBroadcast:
-            return self.target.bytes[1]
-        else:
-            return None
+            med_byte = self.target.bytes[1]
+        return med_byte
 
     @property
     def targetHi(self):
+        """Return the high byte of the target message property.
+
+        Used in All-Link Cleanup message types.
+        """
+        hi_byte = None
         if self.target.addr is not None and self._messageFlags.isBroadcast:
-            return self.target.bytes[2]
-        else:
-            return None
+            hi_byte = self.target.bytes[2]
+        return hi_byte
 
     def _message_properties(self):
-        return [{'address': self._address}, 
+        return [{'address': self._address},
                 {'target': self._target},
                 {'flags': self._messageFlags},
                 {'cmd1': self._cmd1},
