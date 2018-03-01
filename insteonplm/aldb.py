@@ -1,8 +1,6 @@
 """Module to maintain PLM state information and network interface."""
-import asyncio
+
 import logging
-import binascii
-import time
 
 from .address import Address
 from .devices.device import Device
@@ -38,15 +36,14 @@ class ALDB(object):
 
     def __setitem__(self, key, device):
         """Add or Update a device in the ALDB."""
-
         if not isinstance(device, DeviceBase):
             raise ValueError
 
         self._devices[key] = device
 
         self.log.debug('New INSTEON Device %r: %s (%02x:%02x)',
-                        key, device.description, device.cat,
-                        device.subcat)
+                       key, device.description, device.cat,
+                       device.subcat)
 
         for callback in self._cb_new_device:
             callback(device)
@@ -59,7 +56,7 @@ class ALDB(object):
     def add_device_callback(self, callback):
         """Register a callback to be invoked when a new device appears."""
         self.log.debug('Added new callback %s ',
-                      callback)
+                       callback)
         self._cb_new_device.append(callback)
 
     def add_override(self, addr, key, value):
@@ -79,7 +76,8 @@ class ALDB(object):
             info['product_key'] = kwarg.get('product_key', None)
         self._saved_devices[addr] = info
 
-    def create_device_from_category(self, plm, addr, cat, subcat, product_key=0x00):
+    def create_device_from_category(self, plm, addr, cat, subcat,
+                                    product_key=0x00):
         saved_device = self._saved_devices.get(Address(addr).hex, {})
         cat = saved_device.get('cat', cat)
         subcat = saved_device.get('subcat', subcat)
@@ -88,9 +86,9 @@ class ALDB(object):
         device_override = self._overrides.get(Address(addr).hex, {})
         cat = device_override.get('cat', cat)
         subcat = device_override.get('subcat', subcat)
-        product_key = device_override.get('firmware' , product_key)
+        product_key = device_override.get('firmware', product_key)
         product_key = device_override.get('product_key', product_key)
-        
+
         return Device.create(plm, addr, cat, subcat, product_key)
 
     def has_saved(self, addr):

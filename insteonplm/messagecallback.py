@@ -1,12 +1,29 @@
-"""Message callback handler to identify message pattern alignment to inbound messages."""
+"""Message callback handler matching message pattern to inbound messages."""
 
 import logging
-#from .constants import *
-#from insteonplm.messages.messageBase import MessageBase
-#from insteonplm.messages.messageFlags import MessageFlags
+
 
 class MessageCallback(object):
-    """Message callback handler to identify message pattern alignment to inbound messages."""
+    """Message callback handler.
+
+    Message patterns or templates are used as the key to a message/callback
+    tuple. For example, a message with the following attributes:
+
+    {'code': 0x50, 'address': 1A.2B.3C, 'target': None,
+    'flags': None, 'cmd1': 0x11, 'cmd2': None}
+
+    Would match any message with:
+        code == 0x50
+        address == 1A.2B.3C
+        target == any value
+        flags == any value
+        cmd1 == 0x11
+        cmd2 == any value
+
+    The above example is an inbound Standard Receive message (0x50)
+    with the "Light On" message and any light level value in cmd2.
+    """
+
     def __init__(self):
         """Initialize the MessageCallback class."""
         self._dict = {}
@@ -23,25 +40,17 @@ class MessageCallback(object):
 
     def __getitem__(self, key):
         """Gets an item from the callback list.
-
-        Accepts a string in the format of 'code:cmd1:cmd2:acknak.
-        For example, '50:11:None:None' would mean
-        a Standard Message (0x50) Light On (0x11) command with any On Level and
-        any Ack/Nak value.
-
-        If a direct match is not found the following order is used:
-            1) Any cmd2 value
-            2) Any cmd1 value
-            3) Any Ack/Nak value
-        For example, if the key is {'code':0x50, 'cmd1':None, 'cmd2': None, 'acknak':None}
-        (i.e. any Standard Message (0x50)) and the message is
-        {'code':0x50, 'cmd1': 0x11, 'cmd2:0xff, 'acknak':None}
-        this will be a match.
+        Accepts any message type as a key and returns the callbacks
+        associated with that message template.
         """
         return self._dict.get(key, [])
 
     def __setitem__(self, key, value):
-        """Set a callback method where the key is a pattern and the value is a callback method."""
+        """Set a callback method to a message key.
+
+        Key: any message template.
+        Value: callback method.
+        """
         callbacks = self._dict.get(key, [])
         if isinstance(value, list):
             for callback in value:
@@ -55,8 +64,8 @@ class MessageCallback(object):
 
         msg: Message template.
         callback: Callback method
-        override: True - replace all existing callbacks for that message template
-                  False - append the callback to the list of callbacks for that message
+        override: True - replace all existing callbacks for that template
+                  False - append the list of callbacks for that message
                   Default is False
         """
         if override:
@@ -67,7 +76,6 @@ class MessageCallback(object):
         else:
             cb = self[msg]
             cb.append(callback)
-            #self.log.debug('%d total callbacks for template: %s', len(cb), str(msg))
             self._dict[msg] = cb
 
     def remove(self, msg, callback):
@@ -75,7 +83,9 @@ class MessageCallback(object):
 
         msg: Message template
         callback: Callback method to remove.
-                  If callback is None, all callbacks for the message template are removed.
+
+        If callback is None, all callbacks for the message template are
+        removed.
         """
         if callback is None:
             self._dict.pop(msg, None)
