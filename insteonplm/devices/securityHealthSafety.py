@@ -1,7 +1,9 @@
-"""Module for classes representing a Security Health and Safety INSTEON device."""
+"""INSTEON Security Health and Safety Device Class Module."""
 
-from insteonplm.states.sensor import (VariableSensor, OnOffSensor, SmokeCO2Sensor)
-from .devicebase import DeviceBase
+from insteonplm.states.sensor import (VariableSensor,
+                                      OnOffSensor,
+                                      SmokeCO2Sensor)
+from insteonplm.devices import DeviceBase
 
 
 class SecurityHealthSafety(DeviceBase):
@@ -17,15 +19,17 @@ class SecurityHealthSafety(DeviceBase):
         - callback(self, device_id, state, state_value)
     """
 
-    def __init__(self, plm, address, cat, subcat, product_key=None, description=None, model=None):
+    def __init__(self, plm, address, cat, subcat, product_key=None,
+                 description=None, model=None):
         """Initialize the SecurityHealthSafety device class."""
-        super().__init__(plm, address, cat, subcat, product_key, description, model)
+        super().__init__(plm, address, cat, subcat, product_key,
+                         description, model)
 
         self._product_data_in_aldb = True
 
-        self._stateList[0x01] = VariableSensor(self._address, "generalSensor",
-                                               0x01, self._send_msg,
-                                               self._plm.message_callbacks, 0x00)
+        self._stateList[0x01] = VariableSensor(
+            self._address, "generalSensor", 0x01, self._send_msg,
+            self._plm.message_callbacks, 0x00)
 
 
 class SecurityHealthSafety_2421(DeviceBase):
@@ -41,9 +45,11 @@ class SecurityHealthSafety_2421(DeviceBase):
         - callback(self, device_id, state, state_value)
     """
 
-    def __init__(self, plm, address, cat, subcat, product_key=None, description=None, model=None):
+    def __init__(self, plm, address, cat, subcat, product_key=None,
+                 description=None, model=None):
         """Initialize the SecurityHealthSafety_2421 device class."""
-        super().__init__(plm, address, cat, subcat, product_key, description, model)
+        super().__init__(plm, address, cat, subcat, product_key,
+                         description, model)
 
         self._product_data_in_aldb = True
 
@@ -65,15 +71,17 @@ class SecurityHealthSafety_2842_222(DeviceBase):
         - callback(self, device_id, state, state_value)
     """
 
-    def __init__(self, plm, address, cat, subcat, product_key=None, description=None, model=None):
+    def __init__(self, plm, address, cat, subcat, product_key=None,
+                 description=None, model=None):
         """Initialize the SecurityHealthSafety_2842_222 device class."""
-        super().__init__(plm, address, cat, subcat, product_key, description, model)
+        super().__init__(plm, address, cat, subcat, product_key,
+                         description, model)
 
         self._product_data_in_aldb = True
 
-        self._stateList[0x01] = OnOffSensor(self._address, "motionSensor",
-                                            0x01, self._send_msg,
-                                            self._plm.message_callbacks, 0x00)
+        self._stateList[0x01] = OnOffSensor(
+            self._address, "motionSensor", 0x01, self._send_msg,
+            self._plm.message_callbacks, 0x00)
 
 
 class SecurityHealthSafety_2845_222(DeviceBase):
@@ -89,15 +97,17 @@ class SecurityHealthSafety_2845_222(DeviceBase):
         - callback(self, device_id, state, state_value)
     """
 
-    def __init__(self, plm, address, cat, subcat, product_key=None, description=None, model=None):
+    def __init__(self, plm, address, cat, subcat, product_key=None,
+                 description=None, model=None):
         """Initialize the SecurityHealthSafety_2845_222 device class."""
-        super().__init__(plm, address, cat, subcat, product_key, description, model)
+        super().__init__(plm, address, cat, subcat, product_key,
+                         description, model)
 
         self._product_data_in_aldb = True
 
-        self._stateList[0x01] = OnOffSensor(self._address, "doorSensor", 0x01,
-                                            self._send_msg,
-                                            self._plm.message_callbacks, 0x00)
+        self._stateList[0x01] = OnOffSensor(
+            self._address, "doorSensor", 0x01, self._send_msg,
+            self._plm.message_callbacks, 0x00)
 
 
 class SecurityHealthSafety_2852_222(DeviceBase):
@@ -113,9 +123,11 @@ class SecurityHealthSafety_2852_222(DeviceBase):
         - callback(self, device_id, state, state_value)
     """
 
-    def __init__(self, plm, address, cat, subcat, product_key=None, description=None, model=None):
+    def __init__(self, plm, address, cat, subcat, product_key=None,
+                 description=None, model=None):
         """Initialize the SecurityHealthSafety_2852_222 device class."""
-        super().__init__(plm, address, cat, subcat, product_key, description, model)
+        super().__init__(plm, address, cat, subcat, product_key,
+                         description, model)
 
         self._product_data_in_aldb = True
 
@@ -145,11 +157,13 @@ class SecurityHealthSafety_2982_222(DeviceBase):
         - callback(self, device_id, state, state_value)
     """
 
-    def __init__(self, plm, address, cat, subcat, product_key=None, description=None, model=None):
-        super().__init__(plm, address, cat, subcat, product_key, description, model)
+    def __init__(self, plm, address, cat, subcat, product_key=None,
+                 description=None, model=None):
+        super().__init__(plm, address, cat, subcat, product_key,
+                         description, model)
 
         self._product_data_in_aldb = True
 
-        self._stateList[0x01] = SmokeCO2Sensor(self._address, "smokeCO2Sensor",
-                                               0x01, self._send_msg,
-                                               self._plm.message_callbacks, 0x00)
+        self._stateList[0x01] = SmokeCO2Sensor(
+            self._address, "smokeCO2Sensor", 0x01, self._send_msg,
+            self._plm.message_callbacks, 0x00)

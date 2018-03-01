@@ -109,7 +109,7 @@ class Address(object):
 
     @property
     def bytes(self):
-        """Emit the address in bytes format (b'\xaabbcc')."""
+        """Emit the address in bytes format."""
         addrbyte = b'\x00\x00\x00'
         if self.addr is not None:
             addrbyte = self.addr

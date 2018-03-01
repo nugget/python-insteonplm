@@ -1,5 +1,6 @@
+"""INSTEON General Controller Device Class."""
+from insteonplm.devices import DeviceBase
 
-from .devicebase import DeviceBase
 
 class GeneralController(DeviceBase):
     """General Controller Device 0x00

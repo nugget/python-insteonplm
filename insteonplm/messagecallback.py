@@ -39,7 +39,8 @@ class MessageCallback(object):
             yield itm
 
     def __getitem__(self, key):
-        """Gets an item from the callback list.
+        """Return an item from the callback list.
+
         Accepts any message type as a key and returns the callbacks
         associated with that message template.
         """

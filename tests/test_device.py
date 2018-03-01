@@ -1,6 +1,6 @@
 import binascii
 from insteonplm.address import Address
-from insteonplm.devices.device import Device
+from insteonplm.devices import Device
 from insteonplm.devices.generalController import GeneralController
 from insteonplm.devices.dimmableLightingControl import DimmableLightingControl
 from insteonplm.devices.switchedLightingControl import SwitchedLightingControl

@@ -23,7 +23,7 @@ from .sensorsActuators import SensorsActuators_2450
 
 Product = collections.namedtuple('Product', 'cat subcat product_key description model deviceclass')
 
-
+# flake8: noqa
 class IPDB(object):
     """Embodies the INSTEON Product Database static data and access methods."""
     # pylint disable=line-too-long

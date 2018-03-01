@@ -1,10 +1,11 @@
-from .devicebase import DeviceBase
-from insteonplm.constants import *
+"""INSTEON Device Unknown Device Type."""
+from insteonplm.devices import DeviceBase
+
 
 class UnknownDevice(DeviceBase):
     """
-    Unknown Device used when only the device address is known but no other information.
-    Available methods:
+    Unknown Device used when only the device address is known but no other
+    information. Available methods:
         id_request()
         product_data_request()
         assign_to_all_link_group()
@@ -17,6 +18,8 @@ class UnknownDevice(DeviceBase):
         read_aldb()
         write_aldb()
     """
-    def __init__(self, plm, address, cat=None, subcat=None, product_key=0x00, description='', model=''):
+    def __init__(self, plm, address, cat=None, subcat=None, product_key=0x00,
+                 description='', model=''):
         self._noRegisterCallback = False
-        super().__init__(plm, address, cat, subcat, product_key, description, model)
+        super().__init__(plm, address, cat, subcat, product_key,
+                         description, model)

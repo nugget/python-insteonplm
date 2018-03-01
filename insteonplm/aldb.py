@@ -3,8 +3,8 @@
 import logging
 
 from .address import Address
-from .devices.device import Device
-from .devices.devicebase import DeviceBase
+from .devices import Device
+from .devices import DeviceBase
 
 __all__ = ('ALDB')
 
@@ -68,6 +68,7 @@ class ALDB(object):
         self._overrides[address] = device_override
 
     def add_saved_device_info(self, **kwarg):
+        """Register device info from the saved data file."""
         addr = kwarg.get('address', None)
         info = {}
         if addr is not None:
@@ -78,6 +79,7 @@ class ALDB(object):
 
     def create_device_from_category(self, plm, addr, cat, subcat,
                                     product_key=0x00):
+        """Create a new device from the cat, subcat and product_key data."""
         saved_device = self._saved_devices.get(Address(addr).hex, {})
         cat = saved_device.get('cat', cat)
         subcat = saved_device.get('subcat', subcat)
@@ -92,13 +94,15 @@ class ALDB(object):
         return Device.create(plm, addr, cat, subcat, product_key)
 
     def has_saved(self, addr):
+        """Test if device has data from the saved data file."""
+        saved = False
         if self._saved_devices.get(addr, None) is not None:
-            return True
-        else:
-            return False
+            saved = True
+        return saved
 
     def has_override(self, addr):
+        """Test if device has data from a device override setting."""
+        override = False
         if self._overrides.get(addr, None) is not None:
-            return True
-        else:
-            return False
+            override = True
+        return override

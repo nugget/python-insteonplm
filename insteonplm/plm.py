@@ -16,7 +16,7 @@ from .messages import (
     AllLinkRecordResponse, ExtendedSend, GetFirstAllLinkRecord, GetImInfo,
     GetNextAllLinkRecord, StandardReceive, StandardSend)
 from .messages.message import Message
-from .devices.devicebase import DeviceBase
+from .devices import DeviceBase
 
 __all__ = ('PLM')
 WAIT_TIMEOUT = 2

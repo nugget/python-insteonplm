@@ -1,8 +1,6 @@
-"""Setup for insteonplm module."""
 #!/usr/bin/env python
-
+"""Setup for insteonplm module."""
 from setuptools import setup, find_packages
-#import sys
 
 try:
     import pypandoc

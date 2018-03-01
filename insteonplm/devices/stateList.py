@@ -1,4 +1,6 @@
+"""INSTEON State List Manager."""
 from insteonplm.states.stateBase import StateBase
+
 
 class StateList(object):
     """Internal class used to hold a list of device states."""
@@ -32,5 +34,5 @@ class StateList(object):
 
     def add(self, plm, device, stateType, stateName, group, defaultValue=None):
         """Add a state to the StateList"""
-        self._stateList[group] = stateType(plm, device, stateName, group, defaultValue=defaultValue)
-        
+        self._stateList[group] = stateType(plm, device, stateName, group,
+                                           defaultValue=defaultValue)
