@@ -8,7 +8,7 @@ import logging
 import serial
 import serial.aio
 
-from .plm import PLM
+from insteonplm.plm import PLM
 
 __all__ = ('Connection')
 

@@ -1,14 +1,14 @@
 """Test message creation."""
 
 from insteonplm.messages.message import Message
-from insteonplm.messages import (AllLinkComplete,
-                                 AllLinkRecordResponse,
-                                 ButtonEventReport,
-                                 ExtendedReceive,
-                                 ExtendedSend,
-                                 GetImInfo,
-                                 StandardReceive,
-                                 StandardSend)
+from insteonplm.messages.allLinkComplete import AllLinkComplete
+from insteonplm.messages.allLinkRecordResponse import AllLinkRecordResponse
+from insteonplm.messages.buttonEventReport import ButtonEventReport
+from insteonplm.messages.extendedReceive import ExtendedReceive
+from insteonplm.messages.extendedSend import ExtendedSend
+from insteonplm.messages.getIMInfo import GetImInfo
+from insteonplm.messages.standardReceive import StandardReceive
+from insteonplm.messages.standardSend import StandardSend
 from insteonplm.address import Address
 
 def test_create_standardReceive_message():

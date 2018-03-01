@@ -2,9 +2,9 @@
 
 import logging
 
-from .address import Address
-from .devices import Device
-from .devices import DeviceBase
+from insteonplm.address import Address
+import insteonplm.devices
+from insteonplm.devices import DeviceBase
 
 __all__ = ('ALDB')
 
@@ -91,7 +91,7 @@ class ALDB(object):
         product_key = device_override.get('firmware', product_key)
         product_key = device_override.get('product_key', product_key)
 
-        return Device.create(plm, addr, cat, subcat, product_key)
+        return insteonplm.devices.create(plm, addr, cat, subcat, product_key)
 
     def has_saved(self, addr):
         """Test if device has data from the saved data file."""

@@ -9,7 +9,7 @@ from insteonplm.devices.securityHealthSafety import (
     SecurityHealthSafety, SecurityHealthSafety_2842_222,
     SecurityHealthSafety_2845_222, SecurityHealthSafety_2852_222,
     SecurityHealthSafety_2982_222)
-from insteonplm.messages import StandardReceive
+from insteonplm.messages.standardReceive import StandardReceive
 from insteonplm.messages.messageFlags import MessageFlags
 from .mockPLM import MockPLM
 from .mockCallbacks import MockCallbacks

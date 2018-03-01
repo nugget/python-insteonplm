@@ -7,9 +7,9 @@ from insteonplm.constants import (MESSAGE_ACK,
                                   MESSAGE_SEND_STANDARD_MESSAGE_RECEIVED_SIZE,
                                   MESSAGE_SEND_STANDARD_MESSAGE_SIZE)
 from insteonplm.address import Address
-from .messageBase import MessageBase
-from .extendedSend import ExtendedSend
-from .messageFlags import MessageFlags
+from insteonplm.messages import MessageBase
+from insteonplm.messages.extendedSend import ExtendedSend
+from insteonplm.messages.messageFlags import MessageFlags
 
 class StandardSend(MessageBase):
     """Insteon Standard Length Message Send 0x62."""

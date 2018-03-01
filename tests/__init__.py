@@ -1,3 +1,3 @@
-import sys
-sys.path.append('../')
-import insteonplm
+# import sys
+# sys.path.append('../')
+# import insteonplm

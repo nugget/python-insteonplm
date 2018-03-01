@@ -1,5 +1,5 @@
 """INSTEON State List Manager."""
-from insteonplm.states.stateBase import StateBase
+from insteonplm.states import StateBase
 
 
 class StateList(object):

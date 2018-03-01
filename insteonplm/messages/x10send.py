@@ -1,7 +1,7 @@
 import binascii
 from insteonplm.constants import *
-from .messageBase import MessageBase
-from .messageFlags import MessageFlags
+from insteonplm.messages import MessageBase
+from insteonplm.messages.messageFlags import MessageFlags
 
 class X10Send(MessageBase):
     """Insteon Get Next All Link Record Message 0x6A"""

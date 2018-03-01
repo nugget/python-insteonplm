@@ -7,10 +7,10 @@ from insteonplm.constants import (COMMAND_LIGHT_ON_0X11_NONE,
                                   MESSAGE_TYPE_BROADCAST_MESSAGE,
                                   MESSAGE_TYPE_ALL_LINK_CLEANUP,
                                   MESSAGE_TYPE_ALL_LINK_BROADCAST)
-from insteonplm.messages import (StandardSend,
-                                 StandardReceive,
-                                 MessageFlags)
-from .stateBase import StateBase
+from insteonplm.messages.standardSend import StandardSend
+from insteonplm.messages.standardReceive import StandardReceive
+from insteonplm.messages import MessageFlags
+from insteonplm.states import StateBase
 
 class SensorBase(StateBase):
     """Base state representing a variable value sensor that is not controllable.

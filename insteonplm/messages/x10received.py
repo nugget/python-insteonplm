@@ -1,4 +1,4 @@
-from .messageBase import MessageBase
+from insteonplm.messages import MessageBase
 from insteonplm.constants import *
 import binascii
 

@@ -1,7 +1,7 @@
 import binascii
 from insteonplm.constants import *
-from .messageBase import MessageBase
-from .messageFlags import MessageFlags
+from insteonplm.messages import MessageBase
+from insteonplm.messages.messageFlags import MessageFlags
 
 class GetImConfiguration(MessageBase):
     """Insteon Get IM Configuration Message 0x62"""

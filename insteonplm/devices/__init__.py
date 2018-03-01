@@ -5,8 +5,10 @@ import logging
 import async_timeout
 
 from insteonplm.address import Address
-from insteonplm.messages import (StandardReceive, StandardSend,
-                                 ExtendedReceive, ExtendedSend)
+from insteonplm.messages.standardReceive import StandardReceive
+from insteonplm.messages.standardSend import StandardSend
+from insteonplm.messages.extendedReceive import ExtendedReceive
+from insteonplm.messages.extendedSend import ExtendedSend
 from insteonplm.constants import (
     MESSAGE_ACK, COMMAND_ID_REQUEST_0X10_0X00,
     COMMAND_PRODUCT_DATA_REQUEST_0X03_0X00,
@@ -19,28 +21,23 @@ from insteonplm.constants import (
     COMMAND_PING_0X0F_0X00
 )
 
-from .ipdb import IPDB
-from .stateList import StateList
+from insteonplm.devices.stateList import StateList
 
 WAIT_TIMEOUT = 2
 
-
-class Device(object):
-    """Return a device class from a device info record."""
-
-    @classmethod
-    def create(cls, plm, address, cat, subcat, firmware=None):
-        """Create a device from device info data."""
-        ipdb = IPDB()
-        product = ipdb[[cat, subcat]]
-        deviceclass = product.deviceclass
-        device = None
-        if deviceclass is not None:
-            device = deviceclass.create(plm, address, cat, subcat,
-                                        product.product_key,
-                                        product.description,
-                                        product.model)
-        return device
+def create(plm, address, cat, subcat, firmware=None):
+    """Create a device from device info data."""
+    import insteonplm.devices.ipdb
+    ipdb = insteonplm.devices.ipdb.IPDB()
+    product = ipdb[[cat, subcat]]
+    deviceclass = product.deviceclass
+    device = None
+    if deviceclass is not None:
+        device = deviceclass.create(plm, address, cat, subcat,
+                                    product.product_key,
+                                    product.description,
+                                    product.model)
+    return device
 
 
 class DeviceBase(object):

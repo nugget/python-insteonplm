@@ -8,7 +8,8 @@ from insteonplm.constants import (COMMAND_LIGHT_OFF_0X13_0X00,
                                   MESSAGE_ACK,
                                   MESSAGE_TYPE_ALL_LINK_BROADCAST,
                                   MESSAGE_TYPE_DIRECT_MESSAGE_ACK)
-from insteonplm.messages import StandardSend, StandardReceive
+from insteonplm.messages.standardSend import StandardSend
+from insteonplm.messages.standardReceive import StandardReceive
 from insteonplm.messages.messageFlags import MessageFlags
 from insteonplm.devices.dimmableLightingControl import (
     DimmableLightingControl, DimmableLightingControl_2475F)

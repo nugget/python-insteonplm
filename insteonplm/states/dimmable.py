@@ -18,10 +18,11 @@ from insteonplm.constants import (COMMAND_LIGHT_BRIGHTEN_ONE_STEP_0X15_0X00,
                                   FAN_SPEED_OFF,
                                   MESSAGE_TYPE_ALL_LINK_BROADCAST,
                                   MESSAGE_TYPE_ALL_LINK_CLEANUP)
-from insteonplm.messages import (StandardSend, ExtendedSend,
-                                 StandardReceive,
-                                 MessageFlags)
-from .stateBase import StateBase
+from insteonplm.messages.standardSend import StandardSend
+from insteonplm.messages.extendedSend import ExtendedSend
+from insteonplm.messages.standardReceive import StandardReceive
+from insteonplm.messages import MessageFlags
+from insteonplm.states import StateBase
 
 class DimmableSwitch(StateBase):
     """Device state representing an On/Off switch that is controllable.

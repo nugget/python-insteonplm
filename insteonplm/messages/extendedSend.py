@@ -6,9 +6,9 @@ from insteonplm.constants import (MESSAGE_ACK,
                                   MESSAGE_SEND_EXTENDED_MESSAGE_RECEIVED_SIZE,
                                   MESSAGE_SEND_EXTENDED_MESSAGE_SIZE)
 from insteonplm.address import Address
-from .messageBase import MessageBase
-from .messageFlags import MessageFlags
-from .userdata import Userdata
+from insteonplm.messages import MessageBase
+from insteonplm.messages.messageFlags import MessageFlags
+from insteonplm.messages.userdata import Userdata
 
 class ExtendedSend(MessageBase):
     """Send an INSTEON Extended message.

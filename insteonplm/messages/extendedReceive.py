@@ -3,9 +3,9 @@
 from insteonplm.constants import (MESSAGE_EXTENDED_MESSAGE_RECEIVED_0X51,
                                   MESSAGE_EXTENDED_MESSAGE_RECEIVED_SIZE)
 from insteonplm.address import Address
-from .messageBase import MessageBase
-from .messageFlags import MessageFlags
-from .userdata import Userdata
+from insteonplm.messages import MessageBase
+from insteonplm.messages.messageFlags import MessageFlags
+from insteonplm.messages.userdata import Userdata
 
 class ExtendedReceive(MessageBase):
     """Insteon Extended Length Message Received 0x51"""
