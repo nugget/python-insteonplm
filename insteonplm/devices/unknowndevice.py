@@ -19,6 +19,7 @@ class UnknownDevice(DeviceBase):
         read_aldb()
         write_aldb()
     """
+
     def __init__(self, plm, address, cat=None, subcat=None, product_key=0x00,
                  description='', model=''):
         """Initalize the UnknownDevice Class."""

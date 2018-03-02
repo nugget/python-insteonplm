@@ -268,8 +268,8 @@ class DeviceBase(object):
         """Tell a device to enter All-Linking Mode.
 
         Same as holding down the Set button for 10 sec.
-        Default group is 0x01. 
-        
+        Default group is 0x01.
+
         Not supported by i1 devices.
         """
         self._plm.send_standard(self._address,
@@ -305,31 +305,33 @@ class DeviceBase(object):
 
 class StateList(object):
     """Internal class used to hold a list of device states."""
+
     def __init__(self):
+        """Initialize the StateList Class."""
         self._stateList = {}
 
     def __len__(self):
-        """Get the number of states in the StateList"""
+        """Get the number of states in the StateList."""
         return len(self._stateList)
 
     def __iter__(self):
-        """Iterate through each state in the StateList"""
+        """Iterate through each state in the StateList."""
         for state in self._stateList:
             yield state
 
     def __getitem__(self, group):
-        """Get a state from the StateList"""
+        """Get a state from the StateList."""
         return self._stateList.get(group, None)
 
     def __setitem__(self, group, state):
-        """Add or update a state in the StateList"""
+        """Add or update a state in the StateList."""
         if not isinstance(state, StateBase):
             return ValueError
 
         self._stateList[group] = state
 
     def __repr__(self):
-        """Juman representation of a state in the StateList"""
+        """Juman representation of a state in the StateList."""
         attrs = vars(self)
         return ', '.join("%s: %r" % item for item in attrs.items())
 

@@ -8,7 +8,7 @@ from insteonplm.devices import DeviceBase
 
 class SecurityHealthSafety(DeviceBase):
     """Security Health Safety Control Device Class.
-   
+
     Device cat: 0x10 subcat: Any
 
     INSTEON Security Health Safety Control Device Class.
@@ -94,7 +94,7 @@ class SecurityHealthSafety_2842_222(DeviceBase):
 
 class SecurityHealthSafety_2845_222(DeviceBase):
     """Security Health Safety Control Device Class.
-   
+
     Hidden Door Sensor model 2845-222.
     Device cat: 0x10 subcat: 0x11.
 
@@ -123,7 +123,7 @@ class SecurityHealthSafety_2845_222(DeviceBase):
 
 class SecurityHealthSafety_2852_222(DeviceBase):
     """Security Health Safety Control Device Class.
-   
+
     Water Leak Sensor model 2852-222.
     Device cat: 0x10 subcat: 0x08.
 
@@ -152,7 +152,7 @@ class SecurityHealthSafety_2852_222(DeviceBase):
 
 class SecurityHealthSafety_2982_222(DeviceBase):
     """Security Health Safety Control Device Class.
-    
+
     Smoke Bridge model 2982-222
     Device cat: 0x10 subcat: 0x0a
 

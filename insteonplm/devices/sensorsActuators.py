@@ -6,7 +6,7 @@ from insteonplm.states.sensor import IoLincSensor
 
 class SensorsActuators(DeviceBase):
     """Sensors And Actuator Device Class.
-   
+
     Device cat: 0x07 subcat: Any
 
     There are 3 known device types in this category:
@@ -29,6 +29,7 @@ class SensorsActuators(DeviceBase):
     class. However, they all seem to have a common element of a relay and a
     sensor.
     """
+
     def __init__(self, plm, address, cat, subcat, product_key=0,
                  description='', model=''):
         """Initialize the SensorsActuators Class."""
@@ -42,7 +43,7 @@ class SensorsActuators(DeviceBase):
 
 class SensorsActuators_2450(SensorsActuators):
     """I/O Linc [2450] & [2450-50-60] Device Class.
-   
+
     I/O Linc model 2450 and 2450-50-60.
     Device cat: 0x07 subcat: 0x00
 

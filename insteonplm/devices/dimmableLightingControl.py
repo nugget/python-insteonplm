@@ -33,7 +33,7 @@ class DimmableLightingControl(DeviceBase):
 
 class DimmableLightingControl_2475F(DimmableLightingControl):
     """FanLinc model 2475F Dimmable Lighting Control.
-    
+
     Device Class 0x01 subcat 0x2e
 
     Two separate INSTEON On/Off switch devices are created with ID

@@ -156,7 +156,11 @@ class MessageBase(metaclass=ClassPropertyMetaClass):
         return binascii.unhexlify(self.hex)
 
     def matches_pattern(self, other):
-        """Compare the current message to a template message to test matches to a pattern."""
+        """Return if the current message matches a message template.
+        
+        Compare the current message to a template message to test matches
+        to a pattern.
+        """
         properties = self._message_properties()
         ismatch = False
         if isinstance(other, MessageBase) and self.code == other.code:
