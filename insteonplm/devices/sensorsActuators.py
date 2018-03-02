@@ -5,23 +5,25 @@ from insteonplm.states.sensor import IoLincSensor
 
 
 class SensorsActuators(DeviceBase):
-    """Sensors And Actuator Device Class 0x07
+    """Sensors And Actuator Device Class.
+   
+    Device cat: 0x07 subcat: Any
 
-     There are 3 known device types in this category:
-     1) I/O Linc [2450] & [2450-50-60]
-     2) Smartenit IO devices (various input and output channels,
-     see http://sandbox.smartenit.com/downloads/IoTxx_Command_Set.pdf)
-     Including
-        a) EZSns1W Sensor Interface Module
-        b) EZIO8T I/O Module
-        c) EZIO2X4
-        d) EZIO8SA / IOT8
-        e) EZSnsRF
-        f) EZISnsRf
-        g) EZIO6I
-        h) EZIO4O
-    3) SynchroLinc [2423A5]
-    (http://cache.insteon.com/developer/2423A5dev-112010-en.pdf)
+    There are 3 known device types in this category:
+        1) I/O Linc [2450] & [2450-50-60]
+        2) Smartenit IO devices (various input and output channels,
+        see http://sandbox.smartenit.com/downloads/IoTxx_Command_Set.pdf)
+        Including
+            a) EZSns1W Sensor Interface Module
+            b) EZIO8T I/O Module
+            c) EZIO2X4
+            d) EZIO8SA / IOT8
+            e) EZSnsRF
+            f) EZISnsRf
+            g) EZIO6I
+            h) EZIO4O
+        3) SynchroLinc [2423A5]
+        (http://cache.insteon.com/developer/2423A5dev-112010-en.pdf)
 
     Each device type is sufficiently different as to require their own device
     class. However, they all seem to have a common element of a relay and a
@@ -29,6 +31,7 @@ class SensorsActuators(DeviceBase):
     """
     def __init__(self, plm, address, cat, subcat, product_key=0,
                  description='', model=''):
+        """Initialize the SensorsActuators Class."""
         super().__init__(plm, address, cat, subcat, product_key,
                          description, model)
 
@@ -38,7 +41,10 @@ class SensorsActuators(DeviceBase):
 
 
 class SensorsActuators_2450(SensorsActuators):
-    """I/O Linc [2450] & [2450-50-60] Device Class 0x07 subcat 0x00
+    """I/O Linc [2450] & [2450-50-60] Device Class.
+   
+    I/O Linc model 2450 and 2450-50-60.
+    Device cat: 0x07 subcat: 0x00
 
     Two separate INSTEON devices are created
         1) Relay
@@ -62,6 +68,7 @@ class SensorsActuators_2450(SensorsActuators):
 
     def __init__(self, plm, address, cat, subcat, product_key=None,
                  description=None, model=None):
+        """Initialize the SensorsActuators_2450 Class."""
         super().__init__(plm, address, cat, subcat, product_key,
                          description, model)
 

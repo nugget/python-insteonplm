@@ -3,5 +3,9 @@ from insteonplm.devices import DeviceBase
 
 
 class GeneralController(DeviceBase):
-    """General Controller Device 0x00
-       Example: ControLinc, RemoteLinc, SignaLinc, etc."""
+    """General Controller Device Class.
+
+    Device cat: 0x00
+
+    Example: ControLinc, RemoteLinc, SignaLinc, etc.
+    """

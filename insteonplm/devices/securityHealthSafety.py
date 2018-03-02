@@ -7,7 +7,9 @@ from insteonplm.devices import DeviceBase
 
 
 class SecurityHealthSafety(DeviceBase):
-    """Security Health Safety Control Device Class 0x10
+    """Security Health Safety Control Device Class.
+   
+    Device cat: 0x10 subcat: Any
 
     INSTEON Security Health Safety Control Device Class.
     These are typically binary sensors with On/Off status.
@@ -33,7 +35,10 @@ class SecurityHealthSafety(DeviceBase):
 
 
 class SecurityHealthSafety_2421(DeviceBase):
-    """Security Health Safety Control Device model 2421
+    """Security Health Safety Control Device Class.
+
+    TriggerLinc model 2421.
+    Device cat: 0x10 subcat: 0x02.
 
     INSTEON Security Health Safety Control Device Class.
     This device is a binary sensors with On/Off status.
@@ -59,7 +64,10 @@ class SecurityHealthSafety_2421(DeviceBase):
 
 
 class SecurityHealthSafety_2842_222(DeviceBase):
-    """Security Health Safety Control Device model 2842-222
+    """Security Health Safety Control Device Class.
+
+    Moton Sensor model 2842-222.
+    Device cat: 0x10 subcat: 0x01.
 
     INSTEON Security Health Safety Control Device Class.
     This device is a binary sensors with On/Off status.
@@ -85,7 +93,10 @@ class SecurityHealthSafety_2842_222(DeviceBase):
 
 
 class SecurityHealthSafety_2845_222(DeviceBase):
-    """Security Health Safety Control Device model 2845-222
+    """Security Health Safety Control Device Class.
+   
+    Hidden Door Sensor model 2845-222.
+    Device cat: 0x10 subcat: 0x11.
 
     INSTEON Security Health Safety Control Device Class.
     This device is a binary sensors with On/Off status.
@@ -111,7 +122,10 @@ class SecurityHealthSafety_2845_222(DeviceBase):
 
 
 class SecurityHealthSafety_2852_222(DeviceBase):
-    """Security Health Safety Control Device model 2852-222
+    """Security Health Safety Control Device Class.
+   
+    Water Leak Sensor model 2852-222.
+    Device cat: 0x10 subcat: 0x08.
 
     INSTEON Security Health Safety Control Device Class.
     This device is a binary sensors with On/Off status.
@@ -137,7 +151,10 @@ class SecurityHealthSafety_2852_222(DeviceBase):
 
 
 class SecurityHealthSafety_2982_222(DeviceBase):
-    """Security Health Safety Control Device model 2982-222
+    """Security Health Safety Control Device Class.
+    
+    Smoke Bridge model 2982-222
+    Device cat: 0x10 subcat: 0x0a
 
     INSTEON Security Health Safety Control Device Class.
     This device is a variable sensors with the following values:
@@ -159,6 +176,7 @@ class SecurityHealthSafety_2982_222(DeviceBase):
 
     def __init__(self, plm, address, cat, subcat, product_key=None,
                  description=None, model=None):
+        """Initialize the SecurityHealthSafety_2982_222 Class."""
         super().__init__(plm, address, cat, subcat, product_key,
                          description, model)
 

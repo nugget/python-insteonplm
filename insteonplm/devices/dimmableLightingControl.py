@@ -4,7 +4,7 @@ from insteonplm.states.dimmable import DimmableSwitch, DimmableSwitch_Fan
 
 
 class DimmableLightingControl(DeviceBase):
-    """Dimmable Lighting Controller 0x01
+    """Dimmable Lighting Controller.
 
     INSTEON On/Off switch device class. Available device control options are:
         - light_on(onlevel=0xff)
@@ -22,6 +22,7 @@ class DimmableLightingControl(DeviceBase):
 
     def __init__(self, plm, address, cat, subcat, product_key=None,
                  description=None, model=None):
+        """Initialize the DimmableLightingControl Class."""
         DeviceBase.__init__(self, plm, address, cat, subcat, product_key,
                             description, model)
 
@@ -31,7 +32,9 @@ class DimmableLightingControl(DeviceBase):
 
 
 class DimmableLightingControl_2475F(DimmableLightingControl):
-    """FanLinc model 2475F Dimmable Lighting Control Device Class 0x01 subcat 0x2e
+    """FanLinc model 2475F Dimmable Lighting Control.
+    
+    Device Class 0x01 subcat 0x2e
 
     Two separate INSTEON On/Off switch devices are created with ID
         1) Ligth
@@ -57,6 +60,7 @@ class DimmableLightingControl_2475F(DimmableLightingControl):
 
     def __init__(self, plm, address, cat, subcat, product_key=None,
                  description=None, model=None):
+        """Initalize the DimmableLightingControl_2475F Class."""
         super().__init__(plm, address, cat, subcat, product_key,
                          description, model)
 

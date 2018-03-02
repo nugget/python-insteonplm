@@ -21,9 +21,10 @@ from insteonplm.constants import (
     COMMAND_PING_0X0F_0X00
 )
 
-from insteonplm.devices.stateList import StateList
+from insteonplm.states import StateBase
 
 WAIT_TIMEOUT = 2
+
 
 def create(plm, address, cat, subcat, firmware=None):
     """Create a device from device info data."""
@@ -41,10 +42,11 @@ def create(plm, address, cat, subcat, firmware=None):
 
 
 class DeviceBase(object):
-    """INSTEON Device"""
+    """INSTEON DeviceBase Class."""
 
     def __init__(self, plm, address, cat, subcat, product_key=0x00,
                  description='', model=''):
+        """Initialize the DeviceBase class."""
         self.log = logging.getLogger(__name__)
 
         self._plm = plm
@@ -122,12 +124,12 @@ class DeviceBase(object):
 
     @property
     def states(self):
-        """Returns the device states/groups."""
+        """Return the device states/groups."""
         return self._stateList
 
     @property
     def prod_data_in_aldb(self):
-        """Indicates if the PLM use the ALDB data to setup the device.
+        """Return if the PLM use the ALDB data to setup the device.
 
         True if Product data (cat, subcat) is stored in the PLM ALDB.
         False if product data must be aquired via a Device ID message or from a
@@ -217,7 +219,7 @@ class DeviceBase(object):
         self.log.debug('Ending DeviceBase._wait_for_direct_ACK')
 
     def id_request(self):
-        """Request a device ID from a device"""
+        """Request a device ID from a device."""
         self._plm.send_standard(self._address,
                                 COMMAND_ID_REQUEST_0X10_0X00)
 
@@ -266,7 +268,9 @@ class DeviceBase(object):
         """Tell a device to enter All-Linking Mode.
 
         Same as holding down the Set button for 10 sec.
-        Default group is 0x01. \nNot supported by i1 devices.
+        Default group is 0x01. 
+        
+        Not supported by i1 devices.
         """
         self._plm.send_standard(self._address,
                                 COMMAND_ENTER_LINKING_MODE_0X09_NONE,
@@ -297,3 +301,39 @@ class DeviceBase(object):
     def write_aldb(self):
         """Write to the device All-Link Database."""
         pass
+
+
+class StateList(object):
+    """Internal class used to hold a list of device states."""
+    def __init__(self):
+        self._stateList = {}
+
+    def __len__(self):
+        """Get the number of states in the StateList"""
+        return len(self._stateList)
+
+    def __iter__(self):
+        """Iterate through each state in the StateList"""
+        for state in self._stateList:
+            yield state
+
+    def __getitem__(self, group):
+        """Get a state from the StateList"""
+        return self._stateList.get(group, None)
+
+    def __setitem__(self, group, state):
+        """Add or update a state in the StateList"""
+        if not isinstance(state, StateBase):
+            return ValueError
+
+        self._stateList[group] = state
+
+    def __repr__(self):
+        """Juman representation of a state in the StateList"""
+        attrs = vars(self)
+        return ', '.join("%s: %r" % item for item in attrs.items())
+
+    def add(self, plm, device, stateType, stateName, group, defaultValue=None):
+        """Add a state to the StateList"""
+        self._stateList[group] = stateType(plm, device, stateName, group,
+                                           defaultValue=defaultValue)
