@@ -66,7 +66,8 @@ def test_dimmableLightingControl():
         yield from asyncio.sleep(.1, loop=loop)
         recievedmsg = StandardReceive(
             address, target, COMMAND_LIGHT_OFF_0X13_0X00,
-            flags=MessageFlags.create(MESSAGE_TYPE_DIRECT_MESSAGE_ACK, 0, 2, 3))
+            flags=MessageFlags.create(MESSAGE_TYPE_DIRECT_MESSAGE_ACK,
+                                      0, 2, 3))
         plm.message_received(recievedmsg)
         yield from asyncio.sleep(.1, loop=loop)
         sentmsg = StandardSend(address, COMMAND_LIGHT_OFF_0X13_0X00)
@@ -75,21 +76,24 @@ def test_dimmableLightingControl():
 
         device.states[0x01].set_level(0x55)
         yield from asyncio.sleep(.1, loop=loop)
-        recievedmsg = StandardSend(address, COMMAND_LIGHT_ON_0X11_NONE, cmd2=0x55,
-                                   acknak=MESSAGE_ACK)
+        recievedmsg = StandardSend(address, COMMAND_LIGHT_ON_0X11_NONE,
+                                   cmd2=0x55, acknak=MESSAGE_ACK)
         plm.message_received(recievedmsg)
         yield from asyncio.sleep(.1, loop=loop)
         recievedmsg = StandardReceive(
             address, target, COMMAND_LIGHT_ON_0X11_NONE, cmd2=0x55,
-            flags=MessageFlags.create(MESSAGE_TYPE_DIRECT_MESSAGE_ACK, 0, 2, 3))
+            flags=MessageFlags.create(MESSAGE_TYPE_DIRECT_MESSAGE_ACK,
+                                      0, 2, 3))
         plm.message_received(recievedmsg)
         yield from asyncio.sleep(.1, loop=loop)
-        sentmsg = StandardSend(address, COMMAND_LIGHT_ON_0X11_NONE, cmd2=0x55)
+        sentmsg = StandardSend(address, COMMAND_LIGHT_ON_0X11_NONE,
+                               cmd2=0x55)
         assert plm.sentmessage == sentmsg.hex
         assert callbacks.callbackvalue1 == 0x55
 
     loop = asyncio.get_event_loop()
     loop.run_until_complete(run_test(loop))
+
 
 def test_dimmableLightingControl_manual_changes():
     """Test manual changes to Dimmable Lighting Controls."""
@@ -118,7 +122,8 @@ def test_dimmableLightingControl_manual_changes():
 
         receivedmsg = StandardReceive(
             address, '000001', COMMAND_LIGHT_ON_0X11_NONE, cmd2=0x66,
-            flags=MessageFlags.create(MESSAGE_TYPE_ALL_LINK_BROADCAST, 0, 2, 3))
+            flags=MessageFlags.create(MESSAGE_TYPE_ALL_LINK_BROADCAST,
+                                      0, 2, 3))
         plm.message_received(receivedmsg)
         yield from asyncio.sleep(.1, loop=loop)
         assert callbacks.callbackvalue1 == 0x66
@@ -133,6 +138,7 @@ def test_dimmableLightingControl_manual_changes():
 
     loop = asyncio.get_event_loop()
     loop.run_until_complete(run_test(loop))
+
 
 def test_dimmableLightingControl_status():
     """Test status updates for Dimmable Lighting Controls."""
@@ -164,12 +170,14 @@ def test_dimmableLightingControl_status():
         device.async_refresh_state()
         yield from asyncio.sleep(.1, loop=loop)
         receivedmsg = StandardSend(
-            address, COMMAND_LIGHT_STATUS_REQUEST_0X19_0X00, acknak=MESSAGE_ACK)
+            address, COMMAND_LIGHT_STATUS_REQUEST_0X19_0X00,
+            acknak=MESSAGE_ACK)
         plm.message_received(receivedmsg)
         yield from asyncio.sleep(.1, loop=loop)
         receivedmsg = StandardReceive(
             address, target, {'cmd1': 0x08, 'cmd2': 0x27},
-            flags=MessageFlags.create(MESSAGE_TYPE_DIRECT_MESSAGE_ACK, 0, 2, 3))
+            flags=MessageFlags.create(MESSAGE_TYPE_DIRECT_MESSAGE_ACK,
+                                      0, 2, 3))
         plm.message_received(receivedmsg)
         yield from asyncio.sleep(.1, loop=loop)
         sentmsg = StandardSend(address, COMMAND_LIGHT_STATUS_REQUEST_0X19_0X00)
@@ -178,6 +186,7 @@ def test_dimmableLightingControl_status():
 
     loop = asyncio.get_event_loop()
     loop.run_until_complete(run_test(loop))
+
 
 def test_switchedLightingControl_2475F():
     """Test device 2475F."""
@@ -235,8 +244,8 @@ def test_switchedLightingControl_2475F():
 
         device.states[0x02].async_refresh_state()
         yield from asyncio.sleep(.1, loop=loop)
-        ackmsg = StandardSend(address, {'cmd1': 0x19, 'cmd2': 0x03}, flags=0x00,
-                              acknak=MESSAGE_ACK)
+        ackmsg = StandardSend(address, {'cmd1': 0x19, 'cmd2': 0x03},
+                              flags=0x00, acknak=MESSAGE_ACK)
         statusmsg = StandardReceive(
             address, target, {'cmd1': 0xab, 'cmd2': 0x77},
             flags=MessageFlags.create(MESSAGE_TYPE_DIRECT_MESSAGE_ACK,

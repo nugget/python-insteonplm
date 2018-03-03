@@ -8,6 +8,7 @@ from insteonplm.constants import MESSAGE_FLAG_BROADCAST_0X80
 from insteonplm.plm import PLM
 from insteonplm.address import Address
 
+
 # pylint: disable=too-few-public-methods
 class MockConnection():
     """A mock up of the Connection class."""
@@ -58,10 +59,12 @@ class MockConnection():
             def write(self, data):
                 """Mock write data to the Connection."""
                 self.lastmessage = data
-                self.log.info('Message sent: %s', binascii.hexlify(self.lastmessage))
+                self.log.info('Message sent: %s',
+                              binascii.hexlify(self.lastmessage))
 
         conn.transport = Transport()
         return conn
+
 
 @asyncio.coroutine
 def do_plm(loop, log, devicelist):
@@ -81,7 +84,6 @@ def do_plm(loop, log, devicelist):
         log.info('Device %s state %s value is changed to %02x',
                  device_id, state, value)
 
-    #criteria = {}
     conn.protocol.add_device_callback(async_insteonplm_light_callback)
 
     plm = conn.protocol
@@ -141,17 +143,19 @@ def do_plm(loop, log, devicelist):
 
     assert plm.devices['4d5e6f'].states[0x01].value == 0xff
 
-    #Too much backlog of messages at this point to be clear on what message will be
-    #returned.
-    #
-    #log.info('Replying with NAK Record')
-    #log.info('__________________________________')
-    #msg = insteonplm.messages.standardSend.StandardSend(
-    #    address='4d5e6f', commandtuple={'cmd1': 0x011,'cmd2': 0xff},
-    #    flags=0x00, acknak=0x15)
-    #plm.data_received(msg.bytes)
-    #yield from asyncio.sleep(3)
-    #assert plm.transport.lastmessage == msg.bytes[:-1]
+    # Too much backlog of messages at this point to be clear on
+    # what message will be
+    # returned.
+
+    # log.info('Replying with NAK Record')
+    # log.info('__________________________________')
+    # msg = insteonplm.messages.standardSend.StandardSend(
+    #     address='4d5e6f', commandtuple={'cmd1': 0x011,'cmd2': 0xff},
+    #     flags=0x00, acknak=0x15)
+    # plm.data_received(msg.bytes)
+    # yield from asyncio.sleep(3)
+    # assert plm.transport.lastmessage == msg.bytes[:-1]
+
 
 def test_plm():
     """Main test for the PLM."""
