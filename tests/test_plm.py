@@ -12,6 +12,7 @@ from insteonplm.address import Address
 # pylint: disable=too-few-public-methods
 class MockConnection():
     """A mock up of the Connection class."""
+
     def __init__(self):
         """Instantiate the Connection object."""
         self.log = logging.getLogger(__name__)
@@ -33,6 +34,7 @@ class MockConnection():
         # pylint: disable=too-few-public-methods
         class Serial:
             """Mock serial class within Connection class."""
+
             def __init__(self):
                 """Initialize the mock Serial class."""
                 self.log = logging.getLogger(__name__)
@@ -41,6 +43,7 @@ class MockConnection():
 
         class Transport:
             """Mock transport class within Connection class."""
+
             def __init__(self):
                 """Initialize the mock Transport class."""
                 self.log = logging.getLogger(__name__)
