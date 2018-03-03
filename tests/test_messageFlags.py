@@ -10,6 +10,7 @@ from insteonplm.constants import (MESSAGE_TYPE_ALL_LINK_BROADCAST,
                                   MESSAGE_TYPE_DIRECT_MESSAGE_NAK)
 from insteonplm.messages.messageFlags import MessageFlags
 
+
 def test_messageType():
     """Test message flags match the expected message type."""
     direct = MessageFlags(MESSAGE_TYPE_DIRECT_MESSAGE << 5)
@@ -47,10 +48,12 @@ def test_messageType():
             MESSAGE_TYPE_ALL_LINK_CLEANUP_NAK)
     assert all_link_cleanup_nak.isAllLinkCleanupNAK
 
+
 def test_extended():
     """Test the extended flag."""
     assert MessageFlags(0x10).extended == 1
     assert MessageFlags(0x10).isExtended
+
 
 # pylint: disable=too-many-statements
 def test_eq():

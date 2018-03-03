@@ -18,12 +18,14 @@ from insteonplm.constants import (COMMAND_LIGHT_BRIGHTEN_ONE_STEP_0X15_0X00,
                                   FAN_SPEED_OFF,
                                   MESSAGE_TYPE_ALL_LINK_BROADCAST,
                                   MESSAGE_TYPE_ALL_LINK_CLEANUP)
-from insteonplm.messages import (StandardSend, ExtendedSend,
-                                 StandardReceive,
-                                 MessageFlags)
-from .stateBase import StateBase
+from insteonplm.messages.standardSend import StandardSend
+from insteonplm.messages.extendedSend import ExtendedSend
+from insteonplm.messages.standardReceive import StandardReceive
+from insteonplm.messages.messageFlags import MessageFlags
+from insteonplm.states import State
 
-class DimmableSwitch(StateBase):
+
+class DimmableSwitch(State):
     """Device state representing an On/Off switch that is controllable.
 
     Available methods are:
@@ -36,8 +38,10 @@ class DimmableSwitch(StateBase):
     update(self, val)
     async_refresh_state()
     """
+
     def __init__(self, address, statename, group, send_message_method,
                  message_callbacks, defaultvalue=None):
+        """Initalize the DimmableSwitch Class."""
         super().__init__(address, statename, group, send_message_method,
                          message_callbacks, defaultvalue)
 
@@ -220,8 +224,9 @@ class DimmableSwitch(StateBase):
     def _status_message_received(self, msg):
         self._update_subscribers(msg.cmd2)
 
-class DimmableSwitch_Fan(StateBase):
-    """Device state representing a the bottom outlet On/Off switch that is controllable.
+
+class DimmableSwitch_Fan(State):
+    """Device state representing a controlable bottom outlet On/Off switch.
 
     Available methods are:
     on(self)
@@ -234,6 +239,7 @@ class DimmableSwitch_Fan(StateBase):
 
     def __init__(self, address, statename, group, send_message_method,
                  set_message_callback_method, defaultvalue=None):
+        """Initalize the DimmableSwitch_Fan Class."""
         super().__init__(address, statename, group, send_message_method,
                          set_message_callback_method, defaultvalue)
 

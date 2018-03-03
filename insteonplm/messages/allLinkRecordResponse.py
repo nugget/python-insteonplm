@@ -1,19 +1,23 @@
-from .messageBase import MessageBase
-from insteonplm.constants import *
+"""INSTEON Message All-Link Record Response."""
+from insteonplm.messages.message import Message
+from insteonplm.constants import (MESSAGE_ALL_LINK_RECORD_RESPONSE_0X57,
+                                  MESSAGE_ALL_LINK_RECORD_RESPONSE_SIZE)
 from insteonplm.address import Address
-import binascii
 
-class AllLinkRecordResponse(MessageBase):
-    """INSTEON ALL-Link Record Response 0x57"""
+
+class AllLinkRecordResponse(Message):
+    """INSTEON ALL-Link Record Response.
+
+    Message type 0x57
+    """
 
     _code = MESSAGE_ALL_LINK_RECORD_RESPONSE_0X57
     _sendSize = MESSAGE_ALL_LINK_RECORD_RESPONSE_SIZE
     _receivedSize = MESSAGE_ALL_LINK_RECORD_RESPONSE_SIZE
     _description = 'INSTEON ALL-Link Record Response'
 
-
     def __init__(self, flags, group, address, linkdata1, linkdata2, linkdata3):
-        # ALL-Link Record Response
+        """Initalize the AllLinkRecordResponse Class."""
         self._controlFlags = flags
         self._group = group
         self._address = Address(address)
@@ -23,6 +27,7 @@ class AllLinkRecordResponse(MessageBase):
 
     @classmethod
     def from_raw_message(cls, rawmessage):
+        """Create message from raw byte stream."""
         return AllLinkRecordResponse(rawmessage[2],
                                      rawmessage[3],
                                      rawmessage[4:7],
@@ -32,38 +37,49 @@ class AllLinkRecordResponse(MessageBase):
 
     @property
     def controlFlags(self):
+        """Return the link record control flags."""
         return self._controlFlags
 
     @property
     def group(self):
+        """Return the link record group."""
         return self._group
 
     @property
     def address(self):
+        """Return the device address."""
         return self._address
 
     @property
     def linkdata1(self):
+        """Return the first link data field."""
         return self._linkdata1
 
     @property
     def linkdata2(self):
+        """Return the second link data field."""
         return self._linkdata2
 
     @property
     def linkdata3(self):
+        """Return the third link data field."""
         return self._linkdata3
 
     @property
     def isRecordinuse(self):
-        return (self._controlFlags & self.CONTROL_FLAG_RECORD_IN_USE) == self.CONTROL_FLAG_RECORD_IN_USE
+        """Test if the link record is in use."""
+        return ((self._controlFlags & self.CONTROL_FLAG_RECORD_IN_USE)
+                == self.CONTROL_FLAG_RECORD_IN_USE)
 
     @property
     def isController(self):
-        return (self._controlFlags & self.CONTROL_FLAG_CONTROLLER) == self.CONTROL_FLAG_CONTROLER
+        """Test if the link group is a controller."""
+        return ((self._controlFlags & self.CONTROL_FLAG_CONTROLLER)
+                == self.CONTROL_FLAG_CONTROLER)
 
     @property
     def isSlave(self):
+        """Test if the link group is a slave or responder."""
         return not self.iscontroller
 
     def _message_properties(self):

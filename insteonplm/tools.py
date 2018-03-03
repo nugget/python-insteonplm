@@ -7,6 +7,7 @@ import insteonplm
 
 __all__ = ('console', 'monitor')
 
+
 @asyncio.coroutine
 def console(loop, log, devicelist):
     """Connect to receiver and show events as they occur.
@@ -35,18 +36,20 @@ def console(loop, log, devicelist):
 
     log.info('Connecting to Insteon PLM at %s', device)
 
-    conn = yield from insteonplm.Connection.create(device=device, loop=loop, userdefined=devicelist)
+    conn = yield from insteonplm.Connection.create(device=device, loop=loop,
+                                                   userdefined=devicelist)
 
     def async_insteonplm_add_device_callback(device):
         """Log that our new device callback worked."""
-        log.warn('New Device: %s %02x %02x %s, %s', device.id, device.cat, device.subcat, device.description, device.model)
+        log.warn('New Device: %s %02x %02x %s, %s', device.id, device.cat,
+                 device.subcat, device.description, device.model)
         for state in device.states:
             device.states[state].register_updates(async_state_change_callback)
 
     def async_state_change_callback(id, state, value):
-        log.info('Device %s state %s value is changed to %02x', id, state, value)
+        log.info('Device %s state %s value is changed to %02x',
+                 id, state, value)
 
-    criteria = {}
     conn.protocol.add_device_callback(async_insteonplm_add_device_callback)
 
     plm = conn.protocol
@@ -82,14 +85,14 @@ def console(loop, log, devicelist):
         device.states[0x01].on()
         log.debug('Sent top outlet on request')
         log.debug('----------------------')
-        
+
         # Test Bottom Outlet
         device.states[0x02].off()
 
         log.debug('Sent bottom outlet off request')
         log.debug('----------------------')
         yield from asyncio.sleep(5, loop=loop)
-        
+
         device.states[0x02].on()
         log.debug('Sent bottom outlet on request')
         log.debug('----------------------')
@@ -104,12 +107,12 @@ def console(loop, log, devicelist):
         state1.off()
         state2.on()
         yield from asyncio.sleep(5, loop=loop)
-        
+
         log.debug('Sent top outlet status request')
         log.debug('----------------------')
         state1.async_refresh_state()
         yield from asyncio.sleep(5, loop=loop)
-        
+
         log.debug('Sent top and bottom outlet status request')
         log.debug('----------------------')
         state2.async_refresh_state()
@@ -120,17 +123,16 @@ def console(loop, log, devicelist):
         state2.off()
         yield from asyncio.sleep(5, loop=loop)
 
-        
         log.debug('Sent light status request')
         log.debug('----------------------')
         state2.async_refresh_state()
 
         yield from asyncio.sleep(5, loop=loop)
 
-
         log.debug('Turn Bottom outlet on')
         log.debug('----------------------')
         state2.on()
+
 
 def monitor():
     """Wrapper to call console with a loop."""

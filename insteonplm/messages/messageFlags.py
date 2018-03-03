@@ -11,8 +11,10 @@ from insteonplm.constants import (MESSAGE_FLAG_EXTENDED_0X10,
                                   MESSAGE_TYPE_DIRECT_MESSAGE_ACK,
                                   MESSAGE_TYPE_DIRECT_MESSAGE_NAK)
 
+
 class MessageFlags(object):
-    """Class representing Message Flags use in Standard and Extended messages."""
+    """Message Flags class use in Standard and Extended messages."""
+
     def __init__(self, flags=0x00):
         """Initialize the MessageFlags class."""
         self.log = logging.getLogger(__name__)
@@ -46,9 +48,8 @@ class MessageFlags(object):
                    self._extended == other.extended
         return True
 
-
     def matches_pattern(self, other):
-        """Test if the current message and another message match patterns or templates."""
+        """Test if current message match a patterns or template."""
         if hasattr(other, 'messageType'):
             messageTypeIsEqual = False
             if self.messageType is None or other.messageType is None:
@@ -67,13 +68,15 @@ class MessageFlags(object):
     @classmethod
     def get_properties(cls):
         """Get all properties of the MessageFlags class."""
-        property_names = [p for p in dir(cls) if isinstance(getattr(cls, p), property)]
+        property_names = [p for p in dir(cls)
+                          if isinstance(getattr(cls, p), property)]
         return property_names
 
     @property
     def isBroadcast(self):
         """Test if the message is a broadcast message type."""
-        return self._messageType & MESSAGE_TYPE_BROADCAST_MESSAGE == MESSAGE_TYPE_BROADCAST_MESSAGE
+        return (self._messageType & MESSAGE_TYPE_BROADCAST_MESSAGE
+                == MESSAGE_TYPE_BROADCAST_MESSAGE)
 
     @property
     def isDirect(self):
@@ -163,15 +166,16 @@ class MessageFlags(object):
     @classmethod
     def create(cls, messageType, extended, hopsleft=3, hopsmax=3):
         """Create message flags.
+
         messageType: integter 0 to 7:
-                        MESSAGE_TYPE_DIRECT_MESSAGE = 0
-                        MESSAGE_TYPE_DIRECT_MESSAGE_ACK = 1
-                        MESSAGE_TYPE_ALL_LINK_CLEANUP = 2
-                        MESSAGE_TYPE_ALL_LINK_CLEANUP_ACK = 3
-                        MESSAGE_TYPE_BROADCAST_MESSAGE = 4
-                        MESSAGE_TYPE_DIRECT_MESSAGE_NAK = 5
-                        MESSAGE_TYPE_ALL_LINK_BROADCAST = 6
-                        MESSAGE_TYPE_ALL_LINK_CLEANUP_NAK = 7
+            MESSAGE_TYPE_DIRECT_MESSAGE = 0
+            MESSAGE_TYPE_DIRECT_MESSAGE_ACK = 1
+            MESSAGE_TYPE_ALL_LINK_CLEANUP = 2
+            MESSAGE_TYPE_ALL_LINK_CLEANUP_ACK = 3
+            MESSAGE_TYPE_BROADCAST_MESSAGE = 4
+            MESSAGE_TYPE_DIRECT_MESSAGE_NAK = 5
+            MESSAGE_TYPE_ALL_LINK_BROADCAST = 6
+            MESSAGE_TYPE_ALL_LINK_CLEANUP_NAK = 7
         extended: 1 for extended, 0 for standard
         hopsleft: int  0 - 3
         hopsmax:  int  0 - 3
@@ -193,17 +197,19 @@ class MessageFlags(object):
         return flags
 
     @classmethod
-    def template(cls, messageType=None, extended=None, hopsleft=None, hopsmax=None):
+    def template(cls, messageType=None, extended=None,
+                 hopsleft=None, hopsmax=None):
         """Create message flags template.
+
         messageType: integter 0 to 7 or None:
-                        MESSAGE_TYPE_DIRECT_MESSAGE = 0
-                        MESSAGE_TYPE_DIRECT_MESSAGE_ACK = 1
-                        MESSAGE_TYPE_ALL_LINK_CLEANUP = 2
-                        MESSAGE_TYPE_ALL_LINK_CLEANUP_ACK = 3
-                        MESSAGE_TYPE_BROADCAST_MESSAGE = 4
-                        MESSAGE_TYPE_DIRECT_MESSAGE_NAK = 5
-                        MESSAGE_TYPE_ALL_LINK_BROADCAST = 6
-                        MESSAGE_TYPE_ALL_LINK_CLEANUP_NAK = 7
+            MESSAGE_TYPE_DIRECT_MESSAGE = 0
+            MESSAGE_TYPE_DIRECT_MESSAGE_ACK = 1
+            MESSAGE_TYPE_ALL_LINK_CLEANUP = 2
+            MESSAGE_TYPE_ALL_LINK_CLEANUP_ACK = 3
+            MESSAGE_TYPE_BROADCAST_MESSAGE = 4
+            MESSAGE_TYPE_DIRECT_MESSAGE_NAK = 5
+            MESSAGE_TYPE_ALL_LINK_BROADCAST = 6
+            MESSAGE_TYPE_ALL_LINK_CLEANUP_NAK = 7
         extended: 1 for extended, 0 for standard or None
         hopsleft: int  0 - 3
         hopsmax:  int  0 - 3
@@ -232,7 +238,9 @@ class MessageFlags(object):
     def bytes(self):
         """Return a byte representation of the message flags."""
         flagByte = 0x00
-        messageType = 0 if self._messageType is None else (self._messageType << 5)
+        messageType = 0
+        if self._messageType is not None:
+            messageType = self._messageType << 5
         extendedBit = 0 if self._extended is None else self._extended << 4
         hopsMax = 0 if self._hopsMax is None else self._hopsMax
         hopsLeft = 0 if self._hopsLeft is None else (self._hopsLeft << 2)
@@ -261,7 +269,7 @@ class MessageFlags(object):
         elif flags is None:
             norm = None
         else:
-            self.log.warning('MessageFlags class init with unknown type %s: %r',
+            self.log.warning('MessageFlags with unknown type %s: %r',
                              type(flags), flags)
         return norm
 

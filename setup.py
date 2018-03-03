@@ -1,12 +1,11 @@
 #!/usr/bin/env python
-
+"""Setup for insteonplm module."""
 from setuptools import setup, find_packages
-import sys
 
 try:
     import pypandoc
     long_description = pypandoc.convert('README.md', 'rst')
-except:
+except ImportError:
     print('Skipping md->rst conversion for long_description')
     long_description = 'Error converting Markdown from git repo'
 
@@ -40,6 +39,6 @@ setup(
         'async_timeout'
     ],
     entry_points={
-        'console_scripts': [ 'insteonplm_monitor = insteonplm.tools:monitor', ]
+        'console_scripts': ['insteonplm_monitor = insteonplm.tools:monitor', ]
     }
 )

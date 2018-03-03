@@ -2,30 +2,31 @@
 import logging
 import collections
 
-from .unknowndevice import UnknownDevice
-from .generalController import GeneralController
-from .dimmableLightingControl import DimmableLightingControl
-from .dimmableLightingControl import DimmableLightingControl_2475F
-from .switchedLightingControl import SwitchedLightingControl
-from .switchedLightingControl import SwitchedLightingControl_2663_222
-from .securityHealthSafety import (SecurityHealthSafety,
+from insteonplm.devices.unknowndevice import UnknownDevice
+from insteonplm.devices.generalController import GeneralController
+from insteonplm.devices.dimmableLightingControl import DimmableLightingControl
+from insteonplm.devices.dimmableLightingControl import DimmableLightingControl_2475F
+from insteonplm.devices.switchedLightingControl import SwitchedLightingControl
+from insteonplm.devices.switchedLightingControl import SwitchedLightingControl_2663_222
+from insteonplm.devices.securityHealthSafety import (SecurityHealthSafety,
                                    SecurityHealthSafety_2421,
                                    SecurityHealthSafety_2842_222,
                                    SecurityHealthSafety_2852_222,
                                    SecurityHealthSafety_2845_222,
                                    SecurityHealthSafety_2982_222)
 
-from .sensorsActuators import SensorsActuators
-from .sensorsActuators import SensorsActuators_2450
+from insteonplm.devices.sensorsActuators import SensorsActuators
+from insteonplm.devices.sensorsActuators import SensorsActuators_2450
 
 # pylint: disable=line-too-long
 # pylint: disable=too-few-public-methods
 
 Product = collections.namedtuple('Product', 'cat subcat product_key description model deviceclass')
 
-
+# flake8: noqa
 class IPDB(object):
     """Embodies the INSTEON Product Database static data and access methods."""
+
     # pylint disable=line-too-long
     products = [
         Product(None, None, None, '', '', UnknownDevice),
@@ -125,7 +126,7 @@ class IPDB(object):
         self.log = logging.getLogger(__name__)
 
     def __len__(self):
-        """Return the length of the product database"""
+        """Return the length of the product database."""
         return len(self.products)
 
     def __iter__(self):

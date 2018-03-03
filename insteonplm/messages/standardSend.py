@@ -1,20 +1,28 @@
-from insteonplm.constants import *
-from insteonplm.address import Address
-from .messageBase import MessageBase
-from .extendedSend import ExtendedSend
-from .messageFlags import MessageFlags
+"""INSTEON Message type 0x62 Standard Send."""
 
-class StandardSend(MessageBase):
-    """Insteon Standard Length Message Received 0x62"""
-    
+from insteonplm.constants import (MESSAGE_ACK,
+                                  MESSAGE_FLAG_EXTENDED_0X10,
+                                  MESSAGE_NAK,
+                                  MESSAGE_SEND_STANDARD_MESSAGE_0X62,
+                                  MESSAGE_SEND_STANDARD_MESSAGE_RECEIVED_SIZE,
+                                  MESSAGE_SEND_STANDARD_MESSAGE_SIZE)
+from insteonplm.address import Address
+from insteonplm.messages.message import Message
+from insteonplm.messages.extendedSend import ExtendedSend
+from insteonplm.messages.messageFlags import MessageFlags
+
+
+class StandardSend(Message):
+    """Insteon Standard Length Message Send 0x62."""
+
     _code = MESSAGE_SEND_STANDARD_MESSAGE_0X62
     _sendSize = MESSAGE_SEND_STANDARD_MESSAGE_SIZE
     _receivedSize = MESSAGE_SEND_STANDARD_MESSAGE_RECEIVED_SIZE
     _description = 'INSTEON Standard Message Send'
 
-
-    def __init__(self, address, commandtuple, cmd2=None, flags=0x00,  acknak = None):
-        
+    def __init__(self, address, commandtuple, cmd2=None,
+                 flags=0x00, acknak=None):
+        """Initialize the StandardSend message class."""
         if commandtuple.get('cmd1', None) is not None:
             cmd1 = commandtuple['cmd1']
             cmd2out = commandtuple['cmd2']
@@ -37,25 +45,30 @@ class StandardSend(MessageBase):
 
     @classmethod
     def from_raw_message(cls, rawmessage):
-        if rawmessage[5] & MESSAGE_FLAG_EXTENDED_0X10 == MESSAGE_FLAG_EXTENDED_0X10:
+        """Create a message from a raw byte stream."""
+        if (rawmessage[5] &
+                MESSAGE_FLAG_EXTENDED_0X10) == MESSAGE_FLAG_EXTENDED_0X10:
             if len(rawmessage) >= ExtendedSend.receivedSize:
                 msg = ExtendedSend.from_raw_message(rawmessage)
             else:
                 msg = None
-        else: 
+        else:
             msg = StandardSend(rawmessage[2:5],
-                               {'cmd1':rawmessage[6],
-                                'cmd2':rawmessage[7]},
+                               {'cmd1': rawmessage[6],
+                                'cmd2': rawmessage[7]},
                                flags=rawmessage[5],
                                acknak=rawmessage[8:9])
         return msg
 
+    # pylint: disable=protected-access
     @classmethod
-    def template(cls, address=None, commandtuple={}, cmd2=-1, flags=None,  acknak = None):
+    def template(cls, address=None, commandtuple={}, cmd2=-1, flags=None,
+                 acknak=None):
+        """Create a message template for use in callbacks."""
         msgraw = bytearray([0x02, cls._code])
         msgraw.extend(bytes(cls._receivedSize))
         msg = StandardSend.from_raw_message(msgraw)
-        
+
         cmd1 = commandtuple.get('cmd1', None)
         cmd2out = commandtuple.get('cmd2', None)
 
@@ -71,37 +84,38 @@ class StandardSend(MessageBase):
 
     @property
     def address(self):
+        """Return the address of the device."""
         return self._address
 
     @property
     def cmd1(self):
+        """Return cmd1 property of the message."""
         return self._cmd1
 
     @property
     def cmd2(self):
+        """Return cmd2 property of the message."""
         return self._cmd2
 
     @property
     def flags(self):
+        """Return the message flags."""
         return self._messageFlags
 
     @property
     def acknak(self):
+        """Return the ACK/NAK message flag."""
         return self._acknak
 
     @property
     def isack(self):
-        if (self._acknak is not None and self._acknak == MESSAGE_ACK):
-            return True
-        else:
-            return False
+        """Test if the message is a message ACK."""
+        return self._acknak is not None and self._acknak == MESSAGE_ACK
 
     @property
     def isnak(self):
-        if (self._acknak is not None and self._acknak == MESSAGE_NAK):
-            return True
-        else:
-            return False
+        """Test if the message is a message NAK."""
+        return self._acknak is not None and self._acknak == MESSAGE_NAK
 
     def _message_properties(self):
         return [{'address': self._address},

@@ -1,10 +1,16 @@
-from .messageBase import MessageBase
-from insteonplm.constants import *
-from insteonplm.address import Address
-import binascii
+"""INSTEON Message All-Link Complete."""
 
-class AllLinkComplete(MessageBase):
-    """INSTEON ALL-Linking Completed Message 0x53"""
+from insteonplm.address import Address
+from insteonplm.constants import (MESSAGE_ALL_LINKING_COMPLETED_0X53,
+                                  MESSAGE_ALL_LINKING_COMPLETED_SIZE)
+from insteonplm.messages.message import Message
+
+
+class AllLinkComplete(Message):
+    """INSTEON ALL-Linking Completed Message.
+
+    Message type 0x53
+    """
 
     _code = MESSAGE_ALL_LINKING_COMPLETED_0X53
     _sendSize = MESSAGE_ALL_LINKING_COMPLETED_SIZE
@@ -12,7 +18,7 @@ class AllLinkComplete(MessageBase):
     _description = 'INSTEON ALL-Linking Completed Message Received'
 
     def __init__(self, linkcode, group, address, cat, subcat, firmware):
-        # ALL-Linking Complete
+        """Initialize the AllLinkComplete Class."""
         self._linkcode = linkcode
         self._group = group
         self._address = Address(address)
@@ -22,39 +28,47 @@ class AllLinkComplete(MessageBase):
 
     @classmethod
     def from_raw_message(cls, rawmessage):
+        """Create a message from a raw byte stream."""
         return AllLinkComplete(rawmessage[2],
                                rawmessage[3],
                                rawmessage[4:7],
                                rawmessage[7],
                                rawmessage[8],
                                rawmessage[9])
-    
+
     @property
     def linkcode(self):
+        """Return link record link code."""
         return self._linkcode
-    
+
     @property
     def group(self):
+        """Return link record group."""
         return self._group
-    
+
     @property
     def address(self):
+        """Return the device address."""
         return self._address
-    
+
     @property
     def category(self):
+        """Return the device category."""
         return self._category
-    
+
     @property
     def subcategory(self):
+        """Return the device subcategory."""
         return self._subcategory
-    
+
     @property
     def firmware(self):
+        """Return the device firmware version."""
         return self._firmware
 
     @property
     def isresponder(self):
+        """Return if the link record is a responder."""
         if self.linkcode == 0:
             return True
         else:
@@ -62,6 +76,7 @@ class AllLinkComplete(MessageBase):
 
     @property
     def iscontroller(self):
+        """Return if the link record is a controller."""
         if self.linkcode == 1:
             return True
         else:
@@ -69,6 +84,7 @@ class AllLinkComplete(MessageBase):
 
     @property
     def isdeleted(self):
+        """Return if the link record is deleted."""
         if self.linkcode == 0xFF:
             return True
         else:
@@ -79,7 +95,5 @@ class AllLinkComplete(MessageBase):
                 {'group': self._group},
                 {'address': self._address},
                 {'category': self._category},
-                {'subcategory': self._subcategory}, 
+                {'subcategory': self._subcategory},
                 {'firmware': self._firmware}]
-
-

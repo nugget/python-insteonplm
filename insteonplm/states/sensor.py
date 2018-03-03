@@ -7,13 +7,14 @@ from insteonplm.constants import (COMMAND_LIGHT_ON_0X11_NONE,
                                   MESSAGE_TYPE_BROADCAST_MESSAGE,
                                   MESSAGE_TYPE_ALL_LINK_CLEANUP,
                                   MESSAGE_TYPE_ALL_LINK_BROADCAST)
-from insteonplm.messages import (StandardSend,
-                                 StandardReceive,
-                                 MessageFlags)
-from .stateBase import StateBase
+from insteonplm.messages.standardSend import StandardSend
+from insteonplm.messages.standardReceive import StandardReceive
+from insteonplm.messages.messageFlags import MessageFlags
+from insteonplm.states import State
 
-class SensorBase(StateBase):
-    """Base state representing a variable value sensor that is not controllable.
+
+class SensorBase(State):
+    """Base state representing a non-controlable variable value sensor.
 
     Available properties are:
       value
@@ -27,7 +28,7 @@ class SensorBase(StateBase):
 
     def __init__(self, address, statename, group, send_message_method,
                  message_callbacks, defaultvalue=None):
-        """Initialize the StateBase state."""
+        """Initialize the State state."""
         super().__init__(address, statename, group, send_message_method,
                          message_callbacks, defaultvalue)
 
@@ -80,17 +81,20 @@ class SensorBase(StateBase):
                                     self._sensor_off_command_received)
 
     def _sensor_on_command_received(self, msg):
-        """Message handler for Standard (0x50) or Extended (0x51) message commands 0x11 Sensor On.
+        """Message handler for Standard or Extended sensor on messages.
 
-        When a message is received any state listeners are updated with the
-        value in cmd2.
+        Message handler for Standard (0x50) or Extended (0x51) message commands
+        0x11 Sensor On.  When a message is received any state listeners are
+        updated with 0x11 for on.
         """
         self._update_subscribers(msg.cmd2)
 
     def _sensor_off_command_received(self, msg):
-        """Message handler for Standard (0x50) or Extended (0x51) message commands 0x13 Sensor Off.
+        """Message handler for Standard or Extended sensor off messages.
 
-        When a message is received any state listeners are updated with 0x00 for off.
+        Message handler for Standard (0x50) or Extended (0x51) message commands
+        0x11 Sensor On.  When a message is received any state listeners are
+        updated with 0x13 for off.
         """
         self._update_subscribers(0x00)
 
@@ -123,9 +127,11 @@ class OnOffSensor(SensorBase):
     """
 
     def _sensor_on_command_received(self, msg):
-        """Message handler for Standard (0x50) or Extended (0x51) message commands 0x11 Sensor On.
+        """Message handler for Standard or Extended sensor on messages.
 
-        When a message is received any state listeners are updated with 0x01 for on.
+        Message handler for Standard (0x50) or Extended (0x51) message commands
+        0x11 Sensor On.  When a message is received any state listeners are
+        updated with 0x11 for on.
         """
         self._update_subscribers(0x01)
 
@@ -145,7 +151,7 @@ class SmokeCO2Sensor(SensorBase):
 
     def __init__(self, address, statename, group, send_message_method,
                  message_callbacks, defaultvalue=None):
-        """Initialize the StateBase state."""
+        """Initialize the State state."""
         super().__init__(address, statename, group, send_message_method,
                          message_callbacks, defaultvalue)
 

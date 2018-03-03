@@ -1,7 +1,6 @@
 """Test message callbacks."""
 
 import logging
-
 from insteonplm.messagecallback import MessageCallback
 from insteonplm.constants import (COMMAND_LIGHT_ON_0X11_NONE,
                                   MESSAGE_ACK,
@@ -19,6 +18,7 @@ from .mockCallbacks import MockCallbacks
 
 _LOG = logging.getLogger(__name__)
 
+
 def test_messagecallback_basic():
     """Test messagecallback basic."""
     callbacks = MessageCallback()
@@ -35,6 +35,7 @@ def test_messagecallback_basic():
 
     assert len(callback1) == 1
     assert callback1[0] == callbacktest1
+
 
 def test_messagecallback_msg():
     """Test messagecallback msg."""
@@ -56,6 +57,7 @@ def test_messagecallback_msg():
 
     assert callback1[0] == callbacktest
     assert callback2[0] == callbacktest
+
 
 def test_messagecallback_acknak():
     """Test messagecallback acknak."""
@@ -97,6 +99,7 @@ def test_messagecallback_acknak():
     assert len(callback3) == 2
     assert len(callback4) == 1
 
+
 def test_message_callback_extended():
     """Test message callback extended."""
     callbacks = MessageCallback()
@@ -106,18 +109,19 @@ def test_message_callback_extended():
 
     template_ext_on = ExtendedReceive.template(
         commandtuple=COMMAND_LIGHT_ON_0X11_NONE,
-        userdata=Userdata({'d1':0x02}))
+        userdata=Userdata({'d1': 0x02}))
     callbacks.add(template_ext_on, callbacktest)
     msg1 = ExtendedReceive(address, target, COMMAND_LIGHT_ON_0X11_NONE,
-                           Userdata({'d1':0x02}), cmd2=0xff)
+                           Userdata({'d1': 0x02}), cmd2=0xff)
     msg2 = ExtendedReceive(address, target, COMMAND_LIGHT_ON_0X11_NONE,
-                           Userdata({'d1':0x03, 'd2':0x02}), cmd2=0xff)
+                           Userdata({'d1': 0x03, 'd2': 0x02}), cmd2=0xff)
 
     callback1 = callbacks.get_callbacks_from_message(msg1)
     callback2 = callbacks.get_callbacks_from_message(msg2)
 
     assert callback1[0] == callbacktest
     assert not callback2
+
 
 def test_delete_callback():
     """Test delete callback."""
@@ -139,6 +143,7 @@ def test_delete_callback():
     callbacks.remove(StandardSend.template(), callbacktest2)
     callback_list = callbacks.get_callbacks_from_message(msg)
     assert len(callback_list) == 2
+
 
 def test_misc_messages():
     """Test misc messages."""
@@ -169,6 +174,7 @@ def test_misc_messages():
     assert not callback_list3
     assert callback_list4[0] == callbacktest3
 
+
 def test_extended_ack():
     """Test extended ack."""
     callbacks = MockCallbacks()
@@ -182,7 +188,7 @@ def test_extended_ack():
 
     message_callbacks.add(template_ext_ack, callbacks.callbackvalue1)
     message_callbacks.add(template_std_ack, callbacks.callbackvalue2)
-    extmsg = ExtendedSend(address, COMMAND_LIGHT_ON_0X11_NONE, {'d1':0x02},
+    extmsg = ExtendedSend(address, COMMAND_LIGHT_ON_0X11_NONE, {'d1': 0x02},
                           cmd2=0xff, acknak=MESSAGE_ACK)
     stdmsg = StandardSend(address, COMMAND_LIGHT_ON_0X11_NONE, cmd2=0xff,
                           acknak=MESSAGE_ACK)
