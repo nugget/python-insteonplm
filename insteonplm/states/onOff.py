@@ -236,7 +236,7 @@ class OnOffSwitch_OutletTop(OnOffStateBase):
         self._send_method(status_command, self._status_message_0x01_received)
 
     def _status_message_0x01_received(self, msg):
-        """Status receive handler.
+        """Handle status received messages.
 
         The following status values can be recieve:
             0x00 = Both Outlets Off

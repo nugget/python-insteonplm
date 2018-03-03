@@ -82,7 +82,7 @@ class SensorBase(State):
 
     def _sensor_on_command_received(self, msg):
         """Message handler for Standard or Extended sensor on messages.
-        
+
         Message handler for Standard (0x50) or Extended (0x51) message commands
         0x11 Sensor On.  When a message is received any state listeners are
         updated with 0x11 for on.
@@ -128,7 +128,7 @@ class OnOffSensor(SensorBase):
 
     def _sensor_on_command_received(self, msg):
         """Message handler for Standard or Extended sensor on messages.
-        
+
         Message handler for Standard (0x50) or Extended (0x51) message commands
         0x11 Sensor On.  When a message is received any state listeners are
         updated with 0x11 for on.

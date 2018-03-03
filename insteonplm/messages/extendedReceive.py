@@ -11,7 +11,8 @@ from insteonplm.messages.userdata import Userdata
 class ExtendedReceive(Message):
     """Insteon Extended Length Message Received.
 
-    Message type 0x51"""
+    Message type 0x51
+    """
 
     _code = MESSAGE_EXTENDED_MESSAGE_RECEIVED_0X51
     _sendSize = MESSAGE_EXTENDED_MESSAGE_RECEIVED_SIZE

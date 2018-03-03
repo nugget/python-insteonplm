@@ -9,7 +9,7 @@ from insteonplm.messages.userdata import Userdata
 
 class ClassPropertyMetaClass(type):
     """Meta class for Message class.
-    
+
     This is meta class magic to allow class attributes to also appear as an
     instance property.
     """
