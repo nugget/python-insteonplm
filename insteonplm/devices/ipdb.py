@@ -26,6 +26,7 @@ Product = collections.namedtuple('Product', 'cat subcat product_key description 
 # flake8: noqa
 class IPDB(object):
     """Embodies the INSTEON Product Database static data and access methods."""
+
     # pylint disable=line-too-long
     products = [
         Product(None, None, None, '', '', UnknownDevice),
@@ -125,7 +126,7 @@ class IPDB(object):
         self.log = logging.getLogger(__name__)
 
     def __len__(self):
-        """Return the length of the product database"""
+        """Return the length of the product database."""
         return len(self.products)
 
     def __iter__(self):
