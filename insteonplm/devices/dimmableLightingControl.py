@@ -24,7 +24,7 @@ class DimmableLightingControl(Device):
                  description=None, model=None):
         """Initialize the DimmableLightingControl Class."""
         Device.__init__(self, plm, address, cat, subcat, product_key,
-                            description, model)
+                        description, model)
 
         self._stateList[0x01] = DimmableSwitch(
             self._address, "lightOnLevel", 0x01, self._send_msg,

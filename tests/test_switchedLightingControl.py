@@ -19,8 +19,7 @@ from .mockCallbacks import MockCallbacks
 
 
 def test_switchedLightingControl():
-    """test SwitchedLightingControl"""
-
+    """Test SwitchedLightingControl."""
     def run_test(loop):
         """Asyncio test method."""
         plm = MockPLM(loop)
@@ -38,7 +37,7 @@ def test_switchedLightingControl():
         assert device.address.hex == address
         assert device.cat == cat
         assert device.subcat == subcat
-        assert device.product_key == 0x00 # Product key should not be None
+        assert device.product_key == 0x00  # Product key should not be None
         assert device.description == description
         assert device.model == model
         assert device.id == address
@@ -83,7 +82,7 @@ def test_switchedLightingControl():
 
 
 def test_switchedLightingControl_maual_changes():
-    """test SwitchedLightingControl maual changes"""
+    """Test SwitchedLightingControl maual changes."""
     def run_test(loop):
         """Asyncio test method."""
         plm = MockPLM(loop)
@@ -100,7 +99,7 @@ def test_switchedLightingControl_maual_changes():
         assert device.address.hex == address
         assert device.cat == cat
         assert device.subcat == subcat
-        assert device.product_key == 0x00 # Product key should not be None
+        assert device.product_key == 0x00  # Product key should not be None
         assert device.description == description
         assert device.model == model
         assert device.id == address
@@ -129,7 +128,7 @@ def test_switchedLightingControl_maual_changes():
 
 
 def test_switchedLightingControl_status():
-    """test SwitchedLightingControl status"""
+    """Test SwitchedLightingControl status."""
     def run_test(loop):
         """Asyncio test method."""
         plm = MockPLM(loop)
@@ -147,7 +146,7 @@ def test_switchedLightingControl_status():
         assert device.address.hex == address
         assert device.cat == cat
         assert device.subcat == subcat
-        assert device.product_key == 0x00 # Product key should not be None
+        assert device.product_key == 0x00  # Product key should not be None
         assert device.description == description
         assert device.model == model
         assert device.id == address
@@ -177,7 +176,7 @@ def test_switchedLightingControl_status():
 
 
 def test_switchedLightingControl_2663_222():
-    """test SwitchedLightingControl device 2663-222"""
+    """Test SwitchedLightingControl device 2663-222."""
     @asyncio.coroutine
     def run_test(loop):
         """Asyncio test method."""
@@ -198,7 +197,7 @@ def test_switchedLightingControl_2663_222():
         assert device.address.hex == address
         assert device.cat == cat
         assert device.subcat == subcat
-        assert device.product_key == 0x00 # Product key should not be None
+        assert device.product_key == 0x00  # Product key should not be None
         assert device.description == description
         assert device.model == model
         assert device.id == address
@@ -225,7 +224,7 @@ def test_switchedLightingControl_2663_222():
         device.states[0x02].on()
         yield from asyncio.sleep(.1, loop=loop)
         receivedmsg = ExtendedSend(address, COMMAND_LIGHT_ON_0X11_NONE,
-                                   {'d1':0x02}, cmd2=0xff, acknak=MESSAGE_ACK)
+                                   {'d1': 0x02}, cmd2=0xff, acknak=MESSAGE_ACK)
         plm.message_received(receivedmsg)
         yield from asyncio.sleep(.1, loop=loop)
         receivedmsg = StandardReceive(
@@ -235,7 +234,7 @@ def test_switchedLightingControl_2663_222():
         plm.message_received(receivedmsg)
         yield from asyncio.sleep(.1, loop=loop)
         sentmsg = ExtendedSend(address, COMMAND_LIGHT_ON_0X11_NONE,
-                               {'d1':0x02}, cmd2=0xff)
+                               {'d1': 0x02}, cmd2=0xff)
         assert plm.sentmessage == sentmsg.hex
         assert callbacks.callbackvalue2 == 0xff
 
@@ -260,7 +259,7 @@ def test_switchedLightingControl_2663_222():
         device.states[0x02].off()
         yield from asyncio.sleep(.1, loop=loop)
         receivedmsg = ExtendedSend(address, COMMAND_LIGHT_OFF_0X13_0X00,
-                                   {'d1':0x02}, acknak=MESSAGE_ACK)
+                                   {'d1': 0x02}, acknak=MESSAGE_ACK)
         plm.message_received(receivedmsg)
         yield from asyncio.sleep(.1, loop=loop)
         receivedmsg = StandardReceive(
@@ -270,7 +269,7 @@ def test_switchedLightingControl_2663_222():
         plm.message_received(receivedmsg)
         yield from asyncio.sleep(.1, loop=loop)
         sentmsg = ExtendedSend(address, COMMAND_LIGHT_OFF_0X13_0X00,
-                               {'d1':0x02})
+                               {'d1': 0x02})
         assert plm.sentmessage == sentmsg.hex
         assert callbacks.callbackvalue2 == 0x00
 
@@ -279,7 +278,7 @@ def test_switchedLightingControl_2663_222():
 
 
 def test_switchedLightingControl_2663_222_manual_change():
-    """test SwitchedLightingControl device 2663-222 manual change"""
+    """Test SwitchedLightingControl device 2663-222 manual change."""
     @asyncio.coroutine
     def run_test(loop):
         """Asyncio test method."""
@@ -299,7 +298,7 @@ def test_switchedLightingControl_2663_222_manual_change():
         assert device.address.hex == address
         assert device.cat == cat
         assert device.subcat == subcat
-        assert device.product_key == 0x00 # Product key should not be None
+        assert device.product_key == 0x00  # Product key should not be None
         assert device.description == description
         assert device.model == model
         assert device.id == address
@@ -344,12 +343,13 @@ def test_switchedLightingControl_2663_222_manual_change():
 
 
 def test_switchedLightingControl_2663_222_status():
-    """test SwitchedLightingControl device 2663-222 status"""
+    """Test SwitchedLightingControl device 2663-222 status."""
     @asyncio.coroutine
     def run_test(loop):
         """Asyncio test method."""
         class lightStatus(object):
             """Callback class to capture state changes."""
+
             lightOnLevel1 = None
             lightOnLevel2 = None
 
@@ -382,7 +382,6 @@ def test_switchedLightingControl_2663_222_status():
         device.states[0x01].register_updates(callbacks.device_status_callback1)
         device.states[0x02].register_updates(callbacks.device_status_callback2)
 
-
         device.states[0x02].async_refresh_state()
         yield from asyncio.sleep(.1, loop)
         ackmsg = StandardSend(address, COMMAND_LIGHT_STATUS_REQUEST_0X19_0X01,
@@ -395,7 +394,6 @@ def test_switchedLightingControl_2663_222_status():
         yield from asyncio.sleep(.1, loop)
         mockPLM.message_received(statusmsg)
         yield from asyncio.sleep(.1, loop)
-        #assert callbacks.lightOnLevel1 == 0xff
         assert callbacks.lightOnLevel2 == 0x00
 
     loop = asyncio.get_event_loop()

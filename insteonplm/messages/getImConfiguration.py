@@ -1,18 +1,22 @@
-import binascii
-from insteonplm.constants import *
+"""INSTEON Message Get IM Configuration."""
+from insteonplm.constants import (MESSAGE_GET_IM_CONFIGURATION_0X73,
+                                  MESSAGE_GET_IM_CONFIGURATION_SIZE,
+                                  MESSAGE_GET_IM_CONFIGURATION_RECEIVED_SIZE,
+                                  MESSAGE_ACK,
+                                  MESSAGE_NAK)
 from insteonplm.messages.message import Message
-from insteonplm.messages.messageFlags import MessageFlags
+
 
 class GetImConfiguration(Message):
     """Insteon Get IM Configuration Message 0x62"""
-    
+
     _code = MESSAGE_GET_IM_CONFIGURATION_0X73
     _sendSize = MESSAGE_GET_IM_CONFIGURATION_SIZE
     _receivedSize = MESSAGE_GET_IM_CONFIGURATION_RECEIVED_SIZE
     _description = 'Insteon Get IM Configuration Message'
-        
 
-    def __init__(self, flags = None, acknak = None):
+    def __init__(self, flags=None, acknak=None):
+        """Initialize the GetImConfiguration Class."""
         self._imConfigurationFlags = flags
         self._spare1 = None
         self._spare2 = None
@@ -20,30 +24,29 @@ class GetImConfiguration(Message):
 
     @classmethod
     def from_raw_message(cls, rawmesssage):
-        return GetImConfiguration(rawmessage[2],
-                                  rawmessage[5])
+        """Create message from a raw byte stream."""
+        return GetImConfiguration(rawmesssage[2],
+                                  rawmesssage[5])
 
     @property
     def imConfigurationFlags(self):
+        """Return the IM configuration flags."""
         return self._imConfigurationFlags
 
     @property
     def acknak(self):
+        """Return the ACK/NAK byte."""
         return self._acknak
 
     @property
     def isack(self):
-        if (self._acknak is not None and self._acknak == MESSAGE_ACK):
-            return True
-        else:
-            return False
+        """Test if this is an ACK message."""
+        return self._acknak is not None and self._acknak == MESSAGE_ACK
 
     @property
     def isnak(self):
-        if (self._acknak is not None and self._acknak == MESSAGE_NAK):
-            return True
-        else:
-            return False
+        """Test if this is a NAK message."""
+        return self._acknak is not None and self._acknak == MESSAGE_NAK
 
     def _message_properties(self):
         if self._imConfigurationFlags is not None:
