@@ -24,6 +24,7 @@ from insteonplm.messages.standardReceive import StandardReceive
 from insteonplm.messages.messageFlags import MessageFlags
 from insteonplm.states import State
 
+
 class DimmableSwitch(State):
     """Device state representing an On/Off switch that is controllable.
 
@@ -37,8 +38,10 @@ class DimmableSwitch(State):
     update(self, val)
     async_refresh_state()
     """
+
     def __init__(self, address, statename, group, send_message_method,
                  message_callbacks, defaultvalue=None):
+        """Initalize the DimmableSwitch Class."""
         super().__init__(address, statename, group, send_message_method,
                          message_callbacks, defaultvalue)
 
@@ -221,8 +224,9 @@ class DimmableSwitch(State):
     def _status_message_received(self, msg):
         self._update_subscribers(msg.cmd2)
 
+
 class DimmableSwitch_Fan(State):
-    """Device state representing a the bottom outlet On/Off switch that is controllable.
+    """Device state representing a controlable bottom outlet On/Off switch.
 
     Available methods are:
     on(self)
@@ -235,6 +239,7 @@ class DimmableSwitch_Fan(State):
 
     def __init__(self, address, statename, group, send_message_method,
                  set_message_callback_method, defaultvalue=None):
+        """Initalize the DimmableSwitch_Fan Class."""
         super().__init__(address, statename, group, send_message_method,
                          set_message_callback_method, defaultvalue)
 

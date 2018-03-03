@@ -6,14 +6,17 @@ from insteonplm.address import Address
 from insteonplm.messages.message import Message
 from insteonplm.messages.messageFlags import MessageFlags
 
+
 class StandardReceive(Message):
-    """Insteon Standard Length Message Received 0x50"""
+    """Insteon Standard Length Message Received.
+
+    Message type 0x50
+    """
 
     _code = MESSAGE_STANDARD_MESSAGE_RECEIVED_0X50
     _sendSize = MESSAGE_STANDARD_MESSAGE_RECIEVED_SIZE
     _receivedSize = MESSAGE_STANDARD_MESSAGE_RECIEVED_SIZE
     _description = 'INSTEON Standard Message Received'
-
 
     def __init__(self, address, target, commandtuple, cmd2=None, flags=0x00):
         """Initialize the StandardReceive message class."""
@@ -41,8 +44,8 @@ class StandardReceive(Message):
         """Create message from a raw byte stream."""
         return StandardReceive(rawmessage[2:5],
                                rawmessage[5:8],
-                               {'cmd1':rawmessage[9],
-                                'cmd2':rawmessage[10]},
+                               {'cmd1': rawmessage[9],
+                                'cmd2': rawmessage[10]},
                                flags=rawmessage[8])
 
     # pylint: disable=protected-access

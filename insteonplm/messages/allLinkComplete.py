@@ -84,7 +84,7 @@ class AllLinkComplete(Message):
 
     @property
     def isdeleted(self):
-        """return if the link record is deleted."""
+        """Return if the link record is deleted."""
         if self.linkcode == 0xFF:
             return True
         else:

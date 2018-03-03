@@ -11,6 +11,7 @@ from insteonplm.messages.message import Message
 from insteonplm.messages.extendedSend import ExtendedSend
 from insteonplm.messages.messageFlags import MessageFlags
 
+
 class StandardSend(Message):
     """Insteon Standard Length Message Send 0x62."""
 
@@ -53,15 +54,16 @@ class StandardSend(Message):
                 msg = None
         else:
             msg = StandardSend(rawmessage[2:5],
-                               {'cmd1':rawmessage[6],
-                                'cmd2':rawmessage[7]},
+                               {'cmd1': rawmessage[6],
+                                'cmd2': rawmessage[7]},
                                flags=rawmessage[5],
                                acknak=rawmessage[8:9])
         return msg
 
     # pylint: disable=protected-access
     @classmethod
-    def template(cls, address=None, commandtuple={}, cmd2=-1, flags=None, acknak=None):
+    def template(cls, address=None, commandtuple={}, cmd2=-1, flags=None,
+                 acknak=None):
         """Create a message template for use in callbacks."""
         msgraw = bytearray([0x02, cls._code])
         msgraw.extend(bytes(cls._receivedSize))

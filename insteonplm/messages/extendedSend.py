@@ -10,6 +10,7 @@ from insteonplm.messages.message import Message
 from insteonplm.messages.messageFlags import MessageFlags
 from insteonplm.messages.userdata import Userdata
 
+
 class ExtendedSend(Message):
     """Send an INSTEON Extended message.
 
@@ -58,7 +59,7 @@ class ExtendedSend(Message):
         userdata_dict = Userdata(rawmessage[8:22])
         return ExtendedSend(rawmessage[2:5],
                             {'cmd1': rawmessage[6],
-                             'cmd2':rawmessage[7]},
+                             'cmd2': rawmessage[7]},
                             userdata_dict,
                             flags=rawmessage[5],
                             acknak=rawmessage[22:23])

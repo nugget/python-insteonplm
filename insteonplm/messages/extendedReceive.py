@@ -7,16 +7,19 @@ from insteonplm.messages.message import Message
 from insteonplm.messages.messageFlags import MessageFlags
 from insteonplm.messages.userdata import Userdata
 
+
 class ExtendedReceive(Message):
-    """Insteon Extended Length Message Received 0x51"""
+    """Insteon Extended Length Message Received.
+
+    Message type 0x51"""
 
     _code = MESSAGE_EXTENDED_MESSAGE_RECEIVED_0X51
     _sendSize = MESSAGE_EXTENDED_MESSAGE_RECEIVED_SIZE
     _receivedSize = MESSAGE_EXTENDED_MESSAGE_RECEIVED_SIZE
     _description = 'INSTEON Extended Message Received'
 
-
-    def __init__(self, address, target, commandtuple, userdata, cmd2=None, flags=0x10):
+    def __init__(self, address, target, commandtuple, userdata, cmd2=None,
+                 flags=0x10):
         """Initialize the ExtendedRecieve message class."""
         if commandtuple.get('cmd1', None) is not None:
             cmd1 = commandtuple['cmd1']
@@ -44,8 +47,8 @@ class ExtendedReceive(Message):
         userdata = Userdata.from_raw_message(rawmessage[11:25])
         return ExtendedReceive(rawmessage[2:5],
                                rawmessage[5:8],
-                               {'cmd1':rawmessage[9],
-                                'cmd2':rawmessage[10]},
+                               {'cmd1': rawmessage[9],
+                                'cmd2': rawmessage[10]},
                                userdata,
                                flags=rawmessage[8])
 

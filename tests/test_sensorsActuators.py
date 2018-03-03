@@ -7,7 +7,8 @@ from insteonplm.constants import (COMMAND_LIGHT_ON_0X11_NONE,
                                   MESSAGE_ACK,
                                   MESSAGE_TYPE_BROADCAST_MESSAGE,
                                   MESSAGE_TYPE_DIRECT_MESSAGE_ACK)
-from insteonplm.devices.sensorsActuators import SensorsActuators_2450  # SensorsActuators,
+# SensorsActuators class not tested ?
+from insteonplm.devices.sensorsActuators import SensorsActuators_2450
 from insteonplm.messages.standardSend import StandardSend
 from insteonplm.messages.standardReceive import StandardReceive
 from insteonplm.messages.messageFlags import MessageFlags

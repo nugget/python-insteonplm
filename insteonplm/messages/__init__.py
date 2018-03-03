@@ -1,4 +1,4 @@
-"""Factory module to create INSTEON Message based on the byte representation."""
+"""INSTEON Messages Module."""
 
 import logging
 import binascii
@@ -29,9 +29,11 @@ from insteonplm.messages.x10received import X10Received
 from insteonplm.messages.allLinkComplete import AllLinkComplete
 from insteonplm.messages.buttonEventReport import ButtonEventReport
 from insteonplm.messages.userReset import UserReset
-from insteonplm.messages.allLinkCleanupFailureReport import AllLinkCleanupFailureReport
+from insteonplm.messages.allLinkCleanupFailureReport import (
+    AllLinkCleanupFailureReport)
 from insteonplm.messages.allLinkRecordResponse import AllLinkRecordResponse
-from insteonplm.messages.allLinkCleanupStatusReport import AllLinkCleanupStatusReport
+from insteonplm.messages.allLinkCleanupStatusReport import (
+    AllLinkCleanupStatusReport)
 from insteonplm.messages.getIMInfo import GetImInfo
 from insteonplm.messages.sendAlllinkCommand import SendAllLinkCommand
 from insteonplm.messages.standardSend import StandardSend
@@ -86,7 +88,8 @@ def iscomplete(rawmessage):
     if hasattr(msg, 'receivedSize') and msg.receivedSize:
         expectedSize = msg.receivedSize
     else:
-        log.error('Unable to find an receivedSize for code 0x%x', rawmessage[1])
+        log.error('Unable to find an receivedSize for code 0x%x',
+                  rawmessage[1])
         return ValueError
 
     is_expected_size = False
@@ -158,6 +161,7 @@ def _get_msg_class(code):
                                  GetImConfiguration)
 
     return msg_classes.get(code, None)
+
 
 def _add_msg_class(msg_list, code, msg_class):
     msg_list[code] = msg_class

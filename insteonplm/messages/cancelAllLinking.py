@@ -8,7 +8,10 @@ from insteonplm.constants import (MESSAGE_CANCEL_ALL_LINKING_0X65,
 
 
 class CancelAllLinking(Message):
-    """INSTEON Cancel All-Linking 0x65"""
+    """INSTEON Cancel All-Linking.
+
+    Message type 0x65
+    """
 
     _code = MESSAGE_CANCEL_ALL_LINKING_0X65
     _sendSize = MESSAGE_CANCEL_ALL_LINKING_SIZE

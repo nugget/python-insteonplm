@@ -1,3 +1,1 @@
-# import sys
-# sys.path.append('../')
-# import insteonplm
+"""Tests for insteonplm module."""

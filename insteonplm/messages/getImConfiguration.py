@@ -8,7 +8,10 @@ from insteonplm.messages.message import Message
 
 
 class GetImConfiguration(Message):
-    """Insteon Get IM Configuration Message 0x62"""
+    """Insteon Get IM Configuration Message.
+
+    Message type 0x62
+    """
 
     _code = MESSAGE_GET_IM_CONFIGURATION_0X73
     _sendSize = MESSAGE_GET_IM_CONFIGURATION_SIZE

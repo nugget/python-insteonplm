@@ -194,7 +194,7 @@ class OnOffSwitch(OnOffStateBase):
 
 
 class OnOffSwitch_OutletTop(OnOffStateBase):
-    """Device state representing a the top outlet On/Off switch that is controllable.
+    """Device state representing a controllable top outlet On/Off switch.
 
     Available properties are:
       value
@@ -211,6 +211,7 @@ class OnOffSwitch_OutletTop(OnOffStateBase):
 
     def __init__(self, address, statename, group, send_message_method,
                  message_callbacks, defaultvalue=None):
+        """Initalize the OnOffSwitch_OutletTop Class."""
         super().__init__(address, statename, group, send_message_method,
                          message_callbacks, defaultvalue)
 
@@ -235,7 +236,8 @@ class OnOffSwitch_OutletTop(OnOffStateBase):
         self._send_method(status_command, self._status_message_0x01_received)
 
     def _status_message_0x01_received(self, msg):
-        """
+        """Status receive handler.
+
         The following status values can be recieve:
             0x00 = Both Outlets Off
             0x01 = Only Top Outlet On
@@ -251,7 +253,7 @@ class OnOffSwitch_OutletTop(OnOffStateBase):
 
 
 class OnOffSwitch_OutletBottom(OnOffStateBase):
-    """Device state representing a the bottom outlet On/Off switch that is controllable.
+    """Device state representing a controllable bottom outlet On/Off switch.
 
     Available properties are:
       value
@@ -268,7 +270,7 @@ class OnOffSwitch_OutletBottom(OnOffStateBase):
 
     def __init__(self, address, statename, group, send_message_method,
                  set_message_callback_method, defaultvalue=None):
-        """Initialize the OnOffSwitch_OutletBottom"""
+        """Initialize the OnOffSwitch_OutletBottom."""
         super().__init__(address, statename, group, send_message_method,
                          set_message_callback_method, defaultvalue)
 

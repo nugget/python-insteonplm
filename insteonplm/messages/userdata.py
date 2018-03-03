@@ -5,7 +5,9 @@ import binascii
 
 class Userdata(object):
     """Extended Message User Data Type."""
+
     def __init__(self, userdata={}):
+        """Initialize the Userdata Class."""
         self.log = logging.getLogger(__name__)
         self._userdata = self._normalize(self._create_empty(0x00), userdata)
 

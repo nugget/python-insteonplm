@@ -1,9 +1,11 @@
 """Test all message classes."""
 import binascii
-import sys
+
 from insteonplm.address import Address
-from insteonplm.messages.allLinkCleanupFailureReport import AllLinkCleanupFailureReport
-from insteonplm.messages.allLinkCleanupStatusReport import AllLinkCleanupStatusReport
+from insteonplm.messages.allLinkCleanupFailureReport import (
+    AllLinkCleanupFailureReport)
+from insteonplm.messages.allLinkCleanupStatusReport import (
+    AllLinkCleanupStatusReport)
 from insteonplm.messages.allLinkComplete import AllLinkComplete
 from insteonplm.messages.allLinkRecordResponse import AllLinkRecordResponse
 from insteonplm.messages.buttonEventReport import ButtonEventReport
@@ -22,8 +24,6 @@ from insteonplm.messages.startAllLinking import StartAllLinking
 from insteonplm.messages.userReset import UserReset
 from insteonplm.messages.x10received import X10Received
 from insteonplm.messages.x10send import X10Send
-
-sys.path.append('../')
 
 
 def test_allLinkCleanupStatusReport():
@@ -155,7 +155,7 @@ def test_extendedSend():
     for i in range(1, 15):
         key = 'd'+str(i)
         val = 0xe0 + i
-        userdata.update({key:val})
+        userdata.update({key: val})
 
     msg = ExtendedSend(address, {'cmd1': cmd1, 'cmd2': cmd2},
                        userdata, flags=flags)
@@ -471,7 +471,3 @@ def hexmsg(*arg):
                 msg.append(val)
 
     return binascii.hexlify(msg).decode()
-
-
-if __name__ == "__main__":
-    test_extendedReceive()

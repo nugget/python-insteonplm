@@ -8,7 +8,11 @@ from insteonplm.messages.userdata import Userdata
 
 
 class ClassPropertyMetaClass(type):
-    """This is meta class magic to allow class attributes to also appear as an instance property."""
+    """Meta class for Message class.
+    
+    This is meta class magic to allow class attributes to also appear as an
+    instance property.
+    """
 
     @property
     def code(cls):
@@ -33,6 +37,7 @@ class ClassPropertyMetaClass(type):
 
 class Message(metaclass=ClassPropertyMetaClass):
     """Base message class for an INSTEON message."""
+
     _code = 0
     _sendSize = 0
     _receivedSize = 0
@@ -152,12 +157,12 @@ class Message(metaclass=ClassPropertyMetaClass):
 
     @property
     def bytes(self):
-        """Bytes representation of the message."""
+        """Return the bytes representation of the message."""
         return binascii.unhexlify(self.hex)
 
     def matches_pattern(self, other):
         """Return if the current message matches a message template.
-        
+
         Compare the current message to a template message to test matches
         to a pattern.
         """

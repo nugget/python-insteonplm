@@ -1,4 +1,4 @@
-"""INSTEON Message Start All-Linking"""
+"""INSTEON Message Start All-Linking."""
 from insteonplm.messages.message import Message
 from insteonplm.constants import (MESSAGE_START_ALL_LINKING_0X64,
                                   MESSAGE_START_ALL_LINKING_SIZE,
@@ -8,7 +8,10 @@ from insteonplm.constants import (MESSAGE_START_ALL_LINKING_0X64,
 
 
 class StartAllLinking(Message):
-    """Insteon Start All Linking Message 0x64"""
+    """Insteon Start All Linking Message.
+
+    Message type 0x64
+    """
 
     _code = MESSAGE_START_ALL_LINKING_0X64
     _sendSize = MESSAGE_START_ALL_LINKING_SIZE
