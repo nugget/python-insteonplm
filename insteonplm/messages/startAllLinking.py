@@ -1,8 +1,8 @@
-from insteonplm.messages import MessageBase
+from insteonplm.messages.message import Message
 from insteonplm.constants import *
 import binascii
 
-class StartAllLinking(MessageBase):
+class StartAllLinking(Message):
     """Insteon Start All Linking Message 0x64"""
     
     _code = MESSAGE_START_ALL_LINKING_0X64

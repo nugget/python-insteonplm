@@ -3,10 +3,10 @@
 from insteonplm.states.sensor import (VariableSensor,
                                       OnOffSensor,
                                       SmokeCO2Sensor)
-from insteonplm.devices import DeviceBase
+from insteonplm.devices import Device
 
 
-class SecurityHealthSafety(DeviceBase):
+class SecurityHealthSafety(Device):
     """Security Health Safety Control Device Class.
 
     Device cat: 0x10 subcat: Any
@@ -34,7 +34,7 @@ class SecurityHealthSafety(DeviceBase):
             self._plm.message_callbacks, 0x00)
 
 
-class SecurityHealthSafety_2421(DeviceBase):
+class SecurityHealthSafety_2421(Device):
     """Security Health Safety Control Device Class.
 
     TriggerLinc model 2421.
@@ -63,7 +63,7 @@ class SecurityHealthSafety_2421(DeviceBase):
             self._plm.message_callbacks, 0x00)
 
 
-class SecurityHealthSafety_2842_222(DeviceBase):
+class SecurityHealthSafety_2842_222(Device):
     """Security Health Safety Control Device Class.
 
     Moton Sensor model 2842-222.
@@ -92,7 +92,7 @@ class SecurityHealthSafety_2842_222(DeviceBase):
             self._plm.message_callbacks, 0x00)
 
 
-class SecurityHealthSafety_2845_222(DeviceBase):
+class SecurityHealthSafety_2845_222(Device):
     """Security Health Safety Control Device Class.
 
     Hidden Door Sensor model 2845-222.
@@ -121,7 +121,7 @@ class SecurityHealthSafety_2845_222(DeviceBase):
             self._plm.message_callbacks, 0x00)
 
 
-class SecurityHealthSafety_2852_222(DeviceBase):
+class SecurityHealthSafety_2852_222(Device):
     """Security Health Safety Control Device Class.
 
     Water Leak Sensor model 2852-222.
@@ -150,7 +150,7 @@ class SecurityHealthSafety_2852_222(DeviceBase):
             self._plm.message_callbacks, 0x00)
 
 
-class SecurityHealthSafety_2982_222(DeviceBase):
+class SecurityHealthSafety_2982_222(Device):
     """Security Health Safety Control Device Class.
 
     Smoke Bridge model 2982-222

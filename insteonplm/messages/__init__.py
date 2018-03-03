@@ -1,204 +1,177 @@
-"""INSTEON Message Class Module."""
+"""Factory module to create INSTEON Message based on the byte representation."""
+
 import logging
 import binascii
-from insteonplm.address import Address
-from insteonplm.constants import MESSAGE_START_CODE_0X02
-from insteonplm.messages.messageFlags import MessageFlags
-from insteonplm.messages.userdata import Userdata
+
+from insteonplm.constants import (MESSAGE_ALL_LINK_CEANUP_FAILURE_REPORT_0X56,
+                                  MESSAGE_ALL_LINK_CLEANUP_STATUS_REPORT_0X58,
+                                  MESSAGE_ALL_LINK_RECORD_RESPONSE_0X57,
+                                  MESSAGE_ALL_LINKING_COMPLETED_0X53,
+                                  MESSAGE_BUTTON_EVENT_REPORT_0X54,
+                                  MESSAGE_CANCEL_ALL_LINKING_0X65,
+                                  MESSAGE_EXTENDED_MESSAGE_RECEIVED_0X51,
+                                  MESSAGE_GET_FIRST_ALL_LINK_RECORD_0X69,
+                                  MESSAGE_GET_IM_CONFIGURATION_0X73,
+                                  MESSAGE_GET_IM_INFO_0X60,
+                                  MESSAGE_GET_NEXT_ALL_LINK_RECORD_0X6A,
+                                  MESSAGE_RESET_IM_0X67,
+                                  MESSAGE_SEND_ALL_LINK_COMMAND_0X61,
+                                  MESSAGE_SEND_STANDARD_MESSAGE_0X62,
+                                  MESSAGE_STANDARD_MESSAGE_RECEIVED_0X50,
+                                  MESSAGE_START_ALL_LINKING_0X64,
+                                  MESSAGE_START_CODE_0X02,
+                                  MESSAGE_USER_RESET_DETECTED_0X55,
+                                  MESSAGE_X10_MESSAGE_RECEIVED_0X52,
+                                  MESSAGE_X10_MESSAGE_SEND_0X63)
+from insteonplm.messages.standardReceive import StandardReceive
+from insteonplm.messages.extendedReceive import ExtendedReceive
+from insteonplm.messages.x10received import X10Received
+from insteonplm.messages.allLinkComplete import AllLinkComplete
+from insteonplm.messages.buttonEventReport import ButtonEventReport
+from insteonplm.messages.userReset import UserReset
+from insteonplm.messages.allLinkCleanupFailureReport import AllLinkCleanupFailureReport
+from insteonplm.messages.allLinkRecordResponse import AllLinkRecordResponse
+from insteonplm.messages.allLinkCleanupStatusReport import AllLinkCleanupStatusReport
+from insteonplm.messages.getIMInfo import GetImInfo
+from insteonplm.messages.sendAlllinkCommand import SendAllLinkCommand
+from insteonplm.messages.standardSend import StandardSend
+from insteonplm.messages.x10send import X10Send
+from insteonplm.messages.startAllLinking import StartAllLinking
+from insteonplm.messages.cancelAllLinking import CancelAllLinking
+from insteonplm.messages.resetIM import ResetIM
+from insteonplm.messages.getFirstAllLinkRecord import GetFirstAllLinkRecord
+from insteonplm.messages.getNextAllLinkRecord import GetNextAllLinkRecord
+from insteonplm.messages.getImConfiguration import GetImConfiguration
 
 
-class ClassPropertyMetaClass(type):
-    """This is meta class magic to allow class attributes to also appear as an instance property."""
+def create(rawmessage):
+    """Return an INSTEON message class based on a raw byte stream."""
+    rawmessage = _trim_buffer_garbage(rawmessage)
 
-    @property
-    def code(cls):
-        """Message code used to determine message type."""
-        return cls._code
+    if len(rawmessage) < 2:
+        return None
 
-    @property
-    def sendSize(cls):
-        """Size of the message sent in bytes."""
-        return cls._sendSize
+    code = rawmessage[1]
+    msgclass = _get_msg_class(code)
 
-    @property
-    def receivedSize(cls):
-        """Size of the message received in bytes."""
-        return cls._receivedSize
+    msg = None
 
-    @property
-    def description(cls):
-        """Description of the message type."""
-        return cls._description
+    if msgclass is None:
+        rawmessage = rawmessage[1:]
+        msg = create(rawmessage)
+    else:
+        if iscomplete(rawmessage):
+            msg = msgclass.from_raw_message(rawmessage)
+
+    return msg
 
 
-class MessageBase(metaclass=ClassPropertyMetaClass):
-    """Base message class for an INSTEON message."""
-    _code = 0
-    _sendSize = 0
-    _receivedSize = 0
-    _description = "Empty message"
+def iscomplete(rawmessage):
+    """Test if the raw message is a complete message."""
     log = logging.getLogger(__name__)
 
-    def __str__(self):
-        """String representation of an INSTEON message."""
-        props = self._message_properties()
-        msgstr = "{}'code': 0x{}".format(
-            "{", binascii.hexlify(bytes([self._code])).decode())
-        for prop in props:
-            for key, val in prop.items():
-                msgstr = msgstr + ', '
-                if isinstance(val, Address):
-                    msgstr = "{}'{}': {}".format(msgstr, key, val.human)
-                elif isinstance(val, MessageFlags):
-                    msgstr = "{}'{}': 0x{}".format(msgstr, key, val.hex)
-                elif isinstance(val, int):
-                    msgstr = "{}'{}': 0x{}".format(
-                        msgstr, key, binascii.hexlify(bytes([val])).decode())
-                elif isinstance(val, bytearray):
-                    msgstr = "{}'{}': 0x{}".format(
-                        msgstr, key, binascii.hexlify(val).decode())
-                elif isinstance(val, bytes):
-                    msgstr = "{}'{}': 0x{}".format(
-                        msgstr, key, binascii.hexlify(val).decode())
-                else:
-                    msgstr = "{}'{}': 0x{}".format(msgstr, key, str(val))
-        msgstr = "{}{}".format(msgstr, '}')
-        return msgstr
+    if len(rawmessage) < 2:
+        return False
 
-    def __eq__(self, other):
-        """Test for equality."""
-        match = False
-        if isinstance(other, MessageBase) and other.code == self._code:
-            match = str(self) == str(other)
-        return match
+    elif rawmessage[0] != 0x02:
+        raise ValueError('message does not start with 0x02')
 
-    def __ne__(self, other):
-        """Test for inequality."""
-        match = True
-        if isinstance(other, MessageBase) and other.code == self._code:
-            match = str(self) != str(other)
-        return match
+    messageBuffer = bytearray()
+    filler = bytearray(30)
+    messageBuffer.extend(rawmessage)
+    messageBuffer.extend(filler)
 
-    def __lt__(self, other):
-        """Test for less than."""
-        less_than = False
-        if isinstance(other, MessageBase):
-            less_than = str(self) < str(other)
-        else:
-            raise TypeError
-        return less_than
+    msg = _get_msg_class(rawmessage[1])
 
-    def __gt__(self, other):
-        """Test for greater than."""
-        greater_than = False
-        if isinstance(other, MessageBase):
-            greater_than = str(self) > str(other)
-        else:
-            raise TypeError
-        return greater_than
+    if hasattr(msg, 'receivedSize') and msg.receivedSize:
+        expectedSize = msg.receivedSize
+    else:
+        log.error('Unable to find an receivedSize for code 0x%x', rawmessage[1])
+        return ValueError
 
-    def __hash__(self):
-        """Create a has of the message."""
-        return hash(str(self))
+    is_expected_size = False
+    if len(rawmessage) >= expectedSize:
+        is_expected_size = True
 
-    @property
-    def code(self):
-        """Messasge code used to determine message type."""
-        return self._code
+    return is_expected_size
 
-    @property
-    def sendSize(self):
-        """Size of the sent messsage in bytes."""
-        return self._sendSize
 
-    @property
-    def receivedSize(self):
-        """Size of the received message in bytes."""
-        return self._receivedSize
+def _get_msg_class(code):
+    """Get the message class based on the message code."""
+    msg_classes = {}
+    msg_classes = _add_msg_class(msg_classes,
+                                 MESSAGE_STANDARD_MESSAGE_RECEIVED_0X50,
+                                 StandardReceive)
+    msg_classes = _add_msg_class(msg_classes,
+                                 MESSAGE_EXTENDED_MESSAGE_RECEIVED_0X51,
+                                 ExtendedReceive)
+    msg_classes = _add_msg_class(msg_classes,
+                                 MESSAGE_X10_MESSAGE_RECEIVED_0X52,
+                                 X10Received)
+    msg_classes = _add_msg_class(msg_classes,
+                                 MESSAGE_ALL_LINKING_COMPLETED_0X53,
+                                 AllLinkComplete)
+    msg_classes = _add_msg_class(msg_classes,
+                                 MESSAGE_BUTTON_EVENT_REPORT_0X54,
+                                 ButtonEventReport)
+    msg_classes = _add_msg_class(msg_classes,
+                                 MESSAGE_USER_RESET_DETECTED_0X55,
+                                 UserReset)
+    msg_classes = _add_msg_class(msg_classes,
+                                 MESSAGE_ALL_LINK_CEANUP_FAILURE_REPORT_0X56,
+                                 AllLinkCleanupFailureReport)
+    msg_classes = _add_msg_class(msg_classes,
+                                 MESSAGE_ALL_LINK_RECORD_RESPONSE_0X57,
+                                 AllLinkRecordResponse)
+    msg_classes = _add_msg_class(msg_classes,
+                                 MESSAGE_ALL_LINK_CLEANUP_STATUS_REPORT_0X58,
+                                 AllLinkCleanupStatusReport)
+    msg_classes = _add_msg_class(msg_classes,
+                                 MESSAGE_GET_IM_INFO_0X60,
+                                 GetImInfo)
+    msg_classes = _add_msg_class(msg_classes,
+                                 MESSAGE_SEND_ALL_LINK_COMMAND_0X61,
+                                 SendAllLinkCommand)
+    msg_classes = _add_msg_class(msg_classes,
+                                 MESSAGE_SEND_STANDARD_MESSAGE_0X62,
+                                 StandardSend)
+    msg_classes = _add_msg_class(msg_classes,
+                                 MESSAGE_X10_MESSAGE_SEND_0X63,
+                                 X10Send)
+    msg_classes = _add_msg_class(msg_classes,
+                                 MESSAGE_START_ALL_LINKING_0X64,
+                                 StartAllLinking)
+    msg_classes = _add_msg_class(msg_classes,
+                                 MESSAGE_CANCEL_ALL_LINKING_0X65,
+                                 CancelAllLinking)
+    msg_classes = _add_msg_class(msg_classes,
+                                 MESSAGE_RESET_IM_0X67,
+                                 ResetIM)
+    msg_classes = _add_msg_class(msg_classes,
+                                 MESSAGE_GET_FIRST_ALL_LINK_RECORD_0X69,
+                                 GetFirstAllLinkRecord)
+    msg_classes = _add_msg_class(msg_classes,
+                                 MESSAGE_GET_NEXT_ALL_LINK_RECORD_0X6A,
+                                 GetNextAllLinkRecord)
+    msg_classes = _add_msg_class(msg_classes,
+                                 MESSAGE_GET_IM_CONFIGURATION_0X73,
+                                 GetImConfiguration)
 
-    @property
-    def description(self):
-        """Description of the message type."""
-        return self._description
+    return msg_classes.get(code, None)
 
-    @property
-    def hex(self):
-        """Hexideciaml representation of the message in bytes."""
-        props = self._message_properties()
-        msg = bytearray([MESSAGE_START_CODE_0X02, self._code])
+def _add_msg_class(msg_list, code, msg_class):
+    msg_list[code] = msg_class
+    return msg_list
 
-        for prop in props:
-            # pylint: disable=unused-variable
-            for key, val in prop.items():
-                if val is None:
-                    pass
-                elif isinstance(val, int):
-                    msg.append(val)
-                elif isinstance(val, Address):
-                    if val.addr is None:
-                        pass
-                    else:
-                        msg.extend(val.bytes)
-                elif isinstance(val, MessageFlags):
-                    msg.extend(val.bytes)
-                elif isinstance(val, bytearray):
-                    msg.extend(val)
-                elif isinstance(val, bytes):
-                    msg.extend(val)
-                elif isinstance(val, Userdata):
-                    msg.extend(val.bytes)
 
-        return binascii.hexlify(msg).decode()
+def _trim_buffer_garbage(rawmessage):
+    """Remove leading bytes from a byte stream.
 
-    @property
-    def bytes(self):
-        """Bytes representation of the message."""
-        return binascii.unhexlify(self.hex)
-
-    def matches_pattern(self, other):
-        """Return if the current message matches a message template.
-        
-        Compare the current message to a template message to test matches
-        to a pattern.
-        """
-        properties = self._message_properties()
-        ismatch = False
-        if isinstance(other, MessageBase) and self.code == other.code:
-            for prop in properties:
-                for key, prop_val in prop.items():
-                    if hasattr(other, key):
-                        key_val = getattr(other, key)
-                        ismatch = self._test_match(prop_val, key_val)
-                    else:
-                        ismatch = False
-                    if not ismatch:
-                        break
-                if not ismatch:
-                    break
-        return ismatch
-
-    @staticmethod
-    def _setacknak(acknak):
-        _acknak = acknak
-        if isinstance(acknak, bytearray) and acknak:
-            _acknak = acknak[0]
-        return _acknak
-
-    def _message_properties(self):
-        raise NotImplementedError
-
-    @staticmethod
-    def _test_match(prop_val, key_val):
-        ismatch = False
-        if isinstance(prop_val, MessageFlags):
-            ismatch = prop_val.matches_pattern(key_val)
-        elif isinstance(prop_val, Address):
-            ismatch = prop_val.matches_pattern(key_val)
-        elif isinstance(prop_val, Userdata):
-            ismatch = prop_val.matches_pattern(key_val)
-        else:
-            if prop_val is None or key_val is None:
-                ismatch = True
-            else:
-                ismatch = prop_val == key_val
-        return ismatch
+    A proper message byte stream begins with 0x02.
+    """
+    log = logging.getLogger(__name__)
+    while rawmessage and rawmessage[0] != MESSAGE_START_CODE_0X02:
+        log.debug('Buffer content: %s', binascii.hexlify(rawmessage))
+        rawmessage = rawmessage[1:]
+        log.debug('Trimming leading buffer garbage')
+    return rawmessage

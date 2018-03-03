@@ -1,8 +1,8 @@
-from insteonplm.messages import MessageBase
+from insteonplm.messages.message import Message
 from insteonplm.constants import *
 import binascii
 
-class UserReset(MessageBase):
+class UserReset(Message):
     """Insteon User Reset Message Received 0x55"""
     
     _code = MESSAGE_USER_RESET_DETECTED_0X55

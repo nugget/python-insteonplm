@@ -1,9 +1,9 @@
-from insteonplm.messages import MessageBase
+from insteonplm.messages.message import Message
 from insteonplm.constants import *
 from insteonplm.address import Address
 import binascii
 
-class GetImInfo(MessageBase):
+class GetImInfo(Message):
     """INSTEON Get Insteon Modem Info Message 0x60"""
     
     _code = MESSAGE_GET_IM_INFO_0X60

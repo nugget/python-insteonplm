@@ -1,8 +1,8 @@
-from insteonplm.messages import MessageBase
+from insteonplm.messages.message import Message
 from insteonplm.constants import *
 import binascii
 
-class GetFirstAllLinkRecord(MessageBase):
+class GetFirstAllLinkRecord(Message):
     """Insteon Get First All Link Record Message 0x69"""
     
     _code = MESSAGE_GET_FIRST_ALL_LINK_RECORD_0X69

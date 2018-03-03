@@ -1,8 +1,8 @@
 """INSTEON Device Unknown Device Type."""
-from insteonplm.devices import DeviceBase
+from insteonplm.devices import Device
 
 
-class UnknownDevice(DeviceBase):
+class UnknownDevice(Device):
     """Unknown Device Class.
 
     Unknown Device used when only the device address is known but no other

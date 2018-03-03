@@ -5,10 +5,6 @@ import logging
 import async_timeout
 
 from insteonplm.address import Address
-from insteonplm.messages.standardReceive import StandardReceive
-from insteonplm.messages.standardSend import StandardSend
-from insteonplm.messages.extendedReceive import ExtendedReceive
-from insteonplm.messages.extendedSend import ExtendedSend
 from insteonplm.constants import (
     MESSAGE_ACK, COMMAND_ID_REQUEST_0X10_0X00,
     COMMAND_PRODUCT_DATA_REQUEST_0X03_0X00,
@@ -20,16 +16,19 @@ from insteonplm.constants import (
     COMMAND_GET_INSTEON_ENGINE_VERSION_0X0D_0X00,
     COMMAND_PING_0X0F_0X00
 )
-
-from insteonplm.states import StateBase
+from insteonplm.messages.extendedReceive import ExtendedReceive
+from insteonplm.messages.extendedSend import ExtendedSend
+from insteonplm.messages.standardReceive import StandardReceive
+from insteonplm.messages.standardSend import StandardSend
+from insteonplm.states import State
 
 WAIT_TIMEOUT = 2
 
 
 def create(plm, address, cat, subcat, firmware=None):
     """Create a device from device info data."""
-    import insteonplm.devices.ipdb
-    ipdb = insteonplm.devices.ipdb.IPDB()
+    from insteonplm.devices.ipdb import IPDB
+    ipdb = IPDB()
     product = ipdb[[cat, subcat]]
     deviceclass = product.deviceclass
     device = None
@@ -41,12 +40,12 @@ def create(plm, address, cat, subcat, firmware=None):
     return device
 
 
-class DeviceBase(object):
-    """INSTEON DeviceBase Class."""
+class Device(object):
+    """INSTEON Device Class."""
 
     def __init__(self, plm, address, cat, subcat, product_key=0x00,
                  description='', model=''):
-        """Initialize the DeviceBase class."""
+        """Initialize the Device class."""
         self.log = logging.getLogger(__name__)
 
         self._plm = plm
@@ -150,7 +149,7 @@ class DeviceBase(object):
                    description, model)
 
     def _receive_message(self, msg):
-        self.log.debug('Starting DeviceBase._receive_message')
+        self.log.debug('Starting Device._receive_message')
         if hasattr(msg, 'isack') and msg.isack:
             self.log.debug('Got Message ACK')
             if self._sent_msg_wait_for_directACK.get('callback') is not None:
@@ -167,7 +166,7 @@ class DeviceBase(object):
                 self.log.debug('Lock is locked')
                 self._directACK_received_queue.put_nowait(msg)
         self._last_communication_received = datetime.datetime.now()
-        self.log.debug('Ending DeviceBase._receive_message')
+        self.log.debug('Ending Device._receive_message')
 
     def async_refresh_state(self):
         """Request each state to provide status update."""
@@ -175,17 +174,17 @@ class DeviceBase(object):
             self._stateList[state].async_refresh_state()
 
     def _send_msg(self, msg, directACK_Method=None):
-        self.log.debug('Starting DeviceBase._send_msg')
+        self.log.debug('Starting Device._send_msg')
         write_message_coroutine = self._process_send_queue(msg,
                                                            directACK_Method)
         self._send_queue.put_nowait(msg)
         asyncio.ensure_future(write_message_coroutine,
                               loop=self._plm.loop)
-        self.log.debug('Ending DeviceBase._send_msg')
+        self.log.debug('Ending Device._send_msg')
 
     @asyncio.coroutine
     def _process_send_queue(self, msg, directACK_Method=None):
-        self.log.debug('Starting DeviceBase._process_send_queue')
+        self.log.debug('Starting Device._process_send_queue')
         yield from self._send_msg_lock
         if directACK_Method is not None:
             self._sent_msg_wait_for_directACK = {'msg': msg,
@@ -194,11 +193,11 @@ class DeviceBase(object):
             self._send_msg_lock.acquire()
             self.log.debug('Lock acquired')
         self._plm.send_msg(msg)
-        self.log.debug('Ending DeviceBase._process_send_queue')
+        self.log.debug('Ending Device._process_send_queue')
 
     @asyncio.coroutine
     def _wait_for_direct_ACK(self):
-        self.log.debug('Starting DeviceBase._wait_for_direct_ACK')
+        self.log.debug('Starting Device._wait_for_direct_ACK')
         msg = None
         while True:
             # wait for an item from the queue
@@ -216,7 +215,7 @@ class DeviceBase(object):
             if callback is not None:
                 callback(msg)
         self._sent_msg_wait_for_directACK = {}
-        self.log.debug('Ending DeviceBase._wait_for_direct_ACK')
+        self.log.debug('Ending Device._wait_for_direct_ACK')
 
     def id_request(self):
         """Request a device ID from a device."""
@@ -325,7 +324,7 @@ class StateList(object):
 
     def __setitem__(self, group, state):
         """Add or update a state in the StateList."""
-        if not isinstance(state, StateBase):
+        if not isinstance(state, State):
             return ValueError
 
         self._stateList[group] = state
@@ -336,6 +335,6 @@ class StateList(object):
         return ', '.join("%s: %r" % item for item in attrs.items())
 
     def add(self, plm, device, stateType, stateName, group, defaultValue=None):
-        """Add a state to the StateList"""
+        """Add a state to the StateList."""
         self._stateList[group] = stateType(plm, device, stateName, group,
                                            defaultValue=defaultValue)

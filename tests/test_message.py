@@ -1,6 +1,6 @@
 """Test message creation."""
 
-from insteonplm.messages.message import Message
+import insteonplm.messages
 from insteonplm.messages.allLinkComplete import AllLinkComplete
 from insteonplm.messages.allLinkRecordResponse import AllLinkRecordResponse
 from insteonplm.messages.buttonEventReport import ButtonEventReport
@@ -24,7 +24,7 @@ def test_create_standardReceive_message():
     cmd2 = 0x99
     rawmessage = bytearray([0x02, 0x50, address1, address2, address3, target1,
                             target2, target3, flags, cmd1, cmd2])
-    msg = Message.create(rawmessage)
+    msg = insteonplm.messages.create(rawmessage)
 
     assert isinstance(msg, StandardReceive)
     assert msg.address == Address(bytearray([address1, address2, address3]))
@@ -47,7 +47,7 @@ def test_create_extendedReceive_message():
                             target2, target3, flags, cmd1, cmd2,
                             0x11, 0x22, 0x33, 0x44, 0x55, 0x66, 0x77, 0x88,
                             0x99, 0xaa, 0xbb, 0xcc, 0xdd, 0xee])
-    msg = Message.create(rawmessage)
+    msg = insteonplm.messages.create(rawmessage)
 
     assert isinstance(msg, ExtendedReceive)
     assert msg.address == Address(bytearray([address1, address2, address3]))
@@ -68,7 +68,7 @@ def test_create_allLinkComplete_message():
 
     rawmessage = bytearray([0x02, 0x53, linkcode, group, address1, address2,
                             address3, cat, subcat, firmware])
-    msg = Message.create(rawmessage)
+    msg = insteonplm.messages.create(rawmessage)
 
     assert isinstance(msg, AllLinkComplete)
 
@@ -83,7 +83,7 @@ def test_button_event_report():
     """Test button event report."""
     event = 0x02
     rawmessage = bytearray([0x02, 0x54, event])
-    msg = Message.create(rawmessage)
+    msg = insteonplm.messages.create(rawmessage)
 
     assert isinstance(msg, ButtonEventReport)
     assert msg.event == event
@@ -101,7 +101,7 @@ def test_AllLinkRecordResponse_message():
     linkdata3 = 0x88
     rawmessage = bytearray([0x02, 0x57, flags, group, address1, address2,
                             address3, linkdata1, linkdata2, linkdata3])
-    msg = Message.create(rawmessage)
+    msg = insteonplm.messages.create(rawmessage)
 
     assert isinstance(msg, AllLinkRecordResponse)
     assert msg.group == group
@@ -121,7 +121,7 @@ def test_GetImInfo_message():
     acknak = 0x77
     rawmessage = bytearray([0x02, 0x60, address1, address2, address3, cat,
                             subcat, firmware, acknak])
-    msg = Message.create(rawmessage)
+    msg = insteonplm.messages.create(rawmessage)
 
     assert isinstance(msg, GetImInfo)
     assert msg.address == Address(bytearray([address1, address2, address3]))
@@ -140,7 +140,7 @@ def test_GetImInfo_message():
 #    cmd2 = 0x66
 #    rawmessage = bytearray([0x02, 0x62, target1, target2, target3,
 #                            flags, cmd1, cmd2])
-#    msg = Message.create(rawmessage)
+#    msg = insteonplm.messages.create(rawmessage)
 #
 #
 #    assert isinstance(msg, StandardSend)
@@ -160,7 +160,7 @@ def test_StandardSend_withAcknak_message():
     acknak = 0x06
     rawmessage = bytearray([0x02, 0x62, target1, target2, target3, flags,
                             cmd1, cmd2, acknak])
-    msg = Message.create(rawmessage)
+    msg = insteonplm.messages.create(rawmessage)
 
     assert isinstance(msg, StandardSend)
     assert msg.cmd1 == cmd1
@@ -181,7 +181,7 @@ def test_ExtendedSend_withAcknak_message():
         [0x02, 0x62, target1, target2, target3, flags, cmd1, cmd2,
          0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
          0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, acknak])
-    msg = Message.create(rawmessage)
+    msg = insteonplm.messages.create(rawmessage)
 
     assert isinstance(msg, ExtendedSend)
     assert msg.cmd1 == cmd1
@@ -193,18 +193,18 @@ def test_iscomplete_with_complete_message():
     """Test iscomplete with complete message."""
     rawmessage = bytearray([0x02, 0x50, 0x00, 0x00, 0x00, 0x00,
                             0x00, 0x00, 0x00, 0x00, 0x00])
-    assert Message.iscomplete(rawmessage)
+    assert insteonplm.messages.iscomplete(rawmessage)
 
 def test_iscomplete_with_incomplete_message():
     """Test iscomplete with incomplete message."""
     shortmessage = bytearray([0x02, 0x50, 0x00])
-    assert not Message.iscomplete(shortmessage)
+    assert not insteonplm.messages.iscomplete(shortmessage)
 
 def test_incomplete_standard_message():
     """Test incomplete standard message."""
     rawmessage = bytearray([0x02, 0x50, 0x00, 0x00, 0x00, 0x00,
                             0x00, 0x00, 0x00, 0x00])
-    msg = Message.create(rawmessage)
+    msg = insteonplm.messages.create(rawmessage)
     assert msg is None
 
 def test_incomplete_extended_message():
@@ -212,18 +212,18 @@ def test_incomplete_extended_message():
     rawmessage = bytearray([0x02, 0x62, 0x1a, 0x2b, 0x3c, 0x10, 0x7d, 0x8e,
                             0x9f, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
                             0x00, 0x00, 0x00, 0x00, 0x00, 0x00])
-    msg = Message.create(rawmessage)
+    msg = insteonplm.messages.create(rawmessage)
     assert msg is None
 
     rawmessage.append(0x06)
-    msg = Message.create(rawmessage)
+    msg = insteonplm.messages.create(rawmessage)
     assert isinstance(msg, ExtendedSend)
 
 def test_leading_unknown_messge():
     """Test leading unknown messge."""
     rawmessage = bytearray([0x02, 0x00, 0x15, 0x02, 0x50, 0x46, 0xd0, 0xe6,
                             0x43, 0x6c, 0x15, 0x40, 0x11, 0x01])
-    msg = Message.create(rawmessage)
+    msg = insteonplm.messages.create(rawmessage)
     assert isinstance(msg, StandardReceive)
     assert msg.cmd1 == 0x11
     assert msg.cmd2 == 0x01

@@ -21,10 +21,10 @@ from insteonplm.constants import (COMMAND_LIGHT_BRIGHTEN_ONE_STEP_0X15_0X00,
 from insteonplm.messages.standardSend import StandardSend
 from insteonplm.messages.extendedSend import ExtendedSend
 from insteonplm.messages.standardReceive import StandardReceive
-from insteonplm.messages import MessageFlags
-from insteonplm.states import StateBase
+from insteonplm.messages.messageFlags import MessageFlags
+from insteonplm.states import State
 
-class DimmableSwitch(StateBase):
+class DimmableSwitch(State):
     """Device state representing an On/Off switch that is controllable.
 
     Available methods are:
@@ -221,7 +221,7 @@ class DimmableSwitch(StateBase):
     def _status_message_received(self, msg):
         self._update_subscribers(msg.cmd2)
 
-class DimmableSwitch_Fan(StateBase):
+class DimmableSwitch_Fan(State):
     """Device state representing a the bottom outlet On/Off switch that is controllable.
 
     Available methods are:

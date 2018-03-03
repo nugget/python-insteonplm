@@ -3,10 +3,10 @@
 from insteonplm.constants import (MESSAGE_STANDARD_MESSAGE_RECEIVED_0X50,
                                   MESSAGE_STANDARD_MESSAGE_RECIEVED_SIZE)
 from insteonplm.address import Address
-from insteonplm.messages import MessageBase
+from insteonplm.messages.message import Message
 from insteonplm.messages.messageFlags import MessageFlags
 
-class StandardReceive(MessageBase):
+class StandardReceive(Message):
     """Insteon Standard Length Message Received 0x50"""
 
     _code = MESSAGE_STANDARD_MESSAGE_RECEIVED_0X50

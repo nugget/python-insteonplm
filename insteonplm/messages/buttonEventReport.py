@@ -1,8 +1,8 @@
-from insteonplm.messages import MessageBase
+from insteonplm.messages.message import Message
 from insteonplm.constants import *
 import binascii
 
-class ButtonEventReport(MessageBase):
+class ButtonEventReport(Message):
     """Insteon Button Event Report Message Received 0x54"""
     
     _code = MESSAGE_BUTTON_EVENT_REPORT_0X54

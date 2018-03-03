@@ -1,9 +1,9 @@
-from insteonplm.messages import MessageBase
+from insteonplm.messages.message import Message
 from insteonplm.constants import *
 from insteonplm.address import Address
 import binascii
 
-class AllLinkComplete(MessageBase):
+class AllLinkComplete(Message):
     """INSTEON ALL-Linking Completed Message 0x53"""
 
     _code = MESSAGE_ALL_LINKING_COMPLETED_0X53

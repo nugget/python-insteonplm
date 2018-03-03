@@ -8,6 +8,7 @@ from collections import deque
 
 import async_timeout
 
+import insteonplm.messages
 from insteonplm.constants import (COMMAND_ASSIGN_TO_ALL_LINK_GROUP_0X01_NONE,
                                   MESSAGE_NAK, MESSAGE_FLAG_EXTENDED_0X10)
 from insteonplm.aldb import ALDB
@@ -19,15 +20,14 @@ from insteonplm.messages.getIMInfo import GetImInfo
 from insteonplm.messages.getNextAllLinkRecord import GetNextAllLinkRecord
 from insteonplm.messages.standardReceive import StandardReceive
 from insteonplm.messages.standardSend import StandardSend
-from insteonplm.messages.message import Message
-from insteonplm.devices import DeviceBase
+from insteonplm.devices import Device
 
 __all__ = ('PLM')
 WAIT_TIMEOUT = 2
 DEVICE_INFO_FILE = 'insteon_plm_device_info.dat'
 
 
-class PLM(asyncio.Protocol, DeviceBase):
+class PLM(asyncio.Protocol, Device):
     """The Insteon PLM IP control protocol handler."""
 
     def __init__(self, loop=None, connection_lost_callback=None,
@@ -438,7 +438,7 @@ class PLM(asyncio.Protocol, DeviceBase):
             if len(self._buffer) == 0:
                 worktodo = False
                 break
-            msg = Message.create(self._buffer)
+            msg = insteonplm.messages.create(self._buffer)
 
             if msg is not None:
                 self._recv_queue.appendleft(msg)

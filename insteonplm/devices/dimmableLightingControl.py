@@ -1,9 +1,9 @@
 """INSTEON Device Type Dimmable Lighting Control Module."""
-from insteonplm.devices import DeviceBase
+from insteonplm.devices import Device
 from insteonplm.states.dimmable import DimmableSwitch, DimmableSwitch_Fan
 
 
-class DimmableLightingControl(DeviceBase):
+class DimmableLightingControl(Device):
     """Dimmable Lighting Controller.
 
     INSTEON On/Off switch device class. Available device control options are:
@@ -23,7 +23,7 @@ class DimmableLightingControl(DeviceBase):
     def __init__(self, plm, address, cat, subcat, product_key=None,
                  description=None, model=None):
         """Initialize the DimmableLightingControl Class."""
-        DeviceBase.__init__(self, plm, address, cat, subcat, product_key,
+        Device.__init__(self, plm, address, cat, subcat, product_key,
                             description, model)
 
         self._stateList[0x01] = DimmableSwitch(

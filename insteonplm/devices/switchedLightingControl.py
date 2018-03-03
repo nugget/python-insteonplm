@@ -1,11 +1,11 @@
 """Insteon Switched Lighting Control Device Class Module."""
-from insteonplm.devices import DeviceBase
+from insteonplm.devices import Device
 from insteonplm.states.onOff import (OnOffSwitch,
                                      OnOffSwitch_OutletTop,
                                      OnOffSwitch_OutletBottom)
 
 
-class SwitchedLightingControl(DeviceBase):
+class SwitchedLightingControl(Device):
     """Switched Lighting Control.
 
     Device Class 0x02 subcat Any
@@ -32,7 +32,7 @@ class SwitchedLightingControl(DeviceBase):
             self._plm.message_callbacks, 0x00)
 
 
-class SwitchedLightingControl_2663_222(DeviceBase):
+class SwitchedLightingControl_2663_222(Device):
     """On/Off outlet model 2663-222 Switched Lighting Control.
 
     Device Class 0x02 subcat 0x39

@@ -1,9 +1,9 @@
-from insteonplm.messages import MessageBase
+from insteonplm.messages.message import Message
 from insteonplm.constants import *
 from insteonplm.address import Address
 import binascii
 
-class AllLinkCleanupFailureReport(MessageBase):
+class AllLinkCleanupFailureReport(Message):
     """INSTEON All-Link Failure Report Message 0x56"""
     _code = MESSAGE_ALL_LINK_CEANUP_FAILURE_REPORT_0X56
     _sendSize = MESSAGE_ALL_LINK_CEANUP_FAILURE_REPORT_SIZE

@@ -6,11 +6,11 @@ from insteonplm.constants import (MESSAGE_ACK,
                                   MESSAGE_SEND_EXTENDED_MESSAGE_RECEIVED_SIZE,
                                   MESSAGE_SEND_EXTENDED_MESSAGE_SIZE)
 from insteonplm.address import Address
-from insteonplm.messages import MessageBase
+from insteonplm.messages.message import Message
 from insteonplm.messages.messageFlags import MessageFlags
 from insteonplm.messages.userdata import Userdata
 
-class ExtendedSend(MessageBase):
+class ExtendedSend(Message):
     """Send an INSTEON Extended message.
 
     address: A device hex address in any form.

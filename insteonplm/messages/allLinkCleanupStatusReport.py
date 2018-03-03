@@ -1,8 +1,8 @@
-from insteonplm.messages import MessageBase
+from insteonplm.messages.message import Message
 from insteonplm.constants import *
 import binascii
 
-class AllLinkCleanupStatusReport(MessageBase):
+class AllLinkCleanupStatusReport(Message):
     """INSTEON All-Link Cleanup Status Report Message 0x58"""
     _code = MESSAGE_ALL_LINK_CLEANUP_STATUS_REPORT_0X58
     _sendSize = MESSAGE_ALL_LINK_CLEANUP_STATUS_REPORT_SIZE

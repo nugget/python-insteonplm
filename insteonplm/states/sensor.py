@@ -9,10 +9,10 @@ from insteonplm.constants import (COMMAND_LIGHT_ON_0X11_NONE,
                                   MESSAGE_TYPE_ALL_LINK_BROADCAST)
 from insteonplm.messages.standardSend import StandardSend
 from insteonplm.messages.standardReceive import StandardReceive
-from insteonplm.messages import MessageFlags
-from insteonplm.states import StateBase
+from insteonplm.messages.messageFlags import MessageFlags
+from insteonplm.states import State
 
-class SensorBase(StateBase):
+class SensorBase(State):
     """Base state representing a variable value sensor that is not controllable.
 
     Available properties are:
@@ -27,7 +27,7 @@ class SensorBase(StateBase):
 
     def __init__(self, address, statename, group, send_message_method,
                  message_callbacks, defaultvalue=None):
-        """Initialize the StateBase state."""
+        """Initialize the State state."""
         super().__init__(address, statename, group, send_message_method,
                          message_callbacks, defaultvalue)
 
@@ -145,7 +145,7 @@ class SmokeCO2Sensor(SensorBase):
 
     def __init__(self, address, statename, group, send_message_method,
                  message_callbacks, defaultvalue=None):
-        """Initialize the StateBase state."""
+        """Initialize the State state."""
         super().__init__(address, statename, group, send_message_method,
                          message_callbacks, defaultvalue)
 

@@ -3,11 +3,11 @@
 from insteonplm.constants import (MESSAGE_EXTENDED_MESSAGE_RECEIVED_0X51,
                                   MESSAGE_EXTENDED_MESSAGE_RECEIVED_SIZE)
 from insteonplm.address import Address
-from insteonplm.messages import MessageBase
+from insteonplm.messages.message import Message
 from insteonplm.messages.messageFlags import MessageFlags
 from insteonplm.messages.userdata import Userdata
 
-class ExtendedReceive(MessageBase):
+class ExtendedReceive(Message):
     """Insteon Extended Length Message Received 0x51"""
 
     _code = MESSAGE_EXTENDED_MESSAGE_RECEIVED_0X51

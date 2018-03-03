@@ -1,10 +1,10 @@
 """INSTEON Sensors Actuators Device Class Module."""
-from insteonplm.devices import DeviceBase
+from insteonplm.devices import Device
 from insteonplm.states.onOff import OpenClosedRelay
 from insteonplm.states.sensor import IoLincSensor
 
 
-class SensorsActuators(DeviceBase):
+class SensorsActuators(Device):
     """Sensors And Actuator Device Class.
 
     Device cat: 0x07 subcat: Any

@@ -1,8 +1,8 @@
 """INSTEON General Controller Device Class."""
-from insteonplm.devices import DeviceBase
+from insteonplm.devices import Device
 
 
-class GeneralController(DeviceBase):
+class GeneralController(Device):
     """General Controller Device Class.
 
     Device cat: 0x00

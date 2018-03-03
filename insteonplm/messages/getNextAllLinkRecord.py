@@ -1,8 +1,8 @@
-from insteonplm.messages import MessageBase
+from insteonplm.messages.message import Message
 from insteonplm.constants import *
 import binascii
 
-class GetNextAllLinkRecord(MessageBase):
+class GetNextAllLinkRecord(Message):
     """Insteon Get Next All Link Record Message 0x6A"""
     
     _code = MESSAGE_GET_NEXT_ALL_LINK_RECORD_0X6A

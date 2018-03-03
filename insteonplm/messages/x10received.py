@@ -1,8 +1,8 @@
-from insteonplm.messages import MessageBase
+from insteonplm.messages.message import Message
 from insteonplm.constants import *
 import binascii
 
-class X10Received(MessageBase):
+class X10Received(Message):
     """Insteon Get Next All Link Record Message 0x6A"""
     
     _code = MESSAGE_X10_MESSAGE_RECEIVED_0X52

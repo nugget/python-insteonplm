@@ -1,8 +1,8 @@
-from insteonplm.messages import MessageBase
+from insteonplm.messages.message import Message
 from insteonplm.constants import *
 import binascii
 
-class SendAllLinkCommand(MessageBase):
+class SendAllLinkCommand(Message):
     """Insteon Send All Link Command Message 0x6A"""
 
     _code = MESSAGE_SEND_ALL_LINK_COMMAND_0X61

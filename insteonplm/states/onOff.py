@@ -13,11 +13,11 @@ from insteonplm.constants import (COMMAND_LIGHT_MANUALLY_TURNED_ON_0X23_0X00,
 from insteonplm.messages.standardSend import StandardSend
 from insteonplm.messages.extendedSend import ExtendedSend
 from insteonplm.messages.standardReceive import StandardReceive
-from insteonplm.messages import MessageFlags
-from insteonplm.states import StateBase
+from insteonplm.messages.messageFlags import MessageFlags
+from insteonplm.states import State
 
 
-class OnOffStateBase(StateBase):
+class OnOffStateBase(State):
     """Base state representing an On/Off switch that is controllable.
 
     Available properties are:

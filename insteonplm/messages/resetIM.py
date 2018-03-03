@@ -1,8 +1,8 @@
-from insteonplm.messages import MessageBase
+from insteonplm.messages.message import Message
 from insteonplm.constants import *
 import binascii
 
-class ResetIM(MessageBase):
+class ResetIM(Message):
     """Insteon Reset IM Message 0x67"""
     
     _code = MESSAGE_RESET_IM_0X67

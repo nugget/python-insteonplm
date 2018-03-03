@@ -1,9 +1,9 @@
-from insteonplm.messages import MessageBase
+from insteonplm.messages.message import Message
 from insteonplm.constants import *
 from insteonplm.address import Address
 import binascii
 
-class AllLinkRecordResponse(MessageBase):
+class AllLinkRecordResponse(Message):
     """INSTEON ALL-Link Record Response 0x57"""
 
     _code = MESSAGE_ALL_LINK_RECORD_RESPONSE_0X57
