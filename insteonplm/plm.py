@@ -11,6 +11,7 @@ import async_timeout
 import insteonplm.messages
 from insteonplm.constants import (COMMAND_ASSIGN_TO_ALL_LINK_GROUP_0X01_NONE,
                                   MESSAGE_NAK, MESSAGE_FLAG_EXTENDED_0X10)
+from insteonplm.address import Address
 from insteonplm.aldb import ALDB
 from insteonplm.messagecallback import MessageCallback
 from insteonplm.messages.allLinkRecordResponse import AllLinkRecordResponse
