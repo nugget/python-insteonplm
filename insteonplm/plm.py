@@ -62,6 +62,7 @@ class PLM(asyncio.Protocol, Device):
         self._message_callbacks = MessageCallback()
         self._saved_device_info = []
         self._cb_load_all_link_db_done = []
+        self._cb_device_not_active = []
 
         self._address = None
         self._cat = None
@@ -178,6 +179,12 @@ class PLM(asyncio.Protocol, Device):
         self.log.debug('Added new callback %s ',
                        callback)
         self._cb_load_all_link_db_done.append(callback)
+
+    def add_device_not_active_callback(self, callback):
+        """Register a callback to be invoked when a device is not repsonding."""
+        self.log.debug('Added new callback %s ',
+                      callback)
+        self._cb_device_not_active.append(callback)
 
     def poll_devices(self):
         """Request status updates from each device."""
@@ -368,6 +375,9 @@ class PLM(asyncio.Protocol, Device):
                                  'device_override')
                 self.log.warning('configuration.')
                 staleaddr.append(addr)
+
+                for callback in self._cb_device_not_active:
+                    callback(Address(addr))
 
         for addr in staleaddr:
             self._aldb_response_queue.pop(addr)
