@@ -32,7 +32,7 @@ def test_create_device_from_category_generic_device():
     cat = 0x02
     subcat = 0xff  # needs to be a subcat that is not in the IPDB
 
-    description = 'Generic Switched Lighting'
+    description = 'Generic Switched Lighting Control'
     model = ''
 
     aldb = ALDB()
