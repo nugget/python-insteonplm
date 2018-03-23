@@ -29,9 +29,9 @@ class IPDB(object):
 
     # pylint disable=line-too-long
     products = [
-        Product(None, None, None, '', '', UnknownDevice),
+        Product(None, None, None, 'Unknown Device', '', UnknownDevice),
 
-        Product(0x00, None, None, '', '', GeneralController),
+        Product(0x00, None, None, 'General Controller', '', GeneralController),
         Product(0x00, 0x04, None, 'ControLinc', '2430', GeneralController),
         Product(0x00, 0x05, 0x000034, 'RemoteLinc', '2440', GeneralController),
         Product(0x00, 0x06, None, 'ICON Tabletop Controller', '2830', GeneralController),
@@ -286,10 +286,10 @@ class IPDB(object):
         Product(0x0E, 0x03, 0x0000000, 'Micro Open/Close', '2444-522', None),
 
         Product(0x0F, None, None, 'Generic Plumbing Controller', '', None),
-        Product(0x0F, 0x00, 0x000000E, 'Weiland Doors' Central Drive and Controller', '', None),
-        Product(0x0F, 0x01, 0x000000F, 'Weiland Doors' Secondary Central Drive', '', None),
-        Product(0x0F, 0x02, 0x0000010, 'Weiland Doors' Assist Drive', '', None),
-        Product(0x0F, 0x03, 0x0000011, 'Weiland Doors' Elevation Drive', '', None),
+        Product(0x0F, 0x00, 0x000000E, 'Weiland Doors Central Drive and Controller', '', None),
+        Product(0x0F, 0x01, 0x000000F, 'Weiland Doors Secondary Central Drive', '', None),
+        Product(0x0F, 0x02, 0x0000010, 'Weiland Doors Assist Drive', '', None),
+        Product(0x0F, 0x03, 0x0000011, 'Weiland Doors Elevation Drive', '', None),
         Product(0x0F, 0x04, 0x0000000, 'GarageHawk Garage Unit', '', None),
         Product(0x0F, 0x05, 0x0000000, 'GarageHawk Remote Unit', '', None),
         Product(0x0F, 0x06, 0x0000000, 'MorningLinc', '2458A1', None),
