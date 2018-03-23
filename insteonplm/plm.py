@@ -193,7 +193,7 @@ class PLM(asyncio.Protocol, Device):
         self.log.debug("Starting: send_msg")
         write_message_coroutine = self._write_message_from_send_queue()
         self._send_queue.put_nowait(msg)
-        asyncio.ensure_future(write_message_coroutine)
+        asyncio.ensure_future(write_message_coroutine, loop=self._loop)
         self.log.debug("Ending: send_msg")
 
     def send_standard(self, addr, commandtuple, cmd2=None,
