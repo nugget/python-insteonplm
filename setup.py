@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+3#!/usr/bin/env python
 """Setup for insteonplm module."""
 from setuptools import setup, find_packages
 
@@ -14,7 +14,7 @@ if len(long_description) < 100:
 
 setup(
     name='insteonplm',
-    version='0.8.2',
+    version='0.8.3',
     author='David McNett',
     author_email='nugget@macnugget.org',
     url='https://github.com/nugget/python-insteonplm',
