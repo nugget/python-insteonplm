@@ -136,7 +136,7 @@ def do_plm(loop, log, devicelist):
         address='4d5e6f', commandtuple={'cmd1': 0x19, 'cmd2': 0x00},
         flags=0x00, acknak=0x06)
     plm.data_received(msg.bytes)
-    asyncio.sleep(.1)
+    yield from asyncio.sleep(.1)
     msg = insteonplm.messages.standardReceive.StandardReceive(
         address='4d5e6f', target='1a2b3c',
         commandtuple={'cmd1': 0x17, 'cmd2': 0xff},

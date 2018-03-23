@@ -1,6 +1,6 @@
 
 """Sensor states."""
-
+from enum import Enum
 from insteonplm.constants import (COMMAND_LIGHT_ON_0X11_NONE,
                                   COMMAND_LIGHT_OFF_0X13_0X00,
                                   COMMAND_LIGHT_STATUS_REQUEST_0X19_0X01,
@@ -11,6 +11,11 @@ from insteonplm.messages.standardSend import StandardSend
 from insteonplm.messages.standardReceive import StandardReceive
 from insteonplm.messages.messageFlags import MessageFlags
 from insteonplm.states import State
+
+class LeakSensorState(Enum):
+    """Enum to define dry/wet state of the leak sensor."""
+    DRY = 0
+    WET = 1
 
 
 class SensorBase(State):
@@ -265,3 +270,114 @@ class IoLincSensor(SensorBase):
             self._update_subscribers(0x00)
         else:
             self._update_subscribers(0x01)
+
+
+class LeakSensorDryWet(State):
+    """Water leak sensor for the Dry or Wet states.
+
+    Available properties are:
+      value
+      name
+      address
+      group
+
+    Available methods are:
+    - register_updates(self, callback)
+    """
+
+    def __init__(self, address, statename, group, send_message_method,
+                 message_callbacks, defaultvalue=None, 
+                 dry_wet: LeakSensorState=None):
+        """Initialize the LeakSensorDry state."""
+        super().__init__(address, statename, group, send_message_method,
+                         message_callbacks, defaultvalue)
+
+        self._dry_wet_type = dry_wet
+        self._dry_wet_callbacks = []
+
+        dry_wet_template = StandardReceive.template(
+            commandtuple=COMMAND_LIGHT_ON_0X11_NONE,
+            address=self._address,
+            target=bytearray([0x00, 0x00, self._group]),
+            flags=MessageFlags.template(MESSAGE_TYPE_BROADCAST_MESSAGE, None))
+
+        self._message_callbacks.add(dry_wet_template,
+                                    self._dry_wet_message_received)
+
+    def register_dry_wet_callback(self, callback):
+        """Register the callback for the wet and dry state callbacks."""
+        self._dry_wet_callbacks.append(callback)
+
+    def set_value(self, dry_wet: LeakSensorState):
+        """Set the value of the state to dry or wet."""
+        value = 0
+        if dry_wet == self._dry_wet_type:
+            value = 1
+        self._update_subscribers(value)
+
+    def _dry_wet_message_received(self, msg):
+        """The sensor is reporting a dry or a wet state."""
+        for callback in self._dry_wet_callbacks:
+            callback(self._dry_wet_type)
+        self._update_subscribers(0x01)
+
+
+class LeakSensorHeartbeat(State):
+    """Water leak sensor for the Dry state.
+
+    Available properties are:
+      value
+      name
+      address
+      group
+
+    Available methods are:
+    - register_updates(self, callback)
+    """
+
+    def __init__(self, address, statename, group, send_message_method,
+                 message_callbacks, defaultvalue=None):
+        """Initialize the LeakSensorDry state."""
+        super().__init__(address, statename, group, send_message_method,
+                         message_callbacks, defaultvalue)
+
+        self._dry_wet_callbacks = []
+
+        dry_template = StandardReceive.template(
+            commandtuple=COMMAND_LIGHT_ON_0X11_NONE,
+            cmd2=self._group,
+            address=self._address,
+            target=bytearray([0x00, 0x00, self._group]),
+            flags=MessageFlags.template(MESSAGE_TYPE_BROADCAST_MESSAGE, None))
+
+        wet_template = StandardReceive.template(
+            commandtuple={'cmd1': 0x13, 'cmd2': self._group},
+            address=self._address,
+            target=bytearray([0x00, 0x00, self._group]),
+            flags=MessageFlags.template(MESSAGE_TYPE_BROADCAST_MESSAGE, None))
+
+        self._message_callbacks.add(dry_template, self._dry_message_received)
+        self._message_callbacks.add(wet_template, self._wet_message_received)
+
+    def register_dry_wet_callback(self, callback):
+        """Register the callback for the wet and dry state callbacks."""
+        self._dry_wet_callbacks.append(callback)
+
+    def set_value(self, dry_wet: LeakSensorState):
+        """Set the state to wet or dry."""
+        if dry_wet == LeakSensorState.DRY:
+            self._update_subscribers(0x11)
+        else:
+            self._update_subscribers(0x13)
+
+    def _dry_message_received(self, msg):
+        """The sensor is reporting a dry state."""
+        for callback in self._dry_wet_callbacks:
+            callback(LeakSensorState.DRY)
+        self._update_subscribers(0x11)
+
+    def _wet_message_received(self, msg):
+        """The sensor is reporting a wet state."""
+        for callback in self._dry_wet_callbacks:
+            callback(LeakSensorState.WET)
+        self._update_subscribers(0x13)

@@ -2,7 +2,10 @@
 
 from insteonplm.states.sensor import (VariableSensor,
                                       OnOffSensor,
-                                      SmokeCO2Sensor)
+                                      SmokeCO2Sensor,
+                                      LeakSensorDryWet,
+                                      LeakSensorHeartbeat,
+                                      LeakSensorState)
 from insteonplm.devices import Device
 
 
@@ -145,9 +148,35 @@ class SecurityHealthSafety_2852_222(Device):
 
         self._product_data_in_aldb = True
 
-        self._stateList[0x01] = OnOffSensor(
-            self._address, "leakSensor", 0x01, self._send_msg,
-            self._plm.message_callbacks, 0x00)
+        self._stateList[0x01] = LeakSensorDryWet(
+            self._address, "dryLeakSensor", 0x01, self._send_msg,
+            self._plm.message_callbacks,
+            defaultvalue=0x01,
+            dry_wet=LeakSensorState.DRY)
+        self._stateList[0x02] = LeakSensorDryWet(
+            self._address, "wetLeakSensor", 0x02, self._send_msg,
+            self._plm.message_callbacks,
+            defaultvalue=0x00,
+            dry_wet=LeakSensorState.WET)
+        self._stateList[0x04] = LeakSensorHeartbeat(
+            self._address, "heartbeatLeakSensor", 0x04, self._send_msg,
+            self._plm.message_callbacks,
+            defaultvalue=0x11)
+        
+        self._stateList[0x01].register_dry_wet_callback(
+            self._stateList[0x02].set_value)
+        self._stateList[0x01].register_dry_wet_callback(
+            self._stateList[0x04].set_value)
+
+        self._stateList[0x02].register_dry_wet_callback(
+            self._stateList[0x01].set_value)
+        self._stateList[0x02].register_dry_wet_callback(
+            self._stateList[0x04].set_value)
+
+        self._stateList[0x04].register_dry_wet_callback(
+            self._stateList[0x01].set_value)
+        self._stateList[0x04].register_dry_wet_callback(
+            self._stateList[0x02].set_value)
 
 
 class SecurityHealthSafety_2982_222(Device):
