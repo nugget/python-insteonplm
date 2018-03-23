@@ -31,7 +31,7 @@ class IPDB(object):
     products = [
         Product(None, None, None, 'Unknown Device', '', UnknownDevice),
 
-        Product(0x00, None, None, 'General Controller', '', GeneralController),
+        Product(0x00, None, None, 'Generic General Controller', '', GeneralController),
         Product(0x00, 0x04, None, 'ControLinc', '2430', GeneralController),
         Product(0x00, 0x05, 0x000034, 'RemoteLinc', '2440', GeneralController),
         Product(0x00, 0x06, None, 'ICON Tabletop Controller', '2830', GeneralController),
@@ -254,7 +254,7 @@ class IPDB(object):
         Product(0x06, None, None, 'Generic Pool Controller', '', None),
         Product(0x06, 0x00, 0x000003, 'EZPool', '', None),
 
-        Product(0x07, None, None, 'Genric Sensor Actuator', '', SensorsActuators),
+        Product(0x07, None, None, 'Generic Sensor Actuator', '', SensorsActuators),
         Product(0x07, 0x00, None, 'I/O Linc', '2450', SensorsActuators_2450),
         Product(0x07, 0x01, 0x000004, 'EZSns1W', '', SensorsActuators),
         Product(0x07, 0x02, 0x0000012, 'EZIO8T I/O Module', '', SensorsActuators),
@@ -321,7 +321,6 @@ class IPDB(object):
 
         Product(0xFF, 0x00, None, 'Unrecognized INSTEON Device', '', UnknownDevice),
         Product(0xFF, 0x01, None, 'Unknown Device', '', UnknownDevice),
-
     ]
 
     def __init__(self):
