@@ -106,3 +106,26 @@ class ALDB(object):
         if self._overrides.get(addr, None) is not None:
             override = True
         return override
+
+    def add_known_devices(self, plm):
+        """Add devices from the saved devices or from the device overrides."""
+        for addr in self._saved_devices:
+            if not self._devices.get(addr):
+                saved_device = self._saved_devices.get(Address(addr).hex, {})
+                cat = saved_device.get('cat')
+                subcat = saved_device.get('subcat')
+                product_key = saved_device.get('firmware')
+                product_key = saved_device.get('product_key', product_key)
+                if cat and subcat:
+                    self.create_device_from_category(plm, addr, cat, subcat,
+                                                     product_key)
+        for addr in self._overrides:
+            if not self._devices.get(addr):
+                device_override = self._overrides.get(Address(addr).hex, {})
+                cat = device_override.get('cat')
+                subcat = device_override.get('subcat')
+                product_key = device_override.get('firmware')
+                product_key = device_override.get('product_key', product_key)
+                if cat and subcat:
+                    self.create_device_from_category(plm, addr, cat, subcat,
+                                                     product_key)

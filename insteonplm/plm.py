@@ -258,6 +258,7 @@ class PLM(asyncio.Protocol, Device):
             self.devices.add_saved_device_info(**savedDevice)
         self.log.debug('Found %d saved devices', len(self._saved_device_info))
         self._get_plm_info()
+        self._add_known_devices()
         self._load_all_link_database()
 
     @asyncio.coroutine
@@ -416,6 +417,9 @@ class PLM(asyncio.Protocol, Device):
         self._subcat = msg.subcategory
         self._product_key = msg.firmware
         self.log.debug('Ending _handle_get_plm_info')
+
+    def _add_known_devices(self):
+        self.devices.add_known_devices(self)
 
     def _load_all_link_database(self):
         """Load the ALL-Link Database into object."""
