@@ -53,6 +53,16 @@ class ALDB(object):
         attrs = vars(self)
         return ', '.join("%s: %r" % item for item in attrs.items())
 
+    @property
+    def saved_devices(self):
+        """Return the device info from the saved devices file."""
+        return self._saved_devices
+
+    @property
+    def overrides(self):
+        """Return the device overrides."""
+        return self._overrides
+
     def add_device_callback(self, callback):
         """Register a callback to be invoked when a new device appears."""
         self.log.debug('Added new callback %s ',
@@ -117,8 +127,11 @@ class ALDB(object):
                 product_key = saved_device.get('firmware')
                 product_key = saved_device.get('product_key', product_key)
                 if cat and subcat:
-                    self.create_device_from_category(plm, addr, cat, subcat,
-                                                     product_key)
+                    self.log.info('Device with id %s added to device list '
+                                  'from saved device data.',
+                                  addr)
+                    self[addr] = self.create_device_from_category(
+                        plm, addr, cat,subcat, product_key)
         for addr in self._overrides:
             if not self._devices.get(addr):
                 device_override = self._overrides.get(Address(addr).hex, {})
@@ -127,5 +140,8 @@ class ALDB(object):
                 product_key = device_override.get('firmware')
                 product_key = device_override.get('product_key', product_key)
                 if cat and subcat:
-                    self.create_device_from_category(plm, addr, cat, subcat,
-                                                     product_key)
+                    self.log.info('Device with id %s added to device list '
+                                  'from device override data.',
+                                  addr)
+                    self[addr] = self.create_device_from_category(
+                        plm, addr, cat,subcat, product_key)
