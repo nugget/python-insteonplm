@@ -53,6 +53,16 @@ class ALDB(object):
         attrs = vars(self)
         return ', '.join("%s: %r" % item for item in attrs.items())
 
+    @property
+    def saved_devices(self):
+        """Return the device info from the saved devices file."""
+        return self._saved_devices
+
+    @property
+    def overrides(self):
+        """Return the device overrides."""
+        return self._overrides
+
     def add_device_callback(self, callback):
         """Register a callback to be invoked when a new device appears."""
         self.log.debug('Added new callback %s ',
@@ -69,7 +79,8 @@ class ALDB(object):
 
     def add_saved_device_info(self, **kwarg):
         """Register device info from the saved data file."""
-        addr = kwarg.get('address', None)
+        addr = kwarg.get('address')
+        self.log.debug('Found saved device with address %s', addr)
         info = {}
         if addr is not None:
             info['cat'] = kwarg.get('cat', None)
@@ -106,3 +117,32 @@ class ALDB(object):
         if self._overrides.get(addr, None) is not None:
             override = True
         return override
+
+    def add_known_devices(self, plm):
+        """Add devices from the saved devices or from the device overrides."""
+        for addr in self._saved_devices:
+            if not self._devices.get(addr):
+                saved_device = self._saved_devices.get(Address(addr).hex, {})
+                cat = saved_device.get('cat')
+                subcat = saved_device.get('subcat')
+                product_key = saved_device.get('firmware')
+                product_key = saved_device.get('product_key', product_key)
+                if cat and subcat:
+                    self.log.info('Device with id %s added to device list '
+                                  'from saved device data.',
+                                  addr)
+                    self[addr] = self.create_device_from_category(
+                        plm, addr, cat,subcat, product_key)
+        for addr in self._overrides:
+            if not self._devices.get(addr):
+                device_override = self._overrides.get(Address(addr).hex, {})
+                cat = device_override.get('cat')
+                subcat = device_override.get('subcat')
+                product_key = device_override.get('firmware')
+                product_key = device_override.get('product_key', product_key)
+                if cat and subcat:
+                    self.log.info('Device with id %s added to device list '
+                                  'from device override data.',
+                                  addr)
+                    self[addr] = self.create_device_from_category(
+                        plm, addr, cat,subcat, product_key)
