@@ -79,7 +79,8 @@ class ALDB(object):
 
     def add_saved_device_info(self, **kwarg):
         """Register device info from the saved data file."""
-        addr = kwarg.get('address', None)
+        addr = kwarg.get('address')
+        self.log.debug('Found saved device with address %s', addr)
         info = {}
         if addr is not None:
             info['cat'] = kwarg.get('cat', None)

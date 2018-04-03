@@ -254,6 +254,8 @@ class PLM(asyncio.Protocol, Device):
     @asyncio.coroutine
     def _setup_devices(self):
         saved_device_info = yield from self._load_saved_device_info()
+        self.log.debug('SAVED DEVICE INFO:')
+        self.log.debug(saved_device_info)
         for savedDevice in saved_device_info:
             self.devices.add_saved_device_info(**savedDevice)
         self.log.debug('Found %d saved devices', len(self.devices.saved_devices))
@@ -419,7 +421,9 @@ class PLM(asyncio.Protocol, Device):
         self.log.debug('Ending _handle_get_plm_info')
 
     def _add_known_devices(self):
+        self.log.debug("Adding known devices.")
         self.devices.add_known_devices(self)
+        self.log.debug("Completed adding known devices.")
 
     def _load_all_link_database(self):
         """Load the ALL-Link Database into object."""
