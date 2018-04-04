@@ -40,21 +40,14 @@ class SensorBase(State):
         template_on_broadcast = StandardReceive.template(
             commandtuple=COMMAND_LIGHT_ON_0X11_NONE,
             address=self._address,
-            flags=MessageFlags.template(MESSAGE_TYPE_BROADCAST_MESSAGE, None))
+            target=bytearray([0x00, 0x00, self._group]),
+            flags=MessageFlags.template(MESSAGE_TYPE_BROADCAST_MESSAGE, None),
+            cmd2=None)
         template_off_broadcast = StandardReceive.template(
             commandtuple=COMMAND_LIGHT_OFF_0X13_0X00,
             address=self._address,
+            target=bytearray([0x00, 0x00, self._group]),
             flags=MessageFlags.template(MESSAGE_TYPE_BROADCAST_MESSAGE, None),
-            cmd2=None)
-
-        template_on_cleanup = StandardReceive.template(
-            commandtuple=COMMAND_LIGHT_ON_0X11_NONE,
-            address=self._address,
-            flags=MessageFlags.template(MESSAGE_TYPE_ALL_LINK_CLEANUP, None))
-        template_off_cleanup = StandardReceive.template(
-            commandtuple=COMMAND_LIGHT_OFF_0X13_0X00,
-            address=self._address,
-            flags=MessageFlags.template(MESSAGE_TYPE_ALL_LINK_CLEANUP, None),
             cmd2=None)
 
         template_on_group = StandardReceive.template(
@@ -62,22 +55,17 @@ class SensorBase(State):
             address=self._address,
             target=bytearray([0x00, 0x00, self._group]),
             flags=MessageFlags.template(MESSAGE_TYPE_ALL_LINK_BROADCAST, None),
-            cmd2=self._group)
+            cmd2=None)
         template_off_group = StandardReceive.template(
             commandtuple=COMMAND_LIGHT_OFF_0X13_0X00,
             address=self._address,
             target=bytearray([0x00, 0x00, self._group]),
             flags=MessageFlags.template(MESSAGE_TYPE_ALL_LINK_BROADCAST, None),
-            cmd2=self._group)
+            cmd2=None)
 
         self._message_callbacks.add(template_on_broadcast,
                                     self._sensor_on_command_received)
         self._message_callbacks.add(template_off_broadcast,
-                                    self._sensor_off_command_received)
-
-        self._message_callbacks.add(template_on_cleanup,
-                                    self._sensor_on_command_received)
-        self._message_callbacks.add(template_off_cleanup,
                                     self._sensor_off_command_received)
 
         self._message_callbacks.add(template_on_group,
@@ -171,7 +159,6 @@ class SmokeCO2Sensor(SensorBase):
         template_group = StandardReceive.template(
             commandtuple=COMMAND_LIGHT_ON_0X11_NONE,
             address=self._address,
-            target=bytearray([0x00, 0x00, self._group]),
             flags=MessageFlags.template(MESSAGE_TYPE_ALL_LINK_BROADCAST, None))
 
         self._message_callbacks.add(template_broadcast,
@@ -295,13 +282,31 @@ class LeakSensorDryWet(State):
         self._dry_wet_type = dry_wet
         self._dry_wet_callbacks = []
 
-        dry_wet_template = StandardReceive.template(
+        template_broadcast = StandardReceive.template(
             commandtuple=COMMAND_LIGHT_ON_0X11_NONE,
             address=self._address,
             target=bytearray([0x00, 0x00, self._group]),
             flags=MessageFlags.template(MESSAGE_TYPE_BROADCAST_MESSAGE, None))
 
-        self._message_callbacks.add(dry_wet_template,
+        template_all_link = StandardReceive.template(
+            commandtuple=COMMAND_LIGHT_ON_0X11_NONE,
+            address=self._address,
+            target=bytearray([0x00, 0x00, self._group]),
+            flags=MessageFlags.template(MESSAGE_TYPE_ALL_LINK_BROADCAST, None))
+
+        template_cleanup= StandardReceive.template(
+            commandtuple=COMMAND_LIGHT_ON_0X11_NONE,
+            address=self._address,
+            target=bytearray([0x00, 0x00, self._group]),
+            flags=MessageFlags.template(MESSAGE_TYPE_ALL_LINK_CLEANUP, None))
+
+        self._message_callbacks.add(template_broadcast,
+                                    self._dry_wet_message_received)
+
+        self._message_callbacks.add(template_all_link,
+                                    self._dry_wet_message_received)
+
+        self._message_callbacks.add(template_cleanup,
                                     self._dry_wet_message_received)
 
     def register_dry_wet_callback(self, callback):
@@ -343,21 +348,51 @@ class LeakSensorHeartbeat(State):
 
         self._dry_wet_callbacks = []
 
-        dry_template = StandardReceive.template(
+        template_dry_broadcast = StandardReceive.template(
             commandtuple=COMMAND_LIGHT_ON_0X11_NONE,
             cmd2=self._group,
             address=self._address,
             target=bytearray([0x00, 0x00, self._group]),
             flags=MessageFlags.template(MESSAGE_TYPE_BROADCAST_MESSAGE, None))
 
-        wet_template = StandardReceive.template(
+        template_wet_broadcast = StandardReceive.template(
             commandtuple={'cmd1': 0x13, 'cmd2': self._group},
             address=self._address,
             target=bytearray([0x00, 0x00, self._group]),
             flags=MessageFlags.template(MESSAGE_TYPE_BROADCAST_MESSAGE, None))
 
-        self._message_callbacks.add(dry_template, self._dry_message_received)
-        self._message_callbacks.add(wet_template, self._wet_message_received)
+        template_dry_all_link = StandardReceive.template(
+            commandtuple=COMMAND_LIGHT_ON_0X11_NONE,
+            cmd2=self._group,
+            address=self._address,
+            target=bytearray([0x00, 0x00, self._group]),
+            flags=MessageFlags.template(MESSAGE_TYPE_ALL_LINK_BROADCAST, None))
+
+        template_wet_all_link = StandardReceive.template(
+            commandtuple={'cmd1': 0x13, 'cmd2': self._group},
+            address=self._address,
+            target=bytearray([0x00, 0x00, self._group]),
+            flags=MessageFlags.template(MESSAGE_TYPE_ALL_LINK_BROADCAST, None))
+
+        template_dry_cleanup = StandardReceive.template(
+            commandtuple=COMMAND_LIGHT_ON_0X11_NONE,
+            cmd2=self._group,
+            address=self._address,
+            target=bytearray([0x00, 0x00, self._group]),
+            flags=MessageFlags.template(MESSAGE_TYPE_ALL_LINK_CLEANUP, None))
+
+        template_wet_cleanup = StandardReceive.template(
+            commandtuple={'cmd1': 0x13, 'cmd2': self._group},
+            address=self._address,
+            target=bytearray([0x00, 0x00, self._group]),
+            flags=MessageFlags.template(MESSAGE_TYPE_ALL_LINK_CLEANUP, None))
+
+        self._message_callbacks.add(template_dry_broadcast, self._dry_message_received)
+        self._message_callbacks.add(template_wet_broadcast, self._wet_message_received)
+        self._message_callbacks.add(template_dry_all_link, self._dry_message_received)
+        self._message_callbacks.add(template_wet_all_link, self._wet_message_received)
+        self._message_callbacks.add(template_dry_cleanup, self._dry_message_received)
+        self._message_callbacks.add(template_wet_cleanup, self._wet_message_received)
 
     def register_dry_wet_callback(self, callback):
         """Register the callback for the wet and dry state callbacks."""
