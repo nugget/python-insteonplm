@@ -1,6 +1,7 @@
 """Module to maintain PLM state information and network interface."""
 
 import asyncio
+import json
 import logging
 
 from insteonplm.address import Address

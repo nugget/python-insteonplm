@@ -1,7 +1,6 @@
 """Module to maintain PLM state information and network interface."""
 
 import asyncio
-import json
 import logging
 import binascii
 from collections import deque
