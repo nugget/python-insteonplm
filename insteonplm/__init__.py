@@ -28,7 +28,7 @@ class Connection:
 
     @classmethod
     @asyncio.coroutine
-    def create(cls, device='/dev/ttyUSB0', address=None,
+    def create(cls, device='/dev/ttyUSB0', ipaddress=None,
                username=None, password=None, port=25010,
                auto_reconnect=True, loop=None, workdir=None):
         """Initiate a connection to a specific device.
@@ -61,6 +61,10 @@ class Connection:
         conn = cls()
 
         conn.device = device
+        conn.ipaddress = ipaddress,
+        conn.username = username
+        conn.password = password
+        conn.port = port
         conn._loop = loop or asyncio.get_event_loop()
         conn._retry_interval = 1
         conn._closed = False
@@ -74,7 +78,7 @@ class Connection:
                 ensure_future(conn._reconnect(), loop=conn._loop)
         
         protocol_class = PLM
-        if address:
+        if conn.ipaddress:
             protocol_class = Hub
         conn.protocol = protocol_class(
             connection_lost_callback=connection_lost,
@@ -103,6 +107,8 @@ class Connection:
     def _increase_retry_interval(self):
         self._retry_interval = min(300, 1.5 * self._retry_interval)
 
+    # TODO: 
+    # This code need to change to handle serial or HTTP connections. 
     @asyncio.coroutine
     def _reconnect(self):
         while True:
@@ -110,11 +116,16 @@ class Connection:
                 if self._halted:
                     yield from asyncio.sleep(2, loop=self._loop)
                 else:
-                    self.log.info('Connecting to PLM on %s', self.device)
-                    yield from serial.aio.create_serial_connection(
-                        self._loop, lambda: self.protocol,
-                        self.device, baudrate=19200)
-                    self._reset_retry_interval()
+                    if self.ipaddress:
+                        # TODO
+                        # Figure out how to implement AIOHTTP to connect to the Hub
+                        pass
+                    else:
+                        self.log.info('Connecting to PLM on %s', self.device)
+                        yield from serial.aio.create_serial_connection(
+                            self._loop, lambda: self.protocol,
+                            self.device, baudrate=19200)
+                        self._reset_retry_interval()
                     return
 
             except OSError:

@@ -431,6 +431,7 @@ class IM(Device, asyncio.Protocol):
 
         self.log.debug('Ending _handle_get_plm_info')
 
+
 class PLM(IM):
     """Insteon PowerLinc Modem device.
 
@@ -451,6 +452,7 @@ class PLM(IM):
             :type workdir:
                 string - valid directory path
     """
+
 
 class Hub(IM):
     """Insteon Hub device.
