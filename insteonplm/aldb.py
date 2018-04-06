@@ -9,6 +9,8 @@ from insteonplm.devices import Device
 
 __all__ = ('ALDB')
 
+DEVICE_INFO_FILE = 'insteon_plm_device_info.dat'
+
 
 class ALDB(object):
     """Class holds and maintains the ALL-Link Database from the PLM device."""

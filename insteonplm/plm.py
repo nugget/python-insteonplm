@@ -25,7 +25,6 @@ from insteonplm.devices import Device
 
 __all__ = ('PLM, Hub')
 WAIT_TIMEOUT = 2
-DEVICE_INFO_FILE = 'insteon_plm_device_info.dat'
 
 
 class IM(Device, asyncio.Protocol):
