@@ -119,7 +119,7 @@ class ExtendedSend(Message):
         return self._acknak
 
     @acknak.setter
-    def acknakc(self, val):
+    def acknak(self, val):
         """Set the ACK/NAK byte."""
         if val in [None, 0x06, 0x15]:
             self._acknak = val
