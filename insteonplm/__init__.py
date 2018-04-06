@@ -119,7 +119,7 @@ class Connection:
                     if self.ipaddress:
                         # TODO
                         # Figure out how to implement AIOHTTP to connect to the Hub
-                        pass
+                        self.log.debug('I think I am a hub????')
                     else:
                         self.log.info('Connecting to PLM on %s', self.device)
                         yield from serial.aio.create_serial_connection(
