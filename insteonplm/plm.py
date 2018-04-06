@@ -23,17 +23,13 @@ from insteonplm.messages.standardReceive import StandardReceive
 from insteonplm.messages.standardSend import StandardSend
 from insteonplm.devices import Device
 
-__all__ = ('PLM')
+__all__ = ('PLM, Hub')
 WAIT_TIMEOUT = 2
 DEVICE_INFO_FILE = 'insteon_plm_device_info.dat'
 
 
-class PLM(asyncio.Protocol, Device):
-    """The Insteon PLM IP control protocol handler."""
-
-    def __init__(self, loop=None, connection_lost_callback=None,
-                 userdefineddevices=(), workdir=None):
-        """Protocol handler that handles all status and changes on PLM.
+class IM(Device, asyncio.Protocol):
+    """The Insteon PLM IP control protocol handler.
 
         This class is expected to be wrapped inside a Connection class object
         which will maintain the socket and handle auto-reconnects.
@@ -42,69 +38,47 @@ class PLM(asyncio.Protocol, Device):
                 called when connection is lost to device (optional)
             :param loop:
                 asyncio event loop (optional)
+            :param workdir:
+                Working directory name to save device information (optional)
 
             :type: connection_lost_callback:
                 callable
             :type loop:
                 asyncio.loop
+            :type workdir:
+                string - valid directory path
         """
-        self._loop = loop
 
+    def __init__(self, loop=None, connection_lost_callback=None, workdir=None):
+        """Protocol handler that handles all status and changes on PLM."""
+        self._loop = loop
         self._connection_lost_callback = connection_lost_callback
-        self._workdir = workdir
 
         self._buffer = bytearray()
         self._recv_queue = deque([])
         self._send_queue = asyncio.Queue(loop=self._loop)
         self._wait_acknack_queue = []
         self._aldb_response_queue = {}
-        self.devices = ALDB()
+        self._devices = ALDB(loop, workdir)
         self._write_transport_lock = asyncio.Lock(loop=self._loop)
         self._message_callbacks = MessageCallback()
-        self._saved_device_info = []
+
+        # Callback lists
         self._cb_load_all_link_db_done = []
         self._cb_device_not_active = []
 
-        self._address = None
-        self._cat = None
-        self._subcat = None
-        self._product_key = None
+        super().__init__(self, None, 0x03, None, None, '', '')
 
         self.log = logging.getLogger(__name__)
         self.transport = None
 
-        template_std_msg_nak = StandardSend.template(acknak=MESSAGE_NAK)
-        template_ext_msg_nak = ExtendedSend.template(acknak=MESSAGE_NAK)
+        self._register_message_handlers()
 
-        template_assign_all_link = StandardReceive.template(
-            commandtuple=COMMAND_ASSIGN_TO_ALL_LINK_GROUP_0X01_NONE)
-        template_all_link_response = AllLinkRecordResponse(None, None, None,
-                                                           None, None, None)
-        template_get_im_info = GetImInfo()
-        template_next_all_link_rec = GetNextAllLinkRecord(acknak=MESSAGE_NAK)
-
-        self._message_callbacks.add(
-            template_std_msg_nak,
-            self._handle_standard_or_extended_message_nak)
-        self._message_callbacks.add(
-            template_ext_msg_nak,
-            self._handle_standard_or_extended_message_nak)
-
-        self._message_callbacks.add(
-            template_assign_all_link,
-            self._handle_assign_to_all_link_group)
-
-        self._message_callbacks.add(
-            template_all_link_response,
-            self._handle_all_link_record_response)
-
-        self._message_callbacks.add(
-            template_get_im_info,
-            self._handle_get_plm_info)
-
-        self._message_callbacks.add(
-            template_next_all_link_rec,
-            self._handle_get_next_all_link_record_nak)
+    # public properties
+    @property
+    def devices(self):
+        """Return the list of devices linked to the IM."""
+        return self._devices
 
     @property
     def loop(self):
@@ -116,6 +90,7 @@ class PLM(asyncio.Protocol, Device):
         """Return the list of message callbacks."""
         return self._message_callbacks
 
+    # asyncio.protocol interface methods
     def connection_made(self, transport):
         """Called when asyncio.Protocol establishes the network connection."""
         self.log.info('Connection established to PLM')
@@ -171,6 +146,7 @@ class PLM(asyncio.Protocol, Device):
         if self._connection_lost_callback:
             self._connection_lost_callback()
 
+    # Methods used to trigger callbacks for specific events
     def add_device_callback(self, callback):
         """Register a callback for when a matching new device is seen."""
         self.devices.add_device_callback(callback)
@@ -187,6 +163,7 @@ class PLM(asyncio.Protocol, Device):
                       callback)
         self._cb_device_not_active.append(callback)
 
+    # Public methods
     def poll_devices(self):
         """Request status updates from each device."""
         for addr in self.devices:
@@ -204,61 +181,12 @@ class PLM(asyncio.Protocol, Device):
         asyncio.ensure_future(write_message_coroutine, loop=self._loop)
         self.log.debug("Ending: send_msg")
 
-    def send_standard(self, addr, commandtuple, cmd2=None,
-                      flags=0x00, acknak=None):
-        """Send an INSTEON standard length message."""
-        if commandtuple.get('cmd1', False):
-            cmd1 = commandtuple['cmd1']
-            cmd2out = commandtuple['cmd2']
-        else:
-            raise ValueError
-
-        if cmd2 is not None:
-            cmd2out = cmd2
-
-        if cmd2out is None:
-            raise ValueError
-
-        msg = StandardSend(addr, {'cmd1': cmd1, 'cmd2': cmd2out},
-                           flags=flags, acknak=acknak)
-        self.send_msg(msg)
-
-    def send_extended(self, addr, commandtuple, userdata, cmd2=None,
-                      flags=0x00, acknak=None):
-        """Send an INSTEON extended length message."""
-        if commandtuple.get('cmd1', False):
-            cmd1 = commandtuple['cmd1']
-            cmd2out = commandtuple['cmd2']
-        else:
-            raise ValueError
-
-        if cmd2 is not None:
-            cmd2out = cmd2
-
-        if cmd2out is None:
-            raise ValueError
-
-        msg = ExtendedSend(addr, {'cmd1': cmd1, 'cmd2': cmd2out}, userdata,
-                           flags=flags, acknak=acknak)
-        self.send_msg(msg)
-
-    @asyncio.coroutine
-    def async_sleep(self, seconds):
-        """Call async sleep method yielding to the loop.
-
-        Utility method to allow devices or message handlers to pause execution
-        and yeild back time to the asyncio loop.
-        """
-        yield from asyncio.sleep(seconds, loop=self._loop)
-
     @asyncio.coroutine
     def _setup_devices(self):
-        saved_device_info = yield from self._load_saved_device_info()
-        for savedDevice in saved_device_info:
-            self.devices.add_saved_device_info(**savedDevice)
+        yield from self.devices.load_saved_device_info()
         self.log.debug('Found %d saved devices', len(self.devices.saved_devices))
         self._get_plm_info()
-        self._add_known_devices()
+        self.devices.add_known_devices(self)
         self._load_all_link_database()
 
     @asyncio.coroutine
@@ -286,6 +214,92 @@ class PLM(asyncio.Protocol, Device):
         self.log.info('Requesting PLM Info')
         msg = GetImInfo()
         self.send_msg(msg)
+
+    def _load_all_link_database(self):
+        """Load the ALL-Link Database into object."""
+        self.log.debug("Starting: _load_all_link_database")
+        self.devices.state = 'loading'
+        self._get_first_all_link_record()
+        self.log.debug("Ending: _load_all_link_database")
+
+    def _get_first_all_link_record(self):
+        """Request first ALL-Link record."""
+        self.log.debug("Starting: _get_first_all_link_record")
+        self.log.info('Requesting ALL-Link Records')
+        msg = GetFirstAllLinkRecord()
+        self.send_msg(msg)
+        self.log.debug("Ending: _get_first_all_link_record")
+
+    def _get_next_all_link_record(self):
+        """Request next ALL-Link record."""
+        self.log.debug("Starting: _get_next_all_link_recor")
+        self.log.info("Requesting Next All-Link Record")
+        msg = GetNextAllLinkRecord()
+        self.send_msg(msg)
+        self.log.debug("Ending: _get_next_all_link_recor")
+
+    # Inbound message handlers sepcific to the IM
+    def _register_message_handlers(self):
+        template_std_msg_nak = StandardSend.template(acknak=MESSAGE_NAK)
+        template_ext_msg_nak = ExtendedSend.template(acknak=MESSAGE_NAK)
+
+        template_assign_all_link = StandardReceive.template(
+            commandtuple=COMMAND_ASSIGN_TO_ALL_LINK_GROUP_0X01_NONE)
+        template_all_link_response = AllLinkRecordResponse(None, None, None,
+                                                           None, None, None)
+        template_get_im_info = GetImInfo()
+        template_next_all_link_rec = GetNextAllLinkRecord(acknak=MESSAGE_NAK)
+
+        self._message_callbacks.add(
+            template_std_msg_nak,
+            self._handle_standard_or_extended_message_nak)
+        self._message_callbacks.add(
+            template_ext_msg_nak,
+            self._handle_standard_or_extended_message_nak)
+
+        self._message_callbacks.add(
+            template_assign_all_link,
+            self._handle_assign_to_all_link_group)
+
+        self._message_callbacks.add(
+            template_all_link_response,
+            self._handle_all_link_record_response)
+
+        self._message_callbacks.add(
+            template_get_im_info,
+            self._handle_get_plm_info)
+
+        self._message_callbacks.add(
+            template_next_all_link_rec,
+            self._handle_get_next_all_link_record_nak)
+
+    def _peel_messages_from_buffer(self):
+        self.log.debug("Starting: _peel_messages_from_buffer")
+        lastlooplen = 0
+        worktodo = True
+
+        while worktodo:
+            if len(self._buffer) == 0:
+                worktodo = False
+                break
+            msg = insteonplm.messages.create(self._buffer)
+
+            if msg is not None:
+                self._recv_queue.appendleft(msg)
+                self._buffer = self._buffer[len(msg.bytes):]
+
+            if len(self._buffer) < 2:
+                worktodo = False
+                break
+
+            if len(self._buffer) == lastlooplen:
+                # Buffer size did not change so we should wait for more data
+                worktodo = False
+                break
+
+            lastlooplen = len(self._buffer)
+
+        self.log.debug("Finishing: _peel_messages_from_buffer")
 
     def _handle_assign_to_all_link_group(self, msg):
         if msg.flags.isBroadcast:
@@ -394,7 +408,7 @@ class PLM(asyncio.Protocol, Device):
                                   self._handle_get_next_all_link_record_nak,
                                   None)
         else:
-            self._save_device_info()
+            self.devices.save_device_info()
             while len(self._cb_load_all_link_db_done) > 0:
                 callback = self._cb_load_all_link_db_done.pop()
                 callback()
@@ -402,111 +416,60 @@ class PLM(asyncio.Protocol, Device):
         self.log.debug('Ending _handle_get_next_all_link_record_nak')
 
     def _handle_standard_or_extended_message_nak(self, msg):
-        if msg.flags.isExtended:
-            self.send_extended(msg.address,
-                               {'cmd1': msg.cmd1, 'cmd2': msg.cmd2},
-                               msg.userdata, flags=MESSAGE_FLAG_EXTENDED_0X10)
-        else:
-            self.send_standard(msg.address,
-                               {'cmd1': msg.cmd1, 'cmd2': msg.cmd2})
+        self.send_msg(msg)
 
     def _handle_get_plm_info(self, msg):
         self.log.debug('Starting _handle_get_plm_info')
+        from insteonplm.devices.ipdb import IPDB
+        ipdb = IPDB()
         self._address = msg.address
         self._cat = msg.category
         self._subcat = msg.subcategory
         self._product_key = msg.firmware
+        product = ipdb[[self._cat, self._subcat]]
+        self._description = product.description
+        self._model = product.model
+
         self.log.debug('Ending _handle_get_plm_info')
 
-    def _add_known_devices(self):
-        self.log.debug("Adding known devices.")
-        self.devices.add_known_devices(self)
-        self.log.debug("Completed adding known devices.")
+class PLM(IM):
+    """Insteon PowerLinc Modem device.
 
-    def _load_all_link_database(self):
-        """Load the ALL-Link Database into object."""
-        self.log.debug("Starting: _load_all_link_database")
-        self.devices.state = 'loading'
-        self._get_first_all_link_record()
-        self.log.debug("Ending: _load_all_link_database")
+        This class is expected to be wrapped inside a Connection class object
+        which will maintain the socket and handle auto-reconnects.
 
-    def _get_first_all_link_record(self):
-        """Request first ALL-Link record."""
-        self.log.debug("Starting: _get_first_all_link_record")
-        self.log.info('Requesting ALL-Link Records')
-        msg = GetFirstAllLinkRecord()
-        self.send_msg(msg)
-        self.log.debug("Ending: _get_first_all_link_record")
+            :param connection_lost_callback:
+                called when connection is lost to device (optional)
+            :param loop:
+                asyncio event loop (optional)
+            :param workdir:
+                Working directory name to save device information (optional)
 
-    def _get_next_all_link_record(self):
-        """Request next ALL-Link record."""
-        self.log.debug("Starting: _get_next_all_link_recor")
-        self.log.info("Requesting Next All-Link Record")
-        msg = GetNextAllLinkRecord()
-        self.send_msg(msg)
-        self.log.debug("Ending: _get_next_all_link_recor")
+            :type: connection_lost_callback:
+                callable
+            :type loop:
+                asyncio.loop
+            :type workdir:
+                string - valid directory path
+    """
 
-    def _peel_messages_from_buffer(self):
-        self.log.debug("Starting: _peel_messages_from_buffer")
-        lastlooplen = 0
-        worktodo = True
+class Hub(IM):
+    """Insteon Hub device.
 
-        while worktodo:
-            if len(self._buffer) == 0:
-                worktodo = False
-                break
-            msg = insteonplm.messages.create(self._buffer)
+        This class is expected to be wrapped inside a Connection class object
+        which will maintain the socket and handle auto-reconnects.
 
-            if msg is not None:
-                self._recv_queue.appendleft(msg)
-                self._buffer = self._buffer[len(msg.bytes):]
+            :param connection_lost_callback:
+                called when connection is lost to device (optional)
+            :param loop:
+                asyncio event loop (optional)
+            :param workdir:
+                Working directory name to save device information (optional)
 
-            if len(self._buffer) < 2:
-                worktodo = False
-                break
-
-            if len(self._buffer) == lastlooplen:
-                # Buffer size did not change so we should wait for more data
-                worktodo = False
-                break
-
-            lastlooplen = len(self._buffer)
-
-        self.log.debug("Finishing: _peel_messages_from_buffer")
-
-    @asyncio.coroutine
-    def _load_saved_device_info(self):
-        self.log.debug("Loading saved device info.")
-        deviceinfo = []
-        if self._workdir is not None:
-            try:
-                device_file = '{}/{}'.format(self._workdir, DEVICE_INFO_FILE)
-                with open(device_file, 'r') as infile:
-                    try:
-                        deviceinfo = json.load(infile)
-                    except json.decoder.JSONDecodeError:
-                        pass
-            except FileNotFoundError:
-                pass
-        return deviceinfo
-
-    def _save_device_info(self):
-        if self._workdir is not None:
-            devices = []
-            for addr in self.devices:
-                device = self.devices[addr]
-                deviceInfo = {'address': device.address.hex,
-                              'cat': device.cat,
-                              'subcat': device.subcat,
-                              'product_key': device.product_key}
-                devices.append(deviceInfo)
-            coro = self._write_device_info_file(devices)
-            asyncio.ensure_future(coro, loop=self._loop)
-
-    @asyncio.coroutine
-    def _write_device_info_file(self, devices):
-        if self._workdir is not None:
-            self.log.debug('Writing %d devices to save file', len(devices))
-            device_file = '{}/{}'.format(self._workdir, DEVICE_INFO_FILE)
-            with open(device_file, 'w') as outfile:
-                json.dump(devices, outfile)
+            :type: connection_lost_callback:
+                callable
+            :type loop:
+                asyncio.loop
+            :type workdir:
+                string - valid directory path
+    """

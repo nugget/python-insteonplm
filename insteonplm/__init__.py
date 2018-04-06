@@ -8,7 +8,7 @@ import logging
 import serial
 import serial.aio
 
-from insteonplm.plm import PLM
+from insteonplm.plm import PLM, Hub
 
 __all__ = ('Connection')
 
@@ -28,9 +28,9 @@ class Connection:
 
     @classmethod
     @asyncio.coroutine
-    def create(cls, device='/dev/ttyUSB0',
-               auto_reconnect=True, loop=None, protocol_class=PLM,
-               userdefined=(), workdir=None):
+    def create(cls, device='/dev/ttyUSB0', address=None,
+               username=None, password=None, port=25010,
+               auto_reconnect=True, loop=None, workdir=None):
         """Initiate a connection to a specific device.
 
         Here is where we supply the device and callback callables we
@@ -38,6 +38,12 @@ class Connection:
 
         :param device:
             Unix device where the PLM is attached
+        :param address:
+            IP Address of the Hub
+        :param username:
+            User name for connecting to the Hub
+        :param password:
+            Password for connecting to the Hub
         :param auto_reconnect:
             Should the Connection try to automatically reconnect if needed?
         :param loop:
@@ -66,11 +72,14 @@ class Connection:
             """Function callback for Protocol when connection is lost."""
             if conn._auto_reconnect and not conn._closing:
                 ensure_future(conn._reconnect(), loop=conn._loop)
-
+        
+        if address:
+            protocol_class = Hub
+        else:
+            proptocol_class = PLM
         conn.protocol = protocol_class(
             connection_lost_callback=connection_lost,
             loop=conn._loop,
-            userdefineddevices=userdefined,
             workdir=workdir)
 
         yield from conn._reconnect()
