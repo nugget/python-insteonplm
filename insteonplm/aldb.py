@@ -189,6 +189,7 @@ class ALDB(object):
         self.log.debug("Loading saved device info.")
         deviceinfo = []
         if self._workdir is not None:
+            self.log.debug("Really Loading saved device info.")
             try:
                 device_file = '{}/{}'.format(self._workdir, DEVICE_INFO_FILE)
                 with open(device_file, 'r') as infile:
