@@ -133,7 +133,7 @@ class ALDB(object):
     def add_known_devices(self, plm):
         """Add devices from the saved devices or from the device overrides."""
         for addr in self._saved_devices:
-            if not self.get(addr):
+            if not self._devices.get(addr):
                 saved_device = self._saved_devices.get(Address(addr).hex, {})
                 cat = saved_device.get('cat')
                 subcat = saved_device.get('subcat')
@@ -164,7 +164,7 @@ class ALDB(object):
         if self._workdir is not None:
             devices = []
             for addr in self._devices:
-                device = self.get(addr)
+                device = self._devices.get(addr)
                 deviceInfo = {'address': device.address.hex,
                               'cat': device.cat,
                               'subcat': device.subcat,
