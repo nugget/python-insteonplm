@@ -414,6 +414,7 @@ class IM(Device, asyncio.Protocol):
         self.log.debug('Ending _handle_get_next_all_link_record_nak')
 
     def _handle_standard_or_extended_message_nak(self, msg):
+        msg.acknak = None
         self.send_msg(msg)
 
     def _handle_get_plm_info(self, msg):
