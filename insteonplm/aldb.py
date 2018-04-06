@@ -195,11 +195,13 @@ class ALDB(object):
                 with open(device_file, 'r') as infile:
                     try:
                         deviceinfo = json.load(infile)
+                        self.log.debug("Saved device file loaded")
                     except json.decoder.JSONDecodeError:
-                        pass
+                        self.log.debug("Loading saved device file failed")
             except FileNotFoundError:
-                pass
-        return deviceinfo
+                self.log.debug("Saved device file not found")
+        for device in deviceinfo:
+            self._add_saved_device_info(**device)
 
     @asyncio.coroutine
     def _write_saved_device_info(self, devices):
