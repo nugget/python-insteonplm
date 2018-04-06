@@ -61,7 +61,7 @@ class Connection:
         conn = cls()
 
         conn.device = device
-        conn.ipaddress = ipaddress,
+        conn.ipaddress = ipaddress
         conn.username = username
         conn.password = password
         conn.port = port
