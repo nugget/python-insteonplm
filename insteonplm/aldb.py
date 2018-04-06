@@ -1,5 +1,7 @@
 """Module to maintain PLM state information and network interface."""
 
+import asyncio
+import json
 import logging
 
 from insteonplm.address import Address
@@ -8,14 +10,19 @@ from insteonplm.devices import Device
 
 __all__ = ('ALDB')
 
+DEVICE_INFO_FILE = 'insteon_plm_device_info.dat'
+
 
 class ALDB(object):
     """Class holds and maintains the ALL-Link Database from the PLM device."""
 
-    def __init__(self):
+    def __init__(self, loop=None, workdir=None):
         """Instantiate the ALL-Link Database object."""
         self.log = logging.getLogger(__name__)
-        self.state = 'empty'
+        self._loop = loop
+        self._workdir = workdir
+
+        self._state = 'empty'
         self._devices = {}
         self._cb_new_device = []
         self._overrides = {}
@@ -63,6 +70,22 @@ class ALDB(object):
         """Return the device overrides."""
         return self._overrides
 
+    @property
+    def state(self):
+        """Return the state of the ALDB.
+        
+        Possible states:
+            empty
+            loading
+            loaded
+        """
+        return self._state
+
+    @state.setter
+    def state(self, val):
+        """Set the ALDB load state."""
+        self._state = val
+
     def add_device_callback(self, callback):
         """Register a callback to be invoked when a new device appears."""
         self.log.debug('Added new callback %s ',
@@ -76,17 +99,6 @@ class ALDB(object):
         device_override = self._overrides.get(address, {})
         device_override[key] = value
         self._overrides[address] = device_override
-
-    def add_saved_device_info(self, **kwarg):
-        """Register device info from the saved data file."""
-        addr = kwarg.get('address')
-        self.log.debug('Found saved device with address %s', addr)
-        info = {}
-        if addr is not None:
-            info['cat'] = kwarg.get('cat', None)
-            info['subcat'] = kwarg.get('subcat', None)
-            info['product_key'] = kwarg.get('product_key', None)
-        self._saved_devices[addr] = info
 
     def create_device_from_category(self, plm, addr, cat, subcat,
                                     product_key=0x00):
@@ -146,3 +158,55 @@ class ALDB(object):
                                   addr)
                     self[addr] = self.create_device_from_category(
                         plm, addr, cat,subcat, product_key)
+
+    # Save device information
+    def save_device_info(self):
+        if self._workdir is not None:
+            devices = []
+            for addr in self._devices:
+                device = self._devices.get(addr)
+                deviceInfo = {'address': device.address.hex,
+                              'cat': device.cat,
+                              'subcat': device.subcat,
+                              'product_key': device.product_key}
+                devices.append(deviceInfo)
+            coro = self._write_saved_device_info(devices)
+            asyncio.ensure_future(coro, loop=self._loop)
+
+    def _add_saved_device_info(self, **kwarg):
+        """Register device info from the saved data file."""
+        addr = kwarg.get('address')
+        self.log.debug('Found saved device with address %s', addr)
+        info = {}
+        if addr is not None:
+            info['cat'] = kwarg.get('cat', None)
+            info['subcat'] = kwarg.get('subcat', None)
+            info['product_key'] = kwarg.get('product_key', None)
+        self._saved_devices[addr] = info
+
+    @asyncio.coroutine
+    def load_saved_device_info(self):
+        self.log.debug("Loading saved device info.")
+        deviceinfo = []
+        if self._workdir is not None:
+            self.log.debug("Really Loading saved device info.")
+            try:
+                device_file = '{}/{}'.format(self._workdir, DEVICE_INFO_FILE)
+                with open(device_file, 'r') as infile:
+                    try:
+                        deviceinfo = json.load(infile)
+                        self.log.debug("Saved device file loaded")
+                    except json.decoder.JSONDecodeError:
+                        self.log.debug("Loading saved device file failed")
+            except FileNotFoundError:
+                self.log.debug("Saved device file not found")
+        for device in deviceinfo:
+            self._add_saved_device_info(**device)
+
+    @asyncio.coroutine
+    def _write_saved_device_info(self, devices):
+        if self._workdir is not None:
+            self.log.debug('Writing %d devices to save file', len(devices))
+            device_file = '{}/{}'.format(self._workdir, DEVICE_INFO_FILE)
+            with open(device_file, 'w') as outfile:
+                json.dump(devices, outfile)

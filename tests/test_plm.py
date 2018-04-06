@@ -28,8 +28,7 @@ class MockConnection():
         conn.loop = loop or asyncio.get_event_loop()
         conn.protocol = PLM(
             connection_lost_callback=None,
-            loop=conn.loop,
-            userdefineddevices=())
+            loop=conn.loop)
 
         # pylint: disable=too-few-public-methods
         class Serial:
@@ -79,7 +78,7 @@ def do_plm(loop, log, devicelist):
 
     def async_insteonplm_light_callback(device):
         """Log that our new device callback worked."""
-        log.warn('New Device: %s %02x %02x %s, %s', device.id, device.cat,
+        log.info('New Device: %s %02x %02x %s, %s', device.id, device.cat,
                  device.subcat, device.description, device.model)
 
     def async_light_on_level_callback(device_id, state, value):

@@ -107,6 +107,14 @@ class StandardSend(Message):
         """Return the ACK/NAK message flag."""
         return self._acknak
 
+    @acknak.setter
+    def acknak(self, val):
+        """Set the ACK/NAK byte."""
+        if val in [None, 0x06, 0x15]:
+            self._acknak = val
+        else:
+            raise ValueError
+
     @property
     def isack(self):
         """Test if the message is a message ACK."""

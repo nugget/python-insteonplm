@@ -86,6 +86,7 @@ class Device(object):
             self._plm.message_callbacks.add(ext_msg_ack_recd,
                                             self._receive_message)
 
+    # Public properties
     @property
     def address(self):
         """Return the INSTEON device address."""
@@ -148,6 +149,105 @@ class Device(object):
         return cls(plm, address, cat, subcat, product_key,
                    description, model)
 
+    # Public Methods
+    def async_refresh_state(self):
+        """Request each state to provide status update."""
+        for state in self._stateList:
+            self._stateList[state].async_refresh_state()
+
+    def id_request(self):
+        """Request a device ID from a device."""
+        msg = StandardSend(self.address, COMMAND_ID_REQUEST_0X10_0X00)
+        self._plm.send_msg(msg)
+
+    def product_data_request(self):
+        """Request product data from a device.
+
+        Not supported by all devices.
+        Required after 01-Feb-2007.
+        """
+        msg = StandardSend(self._address,
+                           COMMAND_PRODUCT_DATA_REQUEST_0X03_0X00)
+        self._send_msg(msg)
+
+    def assign_to_all_link_group(self, group=0x01):
+        """Assign a device to an All-Link Group.
+
+        The default is group 0x01.
+        """
+        msg = StandardSend(self._address,
+                                COMMAND_ASSIGN_TO_ALL_LINK_GROUP_0X01_NONE,
+                                cmd2=group)
+        self._send_msg(msg)
+
+    def delete_from_all_link_group(self, group):
+        """Delete a device to an All-Link Group."""
+        msg = StandardSend(self._address,
+                                COMMAND_DELETE_FROM_ALL_LINK_GROUP_0X02_NONE,
+                                cmd2=group)
+        self._send_msg(msg)
+
+    def fx_username(self):
+        """Get FX Username.
+
+        Only required for devices that support FX Commands.
+        FX Addressee responds with an ED 0x0301 FX Username Response message
+        """
+        msg = StandardSend(self._address,COMMAND_FX_USERNAME_0X03_0X01)
+        self._send_msg(msg)
+
+    def device_text_string_request(self):
+        """Get FX Username.
+
+        Only required for devices that support FX Commands.
+        FX Addressee responds with an ED 0x0301 FX Username Response message.
+        """
+        msg = StandardSend(self._address, COMMAND_FX_USERNAME_0X03_0X01)
+        self._send_msg(msg)
+
+    def enter_linking_mode(self, group=0x01):
+        """Tell a device to enter All-Linking Mode.
+
+        Same as holding down the Set button for 10 sec.
+        Default group is 0x01.
+
+        Not supported by i1 devices.
+        """
+        msg = StandardSend(self._address,
+                                COMMAND_ENTER_LINKING_MODE_0X09_NONE,
+                                cmd2=group)
+        self._send_msg(msg)
+
+    def enter_unlinking_mode(self, group):
+        """Unlink a device from an All-Link group.
+
+        Not supported by i1 devices.
+        """
+        msg = StandardSend(self._address,
+                                COMMAND_ENTER_UNLINKING_MODE_0X0A_NONE,
+                                cmd2=group)
+        self._send_msg(msg)
+
+    def get_engine_version(self):
+        """Get the device engine version."""
+        msg = StandardSend(self._address,
+                           COMMAND_GET_INSTEON_ENGINE_VERSION_0X0D_0X00)
+        self._send_msg(msg)
+
+    def ping(self):
+        """Ping a device."""
+        msg = StandardSend(self._address, COMMAND_PING_0X0F_0X00)
+        self._send_msg(msg)
+
+    def read_aldb(self):
+        """Read the device All-Link Database."""
+        pass
+
+    def write_aldb(self):
+        """Write to the device All-Link Database."""
+        pass
+
+    # Send / Receive message processing
     def _receive_message(self, msg):
         self.log.debug('Starting Device._receive_message')
         if hasattr(msg, 'isack') and msg.isack:
@@ -167,11 +267,6 @@ class Device(object):
                 self._directACK_received_queue.put_nowait(msg)
         self._last_communication_received = datetime.datetime.now()
         self.log.debug('Ending Device._receive_message')
-
-    def async_refresh_state(self):
-        """Request each state to provide status update."""
-        for state in self._stateList:
-            self._stateList[state].async_refresh_state()
 
     def _send_msg(self, msg, directACK_Method=None):
         self.log.debug('Starting Device._send_msg')
@@ -216,90 +311,6 @@ class Device(object):
                 callback(msg)
         self._sent_msg_wait_for_directACK = {}
         self.log.debug('Ending Device._wait_for_direct_ACK')
-
-    def id_request(self):
-        """Request a device ID from a device."""
-        self._plm.send_standard(self._address,
-                                COMMAND_ID_REQUEST_0X10_0X00)
-
-    def product_data_request(self):
-        """Request product data from a device.
-
-        Not supported by all devices.
-        Required after 01-Feb-2007.
-        """
-        self._plm.send_standard(self._address,
-                                COMMAND_PRODUCT_DATA_REQUEST_0X03_0X00)
-
-    def assign_to_all_link_group(self, group=0x01):
-        """Assign a device to an All-Link Group.
-
-        The default is group 0x01.
-        """
-        self._plm.send_standard(self._address,
-                                COMMAND_ASSIGN_TO_ALL_LINK_GROUP_0X01_NONE,
-                                group)
-
-    def delete_from_all_link_group(self, group):
-        """Delete a device to an All-Link Group."""
-        self._plm.send_standard(self._address,
-                                COMMAND_DELETE_FROM_ALL_LINK_GROUP_0X02_NONE,
-                                group)
-
-    def fx_username(self):
-        """Get FX Username.
-
-        Only required for devices that support FX Commands.
-        FX Addressee responds with an ED 0x0301 FX Username Response message
-        """
-        self._plm.send_standard(self._address, COMMAND_FX_USERNAME_0X03_0X01)
-
-    def device_text_string_request(self):
-        """Get FX Username.
-
-        Only required for devices that support FX Commands.
-        FX Addressee responds with an ED 0x0301 FX Username Response message.
-        """
-        self.log.debug("Starting: devicebase.device_text_string_request")
-        self._plm.send_standard(self._address, COMMAND_FX_USERNAME_0X03_0X01)
-
-    def enter_linking_mode(self, group=0x01):
-        """Tell a device to enter All-Linking Mode.
-
-        Same as holding down the Set button for 10 sec.
-        Default group is 0x01.
-
-        Not supported by i1 devices.
-        """
-        self._plm.send_standard(self._address,
-                                COMMAND_ENTER_LINKING_MODE_0X09_NONE,
-                                group)
-
-    def enter_unlinking_mode(self, group):
-        """Unlink a device from an All-Link group.
-
-        Not supported by i1 devices.
-        """
-        self._plm.send_standard(self._address,
-                                COMMAND_ENTER_UNLINKING_MODE_0X0A_NONE,
-                                group)
-
-    def get_engine_version(self):
-        """Get the device engine version."""
-        self._plm.send_standard(self._address,
-                                COMMAND_GET_INSTEON_ENGINE_VERSION_0X0D_0X00)
-
-    def ping(self):
-        """Ping a device."""
-        self._plm.send_standard(self._address, COMMAND_PING_0X0F_0X00)
-
-    def read_aldb(self):
-        """Read the device All-Link Database."""
-        pass
-
-    def write_aldb(self):
-        """Write to the device All-Link Database."""
-        pass
 
 
 class StateList(object):
