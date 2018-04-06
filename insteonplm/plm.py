@@ -71,6 +71,7 @@ class IM(Device, asyncio.Protocol):
         self.transport = None
 
         self._register_message_handlers()
+        self.log.debug('IM class initialized')
 
     # public properties
     @property
