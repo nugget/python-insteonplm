@@ -18,6 +18,7 @@ from insteonplm.constants import (
     COMMAND_EXTENDED_READ_WRITE_ALDB_0X2F_0X00,
     MESSAGE_TYPE_DIRECT_MESSAGE
 )
+from insteonplm.messagecallback import MessageCallback
 from insteonplm.messages.extendedReceive import ExtendedReceive
 from insteonplm.messages.extendedSend import ExtendedSend
 from insteonplm.messages.messageFlags import MessageFlags
@@ -69,9 +70,9 @@ class Device(object):
         self._product_data_in_aldb = False
         self._stateList = StateList()
         self._send_msg_lock = asyncio.Lock(loop=self._plm.loop)
-        self._send_queue = asyncio.Queue(loop=self._plm.loop)
         self._sent_msg_wait_for_directACK = {}
         self._directACK_received_queue = asyncio.Queue(loop=self._plm.loop)
+        self._message_callbacks = MessageCallback()
         self._aldb = []
 
         if not hasattr(self, '_noRegisterCallback'):
@@ -234,17 +235,34 @@ class Device(object):
         msg = StandardSend(self._address, COMMAND_PING_0X0F_0X00)
         self._send_msg(msg)
 
-    def read_aldb(self):
+    def read_aldb(self, mem_addr=None):
         """Read the device All-Link Database."""
+        if mem_addr:
+            mem_hi = mem_addr >> 8
+            mem_lo = mem_addr & 0xff
+        if self.aldb:
+            last_rec = self.aldb[-1]
+            mem_addr = (last_rec.memhi << 8) + last_rec.memlo - 8
+            mem_hi = mem_addr >> 8
+            mem_lo = mem_addr & 0xff
+        else:
+            mem_hi = self._mem_addr >> 8
+            mem_lo = self._mem_addr & 0xff
         userdata = Userdata({'d1': 0,
                              'd2': 0,
-                             'd3': 0,
-                             'd4': 0,
-                             'd5': 0})
+                             'd3': mem_hi,
+                             'd4': mem_lo,
+                             'd5': 1})
+        # userdata = Userdata({'d1': 0,
+        #                      'd2': 0,
+        #                      'd3': 0,
+        #                      'd4': 0,
+        #                      'd5': 0})
         msg = ExtendedSend(self.address,
                            COMMAND_EXTENDED_READ_WRITE_ALDB_0X2F_0X00,
                            userdata=userdata)
         self._send_msg(msg)
+        yield from asyncio.sleep(.1, loop=self._plm.loop)
 
     def write_aldb(self):
         """Write to the device All-Link Database."""
@@ -254,34 +272,27 @@ class Device(object):
         userdata = msg.userdata
         rec = ALDBRecord.create_from_userdata(userdata)
         self._aldb.append(rec)
-        self.log.info('ALDB Record: %s', rec)
+        self.log.debug('ALDB Record: %s', rec)
+        if rec.control_flags.is_high_water_mark:
+            self.log.debug('Device ALDB high water mark reached')
+        else:
+            mem_addr = (userdata['d3'] << 8) + userdata['d4'] - 8
+            self.read_aldb(mem_addr)
 
     def _register_messages(self):
-            std_msg_recd = StandardReceive.template(address=self._address)
-            ext_msg_recd = ExtendedReceive.template(address=self._address)
-            std_msg_ack_recd = StandardSend.template(address=self._address,
-                                                     acknak=MESSAGE_ACK)
-            ext_msg_ack_recd = ExtendedSend.template(address=self._address,
-                                                     acknak=MESSAGE_ACK)
-            ext_msg_aldb_record = ExtendedSend.template(
+            ext_msg_aldb_record = ExtendedReceive.template(
                 address=self._address,
                 commandtuple=COMMAND_EXTENDED_READ_WRITE_ALDB_0X2F_0X00,
                 userdata=Userdata.template({'d2': 1}),
-                flags=MessageFlags.template(messageType=MESSAGE_TYPE_DIRECT_MESSAGE,
-                                            extended=1))
-
-            self._plm.message_callbacks.add(std_msg_recd,
-                                            self._receive_message)
-            self._plm.message_callbacks.add(ext_msg_recd,
-                                            self._receive_message)
-            self._plm.message_callbacks.add(std_msg_ack_recd,
-                                            self._receive_message)
-            self._plm.message_callbacks.add(ext_msg_ack_recd,
-                                            self._receive_message)
+                flags=MessageFlags.template(
+                    messageType=MESSAGE_TYPE_DIRECT_MESSAGE,
+                    extended=1))
+            self._message_callbacks.add(ext_msg_aldb_record,
+                                            self._handle_aldb_record_received)
 
     # Send / Receive message processing
-    def _receive_message(self, msg):
-        self.log.debug('Starting Device._receive_message')
+    def receive_message(self, msg):
+        self.log.debug('Starting Device.receive_message')
         if hasattr(msg, 'isack') and msg.isack:
             self.log.debug('Got Message ACK')
             if self._sent_msg_wait_for_directACK.get('callback') is not None:
@@ -289,6 +300,7 @@ class Device(object):
                 coro = self._wait_for_direct_ACK()
                 asyncio.ensure_future(coro, loop=self._plm.loop)
             else:
+                self.log.debug('DA queue: %s', self._sent_msg_wait_for_directACK)
                 self.log.debug('Message ACK with no callback')
         if (hasattr(msg, 'flags')
                 and hasattr(msg.flags, 'isDirectACK')
@@ -297,23 +309,28 @@ class Device(object):
             if self._send_msg_lock.locked():
                 self.log.debug('Lock is locked')
                 self._directACK_received_queue.put_nowait(msg)
+        callbacks = self._message_callbacks.get_callbacks_from_message(msg)
+        self.log.debug('Found %d callbacks for msg %s', len(callbacks), msg)
+        for callback in callbacks:
+            self.log.debug('Scheduling msg callback: %s', callback)
+            self._plm.loop.call_soon(callback, msg)
         self._last_communication_received = datetime.datetime.now()
-        self.log.debug('Ending Device._receive_message')
+        self.log.debug('Ending Device.receive_message')
 
     def _send_msg(self, msg, directACK_Method=None):
         self.log.debug('Starting Device._send_msg')
         write_message_coroutine = self._process_send_queue(msg,
                                                            directACK_Method)
-        self._send_queue.put_nowait(msg)
         asyncio.ensure_future(write_message_coroutine,
                               loop=self._plm.loop)
         self.log.debug('Ending Device._send_msg')
 
     @asyncio.coroutine
     def _process_send_queue(self, msg, directACK_Method=None):
-        self.log.debug('Starting Device._process_send_queue')
+        self.log.debug('Callback: %s', directACK_Method)
         yield from self._send_msg_lock
-        if directACK_Method is not None:
+        if directACK_Method:
+            self.log.debug('Writing directACK callback')
             self._sent_msg_wait_for_directACK = {'msg': msg,
                                                  'callback': directACK_Method}
             self.log.debug('Attempt to acquire lock')
@@ -490,7 +507,10 @@ class ALDBRecord(object):
         return userdata
 
     def _record_properties(self):
-        mode = 'Controller' if self._control_flags.is_controller else 'Responder'
+        if not self._control_flags.is_controller:
+            mode = 'Controller'
+        else:
+            mode = 'Responder'
         rec = [{'memory': self._memoryLocation},
                {'inuse': self._control_flags.is_in_use},
                {'mode':  mode},

@@ -40,6 +40,8 @@ def test_dimmableLightingControl():
         assert device.model == model
         assert device.id == address
 
+        plm.devices[device.address.hex] = device
+
         callbacks = MockCallbacks()
         device.states[0x01].register_updates(callbacks.callbackmethod1)
 
@@ -117,6 +119,8 @@ def test_dimmableLightingControl_manual_changes():
         assert device.model == model
         assert device.id == address
 
+        plm.devices[device.address.hex] = device
+
         callbacks = MockCallbacks()
         device.states[0x01].register_updates(callbacks.callbackmethod1)
 
@@ -163,6 +167,7 @@ def test_dimmableLightingControl_status():
         assert device.description == description
         assert device.model == model
         assert device.id == address
+        plm.devices[device.address.hex] = device
 
         callbacks = MockCallbacks()
         device.states[0x01].register_updates(callbacks.callbackmethod1)
@@ -220,7 +225,9 @@ def test_switchedLightingControl_2475F():
 
         device = DimmableLightingControl_2475F.create(
             mockPLM, address, cat, subcat, product_key, description, model)
-
+        
+        mockPLM.devices[device.address.hex] = device
+        
         assert device.states[0x01].name == 'lightOnLevel'
         assert device.states[0x02].name == 'fanOnLevel'
 
@@ -278,7 +285,8 @@ def test_dimmableLightingControl_2475F_status():
 
         device = DimmableLightingControl_2475F(plm, address, cat, subcat,
                                                product_key, description, model)
-
+        
+        plm.devices[device.address.hex] = device
         callbacks = MockCallbacks()
         device.states[0x02].register_updates(callbacks.callbackmethod1)
 

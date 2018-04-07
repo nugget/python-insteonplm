@@ -17,6 +17,9 @@ from insteonplm.devices.switchedLightingControl import (
 from .mockPLM import MockPLM
 from .mockCallbacks import MockCallbacks
 
+import logging
+_LOGGING = logging.getLogger()
+_LOGGING.setLevel(logging.DEBUG)
 
 def test_switchedLightingControl():
     """Test SwitchedLightingControl."""
@@ -33,7 +36,7 @@ def test_switchedLightingControl():
 
         device = SwitchedLightingControl(plm, address, cat, subcat,
                                          product_key, description, model)
-
+        plm.devices[address] = device
         assert device.address.hex == address
         assert device.cat == cat
         assert device.subcat == subcat
@@ -95,7 +98,7 @@ def test_switchedLightingControl_maual_changes():
 
         device = SwitchedLightingControl(plm, address, cat, subcat,
                                          product_key, description, model)
-
+        plm.devices[address] = device
         assert device.address.hex == address
         assert device.cat == cat
         assert device.subcat == subcat
@@ -142,7 +145,7 @@ def test_switchedLightingControl_status():
 
         device = SwitchedLightingControl(plm, address, cat, subcat,
                                          product_key, description, model)
-
+        plm.devices[address] = device
         assert device.address.hex == address
         assert device.cat == cat
         assert device.subcat == subcat
@@ -193,7 +196,7 @@ def test_switchedLightingControl_2663_222():
 
         device = SwitchedLightingControl_2663_222(
             plm, address, cat, subcat, product_key, description, model)
-
+        plm.devices[address] = device
         assert device.address.hex == address
         assert device.cat == cat
         assert device.subcat == subcat
@@ -294,7 +297,7 @@ def test_switchedLightingControl_2663_222_manual_change():
 
         device = SwitchedLightingControl_2663_222(
             plm, address, cat, subcat, product_key, description, model)
-
+        plm.devices[address] = device
         assert device.address.hex == address
         assert device.cat == cat
         assert device.subcat == subcat
@@ -375,7 +378,7 @@ def test_switchedLightingControl_2663_222_status():
 
         device = SwitchedLightingControl_2663_222.create(
             mockPLM, address, cat, subcat, product_key, description, model)
-
+        mockPLM.devices[address] = device
         assert device.states[0x01].name == 'outletTopOnOff'
         assert device.states[0x02].name == 'outletBottomOnOff'
 

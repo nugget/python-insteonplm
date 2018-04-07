@@ -20,7 +20,7 @@ def test_SensorsActuators_2450_status():
     """Test SensorActuator device model 2450."""
     def run_test(loop):
         """Asyncio test run."""
-        plm = MockPLM()
+        plm = MockPLM(loop)
         address = '1a2b3c'
         target = '4d5e6f'
 
@@ -34,7 +34,7 @@ def test_SensorsActuators_2450_status():
 
         device = SensorsActuators_2450.create(plm, address, cat, subcat,
                                               product_key, description, model)
-
+        plm.devices[address] = device
         assert device.states[0x01].name == 'openClosedRelay'
         assert device.states[0x02].name == 'openClosedSensor'
 

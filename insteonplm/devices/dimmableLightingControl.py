@@ -28,7 +28,7 @@ class DimmableLightingControl(Device):
 
         self._stateList[0x01] = DimmableSwitch(
             self._address, "lightOnLevel", 0x01, self._send_msg,
-            self._plm.message_callbacks, 0x00)
+            self._message_callbacks, 0x00)
 
 
 class DimmableLightingControl_2475F(DimmableLightingControl):
@@ -66,7 +66,7 @@ class DimmableLightingControl_2475F(DimmableLightingControl):
 
         self._stateList[0x01] = DimmableSwitch(
             self._address, "lightOnLevel", 0x01, self._send_msg,
-            self._plm.message_callbacks, 0x00)
+            self._message_callbacks, 0x00)
         self._stateList[0x02] = DimmableSwitch_Fan(
             self._address, "fanOnLevel", 0x02, self._send_msg,
-            self._plm.message_callbacks, 0x00)
+            self._message_callbacks, 0x00)
