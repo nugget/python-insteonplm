@@ -11,7 +11,7 @@ import insteonplm.messages
 from insteonplm.constants import (COMMAND_ASSIGN_TO_ALL_LINK_GROUP_0X01_NONE,
                                   MESSAGE_NAK, MESSAGE_FLAG_EXTENDED_0X10)
 from insteonplm.address import Address
-from insteonplm.aldb import ALDB
+from insteonplm.linkedDevices import LinkedDevices
 from insteonplm.messagecallback import MessageCallback
 from insteonplm.messages.allLinkRecordResponse import AllLinkRecordResponse
 from insteonplm.messages.extendedSend import ExtendedSend
@@ -58,7 +58,7 @@ class IM(Device, asyncio.Protocol):
         self._send_queue = asyncio.Queue(loop=self._loop)
         self._wait_acknack_queue = []
         self._aldb_response_queue = {}
-        self._devices = ALDB(loop, workdir)
+        self._devices = LinkedDevices(loop, workdir)
         self._poll_devices = poll_devices
         self._write_transport_lock = asyncio.Lock(loop=self._loop)
         self._message_callbacks = MessageCallback()
@@ -126,9 +126,6 @@ class IM(Device, asyncio.Protocol):
                     device = self.devices[msg.address.hex]
                     if device:
                         device.receive_message(msg)
-                    else:
-                        self.log.info('Received message for unknown device %s',
-                                        msg.address)
                 for callback in callbacks:
                     self._loop.call_soon(callback, msg)
             except IndexError:
@@ -236,7 +233,7 @@ class IM(Device, asyncio.Protocol):
     def _get_next_all_link_record(self):
         """Request next ALL-Link record."""
         self.log.debug("Starting: _get_next_all_link_recor")
-        self.log.info("Requesting Next All-Link Record")
+        self.log.debug("Requesting Next All-Link Record")
         msg = GetNextAllLinkRecord()
         self.send_msg(msg)
         self.log.debug("Ending: _get_next_all_link_recor")
@@ -306,13 +303,13 @@ class IM(Device, asyncio.Protocol):
 
     def _handle_assign_to_all_link_group(self, msg):
         if msg.flags.isBroadcast:
-            self.log.info('Received broadcast ALDB group assigment request.')
+            self.log.debug('Received broadcast ALDB group assigment request.')
             cat = msg.targetLow
             subcat = msg.targetMed
             product_key = msg.targetHi
-            self.log.info('Received Device ID with address: %s  '
-                          'cat: 0x%x  subcat: 0x%x',
-                          msg.address, cat, subcat)
+            self.log.debug('Received Device ID with address: %s  '
+                           'cat: 0x%x  subcat: 0x%x',
+                           msg.address, cat, subcat)
             device = self.devices.create_device_from_category(
                 self, msg.address, cat, subcat, product_key)
             if device is not None:
@@ -407,7 +404,7 @@ class IM(Device, asyncio.Protocol):
         if num_devices_not_added > 0:
             # Schedule _handle_get_next_all_link_record_nak to run again later
             # if some devices did not respond
-            delay = num_devices_not_added*3
+            delay = num_devices_not_added * 3
             self._loop.call_later(delay,
                                   self._handle_get_next_all_link_record_nak,
                                   None)

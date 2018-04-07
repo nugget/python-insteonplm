@@ -1,7 +1,7 @@
 """Mock PLM class for testing devices."""
 import logging
 from insteonplm.messagecallback import MessageCallback
-from insteonplm.aldb import ALDB
+from insteonplm.linkedDevices import LinkedDevices
 
 
 class MockPLM(object):
@@ -13,7 +13,7 @@ class MockPLM(object):
         self.sentmessage = ''
         self._message_callbacks = MessageCallback()
         self.loop = loop
-        self.devices = ALDB()
+        self.devices = LinkedDevices()
 
     @property
     def message_callbacks(self):

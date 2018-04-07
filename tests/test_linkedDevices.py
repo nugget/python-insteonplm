@@ -1,6 +1,6 @@
 """Test insteonplm ALDB Class."""
 from insteonplm.address import Address
-from insteonplm.aldb import ALDB
+from insteonplm.linkedDevices import LinkedDevices
 from insteonplm.devices.switchedLightingControl import SwitchedLightingControl
 from .mockPLM import MockPLM
 
@@ -14,9 +14,9 @@ def test_create_device_from_category():
 
     description = 'Icon SwitchLinc Relay (Lixar)'
     model = '2676R-B'
-
-    aldb = ALDB()
-    dev = aldb.create_device_from_category(plm, addr, cat, subcat)
+    
+    linkedDevices = LinkedDevices()
+    dev = linkedDevices.create_device_from_category(plm, addr, cat, subcat)
 
     assert isinstance(dev, SwitchedLightingControl)
     assert dev.cat == cat
@@ -34,9 +34,9 @@ def test_create_device_from_category_generic_device():
 
     description = 'Generic Switched Lighting Control'
     model = ''
-
-    aldb = ALDB()
-    dev = aldb.create_device_from_category(plm, addr, cat, subcat)
+    
+    linkedDevices = LinkedDevices()
+    dev = linkedDevices.create_device_from_category(plm, addr, cat, subcat)
 
     assert isinstance(dev, SwitchedLightingControl)
     assert dev.cat == cat
