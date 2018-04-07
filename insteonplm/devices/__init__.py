@@ -14,12 +14,16 @@ from insteonplm.constants import (
     COMMAND_ENTER_LINKING_MODE_0X09_NONE,
     COMMAND_ENTER_UNLINKING_MODE_0X0A_NONE,
     COMMAND_GET_INSTEON_ENGINE_VERSION_0X0D_0X00,
-    COMMAND_PING_0X0F_0X00
+    COMMAND_PING_0X0F_0X00,
+    COMMAND_EXTENDED_READ_WRITE_ALDB_0X2F_0X00,
+    MESSAGE_TYPE_DIRECT_MESSAGE
 )
 from insteonplm.messages.extendedReceive import ExtendedReceive
 from insteonplm.messages.extendedSend import ExtendedSend
+from insteonplm.messages.messageFlags import MessageFlags
 from insteonplm.messages.standardReceive import StandardReceive
 from insteonplm.messages.standardSend import StandardSend
+from insteonplm.messages.userdata import Userdata
 from insteonplm.states import State
 
 WAIT_TIMEOUT = 2
@@ -68,23 +72,10 @@ class Device(object):
         self._send_queue = asyncio.Queue(loop=self._plm.loop)
         self._sent_msg_wait_for_directACK = {}
         self._directACK_received_queue = asyncio.Queue(loop=self._plm.loop)
+        self._aldb = []
 
         if not hasattr(self, '_noRegisterCallback'):
-            std_msg_recd = StandardReceive.template(address=self._address)
-            ext_msg_recd = ExtendedReceive.template(address=self._address)
-            std_msg_ack_recd = StandardSend.template(address=self._address,
-                                                     acknak=MESSAGE_ACK)
-            ext_msg_ack_recd = ExtendedSend.template(address=self._address,
-                                                     acknak=MESSAGE_ACK)
-
-            self._plm.message_callbacks.add(std_msg_recd,
-                                            self._receive_message)
-            self._plm.message_callbacks.add(ext_msg_recd,
-                                            self._receive_message)
-            self._plm.message_callbacks.add(std_msg_ack_recd,
-                                            self._receive_message)
-            self._plm.message_callbacks.add(ext_msg_ack_recd,
-                                            self._receive_message)
+            self._register_messages()
 
     # Public properties
     @property
@@ -141,6 +132,10 @@ class Device(object):
         the ability to send a command request is limited.
         """
         return self._product_data_in_aldb
+
+    @property
+    def aldb(self):
+        return self._aldb
 
     @classmethod
     def create(cls, plm, address, cat, subcat, product_key=None,
@@ -241,11 +236,48 @@ class Device(object):
 
     def read_aldb(self):
         """Read the device All-Link Database."""
-        pass
+        userdata = Userdata({'d1': 0,
+                             'd2': 0,
+                             'd3': 0,
+                             'd4': 0,
+                             'd5': 0})
+        msg = ExtendedSend(self.address,
+                           COMMAND_EXTENDED_READ_WRITE_ALDB_0X2F_0X00,
+                           userdata=userdata)
+        self._send_msg(msg)
 
     def write_aldb(self):
         """Write to the device All-Link Database."""
         pass
+
+    def _handle_aldb_record_received(self, msg):
+        userdata = msg.userdata
+        rec = ALDBRecord.create_from_userdata(userdata)
+        self._aldb.append(rec)
+        self.log.info('ALDB Record: %s', rec)
+
+    def _register_messages(self):
+            std_msg_recd = StandardReceive.template(address=self._address)
+            ext_msg_recd = ExtendedReceive.template(address=self._address)
+            std_msg_ack_recd = StandardSend.template(address=self._address,
+                                                     acknak=MESSAGE_ACK)
+            ext_msg_ack_recd = ExtendedSend.template(address=self._address,
+                                                     acknak=MESSAGE_ACK)
+            ext_msg_aldb_record = ExtendedSend.template(
+                address=self._address,
+                commandtuple=COMMAND_EXTENDED_READ_WRITE_ALDB_0X2F_0X00,
+                userdata=Userdata.template({'d2': 1}),
+                flags=MessageFlags.template(messageType=MESSAGE_TYPE_DIRECT_MESSAGE,
+                                            extended=1))
+
+            self._plm.message_callbacks.add(std_msg_recd,
+                                            self._receive_message)
+            self._plm.message_callbacks.add(ext_msg_recd,
+                                            self._receive_message)
+            self._plm.message_callbacks.add(std_msg_ack_recd,
+                                            self._receive_message)
+            self._plm.message_callbacks.add(ext_msg_ack_recd,
+                                            self._receive_message)
 
     # Send / Receive message processing
     def _receive_message(self, msg):
@@ -349,3 +381,186 @@ class StateList(object):
         """Add a state to the StateList."""
         self._stateList[group] = stateType(plm, device, stateName, group,
                                            defaultValue=defaultValue)
+
+class ALDBRecord(object):
+    """Represents an ALDB record."""
+
+    def __init__(self, memory, control_flags, group, address,
+                 data1, data2, data3):
+        """Initialze the ALDBRecord class."""
+        self._memoryLocation = memory
+        self._address = Address(address)
+        self._group = group
+        self._data1 = data1
+        self._data2 = data2
+        self._data3 = data3
+        self._control_flags = ControlFlags.create_from_byte(control_flags)
+
+    def __str__(self):
+        """Return the string representation of an ALDB record."""
+        props = self._record_properties()
+        msgstr = "{"
+        first = True
+        for prop in props:
+            if not first:
+                msgstr = '{}, '.format(msgstr)
+            for key, val in prop.items():
+                if isinstance(val, Address):
+                    msgstr = "{}'{}': {}".format(msgstr, key, val.human)
+                elif key == 'memory':
+                    msgstr = "{}'{}': 0x{:04x}".format(msgstr, key, val)
+                elif isinstance(val, int):
+                    msgstr = "{}'{}': 0x{:02x}".format(msgstr, key, val)
+                else:
+                    msgstr = "{}'{}': {}".format(msgstr, key, val)
+            first = False
+        msgstr = "{}{}".format(msgstr, '}')
+        return msgstr
+
+    @property
+    def memhi(self):
+        """Return the memory address MSB."""
+        return self._memoryLocation >> 8
+
+    @property
+    def memlo(self):
+        """Return the memory address LSB."""
+        return self._memoryLocation & 0xff
+
+    @property
+    def address(self):
+        """Return the address of the device the record points to."""
+        return self._address
+
+    @property
+    def group(self):
+        """Return the group the record responds to."""
+        return self._group
+
+    @property
+    def control_flags(self):
+        """Return the record control flags."""
+        return self._control_flags
+
+    @property
+    def data1(self):
+        """Return the data1 field of the ALDB record."""
+        return self._data1
+
+    @property
+    def data2(self):
+        """Return the data2 field of the ALDB record."""
+        return self._data2
+
+    @property
+    def data3(self):
+        """Return the data3 field of the ALDB record."""
+        return self._data3
+
+    @staticmethod
+    def create_from_userdata(userdata):
+        """Create ALDB Record from the userdata dictionary."""
+        memhi = userdata.get('d3')
+        memlo = userdata.get('d4')
+        memory = memhi << 8 | memlo
+        control_flags = userdata.get('d6')
+        group = userdata.get('d7')
+        addrhi = userdata.get('d8')
+        addrmed = userdata.get('d9')
+        addrlo = userdata.get('d10')
+        addr = Address(bytearray([addrhi, addrmed, addrlo]))
+        data1 = userdata.get('d11')
+        data2 = userdata.get('d12')
+        data3 = userdata.get('d13')
+        return ALDBRecord(memory, control_flags, group, addr,
+                          data1, data2, data3)
+
+    def to_userdata(self):
+        """Return a Userdata dictionary."""
+        userdata = Userdata({'d3': self.memhi,
+                             'd4': self.memlo,
+                             'd6': self.control_flags,
+                             'd7': self.group,
+                             'd8': self.address[2],
+                             'd9': self.address[1],
+                             'd10': self.address[0],
+                             'd11': self.data1,
+                             'd12': self.data2,
+                             'd13': self.data3})
+        return userdata
+
+    def _record_properties(self):
+        mode = 'Controller' if self._control_flags.is_controller else 'Responder'
+        rec = [{'memory': self._memoryLocation},
+               {'inuse': self._control_flags.is_in_use},
+               {'mode':  mode},
+               {'highwater': self._control_flags.is_high_water_mark},
+               {'group': self.group},
+               {'address': self.address},
+               {'data1': self.data1},
+               {'data2': self.data2},
+               {'data3': self.data3}]
+        return rec
+
+
+class ControlFlags(object):
+    """Represents a ControlFlag byte of an ALDB record."""
+
+    def __init__(self, in_use, controller, used_before, bit5=0, bit4=0):
+        """Initialize the ControlFlags Class."""
+        self._in_use = bool(in_use)
+        self._controller = bool(controller)
+        self._used_before = bool(used_before)
+        self._bit5 = bool(bit5)
+        self._bit4 = bool(bit4)
+
+    @property
+    def is_in_use(self):
+        """Returns True if the record is in use."""
+        return self._in_use
+
+    @property
+    def is_available(self):
+        """Returns True if the recored is availabe for use."""
+        return not self._in_use
+
+    @property
+    def is_controller(self):
+        """Returns True if the device is a controller."""
+        return self._controller
+
+    @property
+    def is_responder(self):
+        """Returns True if the device is a responder."""
+        return not self._controller
+
+    @property
+    def is_high_water_mark(self):
+        """Returns True if this is the last record."""
+        return not self._used_before
+
+    @property
+    def is_used_before(self):
+        """Returns True if this is not the last record."""
+        return self._used_before
+
+    @staticmethod
+    def create_from_byte(control_flags):
+        """Create a ControlFlags class from a control flags byte."""
+        in_use = bool(control_flags & 1 << 7)
+        controller = bool(control_flags & 1 << 6)
+        bit5 = bool(control_flags & 1 << 5)
+        bit4 = bool(control_flags & 1 << 4)
+        used_before = bool(control_flags & 1 << 1)
+        flags = ControlFlags(in_use, controller, used_before,
+                             bit5=bit5, bit4=bit4)
+        return flags
+
+    def to_byte(self):
+        """Returns a byte representation of ControlFlags."""
+        flags = int(self._in_use) << 7 \
+            | int(self._controller) << 6 \
+            | int(self._bit5) << 5 \
+            | int(self._bit4) << 4 \
+            | int(self._used_before) << 1
+        return flags

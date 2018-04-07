@@ -26,7 +26,7 @@ class Userdata(object):
 
     def __getitem__(self, key):
         """Return a single byte of the user data."""
-        return self._userdata.get(key, None)
+        return self._userdata.get(key)
 
     def __setitem__(self, key, val):
         """Set a user data element."""
@@ -118,6 +118,10 @@ class Userdata(object):
                     ismatch = False
                     break
         return ismatch
+
+    def get(self, key):
+        """Return a single byte of the user data."""
+        return self[key]
 
     @classmethod
     def _dict_to_dict(cls, empty, userdata):

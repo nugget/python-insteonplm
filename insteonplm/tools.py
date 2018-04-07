@@ -41,7 +41,7 @@ def console(loop, log, devicelist):
 
     def async_insteonplm_add_device_callback(device):
         """Log that our new device callback worked."""
-        log.info('New Device: %s %02x %02x %s, %s', device.id, device.cat,
+        log.warn('New Device: %s %02x %02x %s, %s', device.id, device.cat,
                  device.subcat, device.description, device.model)
         for state in device.states:
             device.states[state].register_updates(async_state_change_callback)
@@ -54,9 +54,9 @@ def console(loop, log, devicelist):
 
     plm = conn.protocol
 
-    yield from asyncio.sleep(240, loop=loop)
+    yield from asyncio.sleep(150, loop=loop)
 
-    if 1 == 0:
+    if False:
         device = plm.devices['14627a']
         device.states[0x01].off()
 
@@ -68,12 +68,12 @@ def console(loop, log, devicelist):
         log.debug('Sent office light on request')
         log.debug('----------------------')
 
-    if 1 == 0:
+    if False:
         for key in plm.devices:
             log.debug('Address: %s', key)
         yield from asyncio.sleep(5, loop=loop)
 
-    if 1 == 0:
+    if False:
         # Test Top Outlet
         device = plm.devices['4189cf']
         device.states[0x01].off()
@@ -97,7 +97,7 @@ def console(loop, log, devicelist):
         log.debug('Sent bottom outlet on request')
         log.debug('----------------------')
 
-    if 1 == 0:
+    if False:
         # Test Status Request message
         state1 = plm.devices['4189cf'].states[0x01]
         state2 = plm.devices['4189cf'].states[0x02]
@@ -133,6 +133,23 @@ def console(loop, log, devicelist):
         log.debug('----------------------')
         state2.on()
 
+    if True:
+        device = plm.devices['462f24']
+        device.read_aldb()
+        yield from asyncio.sleep(30, loop=loop)
+        log.info('-----------------------------------')
+        for rec in device.aldb:
+            log.info('ALDB Record: %s', rec)
+
+    if True:
+        for addr in plm.devices:
+            device = plm.devices[addr]
+            device.product_data_request()
+
+    if True:
+        log.info('--------------------------')
+        log.info('Starting All-Linking')
+        plm.start_all_linking(linkcode=1, group=0)
 
 def monitor():
     """Wrapper to call console with a loop."""
