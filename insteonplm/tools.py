@@ -6,7 +6,7 @@ import logging
 
 import insteonplm
 from insteonplm.address import Address
-from insteonplm.devices import Device
+from insteonplm.devices import Device, ALDBStatus
 
 __all__ = ('Tools', 'monitor', 'all_linking')
 

@@ -1,5 +1,5 @@
 """INSTEON Device Unknown Device Type."""
-from insteonplm.devices import Device
+from insteonplm.devices import Device, ALDB, ALDBVersion
 
 
 class UnknownDevice(Device):
@@ -26,3 +26,4 @@ class UnknownDevice(Device):
         self._noRegisterCallback = False
         super().__init__(plm, address, cat, subcat, product_key,
                          description, model)
+        self._aldb = ALDB(None, None, self._address, version=ALDBVersion.Null)

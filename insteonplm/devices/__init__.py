@@ -1,8 +1,9 @@
 """Insteon Device Classes."""
 import asyncio
-import datetime
-import logging
 import async_timeout
+import datetime
+from enum import Enum
+import logging
 
 from insteonplm.address import Address
 from insteonplm.constants import (
@@ -27,7 +28,11 @@ from insteonplm.messages.standardSend import StandardSend
 from insteonplm.messages.userdata import Userdata
 from insteonplm.states import State
 
-WAIT_TIMEOUT = 2
+DIRECT_ACK_WAIT_TIMEOUT = 3
+ALDB_RECORD_TIMEOUT = 10
+ALDB_RECORD_RETRIES = 20
+ALDB_ALL_RECORD_TIMEOUT = 30
+ALDB_ALL_RECORD_RETRIES = 5
 
 
 def create(plm, address, cat, subcat, firmware=None):
@@ -73,7 +78,7 @@ class Device(object):
         self._sent_msg_wait_for_directACK = {}
         self._directACK_received_queue = asyncio.Queue(loop=self._plm.loop)
         self._message_callbacks = MessageCallback()
-        self._aldb = []
+        self._aldb = ALDB(self._send_msg, self._plm.loop, self._address)
 
         if not hasattr(self, '_noRegisterCallback'):
             self._register_messages()
@@ -317,27 +322,28 @@ class Device(object):
         self._last_communication_received = datetime.datetime.now()
         self.log.debug('Ending Device.receive_message')
 
-    def _send_msg(self, msg, directACK_Method=None):
+    def _send_msg(self, msg, callback=None, on_timeout=False):
         self.log.debug('Starting Device._send_msg')
         write_message_coroutine = self._process_send_queue(msg,
-                                                           directACK_Method)
+                                                           callback,
+                                                           on_timeout)
         asyncio.ensure_future(write_message_coroutine,
                               loop=self._plm.loop)
         self.log.debug('Ending Device._send_msg')
 
     @asyncio.coroutine
-    def _process_send_queue(self, msg, directACK_Method=None):
-        self.log.debug('Callback: %s', directACK_Method)
+    def _process_send_queue(self, msg, callback=None, on_timeout=False):
+        self.log.debug('Starting Device._process_send_queue')
         yield from self._send_msg_lock
-        if directACK_Method:
-            self.log.debug('Writing directACK callback')
+        if self._send_msg_lock.locked():
+            self.log.debug("Lock is locked from yeild from")
+        if callback:
             self._sent_msg_wait_for_directACK = {'msg': msg,
-                                                 'callback': directACK_Method}
-            self.log.debug('Attempt to acquire lock')
-            self._send_msg_lock.acquire()
-            self.log.debug('Lock acquired')
+                                                 'callback': callback,
+                                                 'on_timeout': on_timeout}
         self._plm.send_msg(msg)
         self.log.debug('Ending Device._process_send_queue')
+
 
     @asyncio.coroutine
     def _wait_for_direct_ACK(self):
@@ -346,7 +352,7 @@ class Device(object):
         while True:
             # wait for an item from the queue
             try:
-                with async_timeout.timeout(WAIT_TIMEOUT):
+                with async_timeout.timeout(DIRECT_ACK_WAIT_TIMEOUT):
                     msg = yield from self._directACK_received_queue.get()
                     break
             except asyncio.TimeoutError:
@@ -354,7 +360,7 @@ class Device(object):
                 break
         self.log.debug('Releasing lock')
         self._send_msg_lock.release()
-        if msg is not None:
+        if msg or self._sent_msg_wait_for_directACK.get('on_timeout'):
             callback = self._sent_msg_wait_for_directACK.get('callback', None)
             if callback is not None:
                 callback(msg)
@@ -435,6 +441,11 @@ class ALDBRecord(object):
         return msgstr
 
     @property
+    def mem_addr(self):
+        """Return the memory address of the database record."""
+        return self._memoryLocation
+
+    @property
     def memhi(self):
         """Return the memory address MSB."""
         return self._memoryLocation >> 8
@@ -508,9 +519,9 @@ class ALDBRecord(object):
 
     def _record_properties(self):
         if not self._control_flags.is_controller:
-            mode = 'Controller'
+            mode = 'C'
         else:
-            mode = 'Responder'
+            mode = 'R'
         rec = [{'memory': self._memoryLocation},
                {'inuse': self._control_flags.is_in_use},
                {'mode':  mode},
@@ -584,3 +595,274 @@ class ControlFlags(object):
             | int(self._bit4) << 4 \
             | int(self._used_before) << 1
         return flags
+
+
+class ALDBStatus(Enum):
+    """All-Link Database load status."""
+    EMPTY = 0
+    LOADING = 1
+    LOADED = 2
+    FAILED = 3
+    PARTIAL = 4
+
+
+class ALDBVersion(Enum):
+    """All-Link Database version."""
+    Null = 0,
+    v1 = 1,
+    v2 = 2,
+    v2cs = 20
+
+
+class ALDB(object):
+    """Represents a device All-Link database."""
+
+    def __init__(self, send_method, loop, address,
+                 version=ALDBVersion.v2, mem_addr=0x0000):
+        """Instantiate the ALL-Link Database object."""
+        self.log = logging.getLogger(__name__)
+        self._records = {}
+        self._status = ALDBStatus.EMPTY
+        self._version = version
+
+        self._send_method = send_method
+        self._loop = loop
+        self._address = address
+        self._mem_addr = mem_addr
+        
+        self._rec_mgr_lock = asyncio.Lock(loop=self._loop)
+        self._load_action = {}
+
+    def __len__(self):
+        """Return the number of devices in the ALDB."""
+        return len(self._records)
+
+    def __iter__(self):
+        """Iterate through each ALDB device record."""
+        keys = list(self._records.keys())
+        keys.sort(reverse=True)
+        for key in keys:
+            yield self._records[key]
+
+    def __getitem__(self, mem_addr):
+        """Fetch a device from the ALDB."""
+        return self._records.get(mem_addr)
+
+    def __setitem__(self, mem_addr, record):
+        """Add or Update a device in the ALDB."""
+        if not isinstance(record, ALDBRecord):
+            raise ValueError
+
+        self._records[mem_addr] = record
+
+    def __repr__(self):
+        """Human representation of a device from the ALDB."""
+        attrs = vars(self)
+        return ', '.join("%s: %r" % item for item in attrs.items())
+
+    @property
+    def status(self):
+        return self._status
+
+    @property
+    def version(self):
+        return self._version
+
+    @asyncio.coroutine
+    def load(self, mem_addr=0x0000, rec_count=0):
+        """Read the device database and load."""
+        if self._version == ALDBVersion.Null:
+            self._status = ALDBStatus.LOADED
+            self.log.info('Device has no ALDB')
+
+        else:
+            yield from self._rec_mgr_lock
+            self._status = ALDBStatus.LOADING
+
+            mem_hi = mem_addr >> 8
+            mem_lo = mem_addr & 0xff
+            if rec_count:
+                if mem_addr == 0x0000:
+                    self.log.info('ALDB read first record')
+                else:
+                    self.log.info('ALDB read record %04x', mem_addr)
+            else:
+                self.log.info('ALDB read all records')
+
+            chksum = 0xff - ((0x2f+mem_hi+mem_lo+1) & 0xff) + 1
+            userdata = Userdata({'d1': 0,
+                                 'd2': 0,
+                                 'd3': mem_hi,
+                                 'd4': mem_lo,
+                                 'd5': rec_count,
+                                 'd14': chksum})
+            msg = ExtendedSend(self._address,
+                               COMMAND_EXTENDED_READ_WRITE_ALDB_0X2F_0X00,
+                               userdata=userdata)
+            self._send_method(msg, self._handle_read_aldb_ack, True)
+
+            if not self._load_action:
+                self._set_load_action(mem_addr, rec_count, -1, False)
+
+    def get(self, mem_addr):
+        """Return an All-Link record at a memory address."""
+        return self._records.get(mem_addr)
+
+    def record_received(self, msg):
+        """Handle ALDB record received from device."""
+        release_lock = False
+        userdata = msg.userdata
+        rec = ALDBRecord.create_from_userdata(userdata)
+        self._records[rec.mem_addr] = rec
+        
+        self.log.info('ALDB returned record {:04x}'.format(rec.mem_addr))
+        self.log.debug('ALDB Record: %s', rec)
+
+        rec_count = self._load_action.get('rec_count')
+        if (rec.control_flags.is_high_water_mark or
+            rec_count == 1):
+            release_lock = True
+
+        if self._is_first_record(rec):
+            self._mem_addr = rec.mem_addr
+
+        if release_lock and self._rec_mgr_lock.locked():
+            self.log.info('Releasing lock because record received')
+            self._rec_mgr_lock.release()
+
+    def _handle_read_aldb_ack(self, msg):
+        asyncio.ensure_future(self._read_timer_set(), loop=self._loop)
+
+    asyncio.coroutine
+    def _read_timer_set(self):
+        if not self._rec_mgr_lock.locked():
+            yield from self._rec_mgr_lock.acquire()
+        asyncio.ensure_future(self._read_timeout_manager(), loop=self._loop)
+
+    @asyncio.coroutine
+    def _read_timeout_manager(self):
+        read_complete = False
+        mem_addr = self._load_action.get('mem_addr', 0)
+        rec_count = self._load_action.get('rec_count', 0)
+        retries = self._load_action.get('retries', 0)
+        timeout = ALDB_RECORD_TIMEOUT if rec_count else ALDB_ALL_RECORD_TIMEOUT
+
+        try:
+            with async_timeout.timeout(timeout + retries):
+                yield from self._rec_mgr_lock
+                read_complete = True
+        except asyncio.TimeoutError:
+            if not self.get(mem_addr):
+                self.log.info('ALDB record response timeout.')
+                read_complete = False
+        
+        self._set_load_action(mem_addr, rec_count, retries, read_complete)
+        
+        mem_addr = self._load_action.get('mem_addr', 0)
+        rec_count = self._load_action.get('rec_count', 0)
+        retries = self._load_action.get('retries', 0)
+
+        if self._rec_mgr_lock.locked():
+            self._rec_mgr_lock.release()
+        if mem_addr is not None:
+            if not rec_count and retries:
+                self.log.info('ALDB read all records retries %d', retries)
+            else:
+                if mem_addr == 0x0000:
+                    self.log.info('ALDB read first record')
+                else:
+                    self.log.info('ALDB read record  %04x retries %d',
+                                  mem_addr, retries)
+            asyncio.ensure_future(self.load(mem_addr, rec_count), 
+                                  loop=self._loop)
+        elif read_complete:
+            self.log.info('Marking load complete')
+            self._status = ALDBStatus.LOADED
+            self._load_action = {}
+        else:
+            if self._records:
+                self.log.info('Marking load partial')
+                self._status = ALDBStatus.PARTIAL
+            else:
+                self.log.info('Marking load failed')
+                self._status = ALDBStatus.FAILED
+            self._load_action = {}
+
+    def _set_load_action(self, mem_addr, rec_count, retries,
+                         read_complete=False):
+        """Calculates the next record to read.
+
+        If the last record was successful and one record was being read then
+        look for the next record until we get to the high water mark.
+
+        If the last read was successful and all records were being read then
+        look for the first record.
+
+        if the last read was unsuccessful and one record was being read then
+        repeat the last read until max retries
+
+        If the last read was unsuccessful and all records were being read then
+        repeat the last read until max retries or look for the first record.
+        """
+        if read_complete:
+            retries = 0
+            if rec_count:
+                mem_addr = self._next_address(mem_addr)
+            else:
+                if self._have_first_record():
+                    mem_addr = None
+                else:
+                    mem_addr = 0x0000
+                    rec_count = 1
+                    retries = 0
+
+        elif rec_count and retries < ALDB_RECORD_RETRIES:
+            retries = retries + 1
+        elif not rec_count and retries < ALDB_ALL_RECORD_RETRIES:
+            retries = retries + 1
+        elif not rec_count and retries >= ALDB_ALL_RECORD_RETRIES:
+            mem_addr = 0x0000
+            rec_count = 1
+            retries = 0
+        else:
+            mem_addr = None
+            rec_count = 0
+            retries = 0
+
+        self._load_action = {'mem_addr': mem_addr,
+                             'rec_count': rec_count,
+                             'retries': retries}
+
+    def _next_address(self, mem_addr):
+        if self._have_first_record() and mem_addr == 0x0000:
+            mem_addr = self._mem_addr
+        while self.get(mem_addr): 
+            if self.get(mem_addr).control_flags.is_high_water_mark:
+                mem_addr = None
+            else:
+                mem_addr = mem_addr - 8
+        return mem_addr
+
+    def _have_first_record(self):
+        have_first_record = False
+        if self._records:
+            keys = list(self._records.keys())
+            keys.sort(reverse=True)
+            first_rec = keys[0]
+            if ((self._mem_addr and first_rec == self._mem_addr) or
+                first_rec == 0x0fff):
+                have_first_record = True
+        return have_first_record
+
+    def _is_first_record(self, rec):
+        is_first_record = False
+        mem_addr = self._load_action.get('mem_addr')
+        rec_count = self._load_action.get('rec_count')
+        if rec_count and mem_addr == 0x0000:
+            is_first_record = True
+        elif self._mem_addr == rec.mem_addr:
+            is_first_record = True
+        elif (self._mem_addr == 0x0000 and
+              rec.mem_addr == 0x0fff):
+            is_first_record = True
+        return is_first_record

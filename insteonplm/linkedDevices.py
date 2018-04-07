@@ -13,7 +13,7 @@ __all__ = ('ALDB')
 DEVICE_INFO_FILE = 'insteon_plm_device_info.dat'
 
 
-class ALDB(object):
+class LinkedDevices(object):
     """Class holds and maintains the ALL-Link Database from the PLM device."""
 
     def __init__(self, loop=None, workdir=None):
