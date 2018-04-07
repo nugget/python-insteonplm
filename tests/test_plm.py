@@ -78,7 +78,7 @@ def do_plm(loop, log, devicelist):
 
     def async_insteonplm_light_callback(device):
         """Log that our new device callback worked."""
-        log.info('New Device: %s %02x %02x %s, %s', device.id, device.cat,
+        log.warn('New Device: %s %02x %02x %s, %s', device.id, device.cat,
                  device.subcat, device.description, device.model)
 
     def async_light_on_level_callback(device_id, state, value):
@@ -126,11 +126,12 @@ def do_plm(loop, log, devicelist):
     plm.data_received(msg.bytes)
     yield from asyncio.sleep(.1)
     for addr in plm.devices:
-        log.info('Device: ', addr)
+        log.info('Device: %s', addr)
 
     log.info('Replying with Device Status Record')
     log.info('__________________________________')
     plm.devices['4d5e6f'].states[0x01].async_refresh_state()
+    yield from asyncio.sleep(.1)
     msg = insteonplm.messages.standardSend.StandardSend(
         address='4d5e6f', commandtuple={'cmd1': 0x19, 'cmd2': 0x00},
         flags=0x00, acknak=0x06)

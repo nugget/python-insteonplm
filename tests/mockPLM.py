@@ -1,5 +1,7 @@
 """Mock PLM class for testing devices."""
+import logging
 from insteonplm.messagecallback import MessageCallback
+from insteonplm.aldb import ALDB
 
 
 class MockPLM(object):
@@ -7,9 +9,11 @@ class MockPLM(object):
 
     def __init__(self, loop=None):
         """Initialize the MockPLM class."""
+        self.log = logging.getLogger()
         self.sentmessage = ''
         self._message_callbacks = MessageCallback()
         self.loop = loop
+        self.devices = ALDB()
 
     @property
     def message_callbacks(self):
@@ -22,6 +26,13 @@ class MockPLM(object):
 
     def message_received(self, msg):
         """Fake a message being received by the PLM."""
+        if hasattr(msg, 'address'):
+            device = self.devices[msg.address.hex]
+            if device:
+                device.receive_message(msg)
+            else:
+                self.log.info('Received message for unknown device %s',
+                                msg.address)
         for callback in (
                 self._message_callbacks.get_callbacks_from_message(msg)):
             callback(msg)

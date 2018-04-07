@@ -38,7 +38,7 @@ class SensorsActuators(Device):
 
         self._stateList[0x01] = OpenClosedRelay(
             self._address, "openClosedRelay", 0x01, self._send_msg,
-            self._plm.message_callbacks, 0x00)
+            self._message_callbacks, 0x00)
 
 
 class SensorsActuators_2450(SensorsActuators):
@@ -75,7 +75,7 @@ class SensorsActuators_2450(SensorsActuators):
 
         self._stateList[0x01] = OpenClosedRelay(
             self._address, "openClosedRelay", 0x01, self._send_msg,
-            self._plm.message_callbacks, 0x00)
+            self._message_callbacks, 0x00)
         self._stateList[0x02] = IoLincSensor(
             self._address, "openClosedSensor", 0x02, self._send_msg,
-            self._plm.message_callbacks, 0x00)
+            self._message_callbacks, 0x00)

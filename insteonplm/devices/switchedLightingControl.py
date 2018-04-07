@@ -29,7 +29,7 @@ class SwitchedLightingControl(Device):
 
         self._stateList[0x01] = OnOffSwitch(
             self._address, "lightOnOff", 0x01, self._send_msg,
-            self._plm.message_callbacks, 0x00)
+            self._message_callbacks, 0x00)
 
 
 class SwitchedLightingControl_2663_222(Device):
@@ -60,7 +60,7 @@ class SwitchedLightingControl_2663_222(Device):
 
         self._stateList[0x01] = OnOffSwitch_OutletTop(
             self._address, "outletTopOnOff", 0x01, self._send_msg,
-            self._plm.message_callbacks, 0x00)
+            self._message_callbacks, 0x00)
         self._stateList[0x02] = OnOffSwitch_OutletBottom(
             self._address, "outletBottomOnOff", 0x02, self._send_msg,
-            self._plm.message_callbacks, 0x00)
+            self._message_callbacks, 0x00)

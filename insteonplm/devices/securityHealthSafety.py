@@ -34,7 +34,7 @@ class SecurityHealthSafety(Device):
 
         self._stateList[0x01] = VariableSensor(
             self._address, "generalSensor", 0x01, self._send_msg,
-            self._plm.message_callbacks, 0x00)
+            self._message_callbacks, 0x00)
 
 
 class SecurityHealthSafety_2421(Device):
@@ -63,7 +63,7 @@ class SecurityHealthSafety_2421(Device):
 
         self._stateList[0x01] = OnOffSensor(
             self._address, "openClosedSensor", 0x01, self._send_msg,
-            self._plm.message_callbacks, 0x00)
+            self._message_callbacks, 0x00)
 
 
 class SecurityHealthSafety_2842_222(Device):
@@ -92,7 +92,7 @@ class SecurityHealthSafety_2842_222(Device):
 
         self._stateList[0x01] = OnOffSensor(
             self._address, "motionSensor", 0x01, self._send_msg,
-            self._plm.message_callbacks, 0x00)
+            self._message_callbacks, 0x00)
 
 
 class SecurityHealthSafety_2845_222(Device):
@@ -121,7 +121,7 @@ class SecurityHealthSafety_2845_222(Device):
 
         self._stateList[0x01] = OnOffSensor(
             self._address, "doorSensor", 0x01, self._send_msg,
-            self._plm.message_callbacks, 0x00)
+            self._message_callbacks, 0x00)
 
 
 class SecurityHealthSafety_2852_222(Device):
@@ -150,17 +150,17 @@ class SecurityHealthSafety_2852_222(Device):
 
         self._stateList[0x01] = LeakSensorDryWet(
             self._address, "dryLeakSensor", 0x01, self._send_msg,
-            self._plm.message_callbacks,
+            self._message_callbacks,
             defaultvalue=0x01,
             dry_wet=LeakSensorState.DRY)
         self._stateList[0x02] = LeakSensorDryWet(
             self._address, "wetLeakSensor", 0x02, self._send_msg,
-            self._plm.message_callbacks,
+            self._message_callbacks,
             defaultvalue=0x00,
             dry_wet=LeakSensorState.WET)
         self._stateList[0x04] = LeakSensorHeartbeat(
             self._address, "heartbeatLeakSensor", 0x04, self._send_msg,
-            self._plm.message_callbacks,
+            self._message_callbacks,
             defaultvalue=0x11)
         
         self._stateList[0x01].register_dry_wet_callback(
@@ -213,4 +213,4 @@ class SecurityHealthSafety_2982_222(Device):
 
         self._stateList[0x01] = SmokeCO2Sensor(
             self._address, "smokeCO2Sensor", 0x01, self._send_msg,
-            self._plm.message_callbacks, 0x00)
+            self._message_callbacks, 0x00)

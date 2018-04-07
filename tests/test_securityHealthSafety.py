@@ -3,10 +3,9 @@ import asyncio
 
 from insteonplm.constants import (COMMAND_LIGHT_OFF_0X13_0X00,
                                   COMMAND_LIGHT_ON_0X11_NONE,
-                                  MESSAGE_TYPE_BROADCAST_MESSAGE,
-                                  MESSAGE_TYPE_ALL_LINK_BROADCAST,
-                                  MESSAGE_TYPE_ALL_LINK_CLEANUP)
-
+                                  MESSAGE_FLAG_BROADCAST_0X80,
+                                  MESSAGE_TYPE_ALL_LINK_CLEANUP,
+                                  MESSAGE_TYPE_ALL_LINK_BROADCAST)
 from insteonplm.devices.securityHealthSafety import (
     SecurityHealthSafety, SecurityHealthSafety_2842_222,
     SecurityHealthSafety_2845_222, SecurityHealthSafety_2852_222,
@@ -16,14 +15,12 @@ from insteonplm.messages.messageFlags import MessageFlags
 from .mockPLM import MockPLM
 from .mockCallbacks import MockCallbacks
 
-
 @asyncio.coroutine
 def _onOffSenorTest(onOffClass, loop):
     """Test on/off sensor."""
-    plm = MockPLM()
+    plm = MockPLM(loop=loop)
     address = '1a2b3c'
     target = bytearray([0x00, 0x00, 0x01])
-    cmd2 = 0x01
 
     cat = 0x10
     subcat = 0x00
@@ -35,9 +32,10 @@ def _onOffSenorTest(onOffClass, loop):
 
     device = onOffClass.create(plm, address, cat, subcat, product_key,
                                description, model)
+    plm.devices[address] = device
     device.states[0x01].register_updates(callbacks.callbackmethod1)
     msg = StandardReceive(
-        address, target, COMMAND_LIGHT_ON_0X11_NONE, cmd2=cmd2,
+        address, target, COMMAND_LIGHT_ON_0X11_NONE, cmd2=0x01,
         flags=MessageFlags.create(MESSAGE_TYPE_ALL_LINK_BROADCAST, 0, 3, 3))
     plm.message_received(msg)
     yield from asyncio.sleep(.1, loop=loop)
@@ -68,7 +66,7 @@ def test_securityhealthsafety():
                 """Callback method to update sensor value."""
                 self.sensor = value
 
-        plm = MockPLM()
+        plm = MockPLM(loop)
         address = '1a2b3c'
         target = bytearray([0x00, 0x00, 0x01])
         cmd2 = 0x01
@@ -83,6 +81,7 @@ def test_securityhealthsafety():
 
         device = SecurityHealthSafety.create(plm, address, cat, subcat,
                                              product_key, description, model)
+        plm.devices[address] = device
         device.states[0x01].register_updates(callbacks.callbackmethod1)
         msg = StandardReceive(
             address, target, COMMAND_LIGHT_ON_0X11_NONE, cmd2=cmd2,
@@ -105,30 +104,37 @@ def test_securityhealthsafety():
     loop.run_until_complete(run_test(loop))
 
 
+
 def test_securityhealthsafety_2982_222():
     """Test device 2982-222."""
-    plm = MockPLM()
-    address = '1a2b3c'
-    target = '4d5e6f'
-    cmd2 = 0x04
+    @asyncio.coroutine
+    def run_test(loop):
+        plm = MockPLM(loop)
+        address = '1a2b3c'
+        target = '4d5e6f'
+        cmd2 = 0x04
 
-    cat = 0x10
-    subcat = 0x00
-    product_key = 0x00
-    description = 'Generic Security, Heath and Safety Device'
-    model = ''
+        cat = 0x10
+        subcat = 0x00
+        product_key = 0x00
+        description = 'Generic Security, Heath and Safety Device'
+        model = ''
 
-    callbacks = MockCallbacks()
+        callbacks = MockCallbacks()
 
-    device = SecurityHealthSafety_2982_222.create(
-        plm, address, cat, subcat, product_key, description, model)
-    device.states[0x01].register_updates(callbacks.callbackmethod1)
-    msg = StandardReceive(
-        address, target, COMMAND_LIGHT_ON_0X11_NONE, cmd2=cmd2,
-        flags=MessageFlags.create(MESSAGE_TYPE_ALL_LINK_BROADCAST, 0, 0, 0))
-    plm.message_received(msg)
-    # target hiByte
-    assert callbacks.callbackvalue1 == 0x6f
+        device = SecurityHealthSafety_2982_222.create(
+            plm, address, cat, subcat, product_key, description, model)
+        plm.devices[address] = device
+        device.states[0x01].register_updates(callbacks.callbackmethod1)
+        msg = StandardReceive(
+            address, target, COMMAND_LIGHT_ON_0X11_NONE, cmd2=cmd2,
+            flags=MessageFlags.create(MESSAGE_FLAG_BROADCAST_0X80, 0, 0, 0))
+        plm.message_received(msg)
+        yield from asyncio.sleep(.1, loop=loop)
+        assert callbacks.callbackvalue1 == 0x6f
+
+    loop = asyncio.get_event_loop()
+    loop.run_until_complete(run_test(loop))
 
 
 def test_securityHealthSafety_2842_222():
@@ -149,7 +155,7 @@ def test_securityHealthSafety_2852_222():
     """Test device 2852-222."""
     def _run_test(loop):
         """Test on/off sensor."""
-        plm = MockPLM()
+        plm = MockPLM(loop)
         address = '1a2b3c'
         target = '4d5e6f'
         cmd2 = 0x04
@@ -164,6 +170,7 @@ def test_securityHealthSafety_2852_222():
 
         device = SecurityHealthSafety_2852_222.create(plm, address, cat, subcat, product_key,
                                    description, model)
+        plm.devices[address] = device
         device.states[0x01].register_updates(callbacks.callbackmethod1)
         device.states[0x02].register_updates(callbacks.callbackmethod2)
         device.states[0x04].register_updates(callbacks.callbackmethod4)

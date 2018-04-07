@@ -47,7 +47,8 @@ class IM(Device, asyncio.Protocol):
                 string - valid directory path
         """
 
-    def __init__(self, loop=None, connection_lost_callback=None, workdir=None):
+    def __init__(self, loop=None, connection_lost_callback=None,
+                 workdir=None, poll_devices=True):
         """Protocol handler that handles all status and changes on PLM."""
         self._loop = loop
         self._connection_lost_callback = connection_lost_callback
@@ -58,6 +59,7 @@ class IM(Device, asyncio.Protocol):
         self._wait_acknack_queue = []
         self._aldb_response_queue = {}
         self._devices = ALDB(loop, workdir)
+        self._poll_devices = poll_devices
         self._write_transport_lock = asyncio.Lock(loop=self._loop)
         self._message_callbacks = MessageCallback()
 
@@ -120,12 +122,15 @@ class IM(Device, asyncio.Protocol):
                 self.log.debug('Processing message %s', msg)
                 callbacks = \
                     self._message_callbacks.get_callbacks_from_message(msg)
-                if len(callbacks) > 0:
-                    for callback in callbacks:
-                        self._loop.call_soon(callback, msg)
-                else:
-                    self.log.debug('No callback found for message %s',
-                                   str(msg))
+                if hasattr(msg, 'address'):
+                    device = self.devices[msg.address.hex]
+                    if device:
+                        device.receive_message(msg)
+                    else:
+                        self.log.info('Received message for unknown device %s',
+                                        msg.address)
+                for callback in callbacks:
+                    self._loop.call_soon(callback, msg)
             except IndexError:
                 self.log.debug('Last item in self._recv_queue reached.')
                 worktodo = False
@@ -204,7 +209,7 @@ class IM(Device, asyncio.Protocol):
                 # process the item
                 self.log.debug('Writing message: %s', msg)
                 self.transport.write(msg.bytes)
-                yield from asyncio.sleep(1, loop=self._loop)
+                yield from asyncio.sleep(1.5, loop=self._loop)
             self._write_transport_lock.release()
 
     def _get_plm_info(self):
@@ -301,6 +306,7 @@ class IM(Device, asyncio.Protocol):
 
     def _handle_assign_to_all_link_group(self, msg):
         if msg.flags.isBroadcast:
+            self.log.info('Received broadcast ALDB group assigment request.')
             cat = msg.targetLow
             subcat = msg.targetMed
             product_key = msg.targetHi
@@ -316,7 +322,7 @@ class IM(Device, asyncio.Protocol):
                                   device.id)
             else:
                 self.log.error('Device %s not in the IPDB.',
-                               device.address.human)
+                               msg.address.human)
             self.log.info('Total Devices Found: %d', len(self.devices))
 
     def _handle_standard_or_extended_message_received(self, msg):
@@ -410,7 +416,8 @@ class IM(Device, asyncio.Protocol):
             while len(self._cb_load_all_link_db_done) > 0:
                 callback = self._cb_load_all_link_db_done.pop()
                 callback()
-            self._loop.call_soon(self.poll_devices)
+            if self._poll_devices:
+                self._loop.call_soon(self.poll_devices)
         self.log.debug('Ending _handle_get_next_all_link_record_nak')
 
     def _handle_standard_or_extended_message_nak(self, msg):
