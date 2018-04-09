@@ -139,12 +139,13 @@ class LinkedDevices(object):
                 subcat = saved_device.get('subcat')
                 product_key = saved_device.get('firmware')
                 product_key = saved_device.get('product_key', product_key)
-                if cat and subcat:
+                device = self.create_device_from_category(
+                        plm, addr, cat,subcat, product_key)
+                if device:
                     self.log.info('Device with id %s added to device list '
                                   'from saved device data.',
                                   addr)
-                    self[addr] = self.create_device_from_category(
-                        plm, addr, cat,subcat, product_key)
+                    self[addr] = device
         for addr in self._overrides:
             if not self._devices.get(addr):
                 device_override = self._overrides.get(Address(addr).hex, {})
@@ -152,12 +153,13 @@ class LinkedDevices(object):
                 subcat = device_override.get('subcat')
                 product_key = device_override.get('firmware')
                 product_key = device_override.get('product_key', product_key)
-                if cat and subcat:
+                device = self.create_device_from_category(
+                        plm, addr, cat,subcat, product_key)
+                if device:
                     self.log.info('Device with id %s added to device list '
                                   'from device override data.',
                                   addr)
-                    self[addr] = self.create_device_from_category(
-                        plm, addr, cat,subcat, product_key)
+                    self[addr] = device
 
     # Save device information
     def save_device_info(self):
@@ -208,5 +210,8 @@ class LinkedDevices(object):
         if self._workdir is not None:
             self.log.debug('Writing %d devices to save file', len(devices))
             device_file = '{}/{}'.format(self._workdir, DEVICE_INFO_FILE)
-            with open(device_file, 'w') as outfile:
-                json.dump(devices, outfile)
+            try:
+                with open(device_file, 'w') as outfile:
+                    json.dump(devices, outfile)
+            except FileNotFoundError:
+                self.log.error('Cannot write to file %s', device_file)
