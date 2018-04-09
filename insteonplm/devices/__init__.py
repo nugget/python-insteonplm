@@ -240,49 +240,21 @@ class Device(object):
         msg = StandardSend(self._address, COMMAND_PING_0X0F_0X00)
         self._send_msg(msg)
 
-    def read_aldb(self, mem_addr=None):
+    def read_aldb(self, mem_addr=0x0000, num_recs=0):
         """Read the device All-Link Database."""
-        if mem_addr:
-            mem_hi = mem_addr >> 8
-            mem_lo = mem_addr & 0xff
-        if self.aldb:
-            last_rec = self.aldb[-1]
-            mem_addr = (last_rec.memhi << 8) + last_rec.memlo - 8
-            mem_hi = mem_addr >> 8
-            mem_lo = mem_addr & 0xff
+        if self._aldb.version == ALDBVersion.Null:
+            self.log.info('Device does not contain an ALDB')
         else:
-            mem_hi = self._mem_addr >> 8
-            mem_lo = self._mem_addr & 0xff
-        userdata = Userdata({'d1': 0,
-                             'd2': 0,
-                             'd3': mem_hi,
-                             'd4': mem_lo,
-                             'd5': 1})
-        # userdata = Userdata({'d1': 0,
-        #                      'd2': 0,
-        #                      'd3': 0,
-        #                      'd4': 0,
-        #                      'd5': 0})
-        msg = ExtendedSend(self.address,
-                           COMMAND_EXTENDED_READ_WRITE_ALDB_0X2F_0X00,
-                           userdata=userdata)
-        self._send_msg(msg)
-        yield from asyncio.sleep(.1, loop=self._plm.loop)
+            self.log.info('In device.read_aldb')
+            asyncio.ensure_future(self._aldb.load(mem_addr, num_recs),
+                                  loop=self._plm.loop)
 
     def write_aldb(self):
         """Write to the device All-Link Database."""
         pass
 
     def _handle_aldb_record_received(self, msg):
-        userdata = msg.userdata
-        rec = ALDBRecord.create_from_userdata(userdata)
-        self._aldb.append(rec)
-        self.log.debug('ALDB Record: %s', rec)
-        if rec.control_flags.is_high_water_mark:
-            self.log.debug('Device ALDB high water mark reached')
-        else:
-            mem_addr = (userdata['d3'] << 8) + userdata['d4'] - 8
-            self.read_aldb(mem_addr)
+        self._aldb.record_received(msg)
 
     def _register_messages(self):
             ext_msg_aldb_record = ExtendedReceive.template(
@@ -404,6 +376,7 @@ class StateList(object):
         """Add a state to the StateList."""
         self._stateList[group] = stateType(plm, device, stateName, group,
                                            defaultValue=defaultValue)
+
 
 class ALDBRecord(object):
     """Represents an ALDB record."""
@@ -676,8 +649,9 @@ class ALDB(object):
             self.log.info('Device has no ALDB')
 
         else:
-            yield from self._rec_mgr_lock
             self._status = ALDBStatus.LOADING
+            self.log.info('Starting ALDB loading for device %s', self._address)
+            yield from self._rec_mgr_lock
 
             mem_hi = mem_addr >> 8
             mem_lo = mem_addr & 0xff
@@ -707,6 +681,10 @@ class ALDB(object):
     def get(self, mem_addr):
         """Return an All-Link record at a memory address."""
         return self._records.get(mem_addr)
+
+    def clear(self):
+        """Remove all records."""
+        self._records.clear()
 
     def record_received(self, msg):
         """Handle ALDB record received from device."""
