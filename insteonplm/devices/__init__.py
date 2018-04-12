@@ -246,7 +246,7 @@ class Device(object):
             self.log.info('Device does not contain an ALDB')
         else:
            self.log.info('Reading ALDB for device %s', self._address)
-            asyncio.ensure_future(self._aldb.load(mem_addr, num_recs),
+           asyncio.ensure_future(self._aldb.load(mem_addr, num_recs),
                                   loop=self._plm.loop)
 
     def write_aldb(self):
