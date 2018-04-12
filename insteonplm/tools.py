@@ -60,7 +60,7 @@ class Tools():
         self.device = device if device else self.device
         self.workdir = workdir if workdir else self.workdir
         conn = yield from insteonplm.Connection.create(
-            device=self.device, loop=self.loop,
+            device=conn_device, loop=self.loop,
             poll_devices=poll_devices,
             workdir=self.workdir)
         conn.protocol.add_device_callback(self.async_new_device_callback)
