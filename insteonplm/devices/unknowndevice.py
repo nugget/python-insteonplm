@@ -23,7 +23,6 @@ class UnknownDevice(Device):
     def __init__(self, plm, address, cat=None, subcat=None, product_key=0x00,
                  description='', model=''):
         """Initalize the UnknownDevice Class."""
-        self._noRegisterCallback = False
         super().__init__(plm, address, cat, subcat, product_key,
                          description, model)
         self._aldb = ALDB(None, None, self._address, version=ALDBVersion.Null)

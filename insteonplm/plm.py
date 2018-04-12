@@ -20,7 +20,7 @@ from insteonplm.messages.getIMInfo import GetImInfo
 from insteonplm.messages.getNextAllLinkRecord import GetNextAllLinkRecord
 from insteonplm.messages.standardReceive import StandardReceive
 from insteonplm.messages.standardSend import StandardSend
-from insteonplm.devices import Device
+from insteonplm.devices import Device, ALDBRecord, ALDBStatus
 
 __all__ = ('PLM, Hub')
 WAIT_TIMEOUT = 2
@@ -67,7 +67,7 @@ class IM(Device, asyncio.Protocol):
         self._cb_load_all_link_db_done = []
         self._cb_device_not_active = []
 
-        super().__init__(self, None, 0x03, None, None, '', '')
+        super().__init__(self, '000000', 0x03, None, None, '', '')
 
         self.log = logging.getLogger(__name__)
         self.transport = None
@@ -329,11 +329,14 @@ class IM(Device, asyncio.Protocol):
 
     def _handle_all_link_record_response(self, msg):
         self.log.debug('Found all link record for device %s', msg.address.hex)
+        cat = msg.linkdata1
+        subcat = msg.linkdata2
+        product_key = msg.linkdata3
+        rec_num = len(self._aldb)
+        self._aldb[rec_num] = ALDBRecord(rec_num, msg.controlFlags,
+                                                 msg.group, msg.address,
+                                                 cat, subcat, product_key)
         if self.devices[msg.address.hex] is None:
-            cat = msg.linkdata1
-            subcat = msg.linkdata2
-            product_key = msg.linkdata3
-
             self.log.debug('Product data: address %s cat: %02x '
                            'subcat: %02x product_key: %02x',
                            msg.address.hex, cat, subcat, product_key)
@@ -366,6 +369,7 @@ class IM(Device, asyncio.Protocol):
 
     def _handle_get_next_all_link_record_nak(self, msg):
         # When the last All-Link record is reached the PLM sends a NAK
+        self._aldb.status = ALDBStatus.LOADED
         self.log.debug('All-Link device records found in ALDB: %d',
                        len(self._aldb_response_queue))
 

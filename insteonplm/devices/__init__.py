@@ -79,9 +79,9 @@ class Device(object):
         self._directACK_received_queue = asyncio.Queue(loop=self._plm.loop)
         self._message_callbacks = MessageCallback()
         self._aldb = ALDB(self._send_msg, self._plm.loop, self._address)
+        self._aldb.add_loaded_callback(self._aldb_loaded_callback)
 
-        if not hasattr(self, '_noRegisterCallback'):
-            self._register_messages()
+        self._register_messages()
 
     # Public properties
     @property
@@ -194,7 +194,7 @@ class Device(object):
         Only required for devices that support FX Commands.
         FX Addressee responds with an ED 0x0301 FX Username Response message
         """
-        msg = StandardSend(self._address,COMMAND_FX_USERNAME_0X03_0X01)
+        msg = StandardSend(self._address, COMMAND_FX_USERNAME_0X03_0X01)
         self._send_msg(msg)
 
     def device_text_string_request(self):
@@ -245,8 +245,8 @@ class Device(object):
         if self._aldb.version == ALDBVersion.Null:
             self.log.info('Device does not contain an ALDB')
         else:
-            self.log.info('In device.read_aldb')
-            asyncio.ensure_future(self._aldb.load(mem_addr, num_recs),
+           self.log.info('Reading ALDB for device %s', self._address)
+           asyncio.ensure_future(self._aldb.load(mem_addr, num_recs),
                                   loop=self._plm.loop)
 
     def write_aldb(self):
@@ -338,6 +338,9 @@ class Device(object):
                 callback(msg)
         self._sent_msg_wait_for_directACK = {}
         self.log.debug('Ending Device._wait_for_direct_ACK')
+
+    def _aldb_loaded_callback(self):
+        self._plm.devices.save_device_info()
 
 
 class StateList(object):
@@ -548,6 +551,16 @@ class ControlFlags(object):
         """Returns True if this is not the last record."""
         return self._used_before
 
+    @property
+    def byte(self):
+        """Returns a byte representation of ControlFlags."""
+        flags = int(self._in_use) << 7 \
+            | int(self._controller) << 6 \
+            | int(self._bit5) << 5 \
+            | int(self._bit4) << 4 \
+            | int(self._used_before) << 1
+        return flags
+
     @staticmethod
     def create_from_byte(control_flags):
         """Create a ControlFlags class from a control flags byte."""
@@ -558,15 +571,6 @@ class ControlFlags(object):
         used_before = bool(control_flags & 1 << 1)
         flags = ControlFlags(in_use, controller, used_before,
                              bit5=bit5, bit4=bit4)
-        return flags
-
-    def to_byte(self):
-        """Returns a byte representation of ControlFlags."""
-        flags = int(self._in_use) << 7 \
-            | int(self._controller) << 6 \
-            | int(self._bit5) << 5 \
-            | int(self._bit4) << 4 \
-            | int(self._used_before) << 1
         return flags
 
 
@@ -605,6 +609,7 @@ class ALDB(object):
         
         self._rec_mgr_lock = asyncio.Lock(loop=self._loop)
         self._load_action = {}
+        self._cb_aldb_loaded = []
 
     def __len__(self):
         """Return the number of devices in the ALDB."""
@@ -615,7 +620,7 @@ class ALDB(object):
         keys = list(self._records.keys())
         keys.sort(reverse=True)
         for key in keys:
-            yield self._records[key]
+            yield key
 
     def __getitem__(self, mem_addr):
         """Fetch a device from the ALDB."""
@@ -637,32 +642,50 @@ class ALDB(object):
     def status(self):
         return self._status
 
+    @status.setter
+    def status(self, val: ALDBStatus):
+        self._status = val
+
     @property
     def version(self):
         return self._version
 
+    def add_loaded_callback(self, callback):
+        """Add a callback to be run when the ALDB load is complete."""
+        self._cb_aldb_loaded.append(callback)
+
     @asyncio.coroutine
-    def load(self, mem_addr=0x0000, rec_count=0):
+    def load(self, mem_addr=0x0000, rec_count=0, retry=0):
         """Read the device database and load."""
         if self._version == ALDBVersion.Null:
             self._status = ALDBStatus.LOADED
-            self.log.info('Device has no ALDB')
-
+            self.log.debug('Device has no ALDB')
         else:
             self._status = ALDBStatus.LOADING
-            self.log.info('Starting ALDB loading for device %s', self._address)
+            self.log.debug('Tring to lock from load')
             yield from self._rec_mgr_lock
+            self.log.debug('load yielded lock')
 
             mem_hi = mem_addr >> 8
             mem_lo = mem_addr & 0xff
+            log_output = 'ALDB read'
+            max_retries = 0
             if rec_count:
+                max_retries = ALDB_RECORD_RETRIES
                 if mem_addr == 0x0000:
-                    self.log.info('ALDB read first record')
+                    log_output = '{:s} first record'.format(log_output)
                 else:
-                    self.log.info('ALDB read record %04x', mem_addr)
+                    log_output = '{:s} record {:04x}'.format(log_output,
+                                                             mem_addr)
             else:
-                self.log.info('ALDB read all records')
+                max_retries = ALDB_ALL_RECORD_RETRIES
+                log_output = '{:s} all records'.format(log_output)
 
+            if retry:
+                log_output = '{:s} retry {:d} of {:d}'.format(log_output, 
+                                                              retry,
+                                                              max_retries)
+            self.log.info(log_output)
             chksum = 0xff - ((0x2f+mem_hi+mem_lo+1) & 0xff) + 1
             userdata = Userdata({'d1': 0,
                                  'd2': 0,
@@ -693,32 +716,58 @@ class ALDB(object):
         rec = ALDBRecord.create_from_userdata(userdata)
         self._records[rec.mem_addr] = rec
         
-        self.log.info('ALDB returned record {:04x}'.format(rec.mem_addr))
         self.log.debug('ALDB Record: %s', rec)
 
         rec_count = self._load_action.get('rec_count')
-        if (rec.control_flags.is_high_water_mark or
-            rec_count == 1):
+        if rec_count == 1 or self._have_all_records():
             release_lock = True
 
         if self._is_first_record(rec):
             self._mem_addr = rec.mem_addr
 
         if release_lock and self._rec_mgr_lock.locked():
-            self.log.info('Releasing lock because record received')
+            self.log.debug('Releasing lock because record received')
             self._rec_mgr_lock.release()
 
-    def _handle_read_aldb_ack(self, msg):
-        asyncio.ensure_future(self._read_timer_set(), loop=self._loop)
+    def load_saved_records(self, status, records):
+        if isinstance(status, ALDBStatus):
+            self._status = status
+        else:
+            self._status = ALDBStatus(status)
+        for mem_addr in records:
+            rec = records[mem_addr]
+            control_flags = int(rec.get('control_flags', 0))
+            group = int(rec.get('group', 0))
+            rec_addr = rec.get('address', '000000')
+            data1 = int(rec.get('data1', 0))
+            data2 = int(rec.get('data2', 0))
+            data3 = int(rec.get('data3', 0))
+            self[int(mem_addr)] = ALDBRecord(int(mem_addr), control_flags,
+                                             group, rec_addr,
+                                             data1, data2, data3)
+        if self._status == ALDBStatus.LOADED:
+            keys = list(self._records.keys())
+            keys.sort(reverse=True)
+            first_key = keys[0]
+            self._mem_addr == first_key
 
-    asyncio.coroutine
-    def _read_timer_set(self):
-        if not self._rec_mgr_lock.locked():
-            yield from self._rec_mgr_lock.acquire()
+    def _handle_read_aldb_ack(self, msg):
+        self.log.debug('Read ALDB directACK received or timeout reached')
+    #     asyncio.ensure_future(self._read_timer_set(), loop=self._loop)
+
+    # asyncio.coroutine
+    # def _read_timer_set(self):
+    #     self.log.info('Setting read timer')
+    #     if not self._rec_mgr_lock.locked():
+    #         self.log.info('Trying to lock from _read_timer_set')
+    #         yield from self._rec_mgr_lock.acquire()
+    #         self.log.info('_read_timer_set lock yielded')
         asyncio.ensure_future(self._read_timeout_manager(), loop=self._loop)
+
 
     @asyncio.coroutine
     def _read_timeout_manager(self):
+        self.log.debug('_read_timeout_manager started.')
         read_complete = False
         mem_addr = self._load_action.get('mem_addr', 0)
         rec_count = self._load_action.get('rec_count', 0)
@@ -727,11 +776,13 @@ class ALDB(object):
 
         try:
             with async_timeout.timeout(timeout + retries):
+                self.log.debug('Tring to get lock in _read_timeout_manager.')
                 yield from self._rec_mgr_lock
+                self.log.debug('_read_timeout_manager lock yielded.')
                 read_complete = True
         except asyncio.TimeoutError:
             if not self.get(mem_addr):
-                self.log.info('ALDB record response timeout.')
+                self.log.debug('ALDB record response timeout.')
                 read_complete = False
         
         self._set_load_action(mem_addr, rec_count, retries, read_complete)
@@ -742,28 +793,26 @@ class ALDB(object):
 
         if self._rec_mgr_lock.locked():
             self._rec_mgr_lock.release()
+
         if mem_addr is not None:
-            if not rec_count and retries:
-                self.log.info('ALDB read all records retries %d', retries)
-            else:
-                if mem_addr == 0x0000:
-                    self.log.info('ALDB read first record')
-                else:
-                    self.log.info('ALDB read record  %04x retries %d',
-                                  mem_addr, retries)
-            asyncio.ensure_future(self.load(mem_addr, rec_count), 
+            asyncio.ensure_future(self.load(mem_addr, rec_count, retries), 
                                   loop=self._loop)
-        elif read_complete:
-            self.log.info('Marking load complete')
-            self._status = ALDBStatus.LOADED
-            self._load_action = {}
+        elif read_complete or self._have_all_records():
+            self.log.info('ALDB load complete for device %s', self._address)
+            self._load_finished(ALDBStatus.LOADED)
         else:
             if self._records:
-                self.log.info('Marking load partial')
-                self._status = ALDBStatus.PARTIAL
+                self.log.warning('ALDB partially loaded for device %s', self._address)
+                self._load_finished(ALDBStatus.PARTIAL)
             else:
-                self.log.info('Marking load failed')
-                self._status = ALDBStatus.FAILED
+                self.log.warning('ALDB failed to load for device %s', self._address)
+                self._load_finished(ALDBStatus.FAILED)
+
+    def _load_finished(self, status):
+            self._status = status
+            for callback in self._cb_aldb_loaded:
+                self.log.info('Calling aldb loaded callback')
+                callback()
             self._load_action = {}
 
     def _set_load_action(self, mem_addr, rec_count, retries,
@@ -782,24 +831,24 @@ class ALDB(object):
         If the last read was unsuccessful and all records were being read then
         repeat the last read until max retries or look for the first record.
         """
-        if read_complete:
+        if self._have_all_records():
+            mem_addr = None
+            rec_count = 0
+            retries = 0
+        elif read_complete:
             retries = 0
             if rec_count:
                 mem_addr = self._next_address(mem_addr)
             else:
-                if self._have_first_record():
-                    mem_addr = None
-                else:
-                    mem_addr = 0x0000
-                    rec_count = 1
-                    retries = 0
-
+                mem_addr = self._next_address(mem_addr)
+                rec_count = 1
+                retries = 0
         elif rec_count and retries < ALDB_RECORD_RETRIES:
             retries = retries + 1
         elif not rec_count and retries < ALDB_ALL_RECORD_RETRIES:
             retries = retries + 1
         elif not rec_count and retries >= ALDB_ALL_RECORD_RETRIES:
-            mem_addr = 0x0000
+            mem_addr = self._next_address(mem_addr)
             rec_count = 1
             retries = 0
         else:
@@ -810,6 +859,11 @@ class ALDB(object):
         self._load_action = {'mem_addr': mem_addr,
                              'rec_count': rec_count,
                              'retries': retries}
+        if mem_addr is not None:
+            self.log.debug('Load action: addr: %04x rec_count: %d retries: %d',
+                          self._load_action.get('mem_addr'),
+                          self._load_action.get('rec_count'),
+                          self._load_action.get('retries'))
 
     def _next_address(self, mem_addr):
         if self._have_first_record() and mem_addr == 0x0000:
@@ -826,11 +880,23 @@ class ALDB(object):
         if self._records:
             keys = list(self._records.keys())
             keys.sort(reverse=True)
-            first_rec = keys[0]
-            if ((self._mem_addr and first_rec == self._mem_addr) or
-                first_rec == 0x0fff):
+            first_key = int(keys[0])
+            if first_key == self._mem_addr:
+                have_first_record = True
+            elif first_key == 0x0fff:
+                self._mem_addr = first_key
                 have_first_record = True
         return have_first_record
+
+    def _have_last_record(self):
+        have_last_record = False
+        if self._records:
+            keys = list(self._records.keys())
+            keys.sort(reverse=False)
+            last_key = keys[0]
+            if self[last_key].control_flags.is_high_water_mark:
+                have_last_record = True
+        return have_last_record
 
     def _is_first_record(self, rec):
         is_first_record = False
@@ -844,3 +910,20 @@ class ALDB(object):
               rec.mem_addr == 0x0fff):
             is_first_record = True
         return is_first_record
+
+    def _have_all_records(self):
+        have_all_recs = False
+        if self._have_first_record() and self._have_last_record():
+            prev_mem_addr = None
+            for mem_addr in self:
+                if not prev_mem_addr:
+                    prev_mem_addr = mem_addr
+                elif mem_addr == (prev_mem_addr - 8):
+                    if self[mem_addr].control_flags.is_high_water_mark:
+                        have_all_recs = True
+                    else:
+                        prev_mem_addr = mem_addr
+                else:
+                    have_all_recs = False
+                    break
+        return have_all_recs
