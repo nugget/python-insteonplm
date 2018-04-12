@@ -132,6 +132,7 @@ class LinkedDevices(object):
 
     def add_known_devices(self, plm):
         """Add devices from the saved devices or from the device overrides."""
+        from insteonplm.devices import ALDBRecord, ALDBStatus
         for addr in self._saved_devices:
             if not self._devices.get(addr):
                 saved_device = self._saved_devices.get(Address(addr).hex, {})
@@ -145,6 +146,10 @@ class LinkedDevices(object):
                     self.log.info('Device with id %s added to device list '
                                   'from saved device data.',
                                   addr)
+                    aldb_status = saved_device.get('aldb_status', 0)
+                    device.aldb.status = ALDBStatus(aldb_status)
+                    aldb = saved_device.get('aldb', {})
+                    device.aldb.load_saved_records(aldb_status, aldb)
                     self[addr] = device
         for addr in self._overrides:
             if not self._devices.get(addr):
@@ -167,10 +172,24 @@ class LinkedDevices(object):
             devices = []
             for addr in self._devices:
                 device = self._devices.get(addr)
+                aldb = {}
+                for mem in device.aldb:
+                    rec = device.aldb[mem]
+                    if rec:
+                        aldbRec = {'memory': mem,
+                                   'control_flags': rec.control_flags.byte,
+                                   'group': rec.group,
+                                   'address': rec.address.hex,
+                                   'data1': rec.data1,
+                                   'data2': rec.data2,
+                                   'data3': rec.data3}
+                        aldb[mem] = aldbRec
                 deviceInfo = {'address': device.address.hex,
                               'cat': device.cat,
                               'subcat': device.subcat,
-                              'product_key': device.product_key}
+                              'product_key': device.product_key,
+                              'aldb_status': device.aldb.status.value,
+                              'aldb': aldb}
                 devices.append(deviceInfo)
             coro = self._write_saved_device_info(devices)
             asyncio.ensure_future(coro, loop=self._loop)
@@ -179,12 +198,7 @@ class LinkedDevices(object):
         """Register device info from the saved data file."""
         addr = kwarg.get('address')
         self.log.debug('Found saved device with address %s', addr)
-        info = {}
-        if addr is not None:
-            info['cat'] = kwarg.get('cat', None)
-            info['subcat'] = kwarg.get('subcat', None)
-            info['product_key'] = kwarg.get('product_key', None)
-        self._saved_devices[addr] = info
+        self._saved_devices[addr] = kwarg
 
     @asyncio.coroutine
     def load_saved_device_info(self):
