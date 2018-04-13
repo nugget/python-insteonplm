@@ -43,6 +43,20 @@ to be general-purpose and should be usable for other applications as well.
 - [Credits]
 - [Interesting Links]
 
+[Requirements]:#requirements
+[Installation]:#installation
+[Device permissions]:#device-permissions
+[First Start]:#first-start
+[Tools]:#tools
+[Message Monitoring]:#message-monitoring
+[Command Line Interface]:#command-line-interface
+[Known Issues]:#known-issues
+[How You Can Help]:#how-you-can-help
+[Development]:#development
+[Testing, Feature Requests and Issue Identification]:#testing-feature-requests-and-issue-identification
+[Documentation]:#documentation
+[Credits]:#credits
+[Interesting Links]:#interesting-links
 
 ## Requirements
 
