@@ -1,6 +1,7 @@
 """Provides a raw console to test module and demonstrate usage."""
 import argparse
 import asyncio
+import binascii
 import logging
 import string
 import sys
@@ -13,8 +14,10 @@ __all__ = ('Tools', 'monitor', 'interactive')
 
 _LOGGING = logging.getLogger()
 PROMPT = 'insteonplm: '
-INTRO = ('INSTEON PLM interactive command processor. '
-         'Type `help` for a list of commands.')
+INTRO = ('INSTEON PLM interactive command processor.\n'
+         'Type `help` for a list of commands.\n\n'
+         'This command line tool is still in development.\n'
+         '!!!! Please be VERY careful with the `write_aldb` command !!!!!!!')
 ALLOWEDCHARS = string.ascii_letters + string.digits + '_'
 
 
@@ -60,7 +63,8 @@ class Tools():
         self.device = device if device else self.device
         self.workdir = workdir if workdir else self.workdir
         conn = yield from insteonplm.Connection.create(
-            device=conn_device, loop=self.loop,
+            device=self.device,
+            loop=self.loop,
             poll_devices=poll_devices,
             workdir=self.workdir)
         conn.protocol.add_device_callback(self.async_new_device_callback)
@@ -139,11 +143,11 @@ class Tools():
             address: Required - INSTEON address of the device
             group: Optional - All-Link group number. Defaults to 1
         """
-        _LOGGING.info('Got here too')
         device = None
         state = None
         if addr:
-            device = self.plm.devices[addr]
+            dev_addr = Address(addr)
+            device = self.plm.devices[dev_addr.hex]
 
         if device:
             state = device.states[group]
@@ -180,7 +184,8 @@ class Tools():
         if Address(addr).hex == self.plm.address.hex:
             device = self.plm
         else:
-            device = self.plm.devices[addr]
+            dev_addr = Address(addr)
+            device = self.plm.devices[dev_addr.hex]
         if device:
             if (device.aldb.status == ALDBStatus.LOADED or
                 device.aldb.status == ALDBStatus.PARTIAL):
@@ -214,7 +219,8 @@ class Tools():
     @asyncio.coroutine
     def load_device_aldb(self, addr, clear=True):
         """Read the device ALDB."""
-        device = self.plm.devices[addr]
+        dev_addr = Address(addr)
+        device = self.plm.devices[dev_addr.hex]
         if device:
             if clear:
                 device.aldb.clear()
@@ -233,6 +239,22 @@ class Tools():
         """Read all devices ALDB."""
         for addr in self.plm.devices:
             yield from self.load_device_aldb(addr, clear)
+
+    @asyncio.coroutine
+    def write_aldb(self, addr, mem_addr: int, mode: str, group: int, target,
+                   data1=0x00, data2=0x00, data3=0x00):
+        """Write a device All-Link record."""
+        dev_addr = Address(addr)
+        target_addr = Address(target)
+        device = self.plm.devices[dev_addr.hex]
+        _LOGGING.info('calling device write_aldb')
+        if device:
+            device.write_aldb(mem_addr, mode, group, target_addr,
+                              data1, data2, data3)
+            yield from asyncio.sleep(1, loop=self.loop)
+            while device.aldb.status == ALDBStatus.LOADING:
+                yield from asyncio.sleep(1, loop=self.loop)
+            self.print_device_aldb(addr)
 
 
 class Commander(object):
@@ -494,6 +516,74 @@ class Commander(object):
         else:
             self.do_help('load_aldb')
 
+    @asyncio.coroutine
+    def do_write_aldb(self, args):
+        """Write device All-Link record.
+
+        WARNING THIS METHOD CAN DAMAGE YOUR DEVICE IF USED INCORRECTLY.
+        Please ensure the memory id is appropriate for the device.
+        You must load the ALDB of the device before using this method.
+        The memory id must be an existing memory id in the ALDB or this 
+        method will return an error.
+
+        If you are looking to create a new link between two devices, 
+        use the `link_devices` command or the `start_all_linking` command.
+
+        Usage:
+           write_aldb addr memory mode group target [data1 data2 data3]
+
+        Required Parameters:
+            addr: Inseon address of the device to write
+            memory: record ID of the record to write (i.e. 0fff)
+            mode: r | c
+                    r = Device is a responder of target
+                    c = Device is a controller of target
+            group:  All-Link group integer
+            target: Insteon address of the link target device
+
+        Optional Parameters:
+            data1: int = Device sepcific
+            data2: int = Device specific
+            data3: int = Device specific
+        """
+        params = args.split()
+        addr = None
+        mem_bytes = None
+        memory = None
+        mode = None
+        group = None
+        target = None
+        data1 = 0x00
+        data2 = 0x00
+        data3 = 0x00
+
+        try:
+            addr = Address(params[0])
+            mem_bytes = binascii.unhexlify(params[1])
+            memory = int.from_bytes(mem_bytes, byteorder='big')
+            mode = params[2]
+            group = int(params[3])
+            target = Address(params[4])
+        except IndexError:
+            _LOGGING.error('Device address memory mode group and target '
+                           'are all required.')
+            self.do_help('write_aldb')
+
+        try:
+            data1 = int(params[5])
+            data2 = int(params[6])
+            data3 = int(params[7])
+        except IndexError:
+            pass
+        _LOGGING.info('address: %s', addr)
+        _LOGGING.info('memory: %04x', memory)
+        _LOGGING.info('mode: %s', mode)
+        _LOGGING.info('group: %d', group)
+        _LOGGING.info('target: %s', target)
+        if addr and memory and mode and isinstance(group, int) and target:
+            yield from self.tools.write_aldb(addr, memory, mode, group, target,
+                                             data1, data2, data3)
+
     def do_set_log_level(self, arg):
         """Set the log level.
 
@@ -582,7 +672,7 @@ class Commander(object):
             _LOGGING.info("Available command list: ")
             for curr_cmd in dir(self.__class__):
                 if curr_cmd.startswith("do_") and not curr_cmd == 'do_test':
-                    _LOGGING.error(" - ", curr_cmd[3:])
+                    print(" - ", curr_cmd[3:])
             _LOGGING.info("For help with a command type `help command`")
 
     def do_exit(self, arg):
