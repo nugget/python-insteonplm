@@ -44,19 +44,19 @@ to be general-purpose and should be usable for other applications as well.
 - [Interesting Links]
 
 [Requirements]:#requirements
-[Installation]
-[Device permissions]
-[First Start]
-[Tools]
-[Message Monitoring]
-[Command Line Interface]
-[Known Issues]
-[How You Can Help]
-[Development]
-[Testing, Feature Requests and Issue Identification]
-[Documentation]
-[Credits]
-[Interesting Links]
+[Installation]:#Installation
+[Device permissions]:#device-permissions
+[First Start]:#first-start
+[Tools]:#tools
+[Message Monitoring]:#message-monitoring
+[Command Line Interface]:#command-line-interface
+[Known Issues]:#known-issues
+[How You Can Help]:#how-you-can-help
+[Development]:#development
+[Testing, Feature Requests and Issue Identification]:#testing-feature-requests-and-issue-identification
+[Documentation]:#documentation
+[Credits]:#credits
+[Interesting Links]:#interesting-links
 
 ## Requirements
 
