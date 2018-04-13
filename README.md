@@ -44,7 +44,7 @@ to be general-purpose and should be usable for other applications as well.
 - [Interesting Links]
 
 [Requirements]:#requirements
-[Installation]:#Installation
+[Installation]:#installation
 [Device permissions]:#device-permissions
 [First Start]:#first-start
 [Tools]:#tools
