@@ -16,9 +16,9 @@ Work on the Hub is underway but if you are looking for a library to work wtih
 the emulated PLM offered by an INSTEON [Hub] like the 2245 you might be able to
 use the [insteonlocal] package.
 
-This package was created primarily to support an insteonplm platform
-for the [Home Assistant] automation platform but it is structured to be
-general-purpose and should be usable for other applications as well.
+This **insteonplm** package was created primarily to support an INSTEON PLM
+platform for the [Home Assistant] automation platform but it is structured
+to be general-purpose and should be usable for other applications as well.
 
 [Home Assistant]: https://home-assistant.io/
 [2413U]: https://www.insteon.com/powerlinc-modem-usb
