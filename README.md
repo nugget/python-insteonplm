@@ -12,7 +12,7 @@ protocol has not changed much over time so it would not be surprising if it
 worked with a number of other models. If you find success with something,
 please let us know.
 
-Work on the Hub is underway but if you are looking for a library to work wtih
+Work on the Hub is underway but if you are looking for a library to work with
 the emulated PLM offered by an INSTEON [Hub] like the 2245 you might be able to
 use the [insteonlocal] package.
 
@@ -69,7 +69,7 @@ issue)
 ## Installation
 
 You can, of course, just install the most recent release of this package using
-`pip`.  This will download the more rececnt version from [PyPI] and install it
+`pip`.  This will download the more recent version from [PyPI] and install it
 to your host.
 
 [PyPI]: https://pypi.python.org/pypi/insteonplm
@@ -106,7 +106,7 @@ change to take effect on existing sessions.
 #### First Start
 
 When the module starts it reads the IM's All-Link Database to find linked
-devices. In order for this module to communcate with a device, it must be
+devices. In order for this module to communicate with a device, it must be
 linked to the IM. For help with linking please see the section on the
 [Command Line Tool] below.
 
@@ -116,7 +116,7 @@ device). Once it identifies the devices it saves them in the `WORKDIR` so that
 future startups are faster. 
 
 Currently there is an issue with the command line [Tools] not finding battery
-opperated devices since they don't respond to device information requests.
+operated devices since they don't respond to device information requests.
 This is being addressed in future releases. This is not an issue if used with 
 [Home Assistant] through the use of device overrides.
 
@@ -126,7 +126,7 @@ The package installs a message monitor and a command line interface.
 
 #### Message Monitoring
 
-You can monitor messages flowing across your INSTEON networ with the monitor
+You can monitor messages flowing across your INSTEON network with the monitor
 command line tool. To invoke the monitor use the command:
 
     insteonplm_monitor --device /dev/ttyUSB0 --workdir /home/username
@@ -156,7 +156,7 @@ Command line options for the interactive tool are:
                       information.
 
 Inside the command line tool use `help` to obtain a list of available commands.
-The current list of availble commands is:
+The current list of available commands is:
 
      -  connect            Connect to the IM
      -  exit               Exit the tool
@@ -214,18 +214,7 @@ has been opened so just post your interest there.
   - https://github.com/nugget
   - https://keybase.io/nugget
 
-- If you just want to thank me for the work I've already done, I'm happy to
-  accept your thanks, gratitude, pizza, or bitcoin.  My bitcoin wallet address
-  can be on [Keybase](https://keybase.io/nugget) or you can send me a donation
-  via [PayPal](https://www.paypal.me/macnugget).
-  
-- Or, if you're not comfortable sending me money directly, I'll be nearly as
-  thrilled (really) if you donate to [the
-  ACLU](https://action.aclu.org/donate-aclu),
-  [EFF](https://supporters.eff.org/donate/), or [EPIC](https://epic.org) and
-  let me know that you did.
-  
-- Significant updates were proviced by Tom Harris
+- Significant updates were provided by Tom Harris
   - https://github.com/teharris1
 
 - Many thanks to [Ryan Stanley](https://github.com/rstanley75) for his
