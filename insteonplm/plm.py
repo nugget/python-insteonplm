@@ -13,6 +13,7 @@ from insteonplm.constants import (COMMAND_ASSIGN_TO_ALL_LINK_GROUP_0X01_NONE,
 from insteonplm.address import Address
 from insteonplm.linkedDevices import LinkedDevices
 from insteonplm.messagecallback import MessageCallback
+from insteonplm.messages.allLinkComplete import AllLinkComplete
 from insteonplm.messages.allLinkRecordResponse import AllLinkRecordResponse
 from insteonplm.messages.extendedSend import ExtendedSend
 from insteonplm.messages.getFirstAllLinkRecord import GetFirstAllLinkRecord
@@ -265,6 +266,8 @@ class IM(Device, asyncio.Protocol):
                                                            None, None, None)
         template_get_im_info = GetImInfo()
         template_next_all_link_rec = GetNextAllLinkRecord(acknak=MESSAGE_NAK)
+        template_all_link_complete = AllLinkComplete(None, None, None,
+                                                     None, None, None)
 
         self._message_callbacks.add(
             template_std_msg_nak,
@@ -288,6 +291,10 @@ class IM(Device, asyncio.Protocol):
         self._message_callbacks.add(
             template_next_all_link_rec,
             self._handle_get_next_all_link_record_nak)
+
+        self._message_callbacks.add(
+            template_all_link_complete,
+            self._handle_assign_to_all_link_group)
 
     def _peel_messages_from_buffer(self):
         self.log.debug("Starting: _peel_messages_from_buffer")
@@ -318,25 +325,36 @@ class IM(Device, asyncio.Protocol):
         self.log.debug("Finishing: _peel_messages_from_buffer")
 
     def _handle_assign_to_all_link_group(self, msg):
-        if msg.flags.isBroadcast:
+        cat = 0xff
+        subcat = 0
+        product_key = 0
+        address = None
+        if msg.code == StandardReceive.code and msg.flags.isBroadcast:
             self.log.debug('Received broadcast ALDB group assigment request.')
             cat = msg.targetLow
             subcat = msg.targetMed
             product_key = msg.targetHi
-            self.log.debug('Received Device ID with address: %s  '
-                           'cat: 0x%x  subcat: 0x%x',
-                           msg.address, cat, subcat)
-            device = self.devices.create_device_from_category(
-                self, msg.address, cat, subcat, product_key)
-            if device is not None:
-                if self.devices[device.id] is None:
-                    self.devices[device.id] = device
-                    self.log.info('Device with id %s added to device list.',
-                                  device.id)
-            else:
-                self.log.error('Device %s not in the IPDB.',
-                               msg.address.human)
-            self.log.info('Total Devices Found: %d', len(self.devices))
+            address = msg.address
+        elif msg.code == AllLinkComplete.code:
+            self.log.debug('Received ALDB complete response.')
+            cat = msg.category
+            subcat = msg.subcategory
+            product_key = msg.firmware
+            address = msg.address
+        self.log.debug('Received Device ID with address: %s  '
+                        'cat: 0x%x  subcat: 0x%x',
+                        msg.address, cat, subcat)
+        device = self.devices.create_device_from_category(
+            self, address, cat, subcat, product_key)
+        if device:
+            if self.devices[device.id] is None:
+                self.devices[device.id] = device
+                self.log.info('Device with id %s added to device list.',
+                                device.id)
+        else:
+            self.log.error('Device %s not in the IPDB.',
+                            msg.address.human)
+        self.log.info('Total Devices Found: %d', len(self.devices))
 
     def _handle_standard_or_extended_message_received(self, msg):
         device = self.devices[msg.address.hex]
