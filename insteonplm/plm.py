@@ -20,6 +20,7 @@ from insteonplm.messages.getIMInfo import GetImInfo
 from insteonplm.messages.getNextAllLinkRecord import GetNextAllLinkRecord
 from insteonplm.messages.standardReceive import StandardReceive
 from insteonplm.messages.standardSend import StandardSend
+from insteonplm.messages.startAllLinking import StartAllLinking
 from insteonplm.devices import Device, ALDBRecord, ALDBStatus
 
 __all__ = ('PLM, Hub')
