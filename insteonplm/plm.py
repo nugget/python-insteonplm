@@ -181,6 +181,21 @@ class IM(Device, asyncio.Protocol):
         asyncio.ensure_future(write_message_coroutine, loop=self._loop)
         self.log.debug("Ending: send_msg")
 
+    def start_all_linking(self, mode, group):
+        """Put the IM into All-Linking mode.
+
+        Puts the IM into All-Linking mode for 4 minutes.
+
+        Parameters:
+            mode: 0 | 1 | 3
+                  0 - PLM is responder
+                  1 - PLM is controller
+                  3 - Device that initiated All-Linking is Controller
+            group: All-Link group number (0 - 255)
+        """
+        msg = StartAllLinking(mode, group)
+        self.send_msg(msg)
+
     @asyncio.coroutine
     def _setup_devices(self):
         yield from self.devices.load_saved_device_info()
