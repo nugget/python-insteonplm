@@ -95,7 +95,7 @@ class Tools():
         _LOGGING.info('ALDB Loaded')
 
     @asyncio.coroutine
-    def all_link(self, linkcode, group, address=None):
+    def start_all_linking(self, linkcode, group, address=None):
         _LOGGING.info('Starting the All-Linking process')
         if self.address != '':
             linkdevice = Device.create(self.plm, self.address, None, None)
@@ -406,11 +406,11 @@ class Commander(object):
         """
         self.tools.list_devices()
 
-    def do_start_all_linking(self, args):
-        """Place the PLM in All-Link mode.
+    def do_add_all_link(self, args):
+        """Add an All-Link record to the IM and a device.
 
         Usage:
-            start_all_linking [linkcode [group]]
+            add_all_link [linkcode [group]]
         Arguments:
             linkcode: 0 - PLM is responder
                       1 - PLM is controller
@@ -434,7 +434,31 @@ class Commander(object):
             self.loop.create_task(
                 self.tools.start_all_linking(linkcode, group))
         else:
-            _LOGGING('Could not start')
+            _LOGGING('Link code or group number not valid')
+            do_help('add_all_link')
+
+    def do_del_all_link(self, args):
+        """Delete an All-Link record to the IM and a device.
+
+        Usage:
+            add_all_link [linkcode [group]]
+        Arguments:
+            group: All-Link group number (0 - 255). Default 0.
+        """
+        linkcode = 255
+        group = 0
+        params = args.split()
+        if params:
+            try:
+                group = params[1]
+            except IndexError:
+                group = 0
+        if group >= 0 and group <= 255:
+            self.loop.create_task(
+                self.tools.start_all_linking(linkcode, group))
+        else:
+            _LOGGING('Group number not valid')
+            do_help('del_all_link')
 
     def do_print_aldb(self, args):
         """Print the All-Link database for a device.
