@@ -9,7 +9,7 @@ import async_timeout
 
 import insteonplm.messages
 from insteonplm.constants import (COMMAND_ASSIGN_TO_ALL_LINK_GROUP_0X01_NONE,
-                                  MESSAGE_NAK, MESSAGE_FLAG_EXTENDED_0X10)
+                                  MESSAGE_NAK)
 from insteonplm.address import Address
 from insteonplm.linkedDevices import LinkedDevices
 from insteonplm.messagecallback import MessageCallback
@@ -160,9 +160,9 @@ class IM(Device, asyncio.Protocol):
         self._cb_load_all_link_db_done.append(callback)
 
     def add_device_not_active_callback(self, callback):
-        """Register a callback to be invoked when a device is not repsonding."""
+        """Register callback to be invoked when a device is not repsonding."""
         self.log.debug('Added new callback %s ',
-                      callback)
+                       callback)
         self._cb_device_not_active.append(callback)
 
     # Public methods
@@ -202,7 +202,8 @@ class IM(Device, asyncio.Protocol):
     @asyncio.coroutine
     def _setup_devices(self):
         yield from self.devices.load_saved_device_info()
-        self.log.debug('Found %d saved devices', len(self.devices.saved_devices))
+        self.log.debug('Found %d saved devices',
+                       len(self.devices.saved_devices))
         self._get_plm_info()
         self.devices.add_known_devices(self)
         self._load_all_link_database()
@@ -329,14 +330,13 @@ class IM(Device, asyncio.Protocol):
         cat = 0xff
         subcat = 0
         product_key = 0
-        address = None
         if msg.code == StandardReceive.code and msg.flags.isBroadcast:
             self.log.debug('Received broadcast ALDB group assigment request.')
             cat = msg.targetLow
             subcat = msg.targetMed
             product_key = msg.targetHi
-            address = msg.address
-            self._add_device_from_prod_data(cat, subcat, product_key)
+            self._add_device_from_prod_data(msg.address, cat,
+                                            subcat, product_key)
         elif msg.code == AllLinkComplete.code:
             if msg.linkcode == 0xff:
                 self.log.debug('Received ALDB delete response.')
@@ -345,23 +345,22 @@ class IM(Device, asyncio.Protocol):
                 cat = msg.category
                 subcat = msg.subcategory
                 product_key = msg.firmware
-                address = msg.address
-                self._add_device_from_prod_data(cat, subcat, product_key)
+                self._add_device_from_prod_data(msg.address, cat,
+                                                subcat, product_key)
 
-    def _add_device_from_prod_data(self, cat, subcat, product_key)
+    def _add_device_from_prod_data(self, address, cat, subcat, product_key):
         self.log.debug('Received Device ID with address: %s  '
-                        'cat: 0x%x  subcat: 0x%x',
-                        msg.address, cat, subcat)
+                       'cat: 0x%x  subcat: 0x%x', address, cat, subcat)
         device = self.devices.create_device_from_category(
             self, address, cat, subcat, product_key)
         if device:
             if self.devices[device.id] is None:
                 self.devices[device.id] = device
                 self.log.info('Device with id %s added to device list.',
-                                device.id)
+                              device.id)
         else:
             self.log.error('Device %s not in the IPDB.',
-                            msg.address.human)
+                           Address(address).human)
         self.log.info('Total Devices Found: %d', len(self.devices))
 
     def _update_aldb_records(self, linkcode, address, group):
@@ -372,7 +371,7 @@ class IM(Device, asyncio.Protocol):
             for mem_addr in device.aldb:
                 rec = device.aldb[mem_addr]
                 if linkcode in [0, 1, 3]:
-                    elif rec.control_flags.is_high_water_mark:
+                    if rec.control_flags.is_high_water_mark:
                         device.aldb.pop(mem_addr)
                     elif not rec.control_flags.is_in_use:
                         device.aldb.pop(mem_addr)
@@ -398,8 +397,8 @@ class IM(Device, asyncio.Protocol):
         product_key = msg.linkdata3
         rec_num = len(self._aldb)
         self._aldb[rec_num] = ALDBRecord(rec_num, msg.controlFlags,
-                                                 msg.group, msg.address,
-                                                 cat, subcat, product_key)
+                                         msg.group, msg.address,
+                                         cat, subcat, product_key)
         if self.devices[msg.address.hex] is None:
             self.log.debug('Product data: address %s cat: %02x '
                            'subcat: %02x product_key: %02x',
