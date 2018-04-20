@@ -189,10 +189,11 @@ class IM(Device, asyncio.Protocol):
         Puts the IM into All-Linking mode for 4 minutes.
 
         Parameters:
-            mode: 0 | 1 | 3
+            mode: 0 | 1 | 3 | 255
                   0 - PLM is responder
                   1 - PLM is controller
                   3 - Device that initiated All-Linking is Controller
+                255 = Delete All-Link
             group: All-Link group number (0 - 255)
         """
         msg = StartAllLinking(mode, group)
@@ -335,12 +336,19 @@ class IM(Device, asyncio.Protocol):
             subcat = msg.targetMed
             product_key = msg.targetHi
             address = msg.address
+            self._add_device_from_prod_data(cat, subcat, product_key)
         elif msg.code == AllLinkComplete.code:
-            self.log.debug('Received ALDB complete response.')
-            cat = msg.category
-            subcat = msg.subcategory
-            product_key = msg.firmware
-            address = msg.address
+            if msg.linkcode == 0xff:
+                self.log.debug('Received ALDB delete response.')
+            else:
+                self.log.debug('Received ALDB complete response.')
+                cat = msg.category
+                subcat = msg.subcategory
+                product_key = msg.firmware
+                address = msg.address
+                self._add_device_from_prod_data(cat, subcat, product_key)
+
+    def _add_device_from_prod_data(self, cat, subcat, product_key)
         self.log.debug('Received Device ID with address: %s  '
                         'cat: 0x%x  subcat: 0x%x',
                         msg.address, cat, subcat)
@@ -355,6 +363,28 @@ class IM(Device, asyncio.Protocol):
             self.log.error('Device %s not in the IPDB.',
                             msg.address.human)
         self.log.info('Total Devices Found: %d', len(self.devices))
+
+    def _update_aldb_records(self, linkcode, address, group):
+        """Refresh the IM and device ALDB records."""
+        device = self.devices[Address(address).hex]
+        if device and device.aldb.status in [ALDBStatus.LOADED,
+                                             ALDBStatus.PARTIAL]:
+            for mem_addr in device.aldb:
+                rec = device.aldb[mem_addr]
+                if linkcode in [0, 1, 3]:
+                    elif rec.control_flags.is_high_water_mark:
+                        device.aldb.pop(mem_addr)
+                    elif not rec.control_flags.is_in_use:
+                        device.aldb.pop(mem_addr)
+                else:
+                    if rec.address == self.address and rec.group == group:
+                        device.aldb.pop(mem_addr)
+            device.read_aldb()
+            device.aldb.add_loaded_callback(self._refresh_aldb())
+
+    def _refresh_aldb(self):
+        self.aldb.clear()
+        self._load_all_link_database()
 
     def _handle_standard_or_extended_message_received(self, msg):
         device = self.devices[msg.address.hex]

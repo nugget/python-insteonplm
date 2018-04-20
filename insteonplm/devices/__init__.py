@@ -80,7 +80,6 @@ class Device(object):
         self._directACK_received_queue = asyncio.Queue(loop=self._plm.loop)
         self._message_callbacks = MessageCallback()
         self._aldb = ALDB(self._send_msg, self._plm.loop, self._address)
-        self._aldb.add_loaded_callback(self._aldb_loaded_callback)
 
         self._register_messages()
 
@@ -249,6 +248,7 @@ class Device(object):
             self.log.info('Reading ALDB for device %s', self._address)
             asyncio.ensure_future(self._aldb.load(mem_addr, num_recs),
                                   loop=self._plm.loop)
+            self._aldb.add_loaded_callback(self._aldb_loaded_callback)
 
     def write_aldb(self, mem_addr: int, mode: str, group: int, target,
                    data1=0x00, data2=0x00, data3=0x00):
@@ -281,6 +281,7 @@ class Device(object):
         self.log.info('calling aldb write_record')
         self._aldb.write_record(mem_addr, mode, group, target_addr,
                                 data1, data2, data3)
+        self._aldb.add_loaded_callback(self._aldb_loaded_callback)
 
     def _handle_aldb_record_received(self, msg):
         self._aldb.record_received(msg)
@@ -683,9 +684,14 @@ class ALDB(object):
     def version(self):
         return self._version
 
+    def pop(self, key):
+        """Pop and remove an item from the ALDB."""
+        return self._records.pop(key)
+
     def add_loaded_callback(self, callback):
         """Add a callback to be run when the ALDB load is complete."""
-        self._cb_aldb_loaded.append(callback)
+        if not callback in self._cb_aldb_loaded:
+            self._cb_aldb_loaded.append(callback)
 
     @asyncio.coroutine
     def load(self, mem_addr=0x0000, rec_count=0, retry=0):
@@ -920,8 +926,9 @@ class ALDB(object):
 
     def _load_finished(self, status):
             self._status = status
-            for callback in self._cb_aldb_loaded:
+            while self._cb_aldb_loaded:
                 self.log.info('Calling aldb loaded callback')
+                callback = self._cb_aldb_loaded.pop()
                 callback()
             self._load_action = LoadAction(0, 0, 0)
 
