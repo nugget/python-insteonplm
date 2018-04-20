@@ -220,7 +220,11 @@ class Tools():
     def load_device_aldb(self, addr, clear=True):
         """Read the device ALDB."""
         dev_addr = Address(addr)
-        device = self.plm.devices[dev_addr.hex]
+        device = None
+        if dev_addr == self.plm.address:
+            device = self.plm
+        else:
+            device = self.plm.devices[dev_addr.hex]
         if device:
             if clear:
                 device.aldb.clear()
@@ -760,7 +764,7 @@ def interactive():
                         help='Path to PLM device')
     parser.add_argument('-v', '--verbose', action='count',
                         help='Set logging level to verbose')
-    parser.add_argument('-workdir', default='',
+    parser.add_argument('--workdir', default='',
                         help='Working directory for reading and saving '
                         'device information.')
     args = parser.parse_args()
