@@ -152,7 +152,7 @@ Command line options for the interactive tool are:
     -h, --help        show this help message and exit
     --device DEVICE   Path to PLM device
     -v, --verbose     Set logging level to verbose
-    -workdir WORKDIR  Working directory for reading and saving device
+    --workdir WORKDIR  Working directory for reading and saving device
                       information.
 
 Inside the command line tool use `help` to obtain a list of available commands.
