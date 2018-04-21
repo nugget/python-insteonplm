@@ -338,15 +338,17 @@ class IM(Device, asyncio.Protocol):
             self._add_device_from_prod_data(msg.address, cat,
                                             subcat, product_key)
         elif msg.code == AllLinkComplete.code:
-            if msg.linkcode == 0xff:
-                self.log.debug('Received ALDB delete response.')
-            else:
+            if msg.linkcode in [0, 1, 3]:
                 self.log.debug('Received ALDB complete response.')
                 cat = msg.category
                 subcat = msg.subcategory
                 product_key = msg.firmware
                 self._add_device_from_prod_data(msg.address, cat,
                                                 subcat, product_key)
+                self._update_aldb_records(msg.linkcode, msg.address, msg.group)
+            else:
+                self.log.debug('Received ALDB delete response.')
+                self._update_aldb_records(msg.linkcode, msg.address, msg.group)
 
     def _add_device_from_prod_data(self, address, cat, subcat, product_key):
         self.log.debug('Received Device ID with address: %s  '
@@ -372,11 +374,17 @@ class IM(Device, asyncio.Protocol):
                 rec = device.aldb[mem_addr]
                 if linkcode in [0, 1, 3]:
                     if rec.control_flags.is_high_water_mark:
+                        self.log.info('Removing HWM recordd %04x', mem_addr)
                         device.aldb.pop(mem_addr)
                     elif not rec.control_flags.is_in_use:
+                        self.log.info('Removing not in use recordd %04x',
+                                      mem_addr)
                         device.aldb.pop(mem_addr)
                 else:
                     if rec.address == self.address and rec.group == group:
+                        self.log.info('Removing record %04x with addr %s and '
+                                      'group %d', mem_addr, rec.address, 
+                                      rec.group)
                         device.aldb.pop(mem_addr)
             device.read_aldb()
             device.aldb.add_loaded_callback(self._refresh_aldb())

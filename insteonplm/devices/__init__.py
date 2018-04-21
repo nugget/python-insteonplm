@@ -929,7 +929,8 @@ class ALDB(object):
             while self._cb_aldb_loaded:
                 self.log.info('Calling aldb loaded callback')
                 callback = self._cb_aldb_loaded.pop()
-                callback()
+                if callback:
+                    callback()
             self._load_action = LoadAction(0, 0, 0)
 
     def _set_load_action(self, mem_addr, rec_count, retries,
