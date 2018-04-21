@@ -489,6 +489,7 @@ class IM(Device, asyncio.Protocol):
         self.send_msg(msg)
 
     def _handle_get_plm_info(self, msg):
+        from insteonplm.devices import ALDB
         self.log.debug('Starting _handle_get_plm_info')
         from insteonplm.devices.ipdb import IPDB
         ipdb = IPDB()
@@ -499,6 +500,7 @@ class IM(Device, asyncio.Protocol):
         product = ipdb[[self._cat, self._subcat]]
         self._description = product.description
         self._model = product.model
+        self._aldb = ALDB(self._send_msg, self._plm.loop, self._address)
 
         self.log.debug('Ending _handle_get_plm_info')
 
