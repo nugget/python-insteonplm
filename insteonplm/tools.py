@@ -95,23 +95,21 @@ class Tools():
         _LOGGING.info('ALDB Loaded')
 
     @asyncio.coroutine
-    def all_link(self, linkcode, group, address=None):
+    def start_all_linking(self, linkcode, group, address=None):
         _LOGGING.info('Starting the All-Linking process')
-        if self.address != '':
-            linkdevice = Device.create(self.plm, self.address, None, None)
-            retries = 0
-            while self.plm.devices[self.address] is None and retries < 3:
-                _LOGGING.info('Attempting to link to device %s. '
-                              'Waiting %d seconds.',
-                              self.address, self.wait_time)
-                self.plm.start_all_linking(self.linkcode, self.group)
-                linkdevice.enter_linking_mode(group=self.group)
-                retries = retries + 1
-                yield from asyncio.sleep(self.wait_time, loop=self.loop)
+        if address:
+            linkdevice = self.plm.devices[Address(address).hex]
+            if not linkdevice:
+                linkdevice = Device.create(self.plm, address, None, None)
+            _LOGGING.info('Attempting to link the PLM to device %s. ',
+                            address)
+            self.plm.start_all_linking(linkcode, group)
+            asyncio.sleep(.5, loop=self.loop)
+            linkdevice.enter_linking_mode(group=group)
         else:
             _LOGGING.info('Starting All-Linking on PLM. '
                           'Waiting for button press')
-            self.plm.start_all_linking(self.linkcode, self.group)
+            self.plm.start_all_linking(linkcode, group)
             yield from asyncio.sleep(self.wait_time, loop=self.loop)
 
         _LOGGING.info('%d devices added to the All-Link Database',
@@ -220,7 +218,11 @@ class Tools():
     def load_device_aldb(self, addr, clear=True):
         """Read the device ALDB."""
         dev_addr = Address(addr)
-        device = self.plm.devices[dev_addr.hex]
+        device = None
+        if dev_addr == self.plm.address:
+            device = self.plm
+        else:
+            device = self.plm.devices[dev_addr.hex]
         if device:
             if clear:
                 device.aldb.clear()
@@ -382,20 +384,20 @@ class Commander(object):
         try:
             addr = params[0]
         except IndexError:
-            _LOGGING.error('Device address required.')
-            _LOGGING.error('Usage: on_off_test address [group]')
+            addr = None
+
         try:
-            group_str = params[2]
-            try:
-                group = int(group_str)
-            except ValueError:
-                group = 1
+            group = int(params[1])
+        except ValueError:
+            group = None
         except IndexError:
             group = 1
 
-        if addr:
-            _LOGGING.info("Got here")
+        if addr and group:
             yield from self.tools.on_off_test(addr, group)
+        else:
+            _LOGGING.error('Invalid address or group')
+            self.do_help('on_off_test')
 
     def do_list_devices(self, args):
         """List devices loaded in the IM.
@@ -406,35 +408,83 @@ class Commander(object):
         """
         self.tools.list_devices()
 
-    def do_start_all_linking(self, args):
-        """Place the PLM in All-Link mode.
+    def do_add_all_link(self, args):
+        """Add an All-Link record to the IM and a device.
 
         Usage:
-            start_all_linking [linkcode [group]]
+            add_all_link [linkcode] [group] [address]
         Arguments:
             linkcode: 0 - PLM is responder
                       1 - PLM is controller
                       3 - PLM is controller or responder
                       Default 1
             group: All-Link group number (0 - 255). Default 0.
+            address: INSTEON device to link with (not supported by all devices)
         """
         linkcode = 1
         group = 0
+        addr = None
         params = args.split()
         if params:
             try:
-                linkcode = params[0]
+                linkcode = int(params[0])
             except IndexError:
                 linkcode = 1
+            except ValueError:
+                linkcode = None
+
             try:
-                group = params[1]
+                group = int(params[1])
             except IndexError:
                 group = 0
+            except ValueError:
+                group = None
+
+            try:
+                addr = params[2]
+            except IndexError:
+                addr = None
+
         if linkcode in [0, 1, 3] and group >= 0 and group <= 255:
             self.loop.create_task(
-                self.tools.start_all_linking(linkcode, group))
+                self.tools.start_all_linking(linkcode, group, addr))
         else:
-            _LOGGING('Could not start')
+            _LOGGING.error('Link code %d or group number %d not valid',
+                           linkcode, group)
+            self.do_help('add_all_link')
+
+    def do_del_all_link(self, args):
+        """Delete an All-Link record to the IM and a device.
+
+        Usage:
+            add_all_link [group] [address]
+        Arguments:
+            group: All-Link group number (0 - 255). Default 0.
+            address: INSTEON device to unlink (not supported by all devices)
+        """
+        linkcode = 255
+        group = 0
+        addr = None
+        params = args.split()
+        if params:
+            try:
+                group = int(params[0])
+            except IndexError:
+                group = 0
+            except ValueError:
+                group = None
+
+            try:
+                addr = params[1]
+            except IndexError:
+                addr = None
+
+        if group and group >= 0 and group <= 255:
+            self.loop.create_task(
+                self.tools.start_all_linking(linkcode, group, addr))
+        else:
+            _LOGGING('Group number not valid')
+            do_help('del_all_link')
 
     def do_print_aldb(self, args):
         """Print the All-Link database for a device.
@@ -564,9 +614,19 @@ class Commander(object):
             mode = params[2]
             group = int(params[3])
             target = Address(params[4])
+
+            _LOGGING.info('address: %s', addr)
+            _LOGGING.info('memory: %04x', memory)
+            _LOGGING.info('mode: %s', mode)
+            _LOGGING.info('group: %d', group)
+            _LOGGING.info('target: %s', target)
+
         except IndexError:
             _LOGGING.error('Device address memory mode group and target '
                            'are all required.')
+            self.do_help('write_aldb')
+        except ValueError:
+            _LOGGING.error('Value error - Check parameters')
             self.do_help('write_aldb')
 
         try:
@@ -575,11 +635,11 @@ class Commander(object):
             data3 = int(params[7])
         except IndexError:
             pass
-        _LOGGING.info('address: %s', addr)
-        _LOGGING.info('memory: %04x', memory)
-        _LOGGING.info('mode: %s', mode)
-        _LOGGING.info('group: %d', group)
-        _LOGGING.info('target: %s', target)
+        except ValueError:
+            addr = None
+            _LOGGING.error('Value error - Check parameters')
+            self.do_help('write_aldb')
+
         if addr and memory and mode and isinstance(group, int) and target:
             yield from self.tools.write_aldb(addr, memory, mode, group, target,
                                              data1, data2, data3)
@@ -736,7 +796,7 @@ def interactive():
                         help='Path to PLM device')
     parser.add_argument('-v', '--verbose', action='count',
                         help='Set logging level to verbose')
-    parser.add_argument('-workdir', default='',
+    parser.add_argument('--workdir', default='',
                         help='Working directory for reading and saving '
                         'device information.')
     args = parser.parse_args()
