@@ -373,6 +373,20 @@ class Device(object):
         self._plm.devices.save_device_info()
 
 
+class X10Device(object):
+    """X10 device class."""
+
+    def __init__(self, plm, housecode, devicecode):
+        """Initialize the X10Device class."""
+        self._address = Address.x10(housecode, devicecode)
+        self._plm = plm
+
+    @property
+    def address(self):
+        """X10 device address."""
+        return self._address
+
+
 class StateList(object):
     """Internal class used to hold a list of device states."""
 

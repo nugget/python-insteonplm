@@ -100,6 +100,15 @@ class LinkedDevices(object):
         device_override[key] = value
         self._overrides[address] = device_override
 
+    def add_x10_device(self, housecode, devicecode):
+        """Add an X10 device to the PLM.
+        
+        parameters:
+          housecode: String (A - P)
+          devicecode: int (1 - 16)
+        """
+        pass
+
     def create_device_from_category(self, plm, addr, cat, subcat,
                                     product_key=0x00):
         """Create a new device from the cat, subcat and product_key data."""

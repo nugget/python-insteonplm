@@ -170,7 +170,8 @@ class IM(Device, asyncio.Protocol):
         """Request status updates from each device."""
         for addr in self.devices:
             device = self.devices[addr]
-            device.async_refresh_state()
+            if not device.address.is_x10:
+                device.async_refresh_state()
 
     def send_msg(self, msg):
         """Place a message on the send queue for sending.

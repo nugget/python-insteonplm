@@ -4,10 +4,7 @@ from insteonplm.address import Address
 
 def test_textstring():
     """Test Address created from text string."""
-    addr = Address('1a2b3c')
-    chk = Address('000000')
-    chk.addr = b'\x1a\x2b\x3c'
-    assert addr == chk
+    addr = Address('1a2b3c')    
     assert addr.human == '1A.2B.3C'
     assert addr.hex == '1a2b3c'
     assert addr.bytes == b'\x1a\x2b\x3c'
@@ -17,8 +14,6 @@ def test_bytearray():
     """Test Address created from bytearray."""
     addr_ba = bytearray([0x1a, 0x2b, 0x3c])
     addr = Address(addr_ba)
-    chk = Address('000000')
-    chk.addr = b'\x1a\x2b\x3c'
     assert addr.human == '1A.2B.3C'
     assert addr.hex == '1a2b3c'
     assert addr.bytes == b'\x1a\x2b\x3c'
@@ -28,8 +23,6 @@ def test_bytes():
     """Test Address created from bytes string."""
     addr_b = b'\x1a\x2b\x3c'
     addr = Address(addr_b)
-    chk = Address('000000')
-    chk.addr = b'\x1a\x2b\x3c'
     assert addr.human == '1A.2B.3C'
     assert addr.hex == '1a2b3c'
     assert addr.bytes == b'\x1a\x2b\x3c'
@@ -53,3 +46,14 @@ def test_eq():
     assert addr3.matches_pattern(addr1)
     assert not (addr2.matches_pattern(addr3))
     assert addr2.matches_pattern(addr2)
+
+def test_x10():
+    addr = Address.x10('A', 5)
+
+    assert addr.hex == '000601'
+    assert addr.human == 'X10.A.05'
+    assert addr.is_x10
+    assert addr.x10_housecode == 'A'
+    assert addr.x10_unitcode == 5
+    assert addr.x10_housecode_byte == 6
+    assert addr.x10_unitcode_byte == 1
