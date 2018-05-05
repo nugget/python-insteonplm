@@ -380,11 +380,41 @@ class X10Device(object):
         """Initialize the X10Device class."""
         self._address = Address.x10(housecode, devicecode)
         self._plm = plm
+        self._description = "Generic X10 device"
+        self._model = ''
+        self._aldb = ALDB(None, None, self._address, version=ALDBVersion.Null)
+        self._message_callbacks = MessageCallback()
+        self._stateList = {}
 
     @property
     def address(self):
         """X10 device address."""
         return self._address
+
+    @property
+    def description(self):
+        """Return the INSTEON device description."""
+        return self._description
+
+    @property
+    def model(self):
+        """Return the INSTEON device model number."""
+        return self._model
+
+    @property
+    def id(self):
+        """Return the ID of the device."""
+        return self._address.hex
+
+    @property
+    def states(self):
+        """Return the device states/groups."""
+        return self._stateList
+
+    @property
+    def aldb(self):
+        """Return the device All-Link Database."""
+        return self._aldb
 
 
 class StateList(object):
