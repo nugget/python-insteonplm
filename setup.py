@@ -14,7 +14,7 @@ if len(long_description) < 100:
 
 setup(
     name='insteonplm',
-    version='0.9.1',
+    version='0.8.6',
     author='David McNett',
     author_email='nugget@macnugget.org',
     url='https://github.com/nugget/python-insteonplm',
