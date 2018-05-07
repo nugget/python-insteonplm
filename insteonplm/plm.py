@@ -23,8 +23,8 @@ from insteonplm.messages.startAllLinking import StartAllLinking
 from insteonplm.devices import Device, ALDBRecord, ALDBStatus
 
 __all__ = ('PLM, Hub')
-WAIT_TIMEOUT = 1
-ACKNAK_TIMEOUT = .6
+WAIT_TIMEOUT = 1.5
+ACKNAK_TIMEOUT = 1
 
 
 class IM(Device, asyncio.Protocol):

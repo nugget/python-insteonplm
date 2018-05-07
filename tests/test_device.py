@@ -35,7 +35,7 @@ def test_create_device_from_bytearray():
     assert isinstance(device, DimmableLightingControl)
 
 
-def test_send_msg(logger, caplog):
+def test_send_msg():
 
     @asyncio.coroutine
     def run_test(loop):
@@ -64,7 +64,7 @@ def test_send_msg(logger, caplog):
             address, COMMAND_LIGHT_ON_0X11_NONE, cmd2=0xff, flags=0x00).hex
 
         # Sleep until the Direct ACK time out should expire
-        yield from asyncio.sleep(DIRECT_ACK_WAIT_TIMEOUT + 2,
+        yield from asyncio.sleep(DIRECT_ACK_WAIT_TIMEOUT + .2,
                                  loop=loop)
 
         # Confirm that the OFF command made it to the PLM
