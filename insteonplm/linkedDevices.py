@@ -100,14 +100,19 @@ class LinkedDevices(object):
         device_override[key] = value
         self._overrides[address] = device_override
 
-    def add_x10_device(self, housecode, devicecode):
+    def add_x10_device(self, plm, housecode, unitcode, x10_type):
         """Add an X10 device to the PLM.
         
         parameters:
           housecode: String (A - P)
-          devicecode: int (1 - 16)
+          unitcode: int (1 - 16)
         """
-        pass
+        from insteonplm.devices.x10 import X10OnOff
+        device = None
+        if x10_type.lower() == 'onoff':
+            device = X10OnOff(plm, housecode, unitcode)
+        self._devices[device.address.hex] = device
+        return device
 
     def create_device_from_category(self, plm, addr, cat, subcat,
                                     product_key=0x00):

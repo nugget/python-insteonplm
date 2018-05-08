@@ -1,4 +1,4 @@
-"""Test insteonplm ALDB Class."""
+"""Test insteonplm LinkedDevices Class."""
 from insteonplm.address import Address
 from insteonplm.linkedDevices import LinkedDevices
 from insteonplm.devices.switchedLightingControl import SwitchedLightingControl
@@ -43,3 +43,12 @@ def test_create_device_from_category_generic_device():
     assert dev.subcat == subcat
     assert dev.description == description
     assert dev.model == model
+
+def test_create_x10():
+    """Test creating an X10 device."""
+    plm = MockPLM()
+    housecode = 'C'
+    unitcode = 12
+    linkedDevices = LinkedDevices()
+    dev = linkedDevices.add_x10_device(plm, housecode, unitcode, 'OnOff')
+    assert dev.address.human == 'X10.C.12'

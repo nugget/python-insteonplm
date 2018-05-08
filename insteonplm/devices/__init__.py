@@ -44,12 +44,22 @@ def create(plm, address, cat, subcat, firmware=None):
     deviceclass = product.deviceclass
     device = None
     if deviceclass is not None:
-        device = deviceclass.create(plm, address, cat, subcat,
-                                    product.product_key,
-                                    product.description,
-                                    product.model)
+        device = deviceclass(plm, address, cat, subcat,
+                             product.product_key,
+                             product.description,
+                             product.model)
     return device
 
+def create_x10(plm, housecode, unitcode, feature):
+    """Create an X10 device from a feature definition."""
+    from insteonplm.devices.ipdb import IPDB
+    ipdb = IPDB()
+    product = ipdb.x10(feature)
+    deviceclass = product.deviceclass
+    device = None
+    if deviceclass:
+        device = deviceclass(plm, housecode, unitcode)
+    return device
 
 class Device(object):
     """INSTEON Device Class."""
@@ -143,12 +153,12 @@ class Device(object):
     def aldb(self):
         return self._aldb
 
-    @classmethod
-    def create(cls, plm, address, cat, subcat, product_key=None,
-               description=None, model=None):
-        """Factory method to create a device."""
-        return cls(plm, address, cat, subcat, product_key,
-                   description, model)
+    #@classmethod
+    #def create(cls, plm, address, cat, subcat, product_key=None,
+    #           description=None, model=None):
+    #    """Factory method to create a device."""
+    #    return cls(plm, address, cat, subcat, product_key,
+    #               description, model)
 
     # Public Methods
     def async_refresh_state(self):
@@ -376,15 +386,17 @@ class Device(object):
 class X10Device(object):
     """X10 device class."""
 
-    def __init__(self, plm, housecode, devicecode):
+    def __init__(self, plm, housecode, unitcode):
         """Initialize the X10Device class."""
-        self._address = Address.x10(housecode, devicecode)
+        self._address = Address.x10(housecode, unitcode)
         self._plm = plm
         self._description = "Generic X10 device"
         self._model = ''
         self._aldb = ALDB(None, None, self._address, version=ALDBVersion.Null)
         self._message_callbacks = MessageCallback()
-        self._stateList = {}
+        self._stateList = StateList()
+        self._send_msg_lock = asyncio.Lock(loop=self._plm.loop)
+        self.log = logging.getLogger()
 
     @property
     def address(self):
@@ -415,6 +427,37 @@ class X10Device(object):
     def aldb(self):
         """Return the device All-Link Database."""
         return self._aldb
+
+    # Send / Receive message processing
+    def receive_message(self, msg):
+        self.log.debug('Starting X10Device.receive_message')
+        if hasattr(msg, 'isack') and msg.isack:
+            self.log.debug('Got Message ACK')
+
+        callbacks = self._message_callbacks.get_callbacks_from_message(msg)
+        self.log.debug('Found %d callbacks for msg %s', len(callbacks), msg)
+        for callback in callbacks:
+            self.log.debug('Scheduling msg callback: %s', callback)
+            self._plm.loop.call_soon(callback, msg)
+        self._last_communication_received = datetime.datetime.now()
+        self.log.debug('Ending Device.receive_message')
+
+    def _send_msg(self, msg, callback=None, on_timeout=False):
+        self.log.debug('Starting Device._send_msg')
+        write_message_coroutine = self._process_send_queue(msg)
+        asyncio.ensure_future(write_message_coroutine,
+                              loop=self._plm.loop)
+        self.log.debug('Ending Device._send_msg')
+
+    @asyncio.coroutine
+    def _process_send_queue(self, msg):
+        self.log.debug('Starting Device._process_send_queue')
+        yield from self._send_msg_lock
+        if self._send_msg_lock.locked():
+            self.log.debug("Lock is locked from yeild from")
+       
+        self._plm.send_msg(msg)
+        self.log.debug('Ending Device._process_send_queue')
 
 
 class StateList(object):

@@ -44,6 +44,7 @@ from insteonplm.messages.resetIM import ResetIM
 from insteonplm.messages.getFirstAllLinkRecord import GetFirstAllLinkRecord
 from insteonplm.messages.getNextAllLinkRecord import GetNextAllLinkRecord
 from insteonplm.messages.getImConfiguration import GetImConfiguration
+from insteonplm.messages.x10send import X10Send
 
 
 def create(rawmessage):

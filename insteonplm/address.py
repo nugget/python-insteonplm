@@ -12,8 +12,8 @@ class Address(object):
     def __init__(self, addr):
         """Create an Address object."""
         self.log = logging.getLogger(__name__)
-        self.addr = self.normalize(addr)
         self._is_x10 = False
+        self.addr = self._normalize(addr)
 
     def __repr__(self):
         """Representation of the Address object."""
@@ -65,11 +65,12 @@ class Address(object):
                 matches = self.addr == other.addr
         return matches
 
-    def normalize(self, addr):
+    def _normalize(self, addr):
         """Take any format of address and turn it into a hex string."""
         normalize = None
         if isinstance(addr, Address):
             normalize = addr.addr
+            self._is_x10 = addr.is_x10
 
         elif isinstance(addr, bytearray):
             normalize = binascii.unhexlify(binascii.hexlify(addr).decode())

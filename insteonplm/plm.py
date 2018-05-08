@@ -200,6 +200,17 @@ class IM(Device, asyncio.Protocol):
         msg = StartAllLinking(mode, group)
         self.send_msg(msg)
 
+    def add_x10_device(self, housecode, unitcode, feature='OnOff'):
+        """Add an X10 device based on a feature description.
+
+        Current features are:
+        - OnOff
+        - Dimmable
+        """
+        device = insteonplm.devices.create_x10(self, housecode, unitcode, feature)
+        if devices:
+            self._linkedDevices[device.address.id] = device
+
     @asyncio.coroutine
     def _setup_devices(self):
         yield from self.devices.load_saved_device_info()

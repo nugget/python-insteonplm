@@ -17,18 +17,22 @@ from insteonplm.devices.securityHealthSafety import (SecurityHealthSafety,
 
 from insteonplm.devices.sensorsActuators import SensorsActuators
 from insteonplm.devices.sensorsActuators import SensorsActuators_2450
+from insteonplm.devices.x10 import X10OnOff
 
 # pylint: disable=line-too-long
 # pylint: disable=too-few-public-methods
 
 Product = collections.namedtuple('Product', 'cat subcat product_key description model deviceclass')
 
+
+X10Product = collections.namedtuple('X10Product', 'feature deviceclass')
+
 # flake8: noqa
 class IPDB(object):
     """Embodies the INSTEON Product Database static data and access methods."""
 
     # pylint disable=line-too-long
-    products = [
+    _products = [
         Product(None, None, None, 'Unknown Device', '', UnknownDevice),
 
         Product(0x00, None, None, 'Generic General Controller', '', GeneralController),
@@ -323,6 +327,10 @@ class IPDB(object):
         Product(0xFF, 0x01, None, 'Unknown Device', '', UnknownDevice),
     ]
 
+    _x10_products = [
+        X10Product("OnOff", X10OnOff)
+        ]
+
     def __init__(self):
         """Initialize the INSTEON Product Database (IPDB)."""
         self.log = logging.getLogger(__name__)
@@ -333,24 +341,47 @@ class IPDB(object):
 
     def __iter__(self):
         """Iterate through the product database."""
-        for product in self.products:
+        for product in self._products:
             yield product
 
     def __getitem__(self, key):
         """Return an item from the product database."""
         cat, subcat = key
 
+        device_product = None
+
         for product in self.products:
             if cat == product.cat and subcat == product.subcat:
-                return product
+                device_product = product
 
         # We failed to find a device in the database, so we will make a best
         # guess from the cat and return the generic class
         #
 
-        for product in self.products:
-            if cat == product.cat and product.subcat is None:
-                return product
+        if not device_product:
+            for product in self.products:
+                if cat == product.cat and product.subcat is None:
+                    return product
 
         # We did not find the device or even a generic device of that category
-        return Product(cat, subcat, None, None, None, None)
+        if not device_product:
+            device_product = Product(cat, subcat, None, '', '', None)
+
+        return device_product
+
+    def x10(self, feature):
+        """Return an X10 device based on a feature.
+
+        Current features:
+        - OnOff
+        - Dimmable
+        """
+        x10_product = None
+        for product in self._x10_products:
+            if feature == product.feature:
+                x10_product = product
+
+        if not x10_product:
+            x10_product = X10Product(feature, None)
+
+        return x10_product
