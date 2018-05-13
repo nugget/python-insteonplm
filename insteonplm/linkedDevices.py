@@ -48,9 +48,13 @@ class LinkedDevices(object):
 
         self._devices[key] = device
 
-        self.log.debug('New INSTEON Device %r: %s (%02x:%02x)',
-                       key, device.description, device.cat,
-                       device.subcat)
+        if device.address.is_x10:
+            self.log.debug('New X10 Device %r: %s',
+                           key, device.description)
+        else:
+            self.log.debug('New INSTEON Device %r: %s (%02x:%02x)',
+                           key, device.description, device.cat,
+                           device.subcat)
 
         for callback in self._cb_new_device:
             callback(device)
@@ -111,7 +115,9 @@ class LinkedDevices(object):
         device = None
         if x10_type.lower() == 'onoff':
             device = X10OnOff(plm, housecode, unitcode)
-        self._devices[device.id] = device
+            self._devices[device.id] = device
+        else:
+            raise ValueError
         return device
 
     def create_device_from_category(self, plm, addr, cat, subcat,

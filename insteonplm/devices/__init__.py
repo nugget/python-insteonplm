@@ -432,7 +432,7 @@ class X10Device(object):
         self.log.debug('Starting X10Device.receive_message')
         if hasattr(msg, 'isack') and msg.isack:
             self.log.debug('Got Message ACK')
-
+            self._send_msg_lock.release()
         callbacks = self._message_callbacks.get_callbacks_from_message(msg)
         self.log.debug('Found %d callbacks for msg %s', len(callbacks), msg)
         for callback in callbacks:

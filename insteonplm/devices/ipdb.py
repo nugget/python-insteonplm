@@ -337,7 +337,7 @@ class IPDB(object):
 
     def __len__(self):
         """Return the length of the product database."""
-        return len(self.products)
+        return len(self._products)  + len(self._x10_products)
 
     def __iter__(self):
         """Iterate through the product database."""
@@ -350,7 +350,7 @@ class IPDB(object):
 
         device_product = None
 
-        for product in self.products:
+        for product in self._products:
             if cat == product.cat and subcat == product.subcat:
                 device_product = product
 
@@ -359,7 +359,7 @@ class IPDB(object):
         #
 
         if not device_product:
-            for product in self.products:
+            for product in self._products:
                 if cat == product.cat and product.subcat is None:
                     return product
 

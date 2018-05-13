@@ -376,8 +376,9 @@ def test_switchedLightingControl_2663_222_status():
 
         callbacks = lightStatus()
 
-        device = SwitchedLightingControl_2663_222.create(
-            mockPLM, address, cat, subcat, product_key, description, model)
+        device = SwitchedLightingControl_2663_222(mockPLM, address, cat,
+                                                  subcat, product_key,
+                                                  description, model)
         mockPLM.devices[address] = device
         assert device.states[0x01].name == 'outletTopOnOff'
         assert device.states[0x02].name == 'outletBottomOnOff'

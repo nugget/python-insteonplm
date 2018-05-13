@@ -100,7 +100,8 @@ class Tools():
         if address:
             linkdevice = self.plm.devices[Address(address).id]
             if not linkdevice:
-                linkdevice = Device.create(self.plm, address, None, None)
+                linkdevice = insteonplm.devices.create(self.plm, address,
+                                                       None, None)
             _LOGGING.info('Attempting to link the PLM to device %s. ',
                             address)
             self.plm.start_all_linking(linkcode, group)
@@ -257,6 +258,23 @@ class Tools():
             while device.aldb.status == ALDBStatus.LOADING:
                 yield from asyncio.sleep(1, loop=self.loop)
             self.print_device_aldb(addr)
+
+    def add_device_override(self, addr, cat, subcat, firmware=None):
+        """Add a device override to the PLM."""
+        self.plm.devices.add_override(addr, 'cat', cat)
+        self.plm.devices.add_override(addr, 'subcat', subcat)
+        if firmware:
+            self.plm.devices.add_override(addr, 'firmware', firmware)
+
+    def add_x10_device(self, housecode, unitcode, dev_type):
+        """Add an X10 device to the PLM."""
+        device = None
+        try:
+            device = self.plm.devices.add_x10_device(self.plm, housecode,
+                                                     unitcode, dev_type)
+        except ValueError:
+            pass
+        return device
 
 
 class Commander(object):
@@ -639,6 +657,7 @@ class Commander(object):
             addr = None
             _LOGGING.error('Value error - Check parameters')
             self.do_help('write_aldb')
+            return
 
         if addr and memory and mode and isinstance(group, int) and target:
             yield from self.tools.write_aldb(addr, memory, mode, group, target,
@@ -739,6 +758,100 @@ class Commander(object):
         """Exit the application."""
         _LOGGING.info("Exiting")
         raise KeyboardInterrupt
+
+    def do_add_device_override(self, args):
+        """Add a device override to the IM.
+        
+        Usage:
+            add_device_override address cat subcat [firmware]
+
+        Arguments:
+            address: Insteon address of the device to override
+            cat: Device category
+            subcat: Device subcategory
+            firmware: Optional - Device firmware
+
+        The device address can be written with our without the dots and in
+        upper or lower case, for example: 1a2b3c or 1A.2B.3C.
+
+        The category, subcategory and firmware numbers are written in hex
+        format, for example: 0x01 0x1b
+
+        Example:
+            add_device_override 1a2b3c 0x02 0x1a
+        """
+        params = args.split()
+        addr = None
+        cat = None
+        subcat = None
+        firmware = None
+        error = None
+
+        try:
+            addr = Address(params[0])
+            cat = binascii.unhexlify(params[1][2:])
+            subcat = binascii.unhexlify(params[2][2:])
+            firmware = binascii.unhexlify(params[3][2:])
+        except IndexError:
+            error = 'missing'
+        except ValueError:
+            error = 'value'
+
+        if addr and cat and subcat:
+            self.tools.add_device_override(addr, cat, subcat, firmware)
+        else:
+            if error == 'missing':
+                _LOGGING.error('Device address, category and subcategory are '
+                               'required.')
+            else:
+                _LOGGING.error('Check the vales for address, category and '
+                               'subcategory.')
+            self.do_help('add_device_override')
+
+    def do_add_x10_device(self, args):
+        """Add an X10 device to the IM.
+        
+        Usage:
+            add_x10_device housecode unitcode type
+
+        Arguments:
+            housecode: Device housecode (A - P)
+            unitcode: Device unitcode  (1 - 16)
+            type: Device type
+        
+        Current device types are:
+            - OnOff
+
+        Example:
+            add_x10_device M 12 OnOff
+        """
+        params = args.split()
+        housecode = None
+        unitcode = None
+        dev_type = None
+
+        try:
+            housecode = params[0]
+            unitcode = int(params[1])
+            if not unitcode in range(1, 17):
+                raise ValueError
+            dev_type = params[2]
+        except IndexError:
+            pass
+        except ValueError:
+            _LOGGING.error('X10 unit code must be an integer 1 - 16')
+            unitcode = None
+
+        if housecode and unitcode and dev_type:
+            device = self.tools.add_x10_device(housecode, unitcode, dev_type)
+            if not device:
+                _LOGGING.error('Device not added. Please check the information '
+                               'you provided.')
+                self.do_help('add_x10_device')
+        else:
+            _LOGGING.error('Device housecode, unitcode and type are '
+                           'required.')
+            self.do_help('add_x10_device')
 
 
 def monitor():

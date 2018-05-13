@@ -27,7 +27,7 @@ class MockPLM(object):
     def message_received(self, msg):
         """Fake a message being received by the PLM."""
         if hasattr(msg, 'address'):
-            device = self.devices[msg.address.hex]
+            device = self.devices[msg.address.id]
             if device:
                 device.receive_message(msg)
             else:

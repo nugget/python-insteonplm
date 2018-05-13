@@ -2,6 +2,7 @@
 """Helper objects for maintaining PLM state and interfaces."""
 import logging
 import binascii
+import insteonplm.utils
 
 __all__ = ('Address')
 
@@ -98,9 +99,9 @@ class Address(object):
         if self.addr:
             if self._is_x10:
                 housecode_byte = self.addr[1]
-                housecode = self._byte_to_housecode(housecode_byte)
+                housecode = insteonplm.utils.byte_to_housecode(housecode_byte)
                 unitcode_byte = self.addr[2]
-                unitcode = self._byte_to_unitcode(unitcode_byte)
+                unitcode = insteonplm.utils.byte_to_unitcode(unitcode_byte)
                 addrstr = 'X10.{}.{:02d}'.format(housecode.upper(), unitcode)
             else:
                 addrstr = '{}.{}.{}'.format(self.hex[0:2],
@@ -165,7 +166,7 @@ class Address(object):
         """Emit the X10 house code."""
         housecode = None
         if self.is_x10:
-            housecode = self._byte_to_housecode(self.addr[1])
+            housecode = insteonplm.utils.byte_to_housecode(self.addr[1])
         return housecode
 
     @property
@@ -173,81 +174,32 @@ class Address(object):
         """Emit the X10 unit code."""
         unitcode = None
         if self.is_x10:
-            unitcode = self._byte_to_unitcode(self.addr[2])
+            unitcode = insteonplm.utils.byte_to_unitcode(self.addr[2])
         return unitcode
 
-    @classmethod
-    def x10(cls, housecode, unitcode):
+    @staticmethod
+    def x10(housecode, unitcode):
         """Create an X10 device address."""
         if housecode.lower() in ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h',
                                  'i', 'j', 'k', 'l', 'm', 'n', 'o', 'p']:
-            byte_housecode = cls._housecode_to_byte(housecode)
+            byte_housecode = insteonplm.utils.housecode_to_byte(housecode)
         else:
+            if isinstance(housecode, str):
+                self.log.error('X10 house code error: %s', housecode)
+            else:
+                self.log.error('X10 house code is not a string')
             raise ValueError
 
         if unitcode in range(1, 17):
-            byte_unitcode = cls._unitcode_to_byte(unitcode)
+            byte_unitcode = insteonplm.utils.unitcode_to_byte(unitcode)
+        else:
+            if isinstance(unitcode, int):
+                self.log.error('X10 unit code error: %d', unitcode)
+            else:
+                self.log.error('X10 unit code is not a integer 1 - 16')
+            raise ValueError
 
-        print('Housecode: ', housecode, ' is ', byte_housecode)
         addr = Address(bytearray([0x00, byte_housecode, byte_unitcode]))
         addr.is_x10 = True
         return addr
-
-    # House code lookup
-    # Codes are shifted by 4 bits because this is 
-    # used in the high bits of a message
-    HC_LOOKUP = {'a': 0x60,
-                 'b': 0xe0,
-                 'c': 0x20,
-                 'd': 0xa0,
-                 'e': 0x10,
-                 'f': 0x90,
-                 'g': 0x50,
-                 'h': 0xd0,
-                 'i': 0x70,
-                 'j': 0xf0,
-                 'k': 0x30,
-                 'l': 0xb0,
-                 'm': 0x00,
-                 'n': 0x80,
-                 'o': 0x40,
-                 'p': 0xc0}
-
-    # Unit code lookup
-    # Codes are not shifted because these are 
-    # used in the low bits of a message
-    DC_LOOKUP = {1: 0x06,
-                 2: 0x0e,
-                 3: 0x02,
-                 4: 0x0a,
-                 5: 0x01,
-                 6: 0x09,
-                 7: 0x05,
-                 8: 0x0d,
-                 9: 0x07,
-                 10: 0x0f,
-                 11: 0x03,
-                 12: 0x0b,
-                 13: 0x00,
-                 14: 0x08,
-                 15: 0x04,
-                 16: 0x0c}
-
-    @classmethod
-    def _housecode_to_byte(cls, housecode):
-        return cls.HC_LOOKUP.get(housecode.lower())
-
-    @classmethod
-    def _unitcode_to_byte(cls, unitcode):
-        return cls.DC_LOOKUP.get(unitcode)
-
-    @classmethod
-    def _byte_to_housecode(cls, bytecode):
-        rev_hc = dict([reversed(i) for i in cls.HC_LOOKUP.items()])
-        return rev_hc.get(bytecode).upper()
-
-    @classmethod
-    def _byte_to_unitcode(cls, bytecode):
-        rev_dc = dict([reversed(i) for i in cls.DC_LOOKUP.items()])
-        return rev_dc.get(bytecode)
 

@@ -12,8 +12,6 @@ class X10OnOff(X10Device):
  
     def __init__(self, plm, housecode, unitcode):
         super().__init__(plm, housecode, unitcode)
-        print('1. Is X10 address:', self._address.is_x10)
-
         self._description = 'X10 On / Off Device'
 
         self._stateList[0x01] = X10OnOffSwitch(

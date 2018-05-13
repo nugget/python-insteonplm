@@ -313,3 +313,39 @@ FAN_SPEED_OFF = 0x00
 FAN_SPEED_LOW = 0x3f
 FAN_SPEED_MEDIUM = 0xbe
 FAN_SPEED_HIGH = 0xff
+
+# X10 House code lookup
+HC_LOOKUP = {'a': 0x06,
+             'b': 0x0e,
+             'c': 0x02,
+             'd': 0x0a,
+             'e': 0x01,
+             'f': 0x09,
+             'g': 0x05,
+             'h': 0x0d,
+             'i': 0x07,
+             'j': 0x0f,
+             'k': 0x03,
+             'l': 0x0b,
+             'm': 0x00,
+             'n': 0x08,
+             'o': 0x04,
+             'p': 0x0c}
+
+# X10 Unit code lookup
+UC_LOOKUP = {1: 0x06,
+             2: 0x0e,
+             3: 0x02,
+             4: 0x0a,
+             5: 0x01,
+             6: 0x09,
+             7: 0x05,
+             8: 0x0d,
+             9: 0x07,
+             10: 0x0f,
+             11: 0x03,
+             12: 0x0b,
+             13: 0x00,
+             14: 0x08,
+             15: 0x04,
+             16: 0x0c}
