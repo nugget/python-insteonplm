@@ -6,7 +6,7 @@ import logging
 
 from insteonplm.address import Address
 import insteonplm.devices
-from insteonplm.devices import Device
+from insteonplm.devices import Device, X10Device
 
 __all__ = ('ALDB')
 
@@ -43,7 +43,7 @@ class LinkedDevices(object):
 
     def __setitem__(self, key, device):
         """Add or Update a device in the ALDB."""
-        if not isinstance(device, Device):
+        if not isinstance(device, Device) and not isinstance(device, X10Device):
             raise ValueError
 
         self._devices[key] = device

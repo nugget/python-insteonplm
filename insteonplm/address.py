@@ -183,23 +183,29 @@ class Address(object):
         addr.is_x10 = True
         return addr
 
-    HC_LOOKUP = {'a': 0x06,
-                 'b': 0x0e,
-                 'c': 0x02,
-                 'd': 0x0a,
-                 'e': 0x01,
-                 'f': 0x09,
-                 'g': 0x05,
-                 'h': 0x0d,
-                 'i': 0x07,
-                 'j': 0x0f,
-                 'k': 0x03,
-                 'l': 0x0b,
+    # House code lookup
+    # Codes are shifted by 4 bits because this is 
+    # used in the high bits of a message
+    HC_LOOKUP = {'a': 0x60,
+                 'b': 0xe0,
+                 'c': 0x20,
+                 'd': 0xa0,
+                 'e': 0x10,
+                 'f': 0x90,
+                 'g': 0x50,
+                 'h': 0xd0,
+                 'i': 0x70,
+                 'j': 0xf0,
+                 'k': 0x30,
+                 'l': 0xb0,
                  'm': 0x00,
-                 'n': 0x08,
-                 'o': 0x04,
-                 'p': 0x0c}
+                 'n': 0x80,
+                 'o': 0x40,
+                 'p': 0xc0}
 
+    # Unit code lookup
+    # Codes are not shifted because these are 
+    # used in the low bits of a message
     DC_LOOKUP = {1: 0x06,
                  2: 0x0e,
                  3: 0x02,
