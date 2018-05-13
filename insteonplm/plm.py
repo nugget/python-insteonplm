@@ -15,17 +15,16 @@ from insteonplm.linkedDevices import LinkedDevices
 from insteonplm.messagecallback import MessageCallback
 from insteonplm.messages.allLinkComplete import AllLinkComplete
 from insteonplm.messages.allLinkRecordResponse import AllLinkRecordResponse
-from insteonplm.messages.extendedSend import ExtendedSend
 from insteonplm.messages.getFirstAllLinkRecord import GetFirstAllLinkRecord
 from insteonplm.messages.getIMInfo import GetImInfo
 from insteonplm.messages.getNextAllLinkRecord import GetNextAllLinkRecord
 from insteonplm.messages.standardReceive import StandardReceive
-from insteonplm.messages.standardSend import StandardSend
 from insteonplm.messages.startAllLinking import StartAllLinking
 from insteonplm.devices import Device, ALDBRecord, ALDBStatus
 
 __all__ = ('PLM, Hub')
-WAIT_TIMEOUT = 2
+WAIT_TIMEOUT = 1.5
+ACKNAK_TIMEOUT = 2
 
 
 class IM(Device, asyncio.Protocol):
@@ -58,7 +57,7 @@ class IM(Device, asyncio.Protocol):
         self._buffer = bytearray()
         self._recv_queue = deque([])
         self._send_queue = asyncio.Queue(loop=self._loop)
-        self._wait_acknack_queue = []
+        self._acknak_queue = asyncio.Queue(loop=self._loop)
         self._aldb_response_queue = {}
         self._devices = LinkedDevices(loop, workdir)
         self._poll_devices = poll_devices
@@ -124,6 +123,8 @@ class IM(Device, asyncio.Protocol):
                 self.log.debug('Processing message %s', msg)
                 callbacks = \
                     self._message_callbacks.get_callbacks_from_message(msg)
+                if hasattr(msg, 'isack') or hasattr(msg, 'isnak'):
+                    self._acknak_queue.put_nowait(msg)
                 if hasattr(msg, 'address'):
                     device = self.devices[msg.address.id]
                     if device:
@@ -173,14 +174,17 @@ class IM(Device, asyncio.Protocol):
             if not device.address.is_x10:
                 device.async_refresh_state()
 
-    def send_msg(self, msg):
+    def send_msg(self, msg, wait_nak=True, wait_timeout=WAIT_TIMEOUT):
         """Place a message on the send queue for sending.
 
         Message are sent in the order they are placed in the queue.
         """
         self.log.debug("Starting: send_msg")
         write_message_coroutine = self._write_message_from_send_queue()
-        self._send_queue.put_nowait(msg)
+        wait_info = {'msg': msg,
+                     'wait_nak': wait_nak,
+                     'wait_timeout': wait_timeout}
+        self._send_queue.put_nowait(wait_info)
         asyncio.ensure_future(write_message_coroutine, loop=self._loop)
         self.log.debug("Ending: send_msg")
 
@@ -226,25 +230,47 @@ class IM(Device, asyncio.Protocol):
             self.log.debug('Aquiring write lock')
             yield from self._write_transport_lock.acquire()
             while True:
-                self.log.debug(self._write_transport_lock.locked())
                 # wait for an item from the queue
                 try:
                     with async_timeout.timeout(WAIT_TIMEOUT):
-                        msg = yield from self._send_queue.get()
+                        msg_info = yield from self._send_queue.get()
+                        msg = msg_info.get('msg')
+                        wait_nak = msg_info.get('wait_nak')
+                        wait_timeout = msg_info.get('wait_timeout')
                 except asyncio.TimeoutError:
                     self.log.debug('No new messages received.')
                     break
                 # process the item
                 self.log.debug('Writing message: %s', msg)
+                write_bytes = msg.bytes
+                if hasattr(msg, 'acknak') and msg.acknak:
+                    write_bytes = write_bytes[:-1]
                 self.transport.write(msg.bytes)
-                yield from asyncio.sleep(1.5, loop=self._loop)
+                if wait_nak:
+                    self.log.debug('Waiting for ACK or NAK message')
+                    is_nak = False
+                    try:
+                        with async_timeout.timeout(ACKNAK_TIMEOUT):
+                            while True:
+                                acknak = yield from self._acknak_queue.get()
+                                if msg.matches_pattern(acknak):
+                                    self.log.debug('ACK or NAK received')
+                                    self.log.debug(acknak)
+                                    is_nak = acknak.isnak
+                                break
+                    except asyncio.TimeoutError:
+                        self.log.debug('No ACK or NAK message received.')
+                        is_nak = True
+                    if is_nak:
+                        self._handle_nak(msg)
+                yield from asyncio.sleep(wait_timeout, loop=self._loop)
             self._write_transport_lock.release()
 
     def _get_plm_info(self):
         """Request PLM Info."""
         self.log.info('Requesting PLM Info')
         msg = GetImInfo()
-        self.send_msg(msg)
+        self.send_msg(msg, wait_nak=True, wait_timeout=.5)
 
     def _load_all_link_database(self):
         """Load the ALL-Link Database into object."""
@@ -258,7 +284,7 @@ class IM(Device, asyncio.Protocol):
         self.log.debug("Starting: _get_first_all_link_record")
         self.log.info('Requesting ALL-Link Records')
         msg = GetFirstAllLinkRecord()
-        self.send_msg(msg)
+        self.send_msg(msg, wait_nak=True, wait_timeout=.5)
         self.log.debug("Ending: _get_first_all_link_record")
 
     def _get_next_all_link_record(self):
@@ -266,14 +292,11 @@ class IM(Device, asyncio.Protocol):
         self.log.debug("Starting: _get_next_all_link_recor")
         self.log.debug("Requesting Next All-Link Record")
         msg = GetNextAllLinkRecord()
-        self.send_msg(msg)
+        self.send_msg(msg, wait_nak=True, wait_timeout=.5)
         self.log.debug("Ending: _get_next_all_link_recor")
 
     # Inbound message handlers sepcific to the IM
     def _register_message_handlers(self):
-        template_std_msg_nak = StandardSend.template(acknak=MESSAGE_NAK)
-        template_ext_msg_nak = ExtendedSend.template(acknak=MESSAGE_NAK)
-
         template_assign_all_link = StandardReceive.template(
             commandtuple=COMMAND_ASSIGN_TO_ALL_LINK_GROUP_0X01_NONE)
         template_all_link_response = AllLinkRecordResponse(None, None, None,
@@ -282,13 +305,6 @@ class IM(Device, asyncio.Protocol):
         template_next_all_link_rec = GetNextAllLinkRecord(acknak=MESSAGE_NAK)
         template_all_link_complete = AllLinkComplete(None, None, None,
                                                      None, None, None)
-
-        self._message_callbacks.add(
-            template_std_msg_nak,
-            self._handle_standard_or_extended_message_nak)
-        self._message_callbacks.add(
-            template_ext_msg_nak,
-            self._handle_standard_or_extended_message_nak)
 
         self._message_callbacks.add(
             template_assign_all_link,
@@ -395,7 +411,7 @@ class IM(Device, asyncio.Protocol):
                 else:
                     if rec.address == self.address and rec.group == group:
                         self.log.info('Removing record %04x with addr %s and '
-                                      'group %d', mem_addr, rec.address, 
+                                      'group %d', mem_addr, rec.address,
                                       rec.group)
                         device.aldb.pop(mem_addr)
             device.read_aldb()
@@ -504,8 +520,12 @@ class IM(Device, asyncio.Protocol):
                 self._loop.call_soon(self.poll_devices)
         self.log.debug('Ending _handle_get_next_all_link_record_nak')
 
-    def _handle_standard_or_extended_message_nak(self, msg):
-        msg.acknak = None
+    def _handle_nak(self, msg):
+        if msg.code == GetFirstAllLinkRecord.code or \
+           msg.code == GetNextAllLinkRecord.code:
+            return
+        self.log.debug('No response or NAK message received for message')
+        self.log.debug(msg)
         self.send_msg(msg)
 
     def _handle_get_plm_info(self, msg):
