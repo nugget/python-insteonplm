@@ -94,7 +94,7 @@ class LinkedDevices(object):
 
     def add_override(self, addr, key, value):
         """Register an attribute override for a device."""
-        address = Address(str(addr)).hex
+        address = Address(str(addr)).id
         self.log.info('New override for %s %s is %s', address, key, value)
         device_override = self._overrides.get(address, {})
         device_override[key] = value
@@ -111,18 +111,18 @@ class LinkedDevices(object):
         device = None
         if x10_type.lower() == 'onoff':
             device = X10OnOff(plm, housecode, unitcode)
-        self._devices[device.address.hex] = device
+        self._devices[device.id] = device
         return device
 
     def create_device_from_category(self, plm, addr, cat, subcat,
                                     product_key=0x00):
         """Create a new device from the cat, subcat and product_key data."""
-        saved_device = self._saved_devices.get(Address(addr).hex, {})
+        saved_device = self._saved_devices.get(Address(addr).id, {})
         cat = saved_device.get('cat', cat)
         subcat = saved_device.get('subcat', subcat)
         product_key = saved_device.get('product_key', product_key)
 
-        device_override = self._overrides.get(Address(addr).hex, {})
+        device_override = self._overrides.get(Address(addr).id, {})
         cat = device_override.get('cat', cat)
         subcat = device_override.get('subcat', subcat)
         product_key = device_override.get('firmware', product_key)
@@ -149,7 +149,7 @@ class LinkedDevices(object):
         from insteonplm.devices import ALDBRecord, ALDBStatus
         for addr in self._saved_devices:
             if not self._devices.get(addr):
-                saved_device = self._saved_devices.get(Address(addr).hex, {})
+                saved_device = self._saved_devices.get(Address(addr).id, {})
                 cat = saved_device.get('cat')
                 subcat = saved_device.get('subcat')
                 product_key = saved_device.get('firmware')
@@ -167,7 +167,7 @@ class LinkedDevices(object):
                     self[addr] = device
         for addr in self._overrides:
             if not self._devices.get(addr):
-                device_override = self._overrides.get(Address(addr).hex, {})
+                device_override = self._overrides.get(Address(addr).id, {})
                 cat = device_override.get('cat')
                 subcat = device_override.get('subcat')
                 product_key = device_override.get('firmware')
@@ -193,12 +193,12 @@ class LinkedDevices(object):
                         aldbRec = {'memory': mem,
                                    'control_flags': rec.control_flags.byte,
                                    'group': rec.group,
-                                   'address': rec.address.hex,
+                                   'address': rec.address.id,
                                    'data1': rec.data1,
                                    'data2': rec.data2,
                                    'data3': rec.data3}
                         aldb[mem] = aldbRec
-                deviceInfo = {'address': device.address.hex,
+                deviceInfo = {'address': device.address.id,
                               'cat': device.cat,
                               'subcat': device.subcat,
                               'product_key': device.product_key,

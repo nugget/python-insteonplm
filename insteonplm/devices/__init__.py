@@ -127,7 +127,7 @@ class Device(object):
     @property
     def id(self):
         """Return the ID of the device."""
-        return self._address.hex
+        return self._address.id
 
     @property
     def states(self):
@@ -416,7 +416,7 @@ class X10Device(object):
     @property
     def id(self):
         """Return the ID of the device."""
-        return self._address.hex
+        return self._address.id
 
     @property
     def states(self):

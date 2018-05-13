@@ -17,11 +17,11 @@ class Address(object):
 
     def __repr__(self):
         """Representation of the Address object."""
-        return self.hex
+        return self.id
 
     def __str__(self):
         """String representation of the Address object."""
-        return self.hex
+        return self.id
 
     def __eq__(self, other):
         """Test for equality."""
@@ -53,7 +53,7 @@ class Address(object):
 
     def __hash__(self):
         """Create a hash code for the Address object."""
-        return hash(self.hex)
+        return hash(self.id)
 
     def matches_pattern(self, other):
         """Test Address object matches the pattern of another  object."""
@@ -123,6 +123,16 @@ class Address(object):
         if self.addr is not None:
             addrbyte = self.addr
         return addrbyte
+
+    @property
+    def id(self):
+        """Return the ID of the device address."""
+        id = ''
+        if self._is_x10:
+            id = 'x10{}{:02d}'.format(self.x10_housecode, self.x10_unitcode)
+        else:
+            id = self.hex
+        return id
 
     @property
     def is_x10(self):

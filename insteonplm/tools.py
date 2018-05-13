@@ -98,7 +98,7 @@ class Tools():
     def start_all_linking(self, linkcode, group, address=None):
         _LOGGING.info('Starting the All-Linking process')
         if address:
-            linkdevice = self.plm.devices[Address(address).hex]
+            linkdevice = self.plm.devices[Address(address).id]
             if not linkdevice:
                 linkdevice = Device.create(self.plm, address, None, None)
             _LOGGING.info('Attempting to link the PLM to device %s. ',
@@ -145,7 +145,7 @@ class Tools():
         state = None
         if addr:
             dev_addr = Address(addr)
-            device = self.plm.devices[dev_addr.hex]
+            device = self.plm.devices[dev_addr.id]
 
         if device:
             state = device.states[group]
@@ -179,11 +179,11 @@ class Tools():
 
     def print_device_aldb(self, addr):
         """Diplay the All-Link database for a device."""
-        if Address(addr).hex == self.plm.address.hex:
+        if Address(addr).id == self.plm.address.id:
             device = self.plm
         else:
             dev_addr = Address(addr)
-            device = self.plm.devices[dev_addr.hex]
+            device = self.plm.devices[dev_addr.id]
         if device:
             if (device.aldb.status == ALDBStatus.LOADED or
                 device.aldb.status == ALDBStatus.PARTIAL):
@@ -195,13 +195,13 @@ class Tools():
             else:
                 _LOGGING.info('ALDB not loaded. '
                               'Use `load_aldb %s` first.',
-                              device.address.hex)
+                              device.address.id)
         else:
             _LOGGING.info('Device not found.')
 
     def print_all_aldb(self):
         """Diplay the All-Link database for all devices."""
-        addr = self.plm.address.hex
+        addr = self.plm.address.id
         _LOGGING.info('ALDB for PLM device %s', addr)
         self.print_device_aldb(addr)
         if self.plm.devices:
@@ -222,7 +222,7 @@ class Tools():
         if dev_addr == self.plm.address:
             device = self.plm
         else:
-            device = self.plm.devices[dev_addr.hex]
+            device = self.plm.devices[dev_addr.id]
         if device:
             if clear:
                 device.aldb.clear()
@@ -248,7 +248,7 @@ class Tools():
         """Write a device All-Link record."""
         dev_addr = Address(addr)
         target_addr = Address(target)
-        device = self.plm.devices[dev_addr.hex]
+        device = self.plm.devices[dev_addr.id]
         _LOGGING.info('calling device write_aldb')
         if device:
             device.write_aldb(mem_addr, mode, group, target_addr,
@@ -514,7 +514,7 @@ class Commander(object):
             if addr.lower() == 'all':
                 self.tools.print_all_aldb()
             elif addr.lower() == 'plm':
-                addr = self.tools.plm.address.hex
+                addr = self.tools.plm.address.id
                 self.tools.print_device_aldb(addr)
             else:
                 self.tools.print_device_aldb(addr)

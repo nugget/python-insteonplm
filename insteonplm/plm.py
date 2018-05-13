@@ -125,7 +125,7 @@ class IM(Device, asyncio.Protocol):
                 callbacks = \
                     self._message_callbacks.get_callbacks_from_message(msg)
                 if hasattr(msg, 'address'):
-                    device = self.devices[msg.address.hex]
+                    device = self.devices[msg.address.id]
                     if device:
                         device.receive_message(msg)
                 for callback in callbacks:
@@ -379,7 +379,7 @@ class IM(Device, asyncio.Protocol):
 
     def _update_aldb_records(self, linkcode, address, group):
         """Refresh the IM and device ALDB records."""
-        device = self.devices[Address(address).hex]
+        device = self.devices[Address(address).id]
         if device and device.aldb.status in [ALDBStatus.LOADED,
                                              ALDBStatus.PARTIAL]:
             for mem_addr in device.aldb:
@@ -406,7 +406,7 @@ class IM(Device, asyncio.Protocol):
         self._load_all_link_database()
 
     def _handle_standard_or_extended_message_received(self, msg):
-        device = self.devices[msg.address.hex]
+        device = self.devices[msg.address.id]
         if device is not None:
             device.receive_message(msg)
 
@@ -419,10 +419,10 @@ class IM(Device, asyncio.Protocol):
         self._aldb[rec_num] = ALDBRecord(rec_num, msg.controlFlags,
                                          msg.group, msg.address,
                                          cat, subcat, product_key)
-        if self.devices[msg.address.hex] is None:
+        if self.devices[msg.address.id] is None:
             self.log.debug('Product data: address %s cat: %02x '
                            'subcat: %02x product_key: %02x',
-                           msg.address.hex, cat, subcat, product_key)
+                           msg.address.id, cat, subcat, product_key)
 
             # Get a device from the ALDB based on cat, subcat and product_key
             device = self.devices.create_device_from_category(
@@ -433,8 +433,8 @@ class IM(Device, asyncio.Protocol):
             # type for this record. Otherwise we need to request the device ID.
             if device is not None:
                 if device.prod_data_in_aldb or \
-                        self.devices.has_override(device.address.hex) or \
-                        self.devices.has_saved(device.address.hex):
+                        self.devices.has_override(device.address.id) or \
+                        self.devices.has_saved(device.address.id):
                     if self.devices[device.id] is None:
                         self.devices[device.id] = device
                         self.log.info('Device with id %s added to device list '
@@ -442,10 +442,10 @@ class IM(Device, asyncio.Protocol):
                                       device.id)
         # Check again that the device is not alreay added, otherwise queue it
         # up for Get ID request
-        if self.devices[msg.address.hex] is None:
+        if self.devices[msg.address.id] is None:
             unknowndevice = self.devices.create_device_from_category(
                 self, msg.address.hex, None, None, None)
-            self._aldb_response_queue[msg.address.hex] = {
+            self._aldb_response_queue[msg.address.id] = {
                 'device': unknowndevice, 'retries': 0}
 
         self._get_next_all_link_record()
