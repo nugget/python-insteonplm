@@ -239,10 +239,13 @@ class IM(Device, asyncio.Protocol):
                     is_nak = False
                     try:
                         with async_timeout.timeout(ACKNAK_TIMEOUT):
-                            acknak = yield from self._acknak_queue.get()
-                            self.log.debug('ACK or NAK received')
-                            self.log.debug(acknak)
-                            is_nak = acknak.isnak
+                            while True:
+                                acknak = yield from self._acknak_queue.get()
+                                if msg.matches_pattern(acknak):
+                                    self.log.debug('ACK or NAK received')
+                                    self.log.debug(acknak)
+                                    is_nak = acknak.isnak
+                                break
                     except asyncio.TimeoutError:
                         self.log.debug('No ACK or NAK message received.')
                         is_nak = True
