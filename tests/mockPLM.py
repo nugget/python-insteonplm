@@ -20,7 +20,7 @@ class MockPLM(object):
         """Return the message callback list."""
         return self._message_callbacks
 
-    def send_msg(self, msg):
+    def send_msg(self, msg, wait_nak=True, wait_timeout=2):
         """Send a message mock routine."""
         self.sentmessage = msg.hex
 

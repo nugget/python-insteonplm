@@ -36,17 +36,16 @@ class X10OnOffSwitch(State):
 
         msg = X10Send.command_msg(self.address.x10_housecode,
                                   X10_COMMAND_ON)
-        self._send_method(msg)
+        self._send_method(msg, False)
         self._update_subscribers(0xff)
 
     def off(self):
-        """Send the On command to an X10 device."""
-        houseunitcode = (self._address.x10_housecode_byte +
-                         self._address.x10_unitcode_byte)
-        msg = X10Send(houseunitcode, 0x00)
+        """Send the Off command to an X10 device."""
+        msg = X10Send.unit_code_msg(self.address.x10_housecode,
+                                    self.address.x10_unitcode)
         self._send_method(msg)
 
-        housecmdcode = self._address.x10_housecode_byte + X10_COMMAND_OFF
-        msg = X10Send(housecmdcode, 0x80)
-        self._send_method(msg)
+        msg = X10Send.command_msg(self.address.x10_housecode,
+                                  X10_COMMAND_OFF)
+        self._send_method(msg, False)
         self._update_subscribers(0x00)

@@ -21,6 +21,7 @@ def test_x10OnOff():
         _LOGGER.debug('X10 device id: %s', device.address.id)
         assert device.address.human == 'X10.{}.{:02d}'.format(housecode, unitcode)
 
+        # Send On command and test both commands sent
         device.states[0x01].on()
         yield from asyncio.sleep(.1, loop)
         assert plm.sentmessage == '02632700'
@@ -30,6 +31,19 @@ def test_x10OnOff():
         assert plm.sentmessage == '02632280'
         yield from  asyncio.sleep(.1, loop)
         msg = X10Send(0x22, 0x00, 0x06)
+        plm.message_received(msg)
+        yield from  asyncio.sleep(.1, loop)
+
+        # Send Off command and test both commands sent
+        device.states[0x01].off()
+        yield from asyncio.sleep(.1, loop)
+        assert plm.sentmessage == '02632700'
+        msg = X10Send(0x27, 0x00, 0x06)
+        plm.message_received(msg)
+        yield from  asyncio.sleep(.1, loop)
+        assert plm.sentmessage == '02632380'
+        yield from  asyncio.sleep(.1, loop)
+        msg = X10Send(0x23, 0x00, 0x06)
         plm.message_received(msg)
         yield from  asyncio.sleep(.1, loop)
     

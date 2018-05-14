@@ -441,21 +441,23 @@ class X10Device(object):
         self._last_communication_received = datetime.datetime.now()
         self.log.debug('Ending Device.receive_message')
 
-    def _send_msg(self, msg, callback=None, on_timeout=False):
+    def _send_msg(self, msg, wait_ack=True):
         self.log.debug('Starting Device._send_msg')
-        write_message_coroutine = self._process_send_queue(msg)
+        write_message_coroutine = self._process_send_queue(msg, wait_ack)
         asyncio.ensure_future(write_message_coroutine,
                               loop=self._plm.loop)
         self.log.debug('Ending Device._send_msg')
 
     @asyncio.coroutine
-    def _process_send_queue(self, msg):
+    def _process_send_queue(self, msg, wait_ack):
         self.log.debug('Starting Device._process_send_queue')
         yield from self._send_msg_lock
         if self._send_msg_lock.locked():
             self.log.debug("Lock is locked from yeild from")
        
-        self._plm.send_msg(msg)
+        self._plm.send_msg(msg, wait_timeout=2)
+        if not wait_ack:
+            self._send_msg_lock.release()
         self.log.debug('Ending Device._process_send_queue')
 
 

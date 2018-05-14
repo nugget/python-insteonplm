@@ -122,10 +122,15 @@ class Tools():
         if self.plm.devices:
             for addr in self.plm.devices:
                 device = self.plm.devices[addr]
-                _LOGGING.info(
-                    'Device: %s cat: 0x%02x subcat: 0x%02x desc: %s, model: %s',
-                    device.address.human, device.cat, device.subcat,
-                    device.description, device.model)
+                if device.address.is_x10:
+                    _LOGGING.info('Device: %s %s', device.address.human,
+                                  device.description)
+                else:
+                    _LOGGING.info('Device: %s cat: 0x%02x subcat: 0x%02x '
+                                  'desc: %s, model: %s',
+                                  device.address.human, device.cat,
+                                  device.subcat, device.description,
+                                  device.model)
         else:
             _LOGGING.info('No devices found')
             if not self.plm.transport:
