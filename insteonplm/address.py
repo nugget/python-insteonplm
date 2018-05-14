@@ -80,13 +80,13 @@ class Address(object):
             normalize = addr
 
         elif isinstance(addr, str):
+            addr = addr.replace('.', '')
+            addr = addr[0:6]
             if addr[0:3].lower() == 'x10':
                 x10_addr = Address.x10(addr[3:4], int(addr[4:6]))
                 normalize = x10_addr.addr
                 self._is_x10 = True
             else:
-                addr = addr.replace('.', '')
-                addr = addr[0:6]
                 normalize = binascii.unhexlify(addr.lower())
 
         elif addr is None:
