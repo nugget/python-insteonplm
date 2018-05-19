@@ -8,7 +8,7 @@ import sys
 
 import insteonplm
 from insteonplm.address import Address
-from insteonplm.devices import Device, ALDBStatus
+from insteonplm.devices import ALDBStatus
 
 __all__ = ('Tools', 'monitor', 'interactive')
 
@@ -103,7 +103,7 @@ class Tools():
                 linkdevice = insteonplm.devices.create(self.plm, address,
                                                        None, None)
             _LOGGING.info('Attempting to link the PLM to device %s. ',
-                            address)
+                          address)
             self.plm.start_all_linking(linkcode, group)
             asyncio.sleep(.5, loop=self.loop)
             linkdevice.enter_linking_mode(group=group)
@@ -178,7 +178,8 @@ class Tools():
                 device.states[group].off()
                 yield from asyncio.sleep(2, loop=self.loop)
             else:
-                _LOGGING.warn('Device %s with state %d is not an on/off device.')
+                _LOGGING.warn('Device %s with state %d is not an on/off'
+                              'device.', device.id, state.name)
 
         else:
             _LOGGING.error('Could not find device %s', addr)
@@ -192,7 +193,7 @@ class Tools():
             device = self.plm.devices[dev_addr.id]
         if device:
             if (device.aldb.status == ALDBStatus.LOADED or
-                device.aldb.status == ALDBStatus.PARTIAL):
+                    device.aldb.status == ALDBStatus.PARTIAL):
                 if device.aldb.status == ALDBStatus.PARTIAL:
                     _LOGGING.info('ALDB partially loaded for device %s', addr)
                 for mem_addr in device.aldb:
@@ -376,7 +377,8 @@ class Commander(object):
                 workdir = self.tools.workdir
 
         if device:
-            yield from self.tools.connect(False, device=device, workdir=workdir)
+            yield from self.tools.connect(False, device=device,
+                                          workdir=workdir)
         _LOGGING.info('Connection complete.')
 
     def do_running_tasks(self, arg):
@@ -507,7 +509,7 @@ class Commander(object):
                 self.tools.start_all_linking(linkcode, group, addr))
         else:
             _LOGGING('Group number not valid')
-            do_help('del_all_link')
+            self.do_help('del_all_link')
 
     def do_print_aldb(self, args):
         """Print the All-Link database for a device.
@@ -525,7 +527,6 @@ class Commander(object):
         """
         params = args.split()
         addr = None
-        group = None
 
         try:
             addr = params[0]
@@ -551,7 +552,7 @@ class Commander(object):
         Arguments:
             address: NSTEON address of the device
             all: Load the All-Link database for all devices
-            clear_prior: y|n  
+            clear_prior: y|n
                          y - Clear the prior data and start fresh.
                          n - Keep the prior data and only apply changes
                          Default is y
@@ -596,10 +597,10 @@ class Commander(object):
         WARNING THIS METHOD CAN DAMAGE YOUR DEVICE IF USED INCORRECTLY.
         Please ensure the memory id is appropriate for the device.
         You must load the ALDB of the device before using this method.
-        The memory id must be an existing memory id in the ALDB or this 
+        The memory id must be an existing memory id in the ALDB or this
         method will return an error.
 
-        If you are looking to create a new link between two devices, 
+        If you are looking to create a new link between two devices,
         use the `link_devices` command or the `start_all_linking` command.
 
         Usage:
@@ -714,7 +715,7 @@ class Commander(object):
         The working directory is used to load and save known devices
         to improve startup times. During startup the application
         loads and saves a file `insteon_plm_device_info.dat`. This file
-        is saved in the working directory. 
+        is saved in the working directory.
 
         The working directory has no default value. If the working directory is
         not set, the `insteon_plm_device_info.dat` file is not loaded or saved.
@@ -766,7 +767,7 @@ class Commander(object):
 
     def do_add_device_override(self, args):
         """Add a device override to the IM.
-        
+
         Usage:
             add_device_override address cat subcat [firmware]
 
@@ -815,7 +816,7 @@ class Commander(object):
 
     def do_add_x10_device(self, args):
         """Add an X10 device to the IM.
-        
+
         Usage:
             add_x10_device housecode unitcode type
 
@@ -823,7 +824,7 @@ class Commander(object):
             housecode: Device housecode (A - P)
             unitcode: Device unitcode  (1 - 16)
             type: Device type
-        
+
         Current device types are:
             - OnOff
 
@@ -838,7 +839,7 @@ class Commander(object):
         try:
             housecode = params[0]
             unitcode = int(params[1])
-            if not unitcode in range(1, 17):
+            if unitcode not in range(1, 17):
                 raise ValueError
             dev_type = params[2]
         except IndexError:
@@ -850,8 +851,8 @@ class Commander(object):
         if housecode and unitcode and dev_type:
             device = self.tools.add_x10_device(housecode, unitcode, dev_type)
             if not device:
-                _LOGGING.error('Device not added. Please check the information '
-                               'you provided.')
+                _LOGGING.error('Device not added. Please check the '
+                               'information you provided.')
                 self.do_help('add_x10_device')
         else:
             _LOGGING.error('Device housecode, unitcode and type are '

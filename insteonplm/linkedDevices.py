@@ -43,7 +43,8 @@ class LinkedDevices(object):
 
     def __setitem__(self, key, device):
         """Add or Update a device in the ALDB."""
-        if not isinstance(device, Device) and not isinstance(device, X10Device):
+        if (not isinstance(device, Device) and
+                not isinstance(device, X10Device)):
             raise ValueError
 
         self._devices[key] = device
@@ -77,7 +78,7 @@ class LinkedDevices(object):
     @property
     def state(self):
         """Return the state of the ALDB.
-        
+
         Possible states:
             empty
             loading
@@ -106,7 +107,7 @@ class LinkedDevices(object):
 
     def add_x10_device(self, plm, housecode, unitcode, x10_type):
         """Add an X10 device to the PLM.
-        
+
         parameters:
           housecode: String (A - P)
           unitcode: int (1 - 16)
@@ -152,7 +153,7 @@ class LinkedDevices(object):
 
     def add_known_devices(self, plm):
         """Add devices from the saved devices or from the device overrides."""
-        from insteonplm.devices import ALDBRecord, ALDBStatus
+        from insteonplm.devices import ALDBStatus
         for addr in self._saved_devices:
             if not self._devices.get(addr):
                 saved_device = self._saved_devices.get(Address(addr).id, {})
@@ -161,7 +162,7 @@ class LinkedDevices(object):
                 product_key = saved_device.get('firmware')
                 product_key = saved_device.get('product_key', product_key)
                 device = self.create_device_from_category(
-                        plm, addr, cat,subcat, product_key)
+                        plm, addr, cat, subcat, product_key)
                 if device:
                     self.log.info('Device with id %s added to device list '
                                   'from saved device data.',
@@ -179,7 +180,7 @@ class LinkedDevices(object):
                 product_key = device_override.get('firmware')
                 product_key = device_override.get('product_key', product_key)
                 device = self.create_device_from_category(
-                        plm, addr, cat,subcat, product_key)
+                        plm, addr, cat, subcat, product_key)
                 if device:
                     self.log.info('Device with id %s added to device list '
                                   'from device override data.',

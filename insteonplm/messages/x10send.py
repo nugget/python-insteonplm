@@ -1,5 +1,4 @@
 """INSTEON Message X10 Send."""
-from insteonplm.address import Address
 from insteonplm.constants import (MESSAGE_X10_MESSAGE_SEND_0X63,
                                   MESSAGE_X10_MESSAGE_SEND_SIZE,
                                   MESSAGE_X10_MESSAGE_SEND_RECEIVED_SIZE,
@@ -7,6 +6,7 @@ from insteonplm.constants import (MESSAGE_X10_MESSAGE_SEND_0X63,
                                   MESSAGE_NAK)
 from insteonplm.messages.message import Message
 import insteonplm.utils
+
 
 class X10Send(Message):
     """Insteon Get Next All Link Record Message.
@@ -43,7 +43,7 @@ class X10Send(Message):
             unit_byte = unitcode
         else:
             house_byte = housecode
-            unibyte = unitcode
+            unit_byte = unitcode
         return X10Send(house_byte + unit_byte, 0x00)
 
     @staticmethod
@@ -82,20 +82,6 @@ class X10Send(Message):
     def isnak(self):
         """Test if this is a NAK message."""
         return self._acknak is not None and self._acknak == MESSAGE_NAK
-
-    @property
-    def address(self):
-        addr = None
-        if self._flag == 0x00:
-            house_byte = self._rawX10 >> 4
-            unit_byte = self._rawX10 & 0x0f
-            housecode = insteonplm.utils.byte_to_housecode(house_byte)
-            unitcode = insteonplm.utils.byte_to_unitcode(unit_byte)
-            addr = Address.x10(housecode, unitcode)
-        else:
-            addr = Address('000000')
-            addr.is_x10 = True
-        return addr
 
     def _message_properties(self):
         return [{'rawX10': self._rawX10},

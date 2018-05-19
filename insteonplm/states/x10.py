@@ -1,22 +1,12 @@
 """X10 states."""
 
 from insteonplm.messages.x10send import X10Send
+from insteonplm.messages.x10received import X10Received
 from insteonplm.states import State
-
-X10_COMMAND_ALL_UNITS_OFF = 0x00
-X10_COMMAND_ALL_LIGHTS_ON = 0x01
-X10_COMMAND_ALL_LIGHTS_OFF = 0x06
-X10_COMMAND_ON = 0x02
-X10_COMMAND_OFF = 0x03
-X10_COMMAND_DIM = 0x04
-X10_COMMAND_BRIGHT = 0x05
-X10_COMMAND_EXTENDED_CODE = 0x07
-X10_COMMAND_HAIL_REQUEST = 0x08
-X10_COMMAND_HAIL_ACKNOWLEDGE = 0x09
-X10_COMMAND_PRE_SET_DIM = 0x0A
-X10_COMMAND_STATUS_IS_ON = 0x0B
-X10_COMMAND_STATUS_IS_OFF = 0x0C
-X10_COMMAND_STATUS_REQUEST = 0x0D
+from insteonplm.constants import (X10_COMMAND_ON,
+                                  X10_COMMAND_OFF,
+                                  X10_COMMAND_DIM,
+                                  X10_COMMAND_BRIGHT)
 
 
 class X10OnOffSwitch(State):
@@ -27,6 +17,15 @@ class X10OnOffSwitch(State):
         """Initialize the X10OnOff state."""
         super().__init__(address, statename, group, send_message_method,
                          message_callbacks, defaultvalue)
+
+        on_msg = X10Received.command_msg(address.x10_housecode,
+                                         X10_COMMAND_ON)
+        off_msg = X10Received.command_msg(address.x10_housecode,
+                                          X10_COMMAND_OFF)
+        self._message_callbacks.add(on_msg,
+                                    self._on_message_received)
+        self._message_callbacks.add(off_msg,
+                                    self._off_message_received)
 
     def on(self):
         """Send the On command to an X10 device."""
@@ -49,3 +48,97 @@ class X10OnOffSwitch(State):
                                   X10_COMMAND_OFF)
         self._send_method(msg, False)
         self._update_subscribers(0x00)
+
+    def _on_message_received(self, msg):
+        """An ON has been received."""
+        self._update_subscribers(0xff)
+
+    def _off_message_received(self, msg):
+        """An OFF has been received."""
+        self._update_subscribers(0x00)
+
+
+class X10DimmableSwitch(X10OnOffSwitch):
+    """Dimmable X10 Switch."""
+
+    def __init__(self, address, statename, group, send_message_method,
+                 message_callbacks, defaultvalue=0):
+        """Initialize the Dimmable state."""
+        super().__init__(address, statename, group, send_message_method,
+                         message_callbacks, defaultvalue)
+
+        self._steps = 22
+
+        dim_msg = X10Received.command_msg(address.x10_housecode,
+                                          X10_COMMAND_DIM)
+        bri_msg = X10Received.command_msg(address.x10_housecode,
+                                          X10_COMMAND_BRIGHT)
+        self._message_callbacks.add(dim_msg,
+                                    self._dim_message_received)
+        self._message_callbacks.add(bri_msg,
+                                    self._bright_message_received)
+
+    @property
+    def steps(self):
+        """Number of steps from OFF to full ON."""
+        return self._div_steps
+
+    @steps.setter
+    def steps(self, val: int):
+        """Set the number of steps from OFF to full ON."""
+        self._dim_steps = val
+
+    def set_level(self, val):
+        """Set the device ON LEVEL."""
+        if val == 0:
+            self.off()
+        elif val == 255:
+            self.on()
+        else:
+            setlevel = 255
+            if val < 1:
+                setlevel = val*255
+            elif val <= 0xff:
+                setlevel = val
+            change = setlevel - self._value
+            steps = round(abs(change)/(255/self._steps))
+            print('Steps: ', steps)
+            if change > 0:
+                method = self.brighten
+            else:
+                method = self.dim
+            for step in range(0, steps):
+                method(True)
+            self._update_subscribers(val)
+
+    def brighten(self, defer_update=False):
+        """Brighten the device one step."""
+        msg = X10Send.unit_code_msg(self.address.x10_housecode,
+                                    self.address.x10_unitcode)
+        self._send_method(msg)
+
+        msg = X10Send.command_msg(self.address.x10_housecode,
+                                  X10_COMMAND_BRIGHT)
+        self._send_method(msg, False)
+        if not defer_update:
+            self._update_subscribers(self._value + 255 / self._steps)
+
+    def dim(self, defer_update=False):
+        """Dim the device one step."""
+        msg = X10Send.unit_code_msg(self.address.x10_housecode,
+                                    self.address.x10_unitcode)
+        self._send_method(msg)
+
+        msg = X10Send.command_msg(self.address.x10_housecode,
+                                  X10_COMMAND_DIM)
+        self._send_method(msg, False)
+        if not defer_update:
+            self._update_subscribers(self._value - 255 / self._steps)
+
+    def _dim_message_received(self, msg):
+        val = max(self._value - (255 / self._steps), 0)
+        self._update_subscribers(val)
+
+    def _bright_message_received(self, msg):
+        val = min(self._value + (255 / self._steps), 255)
+        self._update_subscribers(val)

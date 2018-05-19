@@ -17,7 +17,7 @@ from insteonplm.devices.securityHealthSafety import (SecurityHealthSafety,
 
 from insteonplm.devices.sensorsActuators import SensorsActuators
 from insteonplm.devices.sensorsActuators import SensorsActuators_2450
-from insteonplm.devices.x10 import X10OnOff
+from insteonplm.devices.x10 import X10OnOff, X10Dimmable
 
 # pylint: disable=line-too-long
 # pylint: disable=too-few-public-methods
@@ -328,7 +328,8 @@ class IPDB(object):
     ]
 
     _x10_products = [
-        X10Product("OnOff", X10OnOff)
+        X10Product("OnOff", X10OnOff),
+        X10Product("Dimmable", X10Dimmable)
         ]
 
     def __init__(self):

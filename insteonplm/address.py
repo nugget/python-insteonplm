@@ -5,6 +5,7 @@ import binascii
 import insteonplm.utils
 
 __all__ = ('Address')
+_LOGGER = logging.getLogger(__name__)
 
 
 class Address(object):
@@ -12,7 +13,6 @@ class Address(object):
 
     def __init__(self, addr):
         """Create an Address object."""
-        self.log = logging.getLogger(__name__)
         self._is_x10 = False
         self.addr = self._normalize(addr)
 
@@ -93,8 +93,8 @@ class Address(object):
             normalize = None
 
         else:
-            self.log.warning('Address class init with unknown type %s: %r',
-                             type(addr), addr)
+            _LOGGER.warning('Address class init with unknown type %s: %r',
+                            type(addr), addr)
         return normalize
 
     @property
@@ -146,7 +146,7 @@ class Address(object):
         return self._is_x10
 
     @is_x10.setter
-    def is_x10(self, val:bool):
+    def is_x10(self, val: bool):
         """Set if this is an X10 address."""
         self._is_x10 = val
 
@@ -182,29 +182,28 @@ class Address(object):
             unitcode = insteonplm.utils.byte_to_unitcode(self.addr[2])
         return unitcode
 
-    @staticmethod
-    def x10(housecode, unitcode):
+    @classmethod
+    def x10(cls, housecode, unitcode):
         """Create an X10 device address."""
         if housecode.lower() in ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h',
                                  'i', 'j', 'k', 'l', 'm', 'n', 'o', 'p']:
             byte_housecode = insteonplm.utils.housecode_to_byte(housecode)
         else:
             if isinstance(housecode, str):
-                self.log.error('X10 house code error: %s', housecode)
+                _LOGGER.error('X10 house code error: %s', housecode)
             else:
-                self.log.error('X10 house code is not a string')
+                _LOGGER.error('X10 house code is not a string')
             raise ValueError
 
         if unitcode in range(1, 17):
             byte_unitcode = insteonplm.utils.unitcode_to_byte(unitcode)
         else:
             if isinstance(unitcode, int):
-                self.log.error('X10 unit code error: %d', unitcode)
+                _LOGGER.error('X10 unit code error: %d', unitcode)
             else:
-                self.log.error('X10 unit code is not a integer 1 - 16')
+                _LOGGER.error('X10 unit code is not a integer 1 - 16')
             raise ValueError
 
         addr = Address(bytearray([0x00, byte_housecode, byte_unitcode]))
         addr.is_x10 = True
         return addr
-

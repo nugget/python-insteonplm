@@ -49,6 +49,7 @@ def create(plm, address, cat, subcat, firmware=None):
                              product.model)
     return device
 
+
 def create_x10(plm, housecode, unitcode, feature):
     """Create an X10 device from a feature definition."""
     from insteonplm.devices.ipdb import IPDB
@@ -59,6 +60,7 @@ def create_x10(plm, housecode, unitcode, feature):
     if deviceclass:
         device = deviceclass(plm, housecode, unitcode)
     return device
+
 
 class Device(object):
     """INSTEON Device Class."""
@@ -151,13 +153,6 @@ class Device(object):
     @property
     def aldb(self):
         return self._aldb
-
-    #@classmethod
-    #def create(cls, plm, address, cat, subcat, product_key=None,
-    #           description=None, model=None):
-    #    """Factory method to create a device."""
-    #    return cls(plm, address, cat, subcat, product_key,
-    #               description, model)
 
     # Public Methods
     def async_refresh_state(self):
@@ -432,7 +427,8 @@ class X10Device(object):
         self.log.debug('Starting X10Device.receive_message')
         if hasattr(msg, 'isack') and msg.isack:
             self.log.debug('Got Message ACK')
-            self._send_msg_lock.release()
+            if self._send_msg_lock.locked():
+                self._send_msg_lock.release()
         callbacks = self._message_callbacks.get_callbacks_from_message(msg)
         self.log.debug('Found %d callbacks for msg %s', len(callbacks), msg)
         for callback in callbacks:
@@ -454,7 +450,7 @@ class X10Device(object):
         yield from self._send_msg_lock
         if self._send_msg_lock.locked():
             self.log.debug("Lock is locked from yeild from")
-       
+
         self._plm.send_msg(msg, wait_timeout=2)
         if not wait_ack:
             self._send_msg_lock.release()

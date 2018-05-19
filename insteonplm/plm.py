@@ -9,8 +9,11 @@ import async_timeout
 
 import insteonplm.messages
 from insteonplm.constants import (COMMAND_ASSIGN_TO_ALL_LINK_GROUP_0X01_NONE,
-                                  MESSAGE_NAK)
+                                  MESSAGE_ACK,
+                                  MESSAGE_NAK,
+                                  X10CommandType)
 from insteonplm.address import Address
+from insteonplm.devices import Device, ALDBRecord, ALDBStatus
 from insteonplm.linkedDevices import LinkedDevices
 from insteonplm.messagecallback import MessageCallback
 from insteonplm.messages.allLinkComplete import AllLinkComplete
@@ -20,7 +23,12 @@ from insteonplm.messages.getIMInfo import GetImInfo
 from insteonplm.messages.getNextAllLinkRecord import GetNextAllLinkRecord
 from insteonplm.messages.standardReceive import StandardReceive
 from insteonplm.messages.startAllLinking import StartAllLinking
-from insteonplm.devices import Device, ALDBRecord, ALDBStatus
+from insteonplm.messages.x10received import X10Received
+from insteonplm.messages.x10send import X10Send
+from insteonplm.utils import (byte_to_housecode,
+                              byte_to_unitcode,
+                              rawX10_to_bytes,
+                              x10_command_type)
 
 __all__ = ('PLM, Hub')
 WAIT_TIMEOUT = 1.5
@@ -63,6 +71,7 @@ class IM(Device, asyncio.Protocol):
         self._poll_devices = poll_devices
         self._write_transport_lock = asyncio.Lock(loop=self._loop)
         self._message_callbacks = MessageCallback()
+        self._x10_address = None
 
         # Callback lists
         self._cb_load_all_link_db_done = []
@@ -211,9 +220,11 @@ class IM(Device, asyncio.Protocol):
         - OnOff
         - Dimmable
         """
-        device = insteonplm.devices.create_x10(self, housecode, unitcode, feature)
-        if devices:
-            self._linkedDevices[device.address.id] = device
+        device = insteonplm.devices.create_x10(self, housecode,
+                                               unitcode, feature)
+        if device:
+            self.devices[device.address.id] = device
+        return device
 
     @asyncio.coroutine
     def _setup_devices(self):
@@ -305,6 +316,8 @@ class IM(Device, asyncio.Protocol):
         template_next_all_link_rec = GetNextAllLinkRecord(acknak=MESSAGE_NAK)
         template_all_link_complete = AllLinkComplete(None, None, None,
                                                      None, None, None)
+        template_x10_send = X10Send(None, None, MESSAGE_ACK)
+        template_x10_received = X10Received(None, None)
 
         self._message_callbacks.add(
             template_assign_all_link,
@@ -325,6 +338,14 @@ class IM(Device, asyncio.Protocol):
         self._message_callbacks.add(
             template_all_link_complete,
             self._handle_assign_to_all_link_group)
+
+        self._message_callbacks.add(
+            template_x10_send,
+            self._handle_x10_send_receive)
+
+        self._message_callbacks.add(
+            template_x10_received,
+            self._handle_x10_send_receive)
 
     def _peel_messages_from_buffer(self):
         self.log.debug("Starting: _peel_messages_from_buffer")
@@ -543,6 +564,28 @@ class IM(Device, asyncio.Protocol):
         self._aldb = ALDB(self._send_msg, self._plm.loop, self._address)
 
         self.log.debug('Ending _handle_get_plm_info')
+
+    def _handle_x10_send_receive(self, msg):
+        housecode_byte, unit_command_byte = rawX10_to_bytes(msg.rawX10)
+        housecode = byte_to_housecode(housecode_byte)
+        if msg.flag == 0x00:
+            unitcode = byte_to_unitcode(unit_command_byte)
+            self._x10_address = Address.x10(housecode, unitcode)
+            self.devices[self._x10_address.id].receive_message(msg)
+        else:
+            self._x10_command_to_device(housecode, unit_command_byte, msg)
+
+    def _x10_command_to_device(self, housecode, command, msg):
+        if x10_command_type(command) == X10CommandType.DIRECT:
+            if self._x10_address:
+                if self._x10_address.x10_housecode == housecode:
+                    self.devices[self._x10_address.id].receive_message(msg)
+        else:
+            for id in self.devices:
+                if self.devices[id].address.is_x10:
+                    if (self.devices[id].address.x10_housecode == housecode):
+                        self.devices[id].receive_message(msg)
+        self._x10_address = None
 
 
 class PLM(IM):

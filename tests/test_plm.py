@@ -11,7 +11,9 @@ from insteonplm.constants import (COMMAND_LIGHT_ON_0X11_NONE,
                                   COMMAND_ID_REQUEST_0X10_0X00,
                                   COMMAND_LIGHT_STATUS_REQUEST_0X19_0X00,
                                   MESSAGE_NAK,
-                                  MESSAGE_ACK)
+                                  MESSAGE_ACK,
+                                  X10_COMMAND_ON,
+                                  X10_COMMAND_OFF)
 from insteonplm.plm import PLM
 from insteonplm.address import Address
 from insteonplm.messages.standardSend import StandardSend
@@ -20,6 +22,10 @@ from insteonplm.messages.getIMInfo import GetImInfo
 from insteonplm.messages.getFirstAllLinkRecord import GetFirstAllLinkRecord
 from insteonplm.messages.getNextAllLinkRecord import GetNextAllLinkRecord
 from insteonplm.messages.allLinkRecordResponse import AllLinkRecordResponse
+from insteonplm.messages.x10received import X10Received
+
+from .mockConnection import MockConnection
+from .mockCallbacks import MockCallbacks
 
 _LOGGER = logging.getLogger()
 SEND_MSG_WAIT = 1.1
@@ -39,61 +45,6 @@ def wait_for_plm_command(plm, cmd, loop):
     except asyncio.TimeoutError:
         _LOGGER.error('Expected message not sent %s', cmd)
         return False
-
-
-# pylint: disable=too-few-public-methods
-class MockConnection():
-    """A mock up of the Connection class."""
-
-    def __init__(self):
-        """Instantiate the Connection object."""
-        self.loop = None
-        self.protocol = None
-        self.transport = None
-
-    @classmethod
-    @asyncio.coroutine
-    def create(cls, loop=None):
-        """Create a mock connection."""
-        conn = cls()
-        conn.loop = loop or asyncio.get_event_loop()
-        conn.protocol = PLM(
-            connection_lost_callback=None,
-            loop=conn.loop)
-
-        # pylint: disable=too-few-public-methods
-        class Serial:
-            """Mock serial class within Connection class."""
-
-            def __init__(self):
-                """Initialize the mock Serial class."""
-                self.write_timeout = 0
-                self.timeout = 0
-
-        class Transport:
-            """Mock transport class within Connection class."""
-
-            def __init__(self):
-                """Initialize the mock Transport class."""
-                self.serial = Serial()
-                self.lastmessage = None
-                self._mock_buffer_size = 128
-
-            def set_write_buffer_limits(self, num):
-                """Mock set write buffer limits."""
-                pass
-
-            def get_write_buffer_size(self):
-                """Mock get write buffer size."""
-                return self._mock_buffer_size
-
-            def write(self, data):
-                """Mock write data to the Connection."""
-                self.lastmessage = binascii.hexlify(data).decode()
-                _LOGGER.info('Message sent: %s', self.lastmessage)
-
-        conn.transport = Transport()
-        return conn
 
 
 @asyncio.coroutine
@@ -255,8 +206,76 @@ def do_plm(loop):
         assert False
 
 
+@asyncio.coroutine
+def do_plm_x10(loop):
+    """Asyncio coroutine to test the PLM X10 message handling."""
+    _LOGGER.info('Connecting to Insteon PLM')
+
+    # pylint: disable=not-an-iterable
+    conn = yield from MockConnection.create(loop=loop)
+    
+    cb = MockCallbacks()
+
+    #conn.protocol.add_device_callback(async_insteonplm_light_callback)
+
+    plm = conn.protocol
+    plm.connection_made(conn.transport)
+
+    _LOGGER.info('Replying with IM Info')
+    _LOGGER.info('_____________________')
+    cmd_sent = yield from wait_for_plm_command(plm, GetImInfo(), loop)
+    if not cmd_sent:
+        assert False
+    msg = insteonplm.messages.getIMInfo.GetImInfo(address='1a2b3c', cat=0x03,
+                                                  subcat=0x20, firmware=0x00,
+                                                  acknak=MESSAGE_ACK)
+    plm.data_received(msg.bytes)
+    yield from asyncio.sleep(RECV_MSG_WAIT)
+
+    _LOGGER.info('Replying with an All-Link Record NAK')
+    _LOGGER.info('____________________________________')
+    cmd_sent = yield from wait_for_plm_command(plm, GetFirstAllLinkRecord(),
+                                               loop)
+    if not cmd_sent:
+        assert False
+    msg = GetFirstAllLinkRecord(MESSAGE_NAK)
+    plm.data_received(msg.bytes)
+    yield from asyncio.sleep(RECV_MSG_WAIT)
+
+    _LOGGER.info('Add X10 device and receive messages')
+    _LOGGER.info('____________________________________')
+    housecode = 'C'
+    unitcode = 9
+    plm.add_x10_device(housecode, unitcode, 'OnOff')
+    id = Address.x10(housecode, unitcode).id
+    plm.devices[id].states[0x01].register_updates(cb.callbackmethod1)
+
+    msg = X10Received.unit_code_msg(housecode, unitcode)
+    plm.data_received(msg.bytes)
+    yield from asyncio.sleep(.1, loop=loop)
+    msg = X10Received.command_msg(housecode, X10_COMMAND_ON)
+    plm.data_received(msg.bytes)
+    yield from asyncio.sleep(.1, loop=loop)
+    assert cb.callbackvalue1 == 0xff
+
+    msg = X10Received.unit_code_msg(housecode, unitcode)
+    plm.data_received(msg.bytes)
+    yield from asyncio.sleep(.1, loop=loop)
+    msg = X10Received.command_msg(housecode, X10_COMMAND_OFF)
+    plm.data_received(msg.bytes)
+    yield from asyncio.sleep(.1, loop=loop)
+    assert cb.callbackvalue1 == 0x00
+
+
 def test_plm():
     """Main test for the PLM."""
     logging.basicConfig(level=logging.DEBUG)
     loop = asyncio.get_event_loop()
     loop.run_until_complete(do_plm(loop))
+
+
+def test_plm_x10():
+    """Test X10 message handling."""
+    logging.basicConfig(level=logging.DEBUG)
+    loop = asyncio.get_event_loop()
+    loop.run_until_complete(do_plm_x10(loop))

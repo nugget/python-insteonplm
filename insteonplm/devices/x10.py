@@ -1,6 +1,7 @@
 """INSTEON General Controller Device Class."""
 from insteonplm.devices import X10Device
-from insteonplm.states.x10 import X10OnOffSwitch
+from insteonplm.states.x10 import X10OnOffSwitch, X10DimmableSwitch
+
 
 class X10OnOff(X10Device):
     """General Controller Device Class.
@@ -9,11 +10,28 @@ class X10OnOff(X10Device):
 
     Example: ControLinc, RemoteLinc, SignaLinc, etc.
     """
- 
+
     def __init__(self, plm, housecode, unitcode):
         super().__init__(plm, housecode, unitcode)
         self._description = 'X10 On / Off Device'
 
         self._stateList[0x01] = X10OnOffSwitch(
-            self._address, "OnOffSwitch", 0x01, self._send_msg,
+            self._address, "X10OnOffSwitch", 0x01, self._send_msg,
+            self._message_callbacks, 0x00)
+
+
+class X10Dimmable(X10Device):
+    """General Controller Device Class.
+
+    Device cat: 0x00
+
+    Example: ControLinc, RemoteLinc, SignaLinc, etc.
+    """
+
+    def __init__(self, plm, housecode, unitcode, dim_steps=22):
+        super().__init__(plm, housecode, unitcode)
+        self._description = 'X10 Dimmable Device'
+
+        self._stateList[0x01] = X10DimmableSwitch(
+            self._address, "X10DimmableSwitch", 0x01, self._send_msg,
             self._message_callbacks, 0x00)
