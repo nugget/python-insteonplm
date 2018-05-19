@@ -16,7 +16,7 @@ class X10OnOff(X10Device):
         self._description = 'X10 On / Off Device'
 
         self._stateList[0x01] = X10OnOffSwitch(
-            self._address, "X10OnOffSwitch", 0x01, self._send_msg,
+            self._address, "x10OnOffSwitch", 0x01, self._send_msg,
             self._message_callbacks, 0x00)
 
 
@@ -33,5 +33,5 @@ class X10Dimmable(X10Device):
         self._description = 'X10 Dimmable Device'
 
         self._stateList[0x01] = X10DimmableSwitch(
-            self._address, "X10DimmableSwitch", 0x01, self._send_msg,
+            self._address, "x10DimmableSwitch", 0x01, self._send_msg,
             self._message_callbacks, 0x00)
