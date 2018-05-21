@@ -62,11 +62,9 @@ class X10OnOffSwitch(State):
         all_on_msg = X10Received.command_msg(self.address.x10_housecode,
                                              X10_COMMAND_ON)
         all_off_msg = X10Received.command_msg(self.address.x10_housecode,
-                                              X10_COMMAND_ALL_LIGHTS_OFF,
-                                              0x80)
+                                              X10_COMMAND_ALL_LIGHTS_OFF)
         all_units_off_msg = X10Received.command_msg(self.address.x10_housecode,
-                                                    X10_COMMAND_ALL_UNITS_OFF,
-                                                    0x80)
+                                                    X10_COMMAND_ALL_UNITS_OFF)
 
         self._message_callbacks.add(on_msg,
                                     self._on_message_received)
