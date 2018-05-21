@@ -61,8 +61,7 @@ to be general-purpose and should be usable for other applications as well.
 ## Requirements
 
 - Python 3.4, 3.5 or 3.6 with asyncio
-- Posix based system (currently does not work on Windows due to a serial port
-issue)
+- Posix based system (currently does not work on Windows due to a serial port issue)
 - Some form of Insteon PLM or INSTEON USB Stick
 - At least one Insteon device
 
