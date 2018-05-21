@@ -164,9 +164,11 @@ class X10DimmableSwitch(X10OnOffSwitch):
     def _register_messages(self):
         super()._register_messages()
         dim_msg = X10Received.command_msg(address.x10_housecode,
-                                          X10_COMMAND_DIM)
+                                          X10_COMMAND_DIM,
+                                          0x80)
         bri_msg = X10Received.command_msg(address.x10_housecode,
-                                          X10_COMMAND_BRIGHT)
+                                          X10_COMMAND_BRIGHT,
+                                          0x80)
         self._message_callbacks.add(dim_msg,
                                     self._dim_message_received)
         self._message_callbacks.add(bri_msg,
