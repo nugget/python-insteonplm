@@ -55,16 +55,16 @@ class X10OnOffSwitch(State):
         self._update_subscribers(0x00)
 
     def _register_messages(self):
-        on_msg = X10Received.command_msg(address.x10_housecode,
+        on_msg = X10Received.command_msg(self.address.x10_housecode,
                                          X10_COMMAND_ON, 0x80)
-        off_msg = X10Received.command_msg(address.x10_housecode,
+        off_msg = X10Received.command_msg(self.address.x10_housecode,
                                           X10_COMMAND_OFF, 0x80)
-        all_on_msg = X10Received.command_msg(address.x10_housecode,
+        all_on_msg = X10Received.command_msg(self.address.x10_housecode,
                                              X10_COMMAND_ON, 0x80)
-        all_off_msg = X10Received.command_msg(address.x10_housecode,
+        all_off_msg = X10Received.command_msg(self.address.x10_housecode,
                                               X10_COMMAND_ALL_LIGHTS_OFF,
                                               0x80)
-        all_units_off_msg = X10Received.command_msg(address.x10_housecode,
+        all_units_off_msg = X10Received.command_msg(self.address.x10_housecode,
                                                     X10_COMMAND_ALL_UNITS_OFF,
                                                     0x80)
 
@@ -163,10 +163,10 @@ class X10DimmableSwitch(X10OnOffSwitch):
 
     def _register_messages(self):
         super()._register_messages()
-        dim_msg = X10Received.command_msg(address.x10_housecode,
+        dim_msg = X10Received.command_msg(self.address.x10_housecode,
                                           X10_COMMAND_DIM,
                                           0x80)
-        bri_msg = X10Received.command_msg(address.x10_housecode,
+        bri_msg = X10Received.command_msg(self.address.x10_housecode,
                                           X10_COMMAND_BRIGHT,
                                           0x80)
         self._message_callbacks.add(dim_msg,
