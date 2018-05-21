@@ -21,28 +21,8 @@ class X10OnOffSwitch(State):
         super().__init__(address, statename, group, send_message_method,
                          message_callbacks, defaultvalue)
 
-        on_msg = X10Received.command_msg(address.x10_housecode,
-                                         X10_COMMAND_ON, 0x80)
-        off_msg = X10Received.command_msg(address.x10_housecode,
-                                          X10_COMMAND_OFF, 0x80)
-        all_on_msg = X10Received.command_msg(address.x10_housecode,
-                                             X10_COMMAND_ON, 0x80)
-        all_off_msg = X10Received.command_msg(address.x10_housecode,
-                                              X10_COMMAND_ALL_LIGHTS_OFF, 0x80)
-        all_units_off_msg = X10Received.command_msg(address.x10_housecode,
-                                                    X10_COMMAND_ALL_UNITS_OFF,
-                                                    0x80)
+        self._register_messages()
 
-        self._message_callbacks.add(on_msg,
-                                    self._on_message_received)
-        self._message_callbacks.add(off_msg,
-                                    self._off_message_received)
-        self._message_callbacks.add(all_on_msg,
-                                    self._on_message_received)
-        self._message_callbacks.add(all_off_msg,
-                                    self._off_message_received)
-        self._message_callbacks.add(all_units_off_msg,
-                                    self._off_message_received)
 
     def on(self):
         """Send the On command to an X10 device."""
@@ -74,6 +54,31 @@ class X10OnOffSwitch(State):
         """An OFF has been received."""
         self._update_subscribers(0x00)
 
+    def _register_messages(self):
+        on_msg = X10Received.command_msg(address.x10_housecode,
+                                         X10_COMMAND_ON, 0x80)
+        off_msg = X10Received.command_msg(address.x10_housecode,
+                                          X10_COMMAND_OFF, 0x80)
+        all_on_msg = X10Received.command_msg(address.x10_housecode,
+                                             X10_COMMAND_ON, 0x80)
+        all_off_msg = X10Received.command_msg(address.x10_housecode,
+                                              X10_COMMAND_ALL_LIGHTS_OFF,
+                                              0x80)
+        all_units_off_msg = X10Received.command_msg(address.x10_housecode,
+                                                    X10_COMMAND_ALL_UNITS_OFF,
+                                                    0x80)
+
+        self._message_callbacks.add(on_msg,
+                                    self._on_message_received)
+        self._message_callbacks.add(off_msg,
+                                    self._off_message_received)
+        self._message_callbacks.add(all_on_msg,
+                                    self._on_message_received)
+        self._message_callbacks.add(all_off_msg,
+                                    self._off_message_received)
+        self._message_callbacks.add(all_units_off_msg,
+                                    self._off_message_received)
+
 
 class X10DimmableSwitch(X10OnOffSwitch):
     """Dimmable X10 Switch."""
@@ -85,15 +90,6 @@ class X10DimmableSwitch(X10OnOffSwitch):
                          message_callbacks, defaultvalue)
 
         self._steps = 22
-
-        dim_msg = X10Received.command_msg(address.x10_housecode,
-                                          X10_COMMAND_DIM)
-        bri_msg = X10Received.command_msg(address.x10_housecode,
-                                          X10_COMMAND_BRIGHT)
-        self._message_callbacks.add(dim_msg,
-                                    self._dim_message_received)
-        self._message_callbacks.add(bri_msg,
-                                    self._bright_message_received)
 
     @property
     def steps(self):
@@ -164,3 +160,14 @@ class X10DimmableSwitch(X10OnOffSwitch):
     def _bright_message_received(self, msg):
         val = min(self._value + (255 / self._steps), 255)
         self._update_subscribers(val)
+
+    def _register_messages(self):
+        super()._register_messages()
+        dim_msg = X10Received.command_msg(address.x10_housecode,
+                                          X10_COMMAND_DIM)
+        bri_msg = X10Received.command_msg(address.x10_housecode,
+                                          X10_COMMAND_BRIGHT)
+        self._message_callbacks.add(dim_msg,
+                                    self._dim_message_received)
+        self._message_callbacks.add(bri_msg,
+                                    self._bright_message_received)
