@@ -63,15 +63,26 @@ def test_dimmable():
     def run_test(loop):
         housecode = 'C' # byte 0x02
         unitcode = 9    # byte 0x07
+        newval = 200
+        steps = round(newval / (255/22)) + 1
+        _LOGGER.info('Steps %d', steps)
         plm = MockPLM(loop)
         cb = MockCallbacks()
         device = X10Dimmable(plm, housecode, unitcode)
         device.states[0x01].register_updates(cb.callbackmethod1)
         plm.devices[device.address.id] = device
 
-        device.states[0x01].set_level(10)
-        yield from asyncio.sleep(.1, loop=loop)
-        assert cb.callbackvalue1 == 10
+        device.states[0x01].set_level(200)
+        for i in range(0, steps):
+            _LOGGER.info('Sending ACK messages')
+            msg = X10Send(0x27, 0x00, 0x06)
+            device.receive_message(msg)
+            yield from  asyncio.sleep(.1, loop=loop)
+
+            yield from  asyncio.sleep(.1, loop=loop)
+            msg = X10Send(0x25, 0x80, 0x06)
+        _LOGGER.info('New value: 0x%02x', cb.callbackvalue1)
+        assert cb.callbackvalue1 == round((steps -1)*(255 / 22))
     
     loop = asyncio.get_event_loop()
     loop.run_until_complete(run_test(loop))
@@ -97,7 +108,6 @@ def test_on_received():
         device.receive_message(msg)
         yield from asyncio.sleep(.1, loop=loop)
         assert cb.callbackvalue1 == 0x00
-
 
     loop = asyncio.get_event_loop()
     loop.run_until_complete(run_test(loop))

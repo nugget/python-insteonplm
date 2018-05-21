@@ -101,15 +101,20 @@ class X10DimmableSwitch(X10OnOffSwitch):
             elif val <= 0xff:
                 setlevel = val
             change = setlevel - self._value
-            steps = round(abs(change)/(255/self._steps))
+            increment = 255 / self._steps
+            steps = round(abs(change) / increment)
             print('Steps: ', steps)
             if change > 0:
                 method = self.brighten
+                self._value += round(steps * increment)
+                self._value = min(255, self._value)
             else:
                 method = self.dim
+                self._value -= round(steps * increment)
+                self._value == max(0, self._value)
             for step in range(0, steps):
                 method(True)
-            self._update_subscribers(val)
+            self._update_subscribers(self._value)
 
     def brighten(self, defer_update=False):
         """Brighten the device one step."""
