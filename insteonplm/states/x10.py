@@ -3,7 +3,10 @@
 from insteonplm.messages.x10send import X10Send
 from insteonplm.messages.x10received import X10Received
 from insteonplm.states import State
-from insteonplm.constants import (X10_COMMAND_ON,
+from insteonplm.constants import (X10_COMMAND_ALL_UNITS_OFF,
+                                  X10_COMMAND_ALL_LIGHTS_ON,
+                                  X10_COMMAND_ALL_LIGHTS_OFF,
+                                  X10_COMMAND_ON,
                                   X10_COMMAND_OFF,
                                   X10_COMMAND_DIM,
                                   X10_COMMAND_BRIGHT)
@@ -19,12 +22,26 @@ class X10OnOffSwitch(State):
                          message_callbacks, defaultvalue)
 
         on_msg = X10Received.command_msg(address.x10_housecode,
-                                         X10_COMMAND_ON)
+                                         X10_COMMAND_ON, 0x80)
         off_msg = X10Received.command_msg(address.x10_housecode,
-                                          X10_COMMAND_OFF)
+                                          X10_COMMAND_OFF, 0x80)
+        all_on_msg = X10Received.command_msg(address.x10_housecode,
+                                             X10_COMMAND_ON, 0x80)
+        all_off_msg = X10Received.command_msg(address.x10_housecode,
+                                              X10_COMMAND_ALL_LIGHTS_OFF, 0x80)
+        all_units_off_msg = X10Received.command_msg(address.x10_housecode,
+                                                    X10_COMMAND_ALL_UNITS_OFF,
+                                                    0x80)
+
         self._message_callbacks.add(on_msg,
                                     self._on_message_received)
         self._message_callbacks.add(off_msg,
+                                    self._off_message_received)
+        self._message_callbacks.add(all_on_msg,
+                                    self._on_message_received)
+        self._message_callbacks.add(all_off_msg,
+                                    self._off_message_received)
+        self._message_callbacks.add(all_units_off_msg,
                                     self._off_message_received)
 
     def on(self):
