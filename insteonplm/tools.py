@@ -28,8 +28,14 @@ class Tools():
         # common variables
         self.loop = loop
         self.plm = insteonplm.PLM()
-        self.device = args.device
         self.workdir = args.workdir
+        
+        # connection variables
+        self.device = args.device
+        self.username = None
+        self.password = None
+        self.host = None
+        self.port = None
 
         # all-link variables
         self.address = None
@@ -54,7 +60,7 @@ class Tools():
             if hasattr(args, 'wait'):
                 self.wait_time = int(args.wait)
 
-        logging.basicConfig(level=level)
+        _LOGGING.setLevel(level)
 
     @asyncio.coroutine
     def connect(self, poll_devices=False, device=None, workdir=None):
@@ -64,6 +70,10 @@ class Tools():
         self.workdir = workdir if workdir else self.workdir
         conn = yield from insteonplm.Connection.create(
             device=self.device,
+            host=self.host,
+            port=self.port,
+            username=self.username,
+            password=self.password,
             loop=self.loop,
             poll_devices=poll_devices,
             workdir=self.workdir)
@@ -483,7 +493,7 @@ class Commander(object):
             self.loop.create_task(
                 self.tools.start_all_linking(linkcode, group, addr))
         else:
-            _LOGGING('Group number not valid')
+            _LOGGING.error('Group number not valid')
             do_help('del_all_link')
 
     def do_print_aldb(self, args):
@@ -518,6 +528,61 @@ class Commander(object):
                 self.tools.print_device_aldb(addr)
             else:
                 self.tools.print_device_aldb(addr)
+
+    def do_set_hub_connection(self, args):
+        """Set Hub connection parameters.
+
+        Usage:
+            set_hub_connection username password host [port]
+
+        Arguments:
+            username: Hub username
+            password: Hub password
+            host: host name or IP address
+            port: IP port [default 25105]
+        """
+        params = args.split()
+        username = None
+        password = None
+        host = None
+        port = None
+
+        try:
+            username = params[0]
+            password = params[1]
+            host = params[2]
+            port = params[3]
+        except IndexError:
+            pass
+
+        if username and password and host:
+            if not port:
+                port = 25105
+            self.tools.username = username
+            self.tools.password = password
+            self.tools.host = host
+            self.tools.port = port
+        else:
+            _LOGGING.error('username password host are required')
+            self.do_help('set_hub_connection')
+
+    def do_set_log_file(self, args):
+        """Set the log file.
+
+        Usage:
+            set_log_file filename
+        Parameters:
+            filename: log file name to write to
+
+        THIS CAN ONLY BE CALLED ONCE AND MUST BE CALLED
+        BEFORE ANY LOGGING STARTS.
+        """
+        params = args.split()
+        try:
+            filename = params[0]
+            logging.basicConfig(filename=filename)
+        except IndexError:
+            self.do_help('set_log_file')
 
     @asyncio.coroutine
     def do_load_aldb(self, args):
@@ -735,9 +800,18 @@ class Commander(object):
                     print(" - ", curr_cmd[3:])
             _LOGGING.info("For help with a command type `help command`")
 
+    @asyncio.coroutine
     def do_exit(self, arg):
         """Exit the application."""
         _LOGGING.info("Exiting")
+        #if self.tools.plm:
+        #    if self.tools.plm.transport:
+        #        _LOGGING.info("Closing the connection")
+        #        yield from self.tools.plm.transport.close()
+        #    else:
+        #        _LOGGING.debug("Transport is not defined")
+        #else:
+        #    _LOGGING.debug("IM is not defined")
         raise KeyboardInterrupt
 
 
@@ -776,6 +850,9 @@ def monitor():
         loop.run_forever()
     except KeyboardInterrupt:
         pending = asyncio.Task.all_tasks(loop=loop)
+        if monTool.plm:
+            if monTool.plm.transport:
+                monTool.plm.transport.close()
         for task in pending:
             task.cancel()
             try:
@@ -807,6 +884,10 @@ def interactive():
     try:
         loop.run_forever()
     except KeyboardInterrupt:
+        if cmd.tools.plm:
+            if cmd.tools.plm.transport:
+                _LOGGING('Closing the session')
+                cmd.tools.plm.transport.close()
         loop.stop()
         pending = asyncio.Task.all_tasks(loop=loop)
         for task in pending:
