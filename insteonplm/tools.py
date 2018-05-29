@@ -886,7 +886,7 @@ def interactive():
     except KeyboardInterrupt:
         if cmd.tools.plm:
             if cmd.tools.plm.transport:
-                _LOGGING('Closing the session')
+                #_LOGGING('Closing the session')
                 cmd.tools.plm.transport.close()
         loop.stop()
         pending = asyncio.Task.all_tasks(loop=loop)
@@ -897,5 +897,7 @@ def interactive():
             except asyncio.CancelledError:
                 pass
             except KeyboardInterrupt:
+                pass
+            except TypeError:
                 pass
         loop.close()
