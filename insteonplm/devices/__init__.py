@@ -950,7 +950,7 @@ class ALDB(object):
         if msg:
             self.log.info('Device confirmed ALDB message write')
             try:
-                v = self._records.pop(self._load_action.mem_addr)
+                self._records.pop(self._load_action.mem_addr)
             except KeyError:
                 pass
             asyncio.ensure_future(self.load(self._load_action.mem_addr, 1, 0),
