@@ -199,25 +199,26 @@ class LinkedDevices(object):
             devices = []
             for addr in self._devices:
                 device = self._devices.get(addr)
-                aldb = {}
-                for mem in device.aldb:
-                    rec = device.aldb[mem]
-                    if rec:
-                        aldbRec = {'memory': mem,
-                                   'control_flags': rec.control_flags.byte,
-                                   'group': rec.group,
-                                   'address': rec.address.id,
-                                   'data1': rec.data1,
-                                   'data2': rec.data2,
-                                   'data3': rec.data3}
-                        aldb[mem] = aldbRec
-                deviceInfo = {'address': device.address.id,
-                              'cat': device.cat,
-                              'subcat': device.subcat,
-                              'product_key': device.product_key,
-                              'aldb_status': device.aldb.status.value,
-                              'aldb': aldb}
-                devices.append(deviceInfo)
+                if not device.address.is_x10:
+                    aldb = {}
+                    for mem in device.aldb:
+                        rec = device.aldb[mem]
+                        if rec:
+                            aldbRec = {'memory': mem,
+                                       'control_flags': rec.control_flags.byte,
+                                       'group': rec.group,
+                                       'address': rec.address.id,
+                                       'data1': rec.data1,
+                                       'data2': rec.data2,
+                                       'data3': rec.data3}
+                            aldb[mem] = aldbRec
+                    deviceInfo = {'address': device.address.id,
+                                  'cat': device.cat,
+                                  'subcat': device.subcat,
+                                  'product_key': device.product_key,
+                                  'aldb_status': device.aldb.status.value,
+                                  'aldb': aldb}
+                    devices.append(deviceInfo)
             coro = self._write_saved_device_info(devices)
             asyncio.ensure_future(coro, loop=self._loop)
 
@@ -231,7 +232,7 @@ class LinkedDevices(object):
     def load_saved_device_info(self):
         self.log.debug("Loading saved device info.")
         deviceinfo = []
-        if self._workdir is not None:
+        if self._workdir:
             self.log.debug("Really Loading saved device info.")
             try:
                 device_file = '{}/{}'.format(self._workdir, DEVICE_INFO_FILE)
@@ -248,7 +249,7 @@ class LinkedDevices(object):
 
     @asyncio.coroutine
     def _write_saved_device_info(self, devices):
-        if self._workdir is not None:
+        if self._workdir:
             self.log.debug('Writing %d devices to save file', len(devices))
             device_file = '{}/{}'.format(self._workdir, DEVICE_INFO_FILE)
             try:

@@ -827,6 +827,8 @@ class Commander(object):
 
         Current device types are:
             - OnOff
+            - Dimmable
+            - Sensor
 
         Example:
             add_x10_device M 12 OnOff
