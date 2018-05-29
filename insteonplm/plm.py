@@ -577,7 +577,7 @@ class IM(Device, asyncio.Protocol):
 
     def _x10_command_to_device(self, housecode, command, msg):
         if x10_command_type(command) == X10CommandType.DIRECT:
-            if self._x10_address:
+            if self._x10_address and self.devices[self._x10_address.id]:
                 if self._x10_address.x10_housecode == housecode:
                     self.devices[self._x10_address.id].receive_message(msg)
         else:
