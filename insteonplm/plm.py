@@ -597,7 +597,10 @@ class IM(Device, asyncio.Protocol):
         if msg.flag == 0x00:
             unitcode = byte_to_unitcode(unit_command_byte)
             self._x10_address = Address.x10(housecode, unitcode)
-            self.devices[self._x10_address.id].receive_message(msg)
+            if self._x10_address:
+                device = self.devices[self._x10_address.id]
+                if device:
+                    device.receive_message(msg)
         else:
             self._x10_command_to_device(housecode, unit_command_byte, msg)
 
