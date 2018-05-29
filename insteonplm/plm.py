@@ -11,7 +11,10 @@ import insteonplm.messages
 from insteonplm.constants import (COMMAND_ASSIGN_TO_ALL_LINK_GROUP_0X01_NONE,
                                   MESSAGE_ACK,
                                   MESSAGE_NAK,
-                                  X10CommandType)
+                                  X10CommandType,
+                                  X10_COMMAND_ALL_UNITS_OFF,
+                                  X10_COMMAND_ALL_LIGHTS_ON,
+                                  X10_COMMAND_ALL_LIGHTS_OFF)
 from insteonplm.address import Address
 from insteonplm.devices import Device, ALDBRecord, ALDBStatus
 from insteonplm.linkedDevices import LinkedDevices
@@ -565,6 +568,29 @@ class IM(Device, asyncio.Protocol):
 
         self.log.debug('Ending _handle_get_plm_info')
 
+    # X10 Device methods
+    def x10_all_units_off(self, housecode):
+        """Send the X10 All Units Off command."""
+        if isinstance(housecode, str):
+            housecode = housecode.upper()
+        else:
+            raise TypeError('Housecode must be a string')
+        msg = X10Send.command_msg(housecode, X10_COMMAND_ALL_UNITS_OFF)
+        self.send_msg(msg)
+        self._x10_command_to_device(housecode, X10_COMMAND_ALL_UNITS_OFF, msg)
+
+    def x10_all_lights_off(self, housecode):
+        """Send the X10 All Lights Off command."""
+        msg = X10Send.command_msg(housecode, X10_COMMAND_ALL_LIGHTS_OFF)
+        self.send_msg(msg)
+        self._x10_command_to_device(housecode, X10_COMMAND_ALL_LIGHTS_OFF, msg)
+
+    def x10_all_lights_on(self, housecode):
+        """Send the X10 All Lights Off command."""
+        msg = X10Send.command_msg(housecode, X10_COMMAND_ALL_LIGHTS_ON)
+        self.send_msg(msg)
+        self._x10_command_to_device(housecode, X10_COMMAND_ALL_LIGHTS_ON, msg)
+
     def _handle_x10_send_receive(self, msg):
         housecode_byte, unit_command_byte = rawX10_to_bytes(msg.rawX10)
         housecode = byte_to_housecode(housecode_byte)
@@ -576,6 +602,10 @@ class IM(Device, asyncio.Protocol):
             self._x10_command_to_device(housecode, unit_command_byte, msg)
 
     def _x10_command_to_device(self, housecode, command, msg):
+        if isinstance(housecode, str):
+            housecode = housecode.upper()
+        else:
+            raise TypeError('Housecode must be a string')
         if x10_command_type(command) == X10CommandType.DIRECT:
             if self._x10_address and self.devices[self._x10_address.id]:
                 if self._x10_address.x10_housecode == housecode:
