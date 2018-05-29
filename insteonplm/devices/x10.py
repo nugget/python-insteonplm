@@ -33,7 +33,7 @@ class X10Sensor(X10Device):
 
     def __init__(self, plm, housecode, unitcode, dim_steps=22):
         super().__init__(plm, housecode, unitcode)
-        self._description = 'X10 On / OFf Sensor Device'
+        self._description = 'X10 On / Off Sensor Device'
 
         self._stateList[0x01] = X10OnOffSensor(
             self._address, "x10OnOffSensor", 0x01, self._send_msg,
