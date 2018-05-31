@@ -6,7 +6,11 @@ from insteonplm.constants import (X10_COMMAND_ON,
                                   X10_COMMAND_OFF,
                                   X10_COMMAND_DIM,
                                   X10_COMMAND_BRIGHT)
-from insteonplm.devices.x10 import X10OnOff, X10Dimmable, X10AllUnitsOff, X10AllLightsOff, X10AllLightsOn
+from insteonplm.devices.x10 import (X10OnOff,
+                                    X10Dimmable,
+                                    X10AllUnitsOff,
+                                    X10AllLightsOff,
+                                    X10AllLightsOn)
 from insteonplm.messages.x10send import X10Send
 from insteonplm.messages.x10received import X10Received
 import insteonplm.utils
@@ -113,4 +117,12 @@ def test_on_received():
     loop.run_until_complete(run_test(loop))
 
 
-def test_all_on_off_devices():
+def test_all_unit_types():
+    plm = MockPLM()
+    all_unit_off = X10AllUnitsOff(plm, 'A', 20)
+    all_lights_off = X10AllLightsOff(plm, 'A', 22)
+    all_lights_on = X10AllLightsOn(plm, 'A', 21)
+
+    assert all_unit_off.description == 'X10 All Units Off Device'
+    assert all_lights_off.description == 'X10 All Lights Off Device'
+    assert all_lights_on.description == 'X10 All Lights On Device'

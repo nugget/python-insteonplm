@@ -1,5 +1,6 @@
 """INSTEON General Controller Device Class."""
 import asyncio
+import logging
 
 from insteonplm.constants import (X10_COMMAND_ALL_UNITS_OFF,
                                   X10_COMMAND_ALL_LIGHTS_ON,
@@ -9,6 +10,9 @@ from insteonplm.messages.x10received import X10Received
 from insteonplm.states.x10 import (X10OnOffSwitch, X10DimmableSwitch,
                                    X10OnOffSensor, X10AllUnitsOffSensor,
                                    X10AllLightsOnSensor, X10AllLightsOffSensor)
+
+
+_LOGGER = logging.getLogger(__name__)
 
 
 class X10OnOff(X10Device):
@@ -50,14 +54,14 @@ class X10Sensor(X10Device):
 class X10AllUnitsOff(X10Device):
     """X10 All Units Off Device."""
 
-    def __init__(self, plm, housecode, unitcode, dim_steps=22):
+    def __init__(self, plm, housecode, unitcode):
         super().__init__(plm, housecode, unitcode)
         self._description = 'X10 All Units Off Device'
 
         self._stateList[0x01] = X10AllUnitsOffSensor(
             self._address, "x10AllUnitsOffSensor", 0x01, self._send_msg,
             self._message_callbacks, 0x00)
-
+        
         self._stateList[0x01].register_updates(self._reset_state)
         self._register_messages()
 
@@ -76,7 +80,7 @@ class X10AllUnitsOff(X10Device):
 class X10AllLightsOn(X10Device):
     """X10 All Lights On Device."""
 
-    def __init__(self, plm, housecode, unitcode, dim_steps=22):
+    def __init__(self, plm, housecode, unitcode):
         super().__init__(plm, housecode, unitcode)
         self._description = 'X10 All Lights On Device'
 
@@ -102,7 +106,7 @@ class X10AllLightsOn(X10Device):
 class X10AllLightsOff(X10Device):
     """X10 All Lights Off Device."""
 
-    def __init__(self, plm, housecode, unitcode, dim_steps=22):
+    def __init__(self, plm, housecode, unitcode):
         super().__init__(plm, housecode, unitcode)
         self._description = 'X10 All Lights Off Device'
 

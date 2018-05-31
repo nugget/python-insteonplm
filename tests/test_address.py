@@ -57,3 +57,6 @@ def test_x10():
     assert addr.x10_unitcode == 5
     assert addr.x10_housecode_byte == 6
     assert addr.x10_unitcode_byte == 1
+
+    addr2 = Address.x10('A', 20)
+    assert addr2.human == 'X10.A.20'
