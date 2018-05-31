@@ -126,6 +126,7 @@ class LinkedDevices(object):
             device = X10Sensor(plm, housecode, unitcode)
             self._devices[device.id] = device
         elif x10_type.lower() == 'allunitsoff':
+            self.log.debug('Creating x10 allunitsoff device')
             device = X10AllUnitsOff(plm, housecode, 20)
             self._devices[device.id] = device
         elif x10_type.lower() == 'alllightson':
