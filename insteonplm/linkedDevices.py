@@ -115,6 +115,7 @@ class LinkedDevices(object):
         from insteonplm.devices.x10 import (X10OnOff, X10Dimmable, X10Sensor,
                                             X10AllUnitsOff, X10AllLightsOn,
                                             X10AllLightsOff)
+        self.log.debug('Attempting to add x10 device %s', x10_type.lower())
         device = None
         if x10_type.lower() == 'onoff':
             device = X10OnOff(plm, housecode, unitcode)
