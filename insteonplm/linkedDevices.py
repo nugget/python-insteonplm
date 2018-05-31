@@ -105,41 +105,6 @@ class LinkedDevices(object):
         device_override[key] = value
         self._overrides[address] = device_override
 
-    def add_x10_device(self, plm, housecode, unitcode, x10_type):
-        """Add an X10 device to the PLM.
-
-        parameters:
-          housecode: String (A - P)
-          unitcode: int (1 - 16)
-        """
-        from insteonplm.devices.x10 import (X10OnOff, X10Dimmable, X10Sensor,
-                                            X10AllUnitsOff, X10AllLightsOn,
-                                            X10AllLightsOff)
-        self.log.debug('Attempting to add x10 device %s', x10_type.lower())
-        device = None
-        if x10_type.lower() == 'onoff':
-            device = X10OnOff(plm, housecode, unitcode)
-            self._devices[device.id] = device
-        elif x10_type.lower() == 'dimmable':
-            device = X10Dimmable(plm, housecode, unitcode)
-            self._devices[device.id] = device
-        elif x10_type.lower() == 'sensor':
-            device = X10Sensor(plm, housecode, unitcode)
-            self._devices[device.id] = device
-        elif x10_type.lower() == 'allunitsoff':
-            self.log.debug('Creating x10 allunitsoff device')
-            device = X10AllUnitsOff(plm, housecode, 20)
-            self._devices[device.id] = device
-        elif x10_type.lower() == 'alllightson':
-            device = X10AllLightsOn(plm, housecode, 21)
-            self._devices[device.id] = device
-        elif x10_type.lower() == 'alllightsoff':
-            device = X10AllLightsOff(plm, housecode, 22)
-            self._devices[device.id] = device
-        else:
-            raise ValueError
-        return device
-
     def create_device_from_category(self, plm, addr, cat, subcat,
                                     product_key=0x00):
         """Create a new device from the cat, subcat and product_key data."""

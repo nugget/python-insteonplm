@@ -55,7 +55,7 @@ class X10AllUnitsOff(X10Device):
     """X10 All Units Off Device."""
 
     def __init__(self, plm, housecode, unitcode):
-        super().__init__(plm, housecode, unitcode)
+        super().__init__(plm, housecode, 20)
         self._description = 'X10 All Units Off Device'
 
         self._stateList[0x01] = X10AllUnitsOffSensor(
@@ -81,7 +81,7 @@ class X10AllLightsOn(X10Device):
     """X10 All Lights On Device."""
 
     def __init__(self, plm, housecode, unitcode):
-        super().__init__(plm, housecode, unitcode)
+        super().__init__(plm, housecode, 21)
         self._description = 'X10 All Lights On Device'
 
         self._stateList[0x01] = X10AllLightsOnSensor(
@@ -107,7 +107,7 @@ class X10AllLightsOff(X10Device):
     """X10 All Lights Off Device."""
 
     def __init__(self, plm, housecode, unitcode):
-        super().__init__(plm, housecode, unitcode)
+        super().__init__(plm, housecode, 22)
         self._description = 'X10 All Lights Off Device'
 
         self._stateList[0x01] = X10AllLightsOffSensor(
