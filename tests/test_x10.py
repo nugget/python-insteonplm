@@ -126,3 +126,4 @@ def test_all_unit_types():
     assert all_unit_off.description == 'X10 All Units Off Device'
     assert all_lights_off.description == 'X10 All Lights Off Device'
     assert all_lights_on.description == 'X10 All Lights On Device'
+    assert all_unit_off.id == 'x10A20'

@@ -222,6 +222,10 @@ class IM(Device, asyncio.Protocol):
         Current features are:
         - OnOff
         - Dimmable
+        - Sensor
+        - AllUnitsOff
+        - AllLightsOn
+        - AllLightsOff
         """
         device = insteonplm.devices.create_x10(self, housecode,
                                                unitcode, feature)
