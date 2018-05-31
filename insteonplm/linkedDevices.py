@@ -112,7 +112,9 @@ class LinkedDevices(object):
           housecode: String (A - P)
           unitcode: int (1 - 16)
         """
-        from insteonplm.devices.x10 import X10OnOff, X10Dimmable, X10Sensor
+        from insteonplm.devices.x10 import (X10OnOff, X10Dimmable, X10Sensor,
+                                            X10AllUnitsOff, X10AllLightsOn,
+                                            X10AllLightsOff)
         device = None
         if x10_type.lower() == 'onoff':
             device = X10OnOff(plm, housecode, unitcode)
@@ -122,6 +124,15 @@ class LinkedDevices(object):
             self._devices[device.id] = device
         elif x10_type.lower() == 'sensor':
             device = X10Sensor(plm, housecode, unitcode)
+            self._devices[device.id] = device
+        elif x10_type.lower() == 'allunitsoff':
+            device = X10AllUnitsOff(plm, 'q', 0)
+            self._devices[device.id] = device
+        elif x10_type.lower() == 'alllightson':
+            device = X10AllLightsOn(plm, 'q', 1)
+            self._devices[device.id] = device
+        elif x10_type.lower() == 'alllightsoff':
+            device = X10AllLightsOff(plm, 'q', 2)
             self._devices[device.id] = device
         else:
             raise ValueError

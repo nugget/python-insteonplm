@@ -6,7 +6,7 @@ from insteonplm.constants import (X10_COMMAND_ON,
                                   X10_COMMAND_OFF,
                                   X10_COMMAND_DIM,
                                   X10_COMMAND_BRIGHT)
-from insteonplm.devices.x10 import X10OnOff, X10Dimmable
+from insteonplm.devices.x10 import X10OnOff, X10Dimmable, X10AllUnitsOff, X10AllLightsOff, X10AllLightsOn
 from insteonplm.messages.x10send import X10Send
 from insteonplm.messages.x10received import X10Received
 import insteonplm.utils
@@ -111,3 +111,6 @@ def test_on_received():
 
     loop = asyncio.get_event_loop()
     loop.run_until_complete(run_test(loop))
+
+
+def test_all_on_off_devices():

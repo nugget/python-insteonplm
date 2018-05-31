@@ -203,3 +203,81 @@ class X10OnOffSensor(State):
                                     self._off_message_received)
         self._message_callbacks.add(all_units_off_msg,
                                     self._off_message_received)
+
+
+class X10AllUnitsOffSensor(State):
+    """All Units Off state for an X10 device."""
+
+    def __init__(self, address, statename, group, send_message_method,
+                 message_callbacks, defaultvalue=None):
+        """Initialize the X10AllUnitsOff state."""
+        super().__init__(address, statename, group, send_message_method,
+                         message_callbacks, defaultvalue)
+
+        self._register_messages()
+
+    def reset(self):
+        """Reset the state to ON"""
+        self._update_subscribers(0xff)
+
+    def _off_message_received(self, msg):
+        """An OFF has been received."""
+        self._update_subscribers(0x00)
+
+    def _register_messages(self):
+        all_units_off_msg = X10Received.command_msg(self.address.x10_housecode,
+                                                    X10_COMMAND_ALL_UNITS_OFF)
+        self._message_callbacks.add(all_units_off_msg,
+                                    self._off_message_received)
+
+
+class X10AllLightsOnSensor(State):
+    """All Units Off state for an X10 device."""
+
+    def __init__(self, address, statename, group, send_message_method,
+                 message_callbacks, defaultvalue=None):
+        """Initialize the X10AllLightsOn state."""
+        super().__init__(address, statename, group, send_message_method,
+                         message_callbacks, defaultvalue)
+
+        self._register_messages()
+
+    def reset(self):
+        """Reset the state to OFF"""
+        self._update_subscribers(0x00)
+
+    def _on_message_received(self, msg):
+        """An ON has been received."""
+        self._update_subscribers(0xff)
+
+    def _register_messages(self):
+        all_on_msg = X10Received.command_msg(self.address.x10_housecode,
+                                             X10_COMMAND_ALL_LIGHTS_ON)
+        self._message_callbacks.add(all_on_msg,
+                                    self._on_message_received)
+
+
+class X10AllLightsOffSensor(State):
+    """All Lights Off state for an X10 device."""
+
+    def __init__(self, address, statename, group, send_message_method,
+                 message_callbacks, defaultvalue=None):
+        """Initialize the X10AllLightsOff state."""
+        super().__init__(address, statename, group, send_message_method,
+                         message_callbacks, defaultvalue)
+
+        self._register_messages()
+
+    def reset(self):
+        """Reset the state to ON"""
+        self._update_subscribers(0xff)
+
+    def _off_message_received(self, msg):
+        """An OFF has been received."""
+        self._update_subscribers(0x00)
+
+    def _register_messages(self):
+        all_off_msg = X10Received.command_msg(self.address.x10_housecode,
+                                              X10_COMMAND_ALL_LIGHTS_OFF)
+        self._message_callbacks.add(all_off_msg,
+                                    self._off_message_received)

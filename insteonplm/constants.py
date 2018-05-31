@@ -332,7 +332,8 @@ HC_LOOKUP = {'a': 0x06,
              'm': 0x00,
              'n': 0x08,
              'o': 0x04,
-             'p': 0x0c}
+             'p': 0x0c,
+             'q': 0xff}
 
 # X10 Unit code lookup
 UC_LOOKUP = {1: 0x06,
