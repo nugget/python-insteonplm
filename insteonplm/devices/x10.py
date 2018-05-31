@@ -60,7 +60,7 @@ class X10AllUnitsOff(X10Device):
 
         self._stateList[0x01] = X10AllUnitsOffSensor(
             self._address, "x10AllUnitsOffSensor", 0x01, self._send_msg,
-            self._message_callbacks, 0x00)
+            self._message_callbacks, 0xff)
         
         self._stateList[0x01].register_updates(self._reset_state)
         self._register_messages()
@@ -112,7 +112,7 @@ class X10AllLightsOff(X10Device):
 
         self._stateList[0x01] = X10AllLightsOffSensor(
             self._address, "X10AllLightsOffSensor", 0x01, self._send_msg,
-            self._message_callbacks, 0x00)
+            self._message_callbacks, 0xff)
 
         self._stateList[0x01].register_updates(self._reset_state)
         self._register_messages()
