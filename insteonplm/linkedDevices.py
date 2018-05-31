@@ -126,13 +126,13 @@ class LinkedDevices(object):
             device = X10Sensor(plm, housecode, unitcode)
             self._devices[device.id] = device
         elif x10_type.lower() == 'allunitsoff':
-            device = X10AllUnitsOff(plm, 'q', 0)
+            device = X10AllUnitsOff(plm, housecode, 20)
             self._devices[device.id] = device
         elif x10_type.lower() == 'alllightson':
-            device = X10AllLightsOn(plm, 'q', 1)
+            device = X10AllLightsOn(plm, housecode, 21)
             self._devices[device.id] = device
         elif x10_type.lower() == 'alllightsoff':
-            device = X10AllLightsOff(plm, 'q', 2)
+            device = X10AllLightsOff(plm, housecode, 22)
             self._devices[device.id] = device
         else:
             raise ValueError

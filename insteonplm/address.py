@@ -195,7 +195,9 @@ class Address(object):
                 _LOGGER.error('X10 house code is not a string')
             raise ValueError
 
-        if unitcode in range(1, 17):
+        # 20, 21 and 22 for All Units Off, All Lights On and All Lights Off
+        # 'fake' units
+        if unitcode in range(1, 17) or unitcode in range(20, 23):
             byte_unitcode = insteonplm.utils.unitcode_to_byte(unitcode)
         else:
             if isinstance(unitcode, int):

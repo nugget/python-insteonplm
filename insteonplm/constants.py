@@ -332,8 +332,7 @@ HC_LOOKUP = {'a': 0x06,
              'm': 0x00,
              'n': 0x08,
              'o': 0x04,
-             'p': 0x0c,
-             'q': 0xff}
+             'p': 0x0c}
 
 # X10 Unit code lookup
 UC_LOOKUP = {1: 0x06,
@@ -351,7 +350,10 @@ UC_LOOKUP = {1: 0x06,
              13: 0x00,
              14: 0x08,
              15: 0x04,
-             16: 0x0c}
+             16: 0x0c,
+             20: 0x20,  # All Units Off fake device
+             21: 0x21,  # All Lights On fake device
+             22: 0x22}  # All Lights Off fake device
 
 X10_COMMAND_ALL_UNITS_OFF = 0x00
 X10_COMMAND_ALL_LIGHTS_ON = 0x01
