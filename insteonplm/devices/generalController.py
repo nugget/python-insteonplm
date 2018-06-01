@@ -9,7 +9,7 @@ class GeneralController(Device):
 
     Example: ControLinc, RemoteLinc, SignaLinc, etc.
     """
- 
+
     def __init__(self, plm, address, cat, subcat, product_key=0,
                  description='', model=''):
         super().__init__(plm, address, cat, subcat, product_key,

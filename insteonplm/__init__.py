@@ -77,7 +77,7 @@ class Connection:
             """Function callback for Protocol when connection is lost."""
             if conn._auto_reconnect and not conn._closing:
                 ensure_future(conn._reconnect(), loop=conn._loop)
-        
+
         protocol_class = PLM
         if conn.ipaddress:
             protocol_class = Hub
@@ -109,8 +109,8 @@ class Connection:
     def _increase_retry_interval(self):
         self._retry_interval = min(300, 1.5 * self._retry_interval)
 
-    # TODO: 
-    # This code need to change to handle serial or HTTP connections. 
+    # TODO:
+    # This code need to change to handle serial or HTTP connections.
     @asyncio.coroutine
     def _reconnect(self):
         while True:
@@ -120,7 +120,8 @@ class Connection:
                 else:
                     if self.ipaddress:
                         # TODO
-                        # Figure out how to implement AIOHTTP to connect to the Hub
+                        # Figure out how to implement AIOHTTP to connect to
+                        # the Hub
                         self.log.debug('I think I am a hub????')
                         self.log.debug('IP Addres: %s', self.ipaddress)
                     else:

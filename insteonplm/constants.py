@@ -1,5 +1,7 @@
 """INSTEON PLM constants for reuse across the module."""
 
+from enum import Enum
+
 DEVICE_CATEGORY_GENERALIZED_CONTROLLERS_0X00 = 0x00
 DEVICE_CATEGORY_DIMMABLE_LIGHTING_CONTROL_0X01 = 0x01
 DEVICE_CATEGORY_SWITCHED_LIGHTING_CONTROL_0X02 = 0x02
@@ -313,3 +315,62 @@ FAN_SPEED_OFF = 0x00
 FAN_SPEED_LOW = 0x3f
 FAN_SPEED_MEDIUM = 0xbe
 FAN_SPEED_HIGH = 0xff
+
+# X10 House code lookup
+HC_LOOKUP = {'a': 0x06,
+             'b': 0x0e,
+             'c': 0x02,
+             'd': 0x0a,
+             'e': 0x01,
+             'f': 0x09,
+             'g': 0x05,
+             'h': 0x0d,
+             'i': 0x07,
+             'j': 0x0f,
+             'k': 0x03,
+             'l': 0x0b,
+             'm': 0x00,
+             'n': 0x08,
+             'o': 0x04,
+             'p': 0x0c}
+
+# X10 Unit code lookup
+UC_LOOKUP = {1: 0x06,
+             2: 0x0e,
+             3: 0x02,
+             4: 0x0a,
+             5: 0x01,
+             6: 0x09,
+             7: 0x05,
+             8: 0x0d,
+             9: 0x07,
+             10: 0x0f,
+             11: 0x03,
+             12: 0x0b,
+             13: 0x00,
+             14: 0x08,
+             15: 0x04,
+             16: 0x0c,
+             20: 0x20,  # All Units Off fake device
+             21: 0x21,  # All Lights On fake device
+             22: 0x22}  # All Lights Off fake device
+
+X10_COMMAND_ALL_UNITS_OFF = 0x00
+X10_COMMAND_ALL_LIGHTS_ON = 0x01
+X10_COMMAND_ALL_LIGHTS_OFF = 0x06
+X10_COMMAND_ON = 0x02
+X10_COMMAND_OFF = 0x03
+X10_COMMAND_DIM = 0x04
+X10_COMMAND_BRIGHT = 0x05
+X10_COMMAND_EXTENDED_CODE = 0x07
+X10_COMMAND_HAIL_REQUEST = 0x08
+X10_COMMAND_HAIL_ACKNOWLEDGE = 0x09
+X10_COMMAND_PRE_SET_DIM = 0x0A
+X10_COMMAND_STATUS_IS_ON = 0x0B
+X10_COMMAND_STATUS_IS_OFF = 0x0C
+X10_COMMAND_STATUS_REQUEST = 0x0D
+
+
+class X10CommandType(Enum):
+    DIRECT = 0,
+    BROADCAST = 1

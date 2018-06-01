@@ -39,7 +39,8 @@ setup(
         'async_timeout'
     ],
     entry_points={
-        'console_scripts': [ 'insteonplm_monitor = insteonplm.tools:monitor',
-                             'insteonplm_interactive = insteonplm.tools:interactive' ]
+        'console_scripts': ['insteonplm_monitor = insteonplm.tools:monitor',
+                            'insteonplm_interactive = '
+                            'insteonplm.tools:interactive']
     }
 )

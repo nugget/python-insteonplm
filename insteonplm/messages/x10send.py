@@ -5,6 +5,7 @@ from insteonplm.constants import (MESSAGE_X10_MESSAGE_SEND_0X63,
                                   MESSAGE_ACK,
                                   MESSAGE_NAK)
 from insteonplm.messages.message import Message
+import insteonplm.utils
 
 
 class X10Send(Message):
@@ -24,10 +25,38 @@ class X10Send(Message):
         self._flag = flag
         self._acknak = self._setacknak(acknak)
 
-    @classmethod
-    def from_raw_message(cls, rawmessage):
+    @staticmethod
+    def from_raw_message(rawmessage):
         """Create message from raw byte stream."""
         return X10Send(rawmessage[2], rawmessage[3], rawmessage[4:5])
+
+    @staticmethod
+    def unit_code_msg(housecode, unitcode):
+        """Create an X10 message to send the house code and unit code."""
+        house_byte = 0
+        unit_byte = 0
+        if isinstance(housecode, str):
+            house_byte = insteonplm.utils.housecode_to_byte(housecode) << 4
+            unit_byte = insteonplm.utils.unitcode_to_byte(unitcode)
+        elif isinstance(housecode, int) and housecode < 16:
+            house_byte = housecode << 4
+            unit_byte = unitcode
+        else:
+            house_byte = housecode
+            unit_byte = unitcode
+        return X10Send(house_byte + unit_byte, 0x00)
+
+    @staticmethod
+    def command_msg(housecode, command):
+        """Create an X10 message to send the house code and a command code."""
+        house_byte = 0
+        if isinstance(housecode, str):
+            house_byte = insteonplm.utils.housecode_to_byte(housecode) << 4
+        elif isinstance(housecode, int) and housecode < 16:
+            house_byte = housecode << 4
+        else:
+            house_byte = housecode
+        return X10Send(house_byte + command, 0x80)
 
     @property
     def rawX10(self):

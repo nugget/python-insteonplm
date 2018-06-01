@@ -1,4 +1,4 @@
-"""Test insteonplm ALDB Class."""
+"""Test insteonplm LinkedDevices Class."""
 from insteonplm.address import Address
 from insteonplm.linkedDevices import LinkedDevices
 from insteonplm.devices.switchedLightingControl import SwitchedLightingControl
