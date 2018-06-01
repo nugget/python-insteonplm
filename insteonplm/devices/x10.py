@@ -68,8 +68,12 @@ class X10AllUnitsOff(X10Device):
     def _reset_state(self, addr, name, val):
         loop = self._plm.loop
         if val == 0x00:
-            asyncio.wait(asyncio.sleep(.5, loop=loop), loop=loop)
-            self._stateList[0x01].reset()
+            asyncio.ensure_future(self._reset_state_value(loop), loop=loop)
+
+    @asyncio.coroutine
+    def _reset_state_value(self, loop):
+        yield from asyncio.sleep(1, loop=loop)
+        self._stateList[0x01].reset()
 
     def _register_messages(self):
         all_units_off_msg = X10Received.command_msg(self.address.x10_housecode,
@@ -95,8 +99,12 @@ class X10AllLightsOn(X10Device):
     def _reset_state(self, addr, name, val):
         loop = self._plm.loop
         if val == 0xff:
-            asyncio.wait(asyncio.sleep(.5, loop=loop), loop=loop)
-            self._stateList[0x01].reset()
+            asyncio.ensure_future(self._reset_state_value(loop), loop=loop)
+
+    @asyncio.coroutine
+    def _reset_state_value(self, loop):
+        yield from asyncio.sleep(1, loop=loop)
+        self._stateList[0x01].reset()
 
     def _register_messages(self):
         all_on_msg = X10Received.command_msg(self.address.x10_housecode,
@@ -122,8 +130,12 @@ class X10AllLightsOff(X10Device):
     def _reset_state(self, addr, name, val):
         loop = self._plm.loop
         if val == 0x00:
-            asyncio.wait(asyncio.sleep(.5, loop=loop), loop=loop)
-            self._stateList[0x01].reset()
+            asyncio.ensure_future(self._reset_state_value(loop), loop=loop)
+
+    @asyncio.coroutine
+    def _reset_state_value(self, loop):
+        yield from asyncio.sleep(1, loop=loop)
+        self._stateList[0x01].reset()
 
     def _register_messages(self):
         all_off_msg = X10Received.command_msg(self.address.x10_housecode,

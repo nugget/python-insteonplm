@@ -5,7 +5,10 @@ import logging
 from insteonplm.constants import (X10_COMMAND_ON,
                                   X10_COMMAND_OFF,
                                   X10_COMMAND_DIM,
-                                  X10_COMMAND_BRIGHT)
+                                  X10_COMMAND_BRIGHT,
+                                  X10_COMMAND_ALL_UNITS_OFF,
+                                  X10_COMMAND_ALL_LIGHTS_ON,
+                                  X10_COMMAND_ALL_LIGHTS_OFF)
 from insteonplm.devices.x10 import (X10OnOff,
                                     X10Dimmable,
                                     X10AllUnitsOff,
@@ -119,11 +122,37 @@ def test_on_received():
 
 def test_all_unit_types():
     plm = MockPLM()
-    all_unit_off = X10AllUnitsOff(plm, 'A', 20)
+    all_units_off = X10AllUnitsOff(plm, 'A', 20)
     all_lights_off = X10AllLightsOff(plm, 'A', 22)
     all_lights_on = X10AllLightsOn(plm, 'A', 21)
 
-    assert all_unit_off.description == 'X10 All Units Off Device'
+    assert all_units_off.description == 'X10 All Units Off Device'
     assert all_lights_off.description == 'X10 All Lights Off Device'
     assert all_lights_on.description == 'X10 All Lights On Device'
-    assert all_unit_off.id == 'x10A20'
+    assert all_units_off.id == 'x10A20'
+
+
+def test_all_units_on_off():
+    @asyncio.coroutine
+    def run_test(loop):
+        plm = MockPLM(loop)
+        callbacks = MockCallbacks()
+        all_units_off = X10AllUnitsOff(plm, 'A', 20)
+        all_lights_off = X10AllLightsOff(plm, 'A', 22)
+        all_lights_on = X10AllLightsOn(plm, 'A', 21)
+
+        all_units_off.states[0x01].register_updates(callbacks.callbackmethod1)
+        all_lights_off.states[0x01].register_updates(callbacks.callbackmethod2)
+        all_lights_on.states[0x01].register_updates(callbacks.callbackmethod3)
+
+        msg = X10Received.command_msg('A', X10_COMMAND_ALL_UNITS_OFF)
+        plm.message_received(msg)
+        _LOGGER.debug('Should have 1st callback')
+        yield from asyncio.sleep(.1, loop=loop)
+        assert callbacks.callbackvalue1 == 0x00
+        _LOGGER.debug('Should have 2nd callback')
+        yield from asyncio.sleep(2, loop=loop)
+        assert callbacks.callbackvalue1 == 0xff
+
+    loop = asyncio.get_event_loop()
+    loop.run_until_complete(run_test(loop))

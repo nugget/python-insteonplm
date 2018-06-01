@@ -20,7 +20,8 @@ class MockCallbacks(object):
 
     def callbackmethod1(self, id, state, value):
         """Callback method 1."""
-        self.log.debug('Called method 1 callback')
+        self.log.debug('Called method 1 callback with name %s and value %s',
+                       state, value)
         self.callbackvalue1 = value
 
     def callbackmethod2(self, id, state, value):

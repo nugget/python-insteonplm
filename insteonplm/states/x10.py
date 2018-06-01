@@ -1,4 +1,5 @@
 """X10 states."""
+import logging
 
 from insteonplm.messages.x10send import X10Send
 from insteonplm.messages.x10received import X10Received
@@ -10,6 +11,9 @@ from insteonplm.constants import (X10_COMMAND_ALL_UNITS_OFF,
                                   X10_COMMAND_OFF,
                                   X10_COMMAND_DIM,
                                   X10_COMMAND_BRIGHT)
+
+
+_LOGGER = logging.getLogger()
 
 
 class X10OnOffSwitch(State):
@@ -209,7 +213,7 @@ class X10AllUnitsOffSensor(State):
     """All Units Off state for an X10 device."""
 
     def __init__(self, address, statename, group, send_message_method,
-                 message_callbacks, defaultvalue=None):
+                 message_callbacks, defaultvalue=0xff):
         """Initialize the X10AllUnitsOff state."""
         super().__init__(address, statename, group, send_message_method,
                          message_callbacks, defaultvalue)
@@ -235,7 +239,7 @@ class X10AllLightsOnSensor(State):
     """All Units Off state for an X10 device."""
 
     def __init__(self, address, statename, group, send_message_method,
-                 message_callbacks, defaultvalue=None):
+                 message_callbacks, defaultvalue=0x00):
         """Initialize the X10AllLightsOn state."""
         super().__init__(address, statename, group, send_message_method,
                          message_callbacks, defaultvalue)
@@ -261,7 +265,7 @@ class X10AllLightsOffSensor(State):
     """All Lights Off state for an X10 device."""
 
     def __init__(self, address, statename, group, send_message_method,
-                 message_callbacks, defaultvalue=None):
+                 message_callbacks, defaultvalue=0xff):
         """Initialize the X10AllLightsOff state."""
         super().__init__(address, statename, group, send_message_method,
                          message_callbacks, defaultvalue)
