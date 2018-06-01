@@ -65,7 +65,7 @@ class X10AllUnitsOff(X10Device):
         self._stateList[0x01].register_updates(self._reset_state)
         self._register_messages()
 
-    def _reset_state(self):
+    def _reset_state(self, addr, name, val):
         loop = self._plm.loop
         asyncio.wait(asyncio.sleep(.5, loop=loop), loop=loop)
         self._stateList[0x01].reset()
@@ -91,7 +91,7 @@ class X10AllLightsOn(X10Device):
         self._stateList[0x01].register_updates(self._reset_state)
         self._register_messages()
 
-    def _reset_state(self):
+    def _reset_state(self, addr, name, val):
         loop = self._plm.loop
         asyncio.wait(asyncio.sleep(.5, loop=loop), loop=loop)
         self._stateList[0x01].reset()
@@ -117,7 +117,7 @@ class X10AllLightsOff(X10Device):
         self._stateList[0x01].register_updates(self._reset_state)
         self._register_messages()
 
-    def _reset_state(self):
+    def _reset_state(self, addr, name, val):
         loop = self._plm.loop
         asyncio.wait(asyncio.sleep(.5, loop=loop), loop=loop)
         self._stateList[0x01].reset()
