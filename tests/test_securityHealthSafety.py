@@ -30,8 +30,8 @@ def _onOffSenorTest(onOffClass, loop):
 
     callbacks = MockCallbacks()
 
-    device = onOffClass.create(plm, address, cat, subcat, product_key,
-                               description, model)
+    device = onOffClass(plm, address, cat, subcat, product_key,
+                        description, model)
     plm.devices[address] = device
     device.states[0x01].register_updates(callbacks.callbackmethod1)
     msg = StandardReceive(
@@ -41,8 +41,8 @@ def _onOffSenorTest(onOffClass, loop):
     yield from asyncio.sleep(.1, loop=loop)
     assert callbacks.callbackvalue1 == 1
 
-    device = onOffClass.create(plm, address, cat, subcat, product_key,
-                               description, model)
+    device = onOffClass(plm, address, cat, subcat, product_key,
+                        description, model)
     device.states[0x01].register_updates(callbacks.callbackmethod1)
     msg = StandardReceive(
         address, target, COMMAND_LIGHT_OFF_0X13_0X00,
@@ -79,8 +79,8 @@ def test_securityhealthsafety():
 
         callbacks = MockCallbacks()
 
-        device = SecurityHealthSafety.create(plm, address, cat, subcat,
-                                             product_key, description, model)
+        device = SecurityHealthSafety(plm, address, cat, subcat,
+                                      product_key, description, model)
         plm.devices[address] = device
         device.states[0x01].register_updates(callbacks.callbackmethod1)
         msg = StandardReceive(
@@ -90,8 +90,8 @@ def test_securityhealthsafety():
         yield from asyncio.sleep(.1, loop=loop)
         assert callbacks.callbackvalue1 == cmd2
 
-        device = SecurityHealthSafety.create(plm, address, cat, subcat,
-                                             product_key, description, model)
+        device = SecurityHealthSafety(plm, address, cat, subcat,
+                                      product_key, description, model)
         device.states[0x01].register_updates(callbacks.callbackmethod1)
         msg = StandardReceive(
             address, target, COMMAND_LIGHT_OFF_0X13_0X00,
@@ -122,8 +122,8 @@ def test_securityhealthsafety_2982_222():
 
         callbacks = MockCallbacks()
 
-        device = SecurityHealthSafety_2982_222.create(
-            plm, address, cat, subcat, product_key, description, model)
+        device = SecurityHealthSafety_2982_222(plm, address, cat, subcat,
+                                               product_key, description, model)
         plm.devices[address] = device
         device.states[0x01].register_updates(callbacks.callbackmethod1)
         msg = StandardReceive(
@@ -168,8 +168,8 @@ def test_securityHealthSafety_2852_222():
 
         callbacks = MockCallbacks()
 
-        device = SecurityHealthSafety_2852_222.create(plm, address, cat, subcat, product_key,
-                                   description, model)
+        device = SecurityHealthSafety_2852_222(plm, address, cat, subcat,
+                                               product_key, description, model)
         plm.devices[address] = device
         device.states[0x01].register_updates(callbacks.callbackmethod1)
         device.states[0x02].register_updates(callbacks.callbackmethod2)

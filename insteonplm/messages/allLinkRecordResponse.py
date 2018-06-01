@@ -68,14 +68,14 @@ class AllLinkRecordResponse(Message):
     @property
     def isRecordinuse(self):
         """Test if the link record is in use."""
-        return ((self._controlFlags & self.CONTROL_FLAG_RECORD_IN_USE)
-                == self.CONTROL_FLAG_RECORD_IN_USE)
+        return ((self._controlFlags & self.CONTROL_FLAG_RECORD_IN_USE) ==
+                self.CONTROL_FLAG_RECORD_IN_USE)
 
     @property
     def isController(self):
         """Test if the link group is a controller."""
-        return ((self._controlFlags & self.CONTROL_FLAG_CONTROLLER)
-                == self.CONTROL_FLAG_CONTROLER)
+        return ((self._controlFlags & self.CONTROL_FLAG_CONTROLLER) ==
+                self.CONTROL_FLAG_CONTROLER)
 
     @property
     def isSlave(self):

@@ -162,7 +162,7 @@ class SecurityHealthSafety_2852_222(Device):
             self._address, "heartbeatLeakSensor", 0x04, self._send_msg,
             self._message_callbacks,
             defaultvalue=0x11)
-        
+
         self._stateList[0x01].register_dry_wet_callback(
             self._stateList[0x02].set_value)
         self._stateList[0x01].register_dry_wet_callback(

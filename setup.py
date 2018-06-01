@@ -14,7 +14,7 @@ if len(long_description) < 100:
 
 setup(
     name='insteonplm',
-    version='0.9.2',
+    version='0.10.0',
     author='David McNett',
     author_email='nugget@macnugget.org',
     url='https://github.com/nugget/python-insteonplm',
@@ -39,7 +39,8 @@ setup(
         'async_timeout'
     ],
     entry_points={
-        'console_scripts': [ 'insteonplm_monitor = insteonplm.tools:monitor',
-                             'insteonplm_interactive = insteonplm.tools:interactive' ]
+        'console_scripts': ['insteonplm_monitor = insteonplm.tools:monitor',
+                            'insteonplm_interactive = '
+                            'insteonplm.tools:interactive']
     }
 )

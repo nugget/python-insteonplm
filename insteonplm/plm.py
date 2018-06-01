@@ -9,8 +9,14 @@ import async_timeout
 
 import insteonplm.messages
 from insteonplm.constants import (COMMAND_ASSIGN_TO_ALL_LINK_GROUP_0X01_NONE,
-                                  MESSAGE_NAK)
+                                  MESSAGE_ACK,
+                                  MESSAGE_NAK,
+                                  X10CommandType,
+                                  X10_COMMAND_ALL_UNITS_OFF,
+                                  X10_COMMAND_ALL_LIGHTS_ON,
+                                  X10_COMMAND_ALL_LIGHTS_OFF)
 from insteonplm.address import Address
+from insteonplm.devices import Device, ALDBRecord, ALDBStatus
 from insteonplm.linkedDevices import LinkedDevices
 from insteonplm.messagecallback import MessageCallback
 from insteonplm.messages.allLinkComplete import AllLinkComplete
@@ -20,7 +26,12 @@ from insteonplm.messages.getIMInfo import GetImInfo
 from insteonplm.messages.getNextAllLinkRecord import GetNextAllLinkRecord
 from insteonplm.messages.standardReceive import StandardReceive
 from insteonplm.messages.startAllLinking import StartAllLinking
-from insteonplm.devices import Device, ALDBRecord, ALDBStatus
+from insteonplm.messages.x10received import X10Received
+from insteonplm.messages.x10send import X10Send
+from insteonplm.utils import (byte_to_housecode,
+                              byte_to_unitcode,
+                              rawX10_to_bytes,
+                              x10_command_type)
 
 __all__ = ('PLM, Hub')
 WAIT_TIMEOUT = 1.5
@@ -54,7 +65,7 @@ class IM(Device, asyncio.Protocol):
         self._loop = loop
         self._connection_lost_callback = connection_lost_callback
 
-        self._buffer = asyncio.Queue(loop=self._loop)
+        self._buffer = bytearray()
         self._recv_queue = deque([])
         self._send_queue = asyncio.Queue(loop=self._loop)
         self._acknak_queue = asyncio.Queue(loop=self._loop)
@@ -63,6 +74,7 @@ class IM(Device, asyncio.Protocol):
         self._poll_devices = poll_devices
         self._write_transport_lock = asyncio.Lock(loop=self._loop)
         self._message_callbacks = MessageCallback()
+        self._x10_address = None
 
         # Callback lists
         self._cb_load_all_link_db_done = []
@@ -94,18 +106,46 @@ class IM(Device, asyncio.Protocol):
     # asyncio.protocol interface methods
     def connection_made(self, transport):
         """Called when asyncio.Protocol establishes the network connection."""
-        raise NotImplementedError
+        self.log.info('Connection established to PLM')
+        self.transport = transport
+
+        # Testing to see if this fixes the 2413S issue
+        self.transport.serial.timeout = 1
+        self.transport.serial.write_timeout = 1
+        self.transport.set_write_buffer_limits(128)
+        # limit = self.transport.get_write_buffer_size()
+        # self.log.debug('Write buffer size is %d', limit)
+        coro = self._setup_devices()
+        asyncio.ensure_future(coro, loop=self._loop)
 
     def data_received(self, data):
         """Called when asyncio.Protocol detects received data from network."""
         self.log.debug("Starting: data_received")
         self.log.debug('Received %d bytes from PLM: %s',
                        len(data), binascii.hexlify(data))
-        self._buffer.put_nowait(data)
-        #self._buffer.
-        #self.log.debug('Total buffer: %s', binascii.hexlify(self._buffer))
-        asyncio.ensure_future(self._peel_messages_from_buffer(),
-                              loop=self._loop)
+        self._buffer.extend(data)
+        self.log.debug('Total buffer: %s', binascii.hexlify(self._buffer))
+        self._peel_messages_from_buffer()
+
+        self.log.debug('Messages in queue: %d', len(self._recv_queue))
+        worktodo = True
+        while worktodo:
+            try:
+                msg = self._recv_queue.pop()
+                self.log.debug('Processing message %s', msg)
+                callbacks = \
+                    self._message_callbacks.get_callbacks_from_message(msg)
+                if hasattr(msg, 'isack') or hasattr(msg, 'isnak'):
+                    self._acknak_queue.put_nowait(msg)
+                if hasattr(msg, 'address'):
+                    device = self.devices[msg.address.id]
+                    if device:
+                        device.receive_message(msg)
+                for callback in callbacks:
+                    self._loop.call_soon(callback, msg)
+            except IndexError:
+                self.log.debug('Last item in self._recv_queue reached.')
+                worktodo = False
 
         self.log.debug("Finishing: data_received")
 
@@ -143,7 +183,8 @@ class IM(Device, asyncio.Protocol):
         """Request status updates from each device."""
         for addr in self.devices:
             device = self.devices[addr]
-            device.async_refresh_state()
+            if not device.address.is_x10:
+                device.async_refresh_state()
 
     def send_msg(self, msg, wait_nak=True, wait_timeout=WAIT_TIMEOUT):
         """Place a message on the send queue for sending.
@@ -175,6 +216,23 @@ class IM(Device, asyncio.Protocol):
         msg = StartAllLinking(mode, group)
         self.send_msg(msg)
 
+    def add_x10_device(self, housecode, unitcode, feature='OnOff'):
+        """Add an X10 device based on a feature description.
+
+        Current features are:
+        - OnOff
+        - Dimmable
+        - Sensor
+        - AllUnitsOff
+        - AllLightsOn
+        - AllLightsOff
+        """
+        device = insteonplm.devices.create_x10(self, housecode,
+                                               unitcode, feature)
+        if device:
+            self.devices[device.address.id] = device
+        return device
+
     @asyncio.coroutine
     def _setup_devices(self):
         yield from self.devices.load_saved_device_info()
@@ -205,10 +263,6 @@ class IM(Device, asyncio.Protocol):
                 write_bytes = msg.bytes
                 if hasattr(msg, 'acknak') and msg.acknak:
                     write_bytes = write_bytes[:-1]
-                if self.transport:
-                    self.log.debug('Transport is open')
-                else:
-                    self.log.debug("Transport is not open. Cannot write")
                 self.transport.write(msg.bytes)
                 if wait_nak:
                     self.log.debug('Waiting for ACK or NAK message')
@@ -269,6 +323,8 @@ class IM(Device, asyncio.Protocol):
         template_next_all_link_rec = GetNextAllLinkRecord(acknak=MESSAGE_NAK)
         template_all_link_complete = AllLinkComplete(None, None, None,
                                                      None, None, None)
+        template_x10_send = X10Send(None, None, MESSAGE_ACK)
+        template_x10_received = X10Received(None, None)
 
         self._message_callbacks.add(
             template_assign_all_link,
@@ -290,71 +346,41 @@ class IM(Device, asyncio.Protocol):
             template_all_link_complete,
             self._handle_assign_to_all_link_group)
 
-    @asyncio.coroutine
+        self._message_callbacks.add(
+            template_x10_send,
+            self._handle_x10_send_receive)
+
+        self._message_callbacks.add(
+            template_x10_received,
+            self._handle_x10_send_receive)
+
     def _peel_messages_from_buffer(self):
         self.log.debug("Starting: _peel_messages_from_buffer")
         lastlooplen = 0
         worktodo = True
-        buffer = bytearray()
+
         while worktodo:
-            buffer.extend(self._unpack_buffer())
-            if len(buffer) < 2:
+            if len(self._buffer) == 0:
                 worktodo = False
                 break
-            self.log.debug('Total buffer: %s', binascii.hexlify(buffer))
-            msg, buffer = insteonplm.messages.create(buffer)
+            msg = insteonplm.messages.create(self._buffer)
 
             if msg is not None:
-                self.log.debug('Msg buffer: %s', msg.hex)
                 self._recv_queue.appendleft(msg)
-                #buffer = buffer[len(msg.bytes):]
+                self._buffer = self._buffer[len(msg.bytes):]
 
-            self.log.debug('Post buffer: %s', binascii.hexlify(buffer))
-            if len(buffer) < 2:
-                self.log.debug('Buffer too short to have a message')
+            if len(self._buffer) < 2:
                 worktodo = False
                 break
 
-            if len(buffer) == lastlooplen:
-                self.log.debug("Buffer size did not change wait for more data")
+            if len(self._buffer) == lastlooplen:
+                # Buffer size did not change so we should wait for more data
                 worktodo = False
                 break
 
-            lastlooplen = len(buffer)
-        if len(buffer) > 0:
-            buffer.extend(self._unpack_buffer())
-            self._buffer.put_nowait(buffer)
-        
-        
-        self.log.debug('Messages in queue: %d', len(self._recv_queue))
-        worktodo = True
-        while worktodo:
-            try:
-                msg = self._recv_queue.pop()
-                self.log.debug('Processing message %s', msg)
-                callbacks = \
-                    self._message_callbacks.get_callbacks_from_message(msg)
-                if hasattr(msg, 'isack') or hasattr(msg, 'isnak'):
-                    self._acknak_queue.put_nowait(msg)
-                if hasattr(msg, 'address'):
-                    device = self.devices[msg.address.hex]
-                    if device:
-                        device.receive_message(msg)
-                for callback in callbacks:
-                    self._loop.call_soon(callback, msg)
-            except IndexError:
-                self.log.debug('Last item in self._recv_queue reached.')
-                worktodo = False
-
-
+            lastlooplen = len(self._buffer)
 
         self.log.debug("Finishing: _peel_messages_from_buffer")
-
-    def _unpack_buffer(self):
-        buffer = bytearray()
-        while not self._buffer.empty():
-            buffer.extend(self._buffer.get_nowait())
-        return buffer
 
     def _handle_assign_to_all_link_group(self, msg):
         cat = 0xff
@@ -397,7 +423,7 @@ class IM(Device, asyncio.Protocol):
 
     def _update_aldb_records(self, linkcode, address, group):
         """Refresh the IM and device ALDB records."""
-        device = self.devices[Address(address).hex]
+        device = self.devices[Address(address).id]
         if device and device.aldb.status in [ALDBStatus.LOADED,
                                              ALDBStatus.PARTIAL]:
             for mem_addr in device.aldb:
@@ -424,7 +450,7 @@ class IM(Device, asyncio.Protocol):
         self._load_all_link_database()
 
     def _handle_standard_or_extended_message_received(self, msg):
-        device = self.devices[msg.address.hex]
+        device = self.devices[msg.address.id]
         if device is not None:
             device.receive_message(msg)
 
@@ -437,10 +463,10 @@ class IM(Device, asyncio.Protocol):
         self._aldb[rec_num] = ALDBRecord(rec_num, msg.controlFlags,
                                          msg.group, msg.address,
                                          cat, subcat, product_key)
-        if self.devices[msg.address.hex] is None:
-            self.log.debug('ALDB Data: address %s data1: %02x '
-                           'data1: %02x data3: %02x',
-                           msg.address.hex, cat, subcat, product_key)
+        if self.devices[msg.address.id] is None:
+            self.log.debug('Product data: address %s cat: %02x '
+                           'subcat: %02x product_key: %02x',
+                           msg.address.id, cat, subcat, product_key)
 
             # Get a device from the ALDB based on cat, subcat and product_key
             device = self.devices.create_device_from_category(
@@ -451,8 +477,8 @@ class IM(Device, asyncio.Protocol):
             # type for this record. Otherwise we need to request the device ID.
             if device is not None:
                 if device.prod_data_in_aldb or \
-                        self.devices.has_override(device.address.hex) or \
-                        self.devices.has_saved(device.address.hex):
+                        self.devices.has_override(device.address.id) or \
+                        self.devices.has_saved(device.address.id):
                     if self.devices[device.id] is None:
                         self.devices[device.id] = device
                         self.log.info('Device with id %s added to device list '
@@ -460,10 +486,10 @@ class IM(Device, asyncio.Protocol):
                                       device.id)
         # Check again that the device is not alreay added, otherwise queue it
         # up for Get ID request
-        if self.devices[msg.address.hex] is None:
+        if self.devices[msg.address.id] is None:
             unknowndevice = self.devices.create_device_from_category(
                 self, msg.address.hex, None, None, None)
-            self._aldb_response_queue[msg.address.hex] = {
+            self._aldb_response_queue[msg.address.id] = {
                 'device': unknowndevice, 'retries': 0}
 
         self._get_next_all_link_record()
@@ -546,6 +572,58 @@ class IM(Device, asyncio.Protocol):
 
         self.log.debug('Ending _handle_get_plm_info')
 
+    # X10 Device methods
+    def x10_all_units_off(self, housecode):
+        """Send the X10 All Units Off command."""
+        if isinstance(housecode, str):
+            housecode = housecode.upper()
+        else:
+            raise TypeError('Housecode must be a string')
+        msg = X10Send.command_msg(housecode, X10_COMMAND_ALL_UNITS_OFF)
+        self.send_msg(msg)
+        self._x10_command_to_device(housecode, X10_COMMAND_ALL_UNITS_OFF, msg)
+
+    def x10_all_lights_off(self, housecode):
+        """Send the X10 All Lights Off command."""
+        msg = X10Send.command_msg(housecode, X10_COMMAND_ALL_LIGHTS_OFF)
+        self.send_msg(msg)
+        self._x10_command_to_device(housecode, X10_COMMAND_ALL_LIGHTS_OFF, msg)
+
+    def x10_all_lights_on(self, housecode):
+        """Send the X10 All Lights Off command."""
+        msg = X10Send.command_msg(housecode, X10_COMMAND_ALL_LIGHTS_ON)
+        self.send_msg(msg)
+        self._x10_command_to_device(housecode, X10_COMMAND_ALL_LIGHTS_ON, msg)
+
+    def _handle_x10_send_receive(self, msg):
+        housecode_byte, unit_command_byte = rawX10_to_bytes(msg.rawX10)
+        housecode = byte_to_housecode(housecode_byte)
+        if msg.flag == 0x00:
+            unitcode = byte_to_unitcode(unit_command_byte)
+            self._x10_address = Address.x10(housecode, unitcode)
+            if self._x10_address:
+                device = self.devices[self._x10_address.id]
+                if device:
+                    device.receive_message(msg)
+        else:
+            self._x10_command_to_device(housecode, unit_command_byte, msg)
+
+    def _x10_command_to_device(self, housecode, command, msg):
+        if isinstance(housecode, str):
+            housecode = housecode.upper()
+        else:
+            raise TypeError('Housecode must be a string')
+        if x10_command_type(command) == X10CommandType.DIRECT:
+            if self._x10_address and self.devices[self._x10_address.id]:
+                if self._x10_address.x10_housecode == housecode:
+                    self.devices[self._x10_address.id].receive_message(msg)
+        else:
+            for id in self.devices:
+                if self.devices[id].address.is_x10:
+                    if (self.devices[id].address.x10_housecode == housecode):
+                        self.devices[id].receive_message(msg)
+        self._x10_address = None
+
 
 class PLM(IM):
     """Insteon PowerLinc Modem device.
@@ -568,21 +646,6 @@ class PLM(IM):
                 string - valid directory path
     """
 
-    # asyncio.protocol interface methods
-    def connection_made(self, transport):
-        """Called when asyncio.Protocol establishes the network connection."""
-        self.log.info('Connection established to PLM')
-        self.transport = transport
-
-        # Testing to see if this fixes the 2413S issue
-        self.transport.serial.timeout = 1
-        self.transport.serial.write_timeout = 1
-        self.transport.set_write_buffer_limits(128)
-        # limit = self.transport.get_write_buffer_size()
-        # self.log.debug('Write buffer size is %d', limit)
-        coro = self._setup_devices()
-        asyncio.ensure_future(coro, loop=self._loop)
-
 
 class Hub(IM):
     """Insteon Hub device.
@@ -604,12 +667,3 @@ class Hub(IM):
             :type workdir:
                 string - valid directory path
     """
-
-    # asyncio.protocol interface methods
-    def connection_made(self, transport):
-        """Called when asyncio.Protocol establishes the network connection."""
-        self.log.info('Connection established to Hub')
-        self.log.debug('Transport: %s', transport)
-        self.transport = transport
-        coro = self._setup_devices()
-        asyncio.ensure_future(coro, loop=self._loop)

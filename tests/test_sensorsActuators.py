@@ -32,8 +32,8 @@ def test_SensorsActuators_2450_status():
 
         callbacks = MockCallbacks()
 
-        device = SensorsActuators_2450.create(plm, address, cat, subcat,
-                                              product_key, description, model)
+        device = SensorsActuators_2450(plm, address, cat, subcat,
+                                       product_key, description, model)
         plm.devices[address] = device
         assert device.states[0x01].name == 'openClosedRelay'
         assert device.states[0x02].name == 'openClosedSensor'
