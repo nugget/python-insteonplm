@@ -65,7 +65,7 @@ class IM(Device, asyncio.Protocol):
         self._loop = loop
         self._connection_lost_callback = connection_lost_callback
 
-        self._buffer = bytearray()
+        self._buffer = asyncio.Queue(loop=self._loop)
         self._recv_queue = deque([])
         self._send_queue = asyncio.Queue(loop=self._loop)
         self._acknak_queue = asyncio.Queue(loop=self._loop)
@@ -106,46 +106,18 @@ class IM(Device, asyncio.Protocol):
     # asyncio.protocol interface methods
     def connection_made(self, transport):
         """Called when asyncio.Protocol establishes the network connection."""
-        self.log.info('Connection established to PLM')
-        self.transport = transport
-
-        # Testing to see if this fixes the 2413S issue
-        self.transport.serial.timeout = 1
-        self.transport.serial.write_timeout = 1
-        self.transport.set_write_buffer_limits(128)
-        # limit = self.transport.get_write_buffer_size()
-        # self.log.debug('Write buffer size is %d', limit)
-        coro = self._setup_devices()
-        asyncio.ensure_future(coro, loop=self._loop)
+        raise NotImplementedError
 
     def data_received(self, data):
         """Called when asyncio.Protocol detects received data from network."""
         self.log.debug("Starting: data_received")
         self.log.debug('Received %d bytes from PLM: %s',
                        len(data), binascii.hexlify(data))
-        self._buffer.extend(data)
-        self.log.debug('Total buffer: %s', binascii.hexlify(self._buffer))
-        self._peel_messages_from_buffer()
-
-        self.log.debug('Messages in queue: %d', len(self._recv_queue))
-        worktodo = True
-        while worktodo:
-            try:
-                msg = self._recv_queue.pop()
-                self.log.debug('Processing message %s', msg)
-                callbacks = \
-                    self._message_callbacks.get_callbacks_from_message(msg)
-                if hasattr(msg, 'isack') or hasattr(msg, 'isnak'):
-                    self._acknak_queue.put_nowait(msg)
-                if hasattr(msg, 'address'):
-                    device = self.devices[msg.address.id]
-                    if device:
-                        device.receive_message(msg)
-                for callback in callbacks:
-                    self._loop.call_soon(callback, msg)
-            except IndexError:
-                self.log.debug('Last item in self._recv_queue reached.')
-                worktodo = False
+        self._buffer.put_nowait(data)
+        #self._buffer.
+        #self.log.debug('Total buffer: %s', binascii.hexlify(self._buffer))
+        asyncio.ensure_future(self._peel_messages_from_buffer(),
+                              loop=self._loop)
 
         self.log.debug("Finishing: data_received")
 
@@ -354,33 +326,69 @@ class IM(Device, asyncio.Protocol):
             template_x10_received,
             self._handle_x10_send_receive)
 
+    @asyncio.coroutine
     def _peel_messages_from_buffer(self):
         self.log.debug("Starting: _peel_messages_from_buffer")
         lastlooplen = 0
         worktodo = True
-
+        buffer = bytearray()
         while worktodo:
-            if len(self._buffer) == 0:
+            buffer.extend(self._unpack_buffer())
+            if len(buffer) < 2:
                 worktodo = False
                 break
-            msg = insteonplm.messages.create(self._buffer)
+            self.log.debug('Total buffer: %s', binascii.hexlify(buffer))
+            msg, buffer = insteonplm.messages.create(buffer)
 
             if msg is not None:
+                self.log.debug('Msg buffer: %s', msg.hex)
                 self._recv_queue.appendleft(msg)
-                self._buffer = self._buffer[len(msg.bytes):]
+                #buffer = buffer[len(msg.bytes):]
 
-            if len(self._buffer) < 2:
+            self.log.debug('Post buffer: %s', binascii.hexlify(buffer))
+            if len(buffer) < 2:
+                self.log.debug('Buffer too short to have a message')
                 worktodo = False
                 break
 
-            if len(self._buffer) == lastlooplen:
-                # Buffer size did not change so we should wait for more data
+            if len(buffer) == lastlooplen:
+                self.log.debug("Buffer size did not change wait for more data")
                 worktodo = False
                 break
 
-            lastlooplen = len(self._buffer)
+            lastlooplen = len(buffer)
+        if len(buffer) > 0:
+            buffer.extend(self._unpack_buffer())
+            self._buffer.put_nowait(buffer)
+        
+        
+        self.log.debug('Messages in queue: %d', len(self._recv_queue))
+        worktodo = True
+        while worktodo:
+            try:
+                msg = self._recv_queue.pop()
+                self.log.debug('Processing message %s', msg)
+                callbacks = \
+                    self._message_callbacks.get_callbacks_from_message(msg)
+                if hasattr(msg, 'isack') or hasattr(msg, 'isnak'):
+                    self._acknak_queue.put_nowait(msg)
+                if hasattr(msg, 'address'):
+                    device = self.devices[msg.address.hex]
+                    if device:
+                        device.receive_message(msg)
+                for callback in callbacks:
+                    self._loop.call_soon(callback, msg)
+            except IndexError:
+                self.log.debug('Last item in self._recv_queue reached.')
+                worktodo = False
 
         self.log.debug("Finishing: _peel_messages_from_buffer")
+
+    def _unpack_buffer(self):
+        buffer = bytearray()
+        while not self._buffer.empty():
+            buffer.extend(self._buffer.get_nowait())
+        return buffer
 
     def _handle_assign_to_all_link_group(self, msg):
         cat = 0xff
@@ -464,9 +472,9 @@ class IM(Device, asyncio.Protocol):
                                          msg.group, msg.address,
                                          cat, subcat, product_key)
         if self.devices[msg.address.id] is None:
-            self.log.debug('Product data: address %s cat: %02x '
-                           'subcat: %02x product_key: %02x',
-                           msg.address.id, cat, subcat, product_key)
+            self.log.debug('ALDB Data: address %s data1: %02x '
+                           'data1: %02x data3: %02x',
+                           msg.address.hex, cat, subcat, product_key)
 
             # Get a device from the ALDB based on cat, subcat and product_key
             device = self.devices.create_device_from_category(
@@ -646,6 +654,21 @@ class PLM(IM):
                 string - valid directory path
     """
 
+    # asyncio.protocol interface methods
+    def connection_made(self, transport):
+        """Called when asyncio.Protocol establishes the network connection."""
+        self.log.info('Connection established to PLM')
+        self.transport = transport
+
+        # Testing to see if this fixes the 2413S issue
+        self.transport.serial.timeout = 1
+        self.transport.serial.write_timeout = 1
+        self.transport.set_write_buffer_limits(128)
+        # limit = self.transport.get_write_buffer_size()
+        # self.log.debug('Write buffer size is %d', limit)
+        coro = self._setup_devices()
+        asyncio.ensure_future(coro, loop=self._loop)
+
 
 class Hub(IM):
     """Insteon Hub device.
@@ -667,3 +690,12 @@ class Hub(IM):
             :type workdir:
                 string - valid directory path
     """
+
+    # asyncio.protocol interface methods
+    def connection_made(self, transport):
+        """Called when asyncio.Protocol establishes the network connection."""
+        self.log.info('Connection established to Hub')
+        self.log.debug('Transport: %s', transport)
+        self.transport = transport
+        coro = self._setup_devices()
+        asyncio.ensure_future(coro, loop=self._loop)
