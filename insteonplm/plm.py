@@ -235,7 +235,11 @@ class IM(Device, asyncio.Protocol):
                 write_bytes = msg.bytes
                 if hasattr(msg, 'acknak') and msg.acknak:
                     write_bytes = write_bytes[:-1]
-                self.transport.write(msg.bytes)
+                if self.transport:
+                    self.log.debug('Transport is open')
+                    self.transport.write(msg.bytes)
+                else:
+                    self.log.debug("Transport is not open. Cannot write")
                 if wait_nak:
                     self.log.debug('Waiting for ACK or NAK message')
                     is_nak = False

@@ -5,6 +5,7 @@ Insteon Powerline modems like the 2413U and 2412S.
 """
 import aiohttp
 import asyncio
+import binascii
 import logging
 import serial
 import serial.aio

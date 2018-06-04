@@ -11,7 +11,6 @@ from insteonplm.address import Address
 from insteonplm.devices import Device, ALDBStatus
 
 __all__ = ('Tools', 'monitor', 'interactive')
-
 _LOGGING = logging.getLogger()
 PROMPT = 'insteonplm: '
 INTRO = ('INSTEON PLM interactive command processor.\n'
@@ -28,8 +27,9 @@ class Tools():
         # common variables
         self.loop = loop
         self.plm = insteonplm.PLM()
-        self.device = args.device
-        self.workdir = args.workdir
+        self.logfile = None
+        self.workdir = None
+        self.loglevel = logging.INFO
 
         # connection variables
         self.device = args.device
@@ -48,10 +48,14 @@ class Tools():
 
         if args:
             if args.verbose:
-                level = logging.DEBUG
+                self.loglevel = logging.DEBUG
             else:
-                level = logging.INFO
+                self.loglevel = logging.INFO
 
+            if hasattr(args, "workdir"):
+                self.workdir = args.workdir
+            if hasattr(args, "logfile"):
+                self.logfile = args.logfile
             if hasattr(args, 'address'):
                 self.address = args.address
             if hasattr(args, 'group'):
@@ -61,7 +65,10 @@ class Tools():
             if hasattr(args, 'wait'):
                 self.wait_time = int(args.wait)
 
-        _LOGGING.setLevel(level)
+        if self.logfile:
+            logging.basicConfig(level=self.loglevel, filename=self.logfile)
+        else:
+            _LOGGING.setLevel(self.loglevel)
 
     @asyncio.coroutine
     def connect(self, poll_devices=False, device=None, workdir=None):
@@ -518,7 +525,7 @@ class Commander(object):
             self.loop.create_task(
                 self.tools.start_all_linking(linkcode, group, addr))
         else:
-            _LOGGING('Group number not valid')
+            _LOGGING.error('Group number not valid')
             self.do_help('del_all_link')
 
     def do_print_aldb(self, args):
@@ -830,6 +837,13 @@ class Commander(object):
         _LOGGING.info("Exiting")
         raise KeyboardInterrupt
 
+    def do_test_logger(self, arg):
+        _LOGGING.error("This is an error")
+        _LOGGING.warn("This is a warn")
+        _LOGGING.warning("This is a warning")
+        _LOGGING.info("This is an info")
+        _LOGGING.debug("This is a debug")
+
     def do_add_device_override(self, args):
         """Add a device override to the IM.
 
@@ -950,6 +964,8 @@ def monitor():
                         help='Path to PLM device')
     parser.add_argument('--verbose', '-v', action='count',
                         help='Set logging level to verbose')
+    parser.add_argument('-l', '--logfile', default='',
+                        help='Log file name')
     parser.add_argument('--workdir', default='',
                         help='Working directory for reading and saving '
                         'device information.')
@@ -985,6 +1001,8 @@ def interactive():
                         help='Path to PLM device')
     parser.add_argument('-v', '--verbose', action='count',
                         help='Set logging level to verbose')
+    parser.add_argument('-l', '--logfile', default='',
+                        help='Log file name')
     parser.add_argument('--workdir', default='',
                         help='Working directory for reading and saving '
                         'device information.')
@@ -998,7 +1016,7 @@ def interactive():
     except KeyboardInterrupt:
         if cmd.tools.plm:
             if cmd.tools.plm.transport:
-                _LOGGING('Closing the session')
+                _LOGGING.info('Closing the session')
                 cmd.tools.plm.transport.close()
         loop.stop()
         pending = asyncio.Task.all_tasks(loop=loop)
