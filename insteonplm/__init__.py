@@ -293,6 +293,7 @@ class HttpTransport(asyncio.Transport):
             if not self._last_read.empty():
                 last_stop = self._last_read.get_nowait()
             response = yield from self._session.get(url)
+            _LOGGER.debug('Get status: %s', response.status)
             html = yield from response.text()
             last_stop, buffer = self._parse_buffer(html, last_stop)
             self._write_last_read(last_stop)
