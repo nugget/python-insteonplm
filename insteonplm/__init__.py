@@ -257,10 +257,12 @@ class HttpTransport(asyncio.Transport):
     def _async_write(self, url):
         _LOGGER.debug("Writing message: %s", url)
         yield from self._read_write_lock
-        yield from self._session.post(url)
+        resp = yield from self._session.post(url)
         self._write_last_read(0)
         if self._read_write_lock.locked():
             self._read_write_lock.release()
+        _LOGGER.debug("Post status: %s", resp.status)
+        return resp.status
 
     def write_eof(self):
         raise NotImplementedError(
