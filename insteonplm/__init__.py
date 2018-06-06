@@ -13,7 +13,7 @@ import serial.aio
 from insteonplm.plm import PLM, Hub
 
 __all__ = ('Connection')
-_LOGGER = logging.getLogger()
+_LOGGER = logging.getLogger(__name__)
 
 # pylint: disable=invalid-name,no-member
 try:
