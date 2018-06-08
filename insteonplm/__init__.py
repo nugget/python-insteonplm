@@ -156,6 +156,7 @@ class Connection:
         """Close the PLM device connection and don't try to reconnect."""
         _LOGGER.warning('Closing connection to PLM')
         self._closing = True
+        self._auto_reconnect = False
         if self.protocol.transport:
             self.protocol.transport.close()
 
@@ -213,7 +214,9 @@ class HttpTransport(asyncio.Transport):
         self._read_write_lock = asyncio.Lock(loop=self._loop)
         self._last_read = asyncio.Queue(loop=self._loop)
 
-        asyncio.ensure_future(self.ensure_reader(), loop=self._loop)
+        # TODO: restart _ensure_reader if it fails or if the connection
+        # is lost.
+        asyncio.ensure_future(self._ensure_reader(), loop=self._loop)
         
 
     def abort(self):
@@ -229,6 +232,7 @@ class HttpTransport(asyncio.Transport):
     def _close(self):
         _LOGGER.debug("Closing session")
         yield from self._session.close()
+        yield from asyncio.sleep(0, loop=self._loop)
         self._closing = True
         _LOGGER.debug("Session closed")
 
@@ -273,6 +277,7 @@ class HttpTransport(asyncio.Transport):
             "HTTP connections do not support writelines")
 
     def clear_buffer(self):
+        """Clear the Hub read buffer."""
         asyncio.wait(self._clear_buffer())
 
     @asyncio.coroutine
@@ -282,7 +287,7 @@ class HttpTransport(asyncio.Transport):
         yield from self._async_write(url)
 
     @asyncio.coroutine
-    def ensure_reader(self):
+    def _ensure_reader(self):
         yield from self._clear_buffer()
         self._write_last_read(0)
         url = 'http://{:s}:{:d}/buffstatus.xml'.format(self._host, self._port)
@@ -293,7 +298,6 @@ class HttpTransport(asyncio.Transport):
             if not self._last_read.empty():
                 last_stop = self._last_read.get_nowait()
             response = yield from self._session.get(url)
-            _LOGGER.debug('Get status: %s', response.status)
             html = yield from response.text()
             last_stop, buffer = self._parse_buffer(html, last_stop)
             self._write_last_read(last_stop)

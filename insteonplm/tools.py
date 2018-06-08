@@ -209,12 +209,12 @@ class Tools():
             dev_addr = Address(addr)
             device = self.plm.devices[dev_addr.id]
         if device:
-            if (device.aldb.status == ALDBStatus.LOADED or
-                    device.aldb.status == ALDBStatus.PARTIAL):
+            if device.aldb.status in [ALDBStatus.LOADED, ALDBStatus.PARTIAL]:
                 if device.aldb.status == ALDBStatus.PARTIAL:
                     _LOGGING.info('ALDB partially loaded for device %s', addr)
                 for mem_addr in device.aldb:
                     record = device.aldb[mem_addr]
+                    _LOGGING.debug('mem_addr: %s', mem_addr)
                     _LOGGING.info('ALDB record: %s', record)
             else:
                 _LOGGING.info('ALDB not loaded. '
@@ -273,10 +273,23 @@ class Tools():
         dev_addr = Address(addr)
         target_addr = Address(target)
         device = self.plm.devices[dev_addr.id]
-        _LOGGING.info('calling device write_aldb')
         if device:
+            _LOGGING.debug('calling device write_aldb')
             device.write_aldb(mem_addr, mode, group, target_addr,
                               data1, data2, data3)
+            yield from asyncio.sleep(1, loop=self.loop)
+            while device.aldb.status == ALDBStatus.LOADING:
+                yield from asyncio.sleep(1, loop=self.loop)
+            self.print_device_aldb(addr)
+
+    @asyncio.coroutine
+    def del_aldb(self, addr, mem_addr: int):
+        """Write a device All-Link record."""
+        dev_addr = Address(addr)
+        device = self.plm.devices[dev_addr.id]
+        if device:
+            _LOGGING.debug('calling device del_aldb')
+            device.del_aldb(mem_addr)
             yield from asyncio.sleep(1, loop=self.loop)
             while device.aldb.status == ALDBStatus.LOADING:
                 yield from asyncio.sleep(1, loop=self.loop)
@@ -740,6 +753,50 @@ class Commander(object):
         if addr and memory and mode and isinstance(group, int) and target:
             yield from self.tools.write_aldb(addr, memory, mode, group, target,
                                              data1, data2, data3)
+
+    @asyncio.coroutine
+    def do_del_aldb(self, args):
+        """Delete device All-Link record.
+
+        WARNING THIS METHOD CAN DAMAGE YOUR DEVICE IF USED INCORRECTLY.
+        Please ensure the memory id is appropriate for the device.
+        You must load the ALDB of the device before using this method.
+        The memory id must be an existing memory id in the ALDB or this
+        method will return an error.
+
+        If you are looking to create a new link between two devices,
+        use the `link_devices` command or the `start_all_linking` command.
+
+        Usage:
+           del_aldb addr memory
+
+        Required Parameters:
+            addr: Inseon address of the device to write
+            memory: record ID of the record to write (i.e. 0fff)
+        """
+        params = args.split()
+        addr = None
+        mem_bytes = None
+        memory = None
+
+        try:
+            addr = Address(params[0])
+            mem_bytes = binascii.unhexlify(params[1])
+            memory = int.from_bytes(mem_bytes, byteorder='big')
+
+            _LOGGING.info('address: %s', addr)
+            _LOGGING.info('memory: %04x', memory)
+
+        except IndexError:
+            _LOGGING.error('Device address and memory are required.')
+            self.do_help('del_aldb')
+        except ValueError:
+            _LOGGING.error('Value error - Check parameters')
+            self.do_help('write_aldb')
+        
+        if addr and memory:
+            yield from self.tools.del_aldb(addr, memory)
+
 
     def do_set_log_level(self, arg):
         """Set the log level.

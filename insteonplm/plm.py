@@ -283,11 +283,11 @@ class IM(Device, asyncio.Protocol):
 
     def _get_next_all_link_record(self):
         """Request next ALL-Link record."""
-        self.log.debug("Starting: _get_next_all_link_recor")
+        self.log.debug("Starting: _get_next_all_link_record")
         self.log.debug("Requesting Next All-Link Record")
         msg = GetNextAllLinkRecord()
         self.send_msg(msg, wait_nak=True, wait_timeout=.5)
-        self.log.debug("Ending: _get_next_all_link_recor")
+        self.log.debug("Ending: _get_next_all_link_record")
 
     # Inbound message handlers sepcific to the IM
     def _register_message_handlers(self):
