@@ -60,7 +60,7 @@ class IM(Device, asyncio.Protocol):
         """
 
     def __init__(self, loop=None, connection_lost_callback=None,
-                 workdir=None, poll_devices=True):
+                 workdir=None, poll_devices=True, load_aldb=True):
         """Protocol handler that handles all status and changes on PLM."""
         self._loop = loop
         self._connection_lost_callback = connection_lost_callback
@@ -72,6 +72,7 @@ class IM(Device, asyncio.Protocol):
         self._aldb_response_queue = {}
         self._devices = LinkedDevices(loop, workdir)
         self._poll_devices = poll_devices
+        self._load_aldb = load_aldb
         self._write_transport_lock = asyncio.Lock(loop=self._loop)
         self._message_callbacks = MessageCallback()
         self._x10_address = None

@@ -55,7 +55,7 @@ def create(rawmessage):
     rawmessage = _trim_buffer_garbage(rawmessage)
 
     if len(rawmessage) < 2:
-        return None
+        return (None, rawmessage)
 
     code = rawmessage[1]
     msgclass = _get_msg_class(code)
