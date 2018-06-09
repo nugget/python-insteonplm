@@ -93,6 +93,12 @@ class Tools():
         if self.aldb_load_lock.locked():
             self.aldb_load_lock.release()
 
+    @asyncio.coroutine
+    def monitor_mode(self, poll_devices=False, device=None, workdir=None):
+        print("Running monitor mode")
+        yield from self.connect(poll_devices=False, device=None, workdir=None)
+        self.plm.monitor_mode()
+
     def async_new_device_callback(self, device):
         """Log that our new device callback worked."""
         _LOGGING.info(
@@ -1030,7 +1036,7 @@ def monitor():
     args = parser.parse_args()
     loop = asyncio.get_event_loop()
     monTool = Tools(loop, args)
-    asyncio.ensure_future(monTool.connect())
+    asyncio.ensure_future(monTool.monitor_mode())
     try:
         loop.run_forever()
     except KeyboardInterrupt:

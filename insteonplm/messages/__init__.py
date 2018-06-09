@@ -22,7 +22,8 @@ from insteonplm.constants import (MESSAGE_ALL_LINK_CEANUP_FAILURE_REPORT_0X56,
                                   MESSAGE_START_CODE_0X02,
                                   MESSAGE_USER_RESET_DETECTED_0X55,
                                   MESSAGE_X10_MESSAGE_RECEIVED_0X52,
-                                  MESSAGE_X10_MESSAGE_SEND_0X63)
+                                  MESSAGE_X10_MESSAGE_SEND_0X63,
+                                  MESSAGE_SET_IM_CONFIGURATION_0X6B)
 from insteonplm.messages.standardReceive import StandardReceive
 from insteonplm.messages.extendedReceive import ExtendedReceive
 from insteonplm.messages.x10received import X10Received
@@ -41,6 +42,7 @@ from insteonplm.messages.x10send import X10Send
 from insteonplm.messages.startAllLinking import StartAllLinking
 from insteonplm.messages.cancelAllLinking import CancelAllLinking
 from insteonplm.messages.resetIM import ResetIM
+from insteonplm.messages.setImConfiguration import SetIMConfiguration
 from insteonplm.messages.getFirstAllLinkRecord import GetFirstAllLinkRecord
 from insteonplm.messages.getNextAllLinkRecord import GetNextAllLinkRecord
 from insteonplm.messages.getImConfiguration import GetImConfiguration
@@ -170,6 +172,9 @@ def _get_msg_class(code):
     msg_classes = _add_msg_class(msg_classes,
                                  MESSAGE_GET_NEXT_ALL_LINK_RECORD_0X6A,
                                  GetNextAllLinkRecord)
+    msg_classes = _add_msg_class(msg_classes,
+                                 MESSAGE_SET_IM_CONFIGURATION_0X6B,
+                                 SetIMConfiguration)
     msg_classes = _add_msg_class(msg_classes,
                                  MESSAGE_GET_IM_CONFIGURATION_0X73,
                                  GetImConfiguration)

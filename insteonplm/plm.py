@@ -24,6 +24,7 @@ from insteonplm.messages.allLinkRecordResponse import AllLinkRecordResponse
 from insteonplm.messages.getFirstAllLinkRecord import GetFirstAllLinkRecord
 from insteonplm.messages.getIMInfo import GetImInfo
 from insteonplm.messages.getNextAllLinkRecord import GetNextAllLinkRecord
+from insteonplm.messages.setImConfiguration import SetIMConfiguration
 from insteonplm.messages.standardReceive import StandardReceive
 from insteonplm.messages.startAllLinking import StartAllLinking
 from insteonplm.messages.x10received import X10Received
@@ -205,6 +206,11 @@ class IM(Device, asyncio.Protocol):
         if device:
             self.devices[device.address.id] = device
         return device
+
+    def monitor_mode(self):
+        """Put the Insteon Modem in monitor mode."""
+        msg = SetIMConfiguration(0x40)
+        self.send_msg(msg)
 
     @asyncio.coroutine
     def _setup_devices(self):
