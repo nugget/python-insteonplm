@@ -316,7 +316,7 @@ class HttpTransport(asyncio.Transport):
         raw_text = raw_text.strip()
         if raw_text[:200] == '0'*200:
             # Likely the buffer was cleared
-            return (0, raw_text[:200])
+            return (0, None)
         this_stop = int(raw_text[-2:], 16)
         if this_stop > last_stop:
             _LOGGER.debug('Buffer from %d to %d', last_stop, this_stop)
