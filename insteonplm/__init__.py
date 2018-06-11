@@ -314,6 +314,9 @@ class HttpTransport(asyncio.Transport):
         raw_text = html.replace('<response><BS>', '')
         raw_text = raw_text.replace('</BS></response>', '')
         raw_text = raw_text.strip()
+        if raw_text[:200] == '0'*200:
+            # Likely the buffer was cleared
+            return (0, raw_text[:200])
         this_stop = int(raw_text[-2:], 16)
         if this_stop > last_stop:
             _LOGGER.debug('Buffer from %d to %d', last_stop, this_stop)
@@ -326,8 +329,7 @@ class HttpTransport(asyncio.Transport):
             buffer = '{:s}{:s}'.format(buffer_hi, buffer_low)
         else:
             buffer = None
-        yield this_stop
-        yield buffer
+        return (this_stop, buffer)
 
     def _write_last_read(self, val):
         while not self._last_read.empty():
