@@ -180,7 +180,7 @@ For help with a specific command type `help command_name`.
 
 ## Known Issues
 
-- There's basically no documentation.
+- The [documentation](https://github.com/nugget/python-insteonplm/wiki) is limited.
 - Other issues are located in our [issues] list on GitHub.
 
 [issues]: https://github.com/nugget/python-insteonplm/issues
@@ -205,9 +205,11 @@ For help with a specific command type `help command_name`.
 
 #### Documentation
 
-There is no documentation other than this README file. A repository has been
-started but is basically empty. If you would like to drive this effort please
-send a resume and a list of references to... Honestly, we will take anyone.
+Please see our [Wiki](https://github.com/nugget/python-insteonplm/wiki)
+section for documentation. This documentation is limited. If
+you would like to drive this effort please send a resume and a list of references
+to... Honestly, we will take anyone.
+
 PLEASE help. An [issue](https://github.com/nugget/python-insteonplm/issues/23)
 has been opened so just post your interest there.
 
