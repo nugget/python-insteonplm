@@ -225,15 +225,15 @@ class HttpTransport(asyncio.Transport):
         return False
 
     def close(self):
-        asyncio.wait(self._close(), loop=self._loop)
+        _LOGGER.debug("Closing session")
+        self._loop.run_until_complete(self._close())
+        _LOGGER.info("Hub Session closed")
 
     @asyncio.coroutine
     def _close(self):
-        _LOGGER.debug("Closing session")
         yield from self._session.close()
         yield from asyncio.sleep(0, loop=self._loop)
         self._closing = True
-        _LOGGER.debug("Session closed")
 
     def get_write_buffer_size(self):
         return 0
@@ -292,6 +292,8 @@ class HttpTransport(asyncio.Transport):
         url = 'http://{:s}:{:d}/buffstatus.xml'.format(self._host, self._port)
         self._loop.call_soon(self._protocol.connection_made(self))
         while True:
+            if self._session.closed:
+                return
             yield from self._read_write_lock
             last_stop = 0
             if not self._last_read.empty():
