@@ -25,7 +25,6 @@ except AttributeError:
 @asyncio.coroutine
 def create_http_connection(loop, protocol_factory, host, port=25105,
                            auth=None, connector=None):
-    _LOGGER.debug("auth: %s", auth)
     session = aiohttp.ClientSession(auth=auth, connector=connector)
     protocol = protocol_factory()
     transport = HttpTransport(loop, protocol, session, host, port)
