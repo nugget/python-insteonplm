@@ -1040,10 +1040,12 @@ def monitor():
     try:
         loop.run_forever()
     except KeyboardInterrupt:
+        if cmd.tools.plm:
+            if cmd.tools.plm.transport:
+                _LOGGING.info('Closing the session')
+                cmd.tools.plm.transport.close()
+        loop.stop()
         pending = asyncio.Task.all_tasks(loop=loop)
-        if monTool.plm:
-            if monTool.plm.transport:
-                monTool.plm.transport.close()
         for task in pending:
             task.cancel()
             try:
@@ -1052,8 +1054,7 @@ def monitor():
                 pass
             except KeyboardInterrupt:
                 pass
-    loop.stop()
-    loop.close()
+        loop.close()
 
 
 def interactive():
