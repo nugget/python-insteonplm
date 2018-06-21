@@ -326,6 +326,9 @@ class HttpTransport(asyncio.Transport):
             _LOGGER.debug('Buffer from %d to 200 and 0 to %d',
                           last_stop, this_stop)
             buffer_hi = raw_text[last_stop:200]
+            if buffer_hi == '0'*len(buffer_hi):
+                #The buffer was probably reset since the last read
+                buffer_hi = ''
             buffer_low = raw_text[0:this_stop]
             buffer = '{:s}{:s}'.format(buffer_hi, buffer_low)
         else:
