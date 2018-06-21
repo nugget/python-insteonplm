@@ -8,10 +8,9 @@ import sys
 
 import insteonplm
 from insteonplm.address import Address
-from insteonplm.devices import ALDBStatus
+from insteonplm.devices import Device, ALDBStatus
 
 __all__ = ('Tools', 'monitor', 'interactive')
-
 _LOGGING = logging.getLogger()
 PROMPT = 'insteonplm: '
 INTRO = ('INSTEON PLM interactive command processor.\n'
@@ -28,8 +27,16 @@ class Tools():
         # common variables
         self.loop = loop
         self.plm = insteonplm.PLM()
+        self.logfile = None
+        self.workdir = None
+        self.loglevel = logging.INFO
+
+        # connection variables
         self.device = args.device
-        self.workdir = args.workdir
+        self.username = None
+        self.password = None
+        self.host = None
+        self.port = None
 
         # all-link variables
         self.address = None
@@ -41,10 +48,14 @@ class Tools():
 
         if args:
             if args.verbose:
-                level = logging.DEBUG
+                self.loglevel = logging.DEBUG
             else:
-                level = logging.INFO
+                self.loglevel = logging.INFO
 
+            if hasattr(args, "workdir"):
+                self.workdir = args.workdir
+            if hasattr(args, "logfile"):
+                self.logfile = args.logfile
             if hasattr(args, 'address'):
                 self.address = args.address
             if hasattr(args, 'group'):
@@ -54,7 +65,10 @@ class Tools():
             if hasattr(args, 'wait'):
                 self.wait_time = int(args.wait)
 
-        logging.basicConfig(level=level)
+        if self.logfile:
+            logging.basicConfig(level=self.loglevel, filename=self.logfile)
+        else:
+            _LOGGING.setLevel(self.loglevel)
 
     @asyncio.coroutine
     def connect(self, poll_devices=False, device=None, workdir=None):
@@ -64,6 +78,10 @@ class Tools():
         self.workdir = workdir if workdir else self.workdir
         conn = yield from insteonplm.Connection.create(
             device=self.device,
+            host=self.host,
+            port=self.port,
+            username=self.username,
+            password=self.password,
             loop=self.loop,
             poll_devices=poll_devices,
             workdir=self.workdir)
@@ -74,6 +92,12 @@ class Tools():
         yield from self.aldb_load_lock
         if self.aldb_load_lock.locked():
             self.aldb_load_lock.release()
+
+    @asyncio.coroutine
+    def monitor_mode(self, poll_devices=False, device=None, workdir=None):
+        print("Running monitor mode")
+        yield from self.connect(poll_devices=False, device=None, workdir=None)
+        self.plm.monitor_mode()
 
     def async_new_device_callback(self, device):
         """Log that our new device callback worked."""
@@ -100,8 +124,7 @@ class Tools():
         if address:
             linkdevice = self.plm.devices[Address(address).id]
             if not linkdevice:
-                linkdevice = insteonplm.devices.create(self.plm, address,
-                                                       None, None)
+                linkdevice = Device.create(self.plm, address, None, None)
             _LOGGING.info('Attempting to link the PLM to device %s. ',
                           address)
             self.plm.start_all_linking(linkcode, group)
@@ -192,12 +215,12 @@ class Tools():
             dev_addr = Address(addr)
             device = self.plm.devices[dev_addr.id]
         if device:
-            if (device.aldb.status == ALDBStatus.LOADED or
-                    device.aldb.status == ALDBStatus.PARTIAL):
+            if device.aldb.status in [ALDBStatus.LOADED, ALDBStatus.PARTIAL]:
                 if device.aldb.status == ALDBStatus.PARTIAL:
                     _LOGGING.info('ALDB partially loaded for device %s', addr)
                 for mem_addr in device.aldb:
                     record = device.aldb[mem_addr]
+                    _LOGGING.debug('mem_addr: %s', mem_addr)
                     _LOGGING.info('ALDB record: %s', record)
             else:
                 _LOGGING.info('ALDB not loaded. '
@@ -256,10 +279,23 @@ class Tools():
         dev_addr = Address(addr)
         target_addr = Address(target)
         device = self.plm.devices[dev_addr.id]
-        _LOGGING.info('calling device write_aldb')
         if device:
+            _LOGGING.debug('calling device write_aldb')
             device.write_aldb(mem_addr, mode, group, target_addr,
                               data1, data2, data3)
+            yield from asyncio.sleep(1, loop=self.loop)
+            while device.aldb.status == ALDBStatus.LOADING:
+                yield from asyncio.sleep(1, loop=self.loop)
+            self.print_device_aldb(addr)
+
+    @asyncio.coroutine
+    def del_aldb(self, addr, mem_addr: int):
+        """Write a device All-Link record."""
+        dev_addr = Address(addr)
+        device = self.plm.devices[dev_addr.id]
+        if device:
+            _LOGGING.debug('calling device del_aldb')
+            device.del_aldb(mem_addr)
             yield from asyncio.sleep(1, loop=self.loop)
             while device.aldb.status == ALDBStatus.LOADING:
                 yield from asyncio.sleep(1, loop=self.loop)
@@ -508,7 +544,7 @@ class Commander(object):
             self.loop.create_task(
                 self.tools.start_all_linking(linkcode, group, addr))
         else:
-            _LOGGING('Group number not valid')
+            _LOGGING.error('Group number not valid')
             self.do_help('del_all_link')
 
     def do_print_aldb(self, args):
@@ -542,6 +578,61 @@ class Commander(object):
                 self.tools.print_device_aldb(addr)
             else:
                 self.tools.print_device_aldb(addr)
+
+    def do_set_hub_connection(self, args):
+        """Set Hub connection parameters.
+
+        Usage:
+            set_hub_connection username password host [port]
+
+        Arguments:
+            username: Hub username
+            password: Hub password
+            host: host name or IP address
+            port: IP port [default 25105]
+        """
+        params = args.split()
+        username = None
+        password = None
+        host = None
+        port = None
+
+        try:
+            username = params[0]
+            password = params[1]
+            host = params[2]
+            port = params[3]
+        except IndexError:
+            pass
+
+        if username and password and host:
+            if not port:
+                port = 25105
+            self.tools.username = username
+            self.tools.password = password
+            self.tools.host = host
+            self.tools.port = port
+        else:
+            _LOGGING.error('username password host are required')
+            self.do_help('set_hub_connection')
+
+    def do_set_log_file(self, args):
+        """Set the log file.
+
+        Usage:
+            set_log_file filename
+        Parameters:
+            filename: log file name to write to
+
+        THIS CAN ONLY BE CALLED ONCE AND MUST BE CALLED
+        BEFORE ANY LOGGING STARTS.
+        """
+        params = args.split()
+        try:
+            filename = params[0]
+            logging.basicConfig(filename=filename)
+        except IndexError:
+            self.do_help('set_log_file')
 
     @asyncio.coroutine
     def do_load_aldb(self, args):
@@ -669,6 +760,50 @@ class Commander(object):
             yield from self.tools.write_aldb(addr, memory, mode, group, target,
                                              data1, data2, data3)
 
+    @asyncio.coroutine
+    def do_del_aldb(self, args):
+        """Delete device All-Link record.
+
+        WARNING THIS METHOD CAN DAMAGE YOUR DEVICE IF USED INCORRECTLY.
+        Please ensure the memory id is appropriate for the device.
+        You must load the ALDB of the device before using this method.
+        The memory id must be an existing memory id in the ALDB or this
+        method will return an error.
+
+        If you are looking to create a new link between two devices,
+        use the `link_devices` command or the `start_all_linking` command.
+
+        Usage:
+           del_aldb addr memory
+
+        Required Parameters:
+            addr: Inseon address of the device to write
+            memory: record ID of the record to write (i.e. 0fff)
+        """
+        params = args.split()
+        addr = None
+        mem_bytes = None
+        memory = None
+
+        try:
+            addr = Address(params[0])
+            mem_bytes = binascii.unhexlify(params[1])
+            memory = int.from_bytes(mem_bytes, byteorder='big')
+
+            _LOGGING.info('address: %s', addr)
+            _LOGGING.info('memory: %04x', memory)
+
+        except IndexError:
+            _LOGGING.error('Device address and memory are required.')
+            self.do_help('del_aldb')
+        except ValueError:
+            _LOGGING.error('Value error - Check parameters')
+            self.do_help('write_aldb')
+        
+        if addr and memory:
+            yield from self.tools.del_aldb(addr, memory)
+
+
     def do_set_log_level(self, arg):
         """Set the log level.
 
@@ -764,6 +899,13 @@ class Commander(object):
         """Exit the application."""
         _LOGGING.info("Exiting")
         raise KeyboardInterrupt
+
+    def do_test_logger(self, arg):
+        _LOGGING.error("This is an error")
+        _LOGGING.warn("This is a warn")
+        _LOGGING.warning("This is a warning")
+        _LOGGING.info("This is an info")
+        _LOGGING.debug("This is a debug")
 
     def do_add_device_override(self, args):
         """Add a device override to the IM.
@@ -885,6 +1027,8 @@ def monitor():
                         help='Path to PLM device')
     parser.add_argument('--verbose', '-v', action='count',
                         help='Set logging level to verbose')
+    parser.add_argument('-l', '--logfile', default='',
+                        help='Log file name')
     parser.add_argument('--workdir', default='',
                         help='Working directory for reading and saving '
                         'device information.')
@@ -892,10 +1036,15 @@ def monitor():
     args = parser.parse_args()
     loop = asyncio.get_event_loop()
     monTool = Tools(loop, args)
-    asyncio.ensure_future(monTool.connect())
+    asyncio.ensure_future(monTool.monitor_mode())
     try:
         loop.run_forever()
     except KeyboardInterrupt:
+        if cmd.tools.plm:
+            if cmd.tools.plm.transport:
+                _LOGGING.info('Closing the session')
+                cmd.tools.plm.transport.close()
+        loop.stop()
         pending = asyncio.Task.all_tasks(loop=loop)
         for task in pending:
             task.cancel()
@@ -905,8 +1054,7 @@ def monitor():
                 pass
             except KeyboardInterrupt:
                 pass
-    loop.stop()
-    loop.close()
+        loop.close()
 
 
 def interactive():
@@ -917,6 +1065,8 @@ def interactive():
                         help='Path to PLM device')
     parser.add_argument('-v', '--verbose', action='count',
                         help='Set logging level to verbose')
+    parser.add_argument('-l', '--logfile', default='',
+                        help='Log file name')
     parser.add_argument('--workdir', default='',
                         help='Working directory for reading and saving '
                         'device information.')
@@ -928,6 +1078,10 @@ def interactive():
     try:
         loop.run_forever()
     except KeyboardInterrupt:
+        if cmd.tools.plm:
+            if cmd.tools.plm.transport:
+                _LOGGING.info('Closing the session')
+                cmd.tools.plm.transport.close()
         loop.stop()
         pending = asyncio.Task.all_tasks(loop=loop)
         for task in pending:

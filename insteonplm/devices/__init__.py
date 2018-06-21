@@ -274,17 +274,22 @@ class Device(object):
             pass
         else:
             self.log.info('mode: %s', mode)
-            raise ValueError
+            raise ValueError("Mode must be 'c' or 'r'")
         if isinstance(group, int):
             pass
         else:
-            raise ValueError
+            raise ValueError("Group must be an integer")
 
         target_addr = Address(target)
 
         self.log.info('calling aldb write_record')
         self._aldb.write_record(mem_addr, mode, group, target_addr,
                                 data1, data2, data3)
+        self._aldb.add_loaded_callback(self._aldb_loaded_callback)
+
+    def del_aldb(self, mem_addr: int):
+        """Delete an All-Link Database record."""
+        self._aldb.del_record(mem_addr)
         self._aldb.add_loaded_callback(self._aldb_loaded_callback)
 
     def _handle_aldb_record_received(self, msg):
@@ -849,6 +854,51 @@ class ALDB(object):
             addr_lo = addr.bytes[0]
             addr_mid = addr.bytes[1]
             addr_hi = addr.bytes[2]
+            chksum = 0xff - ((0x2f + 0x02 + mem_hi + mem_lo + 0x08 +
+                              control_flag.byte +
+                              addr_lo + addr_mid + addr_hi +
+                              group + data1 + data2 + data3) & 0xff) + 1
+            userdata = Userdata({'d1': 0,
+                                 'd2': 0x02,
+                                 'd3': mem_hi,
+                                 'd4': mem_lo,
+                                 'd5': 0x08,
+                                 'd6': control_flag.byte,
+                                 'd7': group,
+                                 'd8': addr_lo,
+                                 'd9': addr_mid,
+                                 'd10': addr_hi,
+                                 'd11': data1,
+                                 'd12': data2,
+                                 'd13': data3,
+                                 'd14': chksum})
+            msg = ExtendedSend(self._address,
+                               COMMAND_EXTENDED_READ_WRITE_ALDB_0X2F_0X00,
+                               userdata=userdata)
+            self.log.info('writing message %s', msg)
+            self._send_method(msg, self._handle_write_aldb_ack, True)
+            self._load_action = LoadAction(mem_addr, 1,  0)
+
+    def del_record(self, mem_addr: int):
+        """Write an All-Link database record."""
+        record = self._records.get(mem_addr)
+        if not record:
+            self.log.error('Must load the ALDB record before deleting it')
+        else:
+            self._prior_status = self._status
+            self._status = ALDBStatus.LOADING
+            mem_hi = mem_addr >> 8
+            mem_lo = mem_addr & 0xff
+            controller = record.control_flags.is_controller
+            control_flag = ControlFlags(False, controller, True, False, False)
+            addr = record.address
+            addr_lo = addr.bytes[0]
+            addr_mid = addr.bytes[1]
+            addr_hi = addr.bytes[2]
+            group = record.group
+            data1 = record.data1
+            data2 = record.data2
+            data3 = record.data3
             chksum = 0xff - ((0x2f + 0x02 + mem_hi + mem_lo + 0x08 +
                               control_flag.byte +
                               addr_lo + addr_mid + addr_hi +
