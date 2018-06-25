@@ -18,10 +18,12 @@ from insteonplm.constants import (
     COMMAND_GET_INSTEON_ENGINE_VERSION_0X0D_0X00,
     COMMAND_PING_0X0F_0X00,
     COMMAND_EXTENDED_READ_WRITE_ALDB_0X2F_0X00,
-    MESSAGE_TYPE_DIRECT_MESSAGE
+    MESSAGE_TYPE_DIRECT_MESSAGE,
+    MESSAGE_FLAG_DIRECT_MESSAGE_NAK_0XA0
 )
 from insteonplm.messagecallback import MessageCallback
 from insteonplm.messages.extendedReceive import ExtendedReceive
+from insteonplm.messages.standardReceive import StandardReceive
 from insteonplm.messages.extendedSend import ExtendedSend
 from insteonplm.messages.messageFlags import MessageFlags
 from insteonplm.messages.standardSend import StandardSend
@@ -295,6 +297,9 @@ class Device(object):
     def _handle_aldb_record_received(self, msg):
         self._aldb.record_received(msg)
 
+    def _handle_pre_nak(self, msg):
+        self.async_refresh_state()
+
     def _register_messages(self):
             ext_msg_aldb_record = ExtendedReceive.template(
                 address=self._address,
@@ -303,8 +308,20 @@ class Device(object):
                 flags=MessageFlags.template(
                     messageType=MESSAGE_TYPE_DIRECT_MESSAGE,
                     extended=1))
+            std_msg_pre_nak = StandardReceive.template(
+                flags=MessageFlags.template(
+                    messageType=MESSAGE_FLAG_DIRECT_MESSAGE_NAK_0XA0),
+                cmd2=0xfc)
+            ext_msg_pre_nak = ExtendedReceive.template(
+                flags=MessageFlags.template(
+                    messageType=MESSAGE_FLAG_DIRECT_MESSAGE_NAK_0XA0),
+                cmd2=0xfc)
             self._message_callbacks.add(ext_msg_aldb_record,
                                         self._handle_aldb_record_received)
+            self._message_callbacks.add(std_msg_pre_nak,
+                                        self._handle_pre_nak)
+            self._message_callbacks.add(ext_msg_pre_nak,
+                                        self._handle_pre_nak)
 
     # Send / Receive message processing
     def receive_message(self, msg):

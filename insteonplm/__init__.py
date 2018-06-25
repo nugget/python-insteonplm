@@ -299,9 +299,12 @@ class HttpTransport(asyncio.Transport):
             if not self._last_read.empty():
                 last_stop = self._last_read.get_nowait()
             response = yield from self._session.get(url)
-            html = yield from response.text()
-            last_stop, buffer = self._parse_buffer(html, last_stop)
-            self._write_last_read(last_stop)
+            buffer = None
+            if response.status == 200:
+                html = yield from response.text()
+                last_stop, buffer = self._parse_buffer(html, last_stop)
+                self._write_last_read(last_stop)
+            # TODO: handle status codes
             if self._read_write_lock.locked():
                 self._read_write_lock.release()
             if buffer:
