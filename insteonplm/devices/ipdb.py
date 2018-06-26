@@ -3,17 +3,20 @@ import logging
 import collections
 
 from insteonplm.devices.unknowndevice import UnknownDevice
-from insteonplm.devices.generalController import GeneralController
+from insteonplm.devices.generalController import (GeneralController,
+                                                  GeneralController_2342,
+                                                  GeneralController_2342_4,
+                                                  GeneralController_2342_8)
 from insteonplm.devices.dimmableLightingControl import DimmableLightingControl
 from insteonplm.devices.dimmableLightingControl import DimmableLightingControl_2475F
 from insteonplm.devices.switchedLightingControl import SwitchedLightingControl
 from insteonplm.devices.switchedLightingControl import SwitchedLightingControl_2663_222
 from insteonplm.devices.securityHealthSafety import (SecurityHealthSafety,
-                                   SecurityHealthSafety_2421,
-                                   SecurityHealthSafety_2842_222,
-                                   SecurityHealthSafety_2852_222,
-                                   SecurityHealthSafety_2845_222,
-                                   SecurityHealthSafety_2982_222)
+                                                     SecurityHealthSafety_2421,
+                                                     SecurityHealthSafety_2842_222,
+                                                     SecurityHealthSafety_2852_222,
+                                                     SecurityHealthSafety_2845_222,
+                                                     SecurityHealthSafety_2982_222)
 
 from insteonplm.devices.sensorsActuators import SensorsActuators
 from insteonplm.devices.sensorsActuators import SensorsActuators_2450
@@ -46,18 +49,18 @@ class IPDB(object):
         Product(0x00, 0x0A, 0x000007, 'Poolux LCD Controller', '', GeneralController),
         Product(0x00, 0x0B, 0x000022, 'Range Extender', '2443', GeneralController),
         Product(0x00, 0x0C, 0x000028, 'IES Color Touchscreen', '', GeneralController),
-        Product(0x00, 0x10, None, 'Mini Remote - 4 Scene', '2444A2WH4', GeneralController),
-        Product(0x00, 0x11, None, 'Mini Remote - Switch', '2444A3', GeneralController),
-        Product(0x00, 0x12, None, 'Mini Remote - 8 Scene', '2444A2WH8', GeneralController),
-        Product(0x00, 0x14, None, 'Mini Remote - 4 Scene', '2342-432', GeneralController),
-        Product(0x00, 0x15, None, 'Mini Remote - Switch', '2342-442', GeneralController),
-        Product(0x00, 0x16, None, 'Mini Remote - 8 Scene', '2342-422', GeneralController),
-        Product(0x00, 0x17, None, 'Mini Remote - 4 Scene', '2342-532', GeneralController),
-        Product(0x00, 0x18, None, 'Mini Remote - 8 Scene', '2342-522', GeneralController),
-        Product(0x00, 0x19, None, 'Mini Remote - Switch', '2342-542', GeneralController),
-        Product(0x00, 0x1A, None, 'Mini Remote - 4 Scene', '2342-222', GeneralController),
-        Product(0x00, 0x1B, None, 'Mini Remote - 8 Scene', '2342-232', GeneralController),
-        Product(0x00, 0x1C, None, 'Mini Remote - Switch', '2342-242', GeneralController),
+        Product(0x00, 0x10, None, 'Mini Remote - 4 Scene', '2444A2WH4', GeneralController_2342_4),
+        Product(0x00, 0x11, None, 'Mini Remote - Switch', '2444A3', GeneralController_2342),
+        Product(0x00, 0x12, None, 'Mini Remote - 8 Scene', '2444A2WH8', GeneralController_2342_8),
+        Product(0x00, 0x14, None, 'Mini Remote - 4 Scene', '2342-432', GeneralController_2342_4),
+        Product(0x00, 0x15, None, 'Mini Remote - Switch', '2342-442', GeneralController_2342),
+        Product(0x00, 0x16, None, 'Mini Remote - 8 Scene', '2342-422', GeneralController_2342_8),
+        Product(0x00, 0x17, None, 'Mini Remote - 4 Scene', '2342-532', GeneralController_2342_4),
+        Product(0x00, 0x18, None, 'Mini Remote - 8 Scene', '2342-522', GeneralController_2342_8),
+        Product(0x00, 0x19, None, 'Mini Remote - Switch', '2342-542', GeneralController_2342),
+        Product(0x00, 0x1A, None, 'Mini Remote - 4 Scene', '2342-222', GeneralController_2342_4),
+        Product(0x00, 0x1B, None, 'Mini Remote - 8 Scene', '2342-232', GeneralController_2342_8),
+        Product(0x00, 0x1C, None, 'Mini Remote - Switch', '2342-242', GeneralController_2342),
         Product(0x00, 0x1D, 0x000022, 'Range Extender', '2992-222', GeneralController),
 
         Product(0x01, None, None, 'Generic Dimmable Lighting Control', '', DimmableLightingControl),
