@@ -54,8 +54,8 @@ class GeneralController_2342_8(Device):
         super().__init__(plm, address, cat, subcat, product_key,
                          description, model)
 
-        button_list = {1: 'A', 2: 'B', 3: 'C', 4: 'D',
-                       5: 'E', 6: 'F', 7: 'G', 8: 'H'}
+        button_list = {1: 'B', 2: 'A', 3: 'D', 4: 'C',
+                       5: 'F', 6: 'E', 7: 'H', 8: 'G'}
         for group in button_list:
             self._stateList[group] = DimmableRemote(
                 self._address, "onLevelButton{}".format(button_list[group]),
