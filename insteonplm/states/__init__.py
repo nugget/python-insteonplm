@@ -87,4 +87,4 @@ class State(object):
         """Save state value and notify listeners of the change."""
         self._value = val
         for callback in self._observer_callbacks:
-            callback(self._address, self._stateName, val)
+            callback(self._address, self._group, val)
