@@ -48,7 +48,6 @@ from insteonplm.messages.getNextAllLinkRecord import GetNextAllLinkRecord
 from insteonplm.messages.getImConfiguration import GetImConfiguration
 
 
-
 _LOGGER = logging.getLogger(__name__)
 
 

@@ -362,7 +362,7 @@ class Device(object):
         if msg.code not in [MESSAGE_STANDARD_MESSAGE_RECEIVED_0X50,
                             MESSAGE_EXTENDED_MESSAGE_RECEIVED_0X51]:
             return False
-        
+
         recent_messages = []
         while not self._recent_messages.empty():
             recent_message = self._recent_messages.get_nowait()
@@ -390,8 +390,6 @@ class Device(object):
                     group = msg.target.bytes[2]
                 else:
                     group = msg.cmd2
-                self.log.debug('prev cmd1: {:02x}  prev group: {:02x} prev_time: {}'.format(prev_cmd1, prev_group, str(recent_message.get("received"))))
-                self.log.debug('cmd1: {:02x}  group: {:02x}  received: {}'.format(cmd1, group, str(datetime.datetime.now())))
                 if prev_cmd1 == cmd1 and prev_group == group:
                     return True
                 else:

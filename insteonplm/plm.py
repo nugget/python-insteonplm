@@ -116,8 +116,6 @@ class IM(Device, asyncio.Protocol):
         self.log.debug('Received %d bytes from PLM: %s',
                        len(data), binascii.hexlify(data))
         self._buffer.put_nowait(data)
-        #self._buffer.
-        #self.log.debug('Total buffer: %s', binascii.hexlify(self._buffer))
         asyncio.ensure_future(self._peel_messages_from_buffer(),
                               loop=self._loop)
 
@@ -354,7 +352,6 @@ class IM(Device, asyncio.Protocol):
             if msg is not None:
                 self.log.debug('Msg buffer: %s', msg.hex)
                 self._recv_queue.appendleft(msg)
-                #buffer = buffer[len(msg.bytes):]
 
             self.log.debug('Post buffer: %s', binascii.hexlify(buffer))
             if len(buffer) < 2:
@@ -371,8 +368,7 @@ class IM(Device, asyncio.Protocol):
         if len(buffer) > 0:
             buffer.extend(self._unpack_buffer())
             self._buffer.put_nowait(buffer)
-        
-        
+
         self.log.debug('Messages in queue: %d', len(self._recv_queue))
         worktodo = True
         while worktodo:

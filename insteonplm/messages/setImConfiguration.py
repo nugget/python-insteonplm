@@ -6,7 +6,6 @@ from insteonplm.constants import (MESSAGE_SET_IM_CONFIGURATION_0X6B,
                                   MESSAGE_SET_IM_CONFIGURATION_RECEIVED_SIZE,
                                   MESSAGE_ACK,
                                   MESSAGE_NAK)
-from insteonplm.address import Address
 
 
 class SetIMConfiguration(Message):
@@ -54,4 +53,3 @@ class SetIMConfiguration(Message):
     def _message_properties(self):
         return [{'imConfigurationFlags': self._imConfigurationFlags},
                 {'acknak': self.acknak}]
-

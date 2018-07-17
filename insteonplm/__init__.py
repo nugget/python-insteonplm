@@ -128,7 +128,6 @@ class Connection:
                 else:
                     if self.host:
                         _LOGGER.info('Connecting to Hub on %s', self.host)
-                        hub_loop = asyncio.new_event_loop()
                         auth = aiohttp.BasicAuth(self.username, self.password)
                         connector = aiohttp.TCPConnector(
                             limit=1, loop=self._loop, keepalive_timeout=10)
@@ -148,7 +147,7 @@ class Connection:
                 self._increase_retry_interval()
                 interval = self._get_retry_interval()
                 _LOGGER.warning('Connecting failed, retry in %i seconds: %s',
-                                 interval, self.device)
+                                interval, self.device)
                 yield from asyncio.sleep(interval, loop=self._loop)
 
     def close(self):
@@ -216,7 +215,6 @@ class HttpTransport(asyncio.Transport):
         # TODO: restart _ensure_reader if it fails or if the connection
         # is lost.
         asyncio.ensure_future(self._ensure_reader(), loop=self._loop)
-        
 
     def abort(self):
         self._session.close()
@@ -330,7 +328,7 @@ class HttpTransport(asyncio.Transport):
                           last_stop, this_stop)
             buffer_hi = raw_text[last_stop:200]
             if buffer_hi == '0'*len(buffer_hi):
-                #The buffer was probably reset since the last read
+                # The buffer was probably reset since the last read
                 buffer_hi = ''
             buffer_low = raw_text[0:this_stop]
             buffer = '{:s}{:s}'.format(buffer_hi, buffer_low)
@@ -340,5 +338,5 @@ class HttpTransport(asyncio.Transport):
 
     def _write_last_read(self, val):
         while not self._last_read.empty():
-            not_used = self._last_read.get_nowait()
+            self._last_read.get_nowait()
         self._last_read.put_nowait(val)
