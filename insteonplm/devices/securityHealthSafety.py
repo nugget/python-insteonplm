@@ -94,6 +94,14 @@ class SecurityHealthSafety_2842_222(Device):
             self._address, "motionSensor", 0x01, self._send_msg,
             self._message_callbacks, 0x00)
 
+        self._stateList[0x02] = OnOffSensor(
+            self._address, "lightSensor", 0x02, self._send_msg,
+            self._message_callbacks, 0x00)
+
+        self._stateList[0x03] = OnOffSensor(
+            self._address, "batterySensor", 0x03, self._send_msg,
+            self._message_callbacks, 0x00)
+
 
 class SecurityHealthSafety_2845_222(Device):
     """Security Health Safety Control Device Class.

@@ -19,7 +19,9 @@ from insteonplm.constants import (
     COMMAND_PING_0X0F_0X00,
     COMMAND_EXTENDED_READ_WRITE_ALDB_0X2F_0X00,
     MESSAGE_TYPE_DIRECT_MESSAGE,
-    MESSAGE_FLAG_DIRECT_MESSAGE_NAK_0XA0
+    MESSAGE_FLAG_DIRECT_MESSAGE_NAK_0XA0,
+    MESSAGE_STANDARD_MESSAGE_RECEIVED_0X50,
+    MESSAGE_EXTENDED_MESSAGE_RECEIVED_0X51
 )
 from insteonplm.messagecallback import MessageCallback
 from insteonplm.messages.extendedReceive import ExtendedReceive
@@ -86,6 +88,7 @@ class Device(object):
         self._model = model
 
         self._last_communication_received = datetime.datetime(1, 1, 1, 1, 1, 1)
+        self._recent_messages = asyncio.Queue(loop=self._plm.loop)
         self._product_data_in_aldb = False
         self._stateList = StateList()
         self._send_msg_lock = asyncio.Lock(loop=self._plm.loop)
@@ -344,12 +347,61 @@ class Device(object):
                 self._directACK_received_queue.put_nowait(msg)
             else:
                 self.log.debug('But Direct ACK not expected')
-        callbacks = self._message_callbacks.get_callbacks_from_message(msg)
-        for callback in callbacks:
-            self.log.debug('Scheduling msg callback: %s', callback)
-            self._plm.loop.call_soon(callback, msg)
+        if not self._is_duplicate(msg):
+            callbacks = self._message_callbacks.get_callbacks_from_message(msg)
+            for callback in callbacks:
+                self.log.debug('Scheduling msg callback: %s', callback)
+                self._plm.loop.call_soon(callback, msg)
+        else:
+            self.log.debug('msg is duplicate')
+            self.log.debug(msg)
         self._last_communication_received = datetime.datetime.now()
         self.log.debug('Ending Device.receive_message')
+
+    def _is_duplicate(self, msg):
+        if msg.code not in [MESSAGE_STANDARD_MESSAGE_RECEIVED_0X50,
+                            MESSAGE_EXTENDED_MESSAGE_RECEIVED_0X51]:
+            return False
+
+        recent_messages = []
+        while not self._recent_messages.empty():
+            recent_message = self._recent_messages.get_nowait()
+            if recent_message:
+                msg_received = recent_message.get("received")
+                if msg_received >= (datetime.datetime.now() -
+                                    datetime.timedelta(0, 0, 500000)):
+                    recent_messages.append(recent_message)
+        if not recent_messages:
+            self._save_recent_message(msg)
+            return False
+
+        for recent_message in recent_messages:
+            prev_msg = recent_message.get('msg')
+            self._recent_messages.put_nowait(recent_message)
+            prev_cmd1 = prev_msg.cmd1
+            if prev_msg.flags.isAllLinkBroadcast:
+                prev_group = prev_msg.target.bytes[2]
+            elif prev_msg.flags.isAllLinkCleanup:
+                prev_group = prev_msg.cmd2
+
+            if msg.flags.isAllLinkCleanup or msg.flags.isAllLinkBroadcast:
+                cmd1 = msg.cmd1
+                if msg.flags.isAllLinkBroadcast:
+                    group = msg.target.bytes[2]
+                else:
+                    group = msg.cmd2
+                if prev_cmd1 == cmd1 and prev_group == group:
+                    return True
+                else:
+                    self._save_recent_message(msg)
+            else:
+                self._save_recent_message(msg)
+                return False
+
+    def _save_recent_message(self, msg):
+        recent_message = {"msg": msg,
+                          "received": datetime.datetime.now()}
+        self._recent_messages.put_nowait(recent_message)
 
     def _send_msg(self, msg, callback=None, on_timeout=False):
         self.log.debug('Starting Device._send_msg')

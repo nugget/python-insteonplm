@@ -799,10 +799,9 @@ class Commander(object):
         except ValueError:
             _LOGGING.error('Value error - Check parameters')
             self.do_help('write_aldb')
-        
+
         if addr and memory:
             yield from self.tools.del_aldb(addr, memory)
-
 
     def do_set_log_level(self, arg):
         """Set the log level.
@@ -1040,10 +1039,10 @@ def monitor():
     try:
         loop.run_forever()
     except KeyboardInterrupt:
-        if cmd.tools.plm:
-            if cmd.tools.plm.transport:
+        if monTool.plm:
+            if monTool.plm.transport:
                 _LOGGING.info('Closing the session')
-                cmd.tools.plm.transport.close()
+                monTool.plm.transport.close()
         loop.stop()
         pending = asyncio.Task.all_tasks(loop=loop)
         for task in pending:
