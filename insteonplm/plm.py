@@ -219,10 +219,7 @@ class IM(Device, asyncio.Protocol):
                        len(self.devices.saved_devices))
         self._get_plm_info()
         self.devices.add_known_devices(self)
-        #self._load_all_link_database()
-        while len(self._cb_load_all_link_db_done) > 0:
-            callback = self._cb_load_all_link_db_done.pop()
-            callback()
+        self._load_all_link_database()
 
     @asyncio.coroutine
     def _write_message_from_send_queue(self):
