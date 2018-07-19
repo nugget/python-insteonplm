@@ -226,15 +226,15 @@ class IM(Device, asyncio.Protocol):
             yield from self._write_transport_lock.acquire()
             while True:
                 # wait for an item from the queue
-                try:
-                    with async_timeout.timeout(WAIT_TIMEOUT):
-                        msg_info = yield from self._send_queue.get()
-                        msg = msg_info.get('msg')
-                        wait_nak = msg_info.get('wait_nak')
-                        wait_timeout = msg_info.get('wait_timeout')
-                except asyncio.TimeoutError:
-                    self.log.debug('No new messages received.')
-                    break
+                # try:
+                #     with async_timeout.timeout(WAIT_TIMEOUT):
+                msg_info = yield from self._send_queue.get()
+                msg = msg_info.get('msg')
+                wait_nak = msg_info.get('wait_nak')
+                wait_timeout = msg_info.get('wait_timeout')
+                # except asyncio.TimeoutError:
+                #     self.log.debug('No new messages received.')
+                #     break
                 # process the item
                 self.log.debug('Writing message: %s', msg)
                 write_bytes = msg.bytes
