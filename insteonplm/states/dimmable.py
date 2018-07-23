@@ -11,26 +11,26 @@ from insteonplm.constants import (COMMAND_LIGHT_BRIGHTEN_ONE_STEP_0X15_0X00,
                                   COMMAND_LIGHT_ON_FAST_0X12_NONE,
                                   COMMAND_LIGHT_STATUS_REQUEST_0X19_0X00,
                                   COMMAND_LIGHT_STATUS_REQUEST_0X19_NONE,
+                                  COMMAND_LIGHT_STATUS_REQUEST_0X19_0X01,
                                   COMMAND_LIGHT_STOP_MANUAL_CHANGE_0X18_0X00,
+                                  COMMAND_EXTENDED_GET_SET_0X2E_0X00,
+                                  COMMAND_EXTENDED_TRIGGER_ALL_LINK_0X30_0X00,
                                   FAN_SPEED_HIGH,
                                   FAN_SPEED_LOW,
                                   FAN_SPEED_MEDIUM,
                                   FAN_SPEED_OFF,
                                   MESSAGE_TYPE_ALL_LINK_BROADCAST,
+                                  MESSAGE_TYPE_DIRECT_MESSAGE,
                                   MESSAGE_TYPE_ALL_LINK_CLEANUP)
 from insteonplm.messages.standardSend import StandardSend
 from insteonplm.messages.extendedSend import ExtendedSend
 from insteonplm.messages.extendedReceive import ExtendedReceive
 from insteonplm.messages.standardReceive import StandardReceive
 from insteonplm.messages.messageFlags import MessageFlags
+from insteonplm.messages.userdata import Userdata
 from insteonplm.states import State
 
 from insteonplm.states.onOff import OnOffKeypadLed
-from insteonplm.const import (COMMAND_LIGHT_STATUS_REQUEST_0X19_0X01,
-                              COMMAND_EXTENDED_TRIGGER_ALL_LINK_0X30_0X00,
-                              COMMAND_EXTENDED_GET_SET_0X2E_0X00,
-                              MESSAGE_TYPE_DIRECT_MESSAGE)
-from insteonplm.messsages.userdata import Userdata
 DIMMABLE_KEYPAD_SCENE_ON_LEVEL = "sceneOnLevel"
 
 

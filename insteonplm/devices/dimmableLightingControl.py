@@ -4,9 +4,9 @@ from insteonplm.states.dimmable import (DimmableSwitch,
                                         DimmableSwitch_Fan,
                                         DimmableKeypadA,
                                         DimmableKeypad)
-from insteonplm.messsages.userdata import Userdata
+from insteonplm.messages.userdata import Userdata
 from insteonplm.messages.extendedSend import ExtendedSend
-from insteonplm.const import COMMAND_EXTENDED_GET_SET_0X2E_0X00
+from insteonplm.constants import COMMAND_EXTENDED_GET_SET_0X2E_0X00
 
 
 class DimmableLightingControl(Device):
