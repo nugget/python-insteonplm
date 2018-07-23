@@ -88,7 +88,7 @@ class SwitchedLightingControl_2334_222(Device):
                          description, model)
 
         self._stateList[0x01] = DimmableKeypadA(
-            self._address, "onLevelButtonA", 0x01, self._send_msg,
+            self._address, "keypadButtonA", 0x01, self._send_msg,
             self._message_callbacks, 0x00)
 
     def _led_on(self, group):
@@ -134,7 +134,7 @@ class SwitchedLightingControl_2334_222(Device):
     def _add_buttons(self, button_list):
         for group in button_list:
             self._stateList[group] = DimmableKeypad(
-                self._address, "onLevelButton{}".format(button_list[group]),
+                self._address, "keypadButton{}".format(button_list[group]),
                 group, self._send_msg, self._message_callbacks, 0x00)
 
             self._stateList[group].on_method = self._led_on

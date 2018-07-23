@@ -9,11 +9,16 @@ from insteonplm.constants import (COMMAND_LIGHT_MANUALLY_TURNED_ON_0X23_0X00,
                                   COMMAND_LIGHT_STATUS_REQUEST_0X19_0X00,
                                   COMMAND_LIGHT_STATUS_REQUEST_0X19_0X01,
                                   MESSAGE_TYPE_ALL_LINK_BROADCAST,
-                                  MESSAGE_TYPE_ALL_LINK_CLEANUP)
+                                  MESSAGE_TYPE_ALL_LINK_CLEANUP,
+                                  MESSAGE_TYPE_DIRECT_MESSAGE,
+                                  COMMAND_EXTENDED_TRIGGER_ALL_LINK_0X30_0X00,
+                                  COMMAND_EXTENDED_GET_SET_0X2E_0X00)
 from insteonplm.messages.standardSend import StandardSend
 from insteonplm.messages.extendedSend import ExtendedSend
 from insteonplm.messages.standardReceive import StandardReceive
+from insteonplm.messages.extendedReceive import ExtendedReceive
 from insteonplm.messages.messageFlags import MessageFlags
+from insteonplm.messages.userdata import Userdata
 from insteonplm.states import State
 
 

@@ -20,6 +20,7 @@ from insteonplm.constants import (COMMAND_LIGHT_BRIGHTEN_ONE_STEP_0X15_0X00,
                                   MESSAGE_TYPE_ALL_LINK_CLEANUP)
 from insteonplm.messages.standardSend import StandardSend
 from insteonplm.messages.extendedSend import ExtendedSend
+from insteonplm.messages.extendedReceive import ExtendedReceive
 from insteonplm.messages.standardReceive import StandardReceive
 from insteonplm.messages.messageFlags import MessageFlags
 from insteonplm.states import State
@@ -30,8 +31,8 @@ from insteonplm.const import (COMMAND_LIGHT_STATUS_REQUEST_0X19_0X01,
                               COMMAND_EXTENDED_GET_SET_0X2E_0X00,
                               MESSAGE_TYPE_DIRECT_MESSAGE)
 from insteonplm.messsages.userdata import Userdata
-from insteonplm.messages.extendedSend import ExtendedSend
 DIMMABLE_KEYPAD_SCENE_ON_LEVEL = "sceneOnLevel"
+
 
 class DimmableSwitch(State):
     """Device state representing an On/Off switch that is controllable.
