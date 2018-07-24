@@ -288,6 +288,7 @@ class OnOffSwitch_OutletBottom(OnOffStateBase):
                                   COMMAND_LIGHT_ON_0X11_NONE,
                                   self._udata,
                                   cmd2=0xff)
+        on_command.set_checksum()
         self._send_method(on_command, self._on_message_received)
 
     def off(self):
@@ -295,6 +296,7 @@ class OnOffSwitch_OutletBottom(OnOffStateBase):
         off_command = ExtendedSend(self._address,
                                    COMMAND_LIGHT_OFF_0X13_0X00,
                                    self._udata)
+        off_command.set_checksum()
         self._send_method(off_command, self._off_message_received)
 
     def _send_status_0x01_request(self):
@@ -476,6 +478,7 @@ class OnOffKeypad(State):
         cmd = ExtendedSend(self._address,
                            COMMAND_EXTENDED_TRIGGER_ALL_LINK_0X30_0X00,
                            user_data)
+        cmd.set_checksum()
         self._send_method(cmd, self._triggered_group)
 
     def scene_off(self):
@@ -489,13 +492,16 @@ class OnOffKeypad(State):
         cmd = ExtendedSend(self._address,
                            COMMAND_EXTENDED_TRIGGER_ALL_LINK_0X30_0X00,
                            user_data)
+        cmd.set_checksum()
         self._send_method(cmd, self._triggered_group)
 
     def _on_message_received(self, msg):
-        self._update_subscribers(msg.cmd2)
+        self._update_subscribers(0xff)
+        self._led.set_value(0xff)
 
     def _off_message_received(self, msg):
         self._update_subscribers(0x00)
+        self._led.set_value(0x00)
 
     def _manual_change_received(self, msg):
         self._send_status_request()
@@ -650,6 +656,7 @@ class OnOffKeypad(State):
         cmd = ExtendedSend(self._address,
                            COMMAND_EXTENDED_GET_SET_0X2E_0X00,
                            user_data)
+        cmd.set_checksum()
         self._sent_property = {'prop': prop,
                                'val': val}
         return cmd
@@ -668,11 +675,13 @@ class OnOffKeypadLed(State):
 
     def on(self):
         """Turn the LED on."""
+        self.log.debug("OnOffKeypadLed.on was called")
         if self.on_method:
             self.on_method(self.group)
 
     def off(self):
         """Turn the LED off."""
+        self.log.debug("OnOffKeypadLed.off was called")
         if self.off_method:
             self.off_method(self.group)
 
@@ -680,3 +689,11 @@ class OnOffKeypadLed(State):
         """Set the LED on/off value from the LED bitmap."""
         is_on = bool(bitmask & 1 << self._group - 1)
         self._update_subscribers(1 if is_on else 0)
+
+    def set_on(self):
+        """Set the LED for this group to 'ON'"""
+        self._update_subscribers(1)
+
+    def set_off(self):
+        """Set the LED for this group to 'ON'"""
+        self._update_subscribers(0)

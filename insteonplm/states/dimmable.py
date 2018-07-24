@@ -55,47 +55,51 @@ class DimmableSwitch(State):
                          message_callbacks, defaultvalue)
 
         self._updatemethod = self._send_status_request
+        self._register_messages()
 
+    def _register_messages(self):
         self.log.debug('Registering callbacks for DimmableSwitch device %s',
                        self._address.human)
         template_on_cleanup = StandardReceive.template(
             commandtuple=COMMAND_LIGHT_ON_0X11_NONE,
             address=self._address,
-            flags=MessageFlags.template(MESSAGE_TYPE_ALL_LINK_CLEANUP, None))
+            flags=MessageFlags.template(MESSAGE_TYPE_ALL_LINK_CLEANUP, None),
+            cmd2=self._group)
         template_on_fast_cleanup = StandardReceive.template(
             commandtuple=COMMAND_LIGHT_ON_FAST_0X12_NONE,
             address=self._address,
-            flags=MessageFlags.template(MESSAGE_TYPE_ALL_LINK_CLEANUP, None))
+            flags=MessageFlags.template(MESSAGE_TYPE_ALL_LINK_CLEANUP, None),
+            cmd2=self._group)
         template_off_cleanup = StandardReceive.template(
             commandtuple=COMMAND_LIGHT_OFF_0X13_0X00,
             address=self._address,
             flags=MessageFlags.template(MESSAGE_TYPE_ALL_LINK_CLEANUP, None),
-            cmd2=None)
+            cmd2=self._group)
         template_off_fast_cleanup = StandardReceive.template(
             commandtuple=COMMAND_LIGHT_OFF_FAST_0X14_0X00,
             address=self._address,
             flags=MessageFlags.template(MESSAGE_TYPE_ALL_LINK_CLEANUP, None),
-            cmd2=None)
+            cmd2=self._group)
         template_manual_cleanup = StandardReceive.template(
             commandtuple=COMMAND_LIGHT_STOP_MANUAL_CHANGE_0X18_0X00,
             address=self._address,
             flags=MessageFlags.template(MESSAGE_TYPE_ALL_LINK_CLEANUP, None),
-            cmd2=None)
+            cmd2=self._group)
         template_instant_cleanup = StandardReceive.template(
             commandtuple=COMMAND_LIGHT_INSTANT_CHANGE_0X21_NONE,
             address=self._address,
             flags=MessageFlags.template(MESSAGE_TYPE_ALL_LINK_CLEANUP, None),
-            cmd2=None)
+            cmd2=self._group)
         template_manual_off_cleanup = StandardReceive.template(
             commandtuple=COMMAND_LIGHT_MANUALLY_TURNED_OFF_0X22_0X00,
             address=self._address,
             flags=MessageFlags.template(MESSAGE_TYPE_ALL_LINK_CLEANUP, None),
-            cmd2=None)
+            cmd2=self._group)
         template_manual_on_cleanup = StandardReceive.template(
             commandtuple=COMMAND_LIGHT_MANUALLY_TURNED_ON_0X23_0X00,
             address=self._address,
             flags=MessageFlags.template(MESSAGE_TYPE_ALL_LINK_CLEANUP, None),
-            cmd2=None)
+            cmd2=self._group)
 
         template_on_broadcast = StandardReceive.template(
             commandtuple=COMMAND_LIGHT_ON_0X11_NONE,
@@ -234,7 +238,7 @@ class DimmableSwitch(State):
         self._update_subscribers(msg.cmd2)
 
 
-class DimmableSwitch_Fan(State):
+class DimmableSwitch_Fan(DimmableSwitch):
     """Device state representing a controlable bottom outlet On/Off switch.
 
     Available methods are:
@@ -259,6 +263,7 @@ class DimmableSwitch_Fan(State):
         """Turn on the fan."""
         on_command = ExtendedSend(self._address, COMMAND_LIGHT_ON_0X11_NONE,
                                   self._udata, cmd2=FAN_SPEED_MEDIUM)
+        on_command.set_checksum()
         self._send_method(on_command, self._on_message_received)
 
     def set_level(self, val):
@@ -270,12 +275,14 @@ class DimmableSwitch_Fan(State):
             set_command = ExtendedSend(self._address,
                                        COMMAND_LIGHT_ON_0X11_NONE,
                                        self._udata, cmd2=speed)
+            set_command.set_checksum()
             self._send_method(set_command, self._on_message_received)
 
     def off(self):
         """Turn off the fan."""
         off_command = ExtendedSend(self._address,
                                    COMMAND_LIGHT_OFF_0X13_0X00, self._udata)
+        off_command.set_checksum()
         self._send_method(off_command, self._off_message_received)
         self.log.debug('Ending DimmableSwitch_Fan.off')
 
@@ -450,7 +457,7 @@ class DimmableKeypadA(DimmableSwitch):
         self._led.set_value(msg.cmd2)
 
 
-class DimmableKeypad(State):
+class DimmableKeypad(DimmableSwitch):
     """Controllable keypad button dimmable switch."""
 
     def __init__(self, address, statename, group, send_message_method,
@@ -476,7 +483,6 @@ class DimmableKeypad(State):
         self._on_off_bit_mask = 0
 
         self._sent_property = {}
-        self._register_messages()
 
     @property
     def led(self):
@@ -531,6 +537,7 @@ class DimmableKeypad(State):
         cmd = ExtendedSend(self._address,
                            COMMAND_EXTENDED_TRIGGER_ALL_LINK_0X30_0X00,
                            user_data)
+        cmd.set_checksum()
         self.log.debug('Calling scene_on and sending reponse to '
                        '_received_scene_triggered')
         self._send_method(cmd, self._received_scene_triggered)
@@ -547,6 +554,7 @@ class DimmableKeypad(State):
         cmd = ExtendedSend(self._address,
                            COMMAND_EXTENDED_TRIGGER_ALL_LINK_0X30_0X00,
                            user_data)
+        cmd.set_checksum()
         self._send_method(cmd, self._received_scene_triggered)
 
     def scene_level(self, level):
@@ -564,13 +572,20 @@ class DimmableKeypad(State):
             cmd = ExtendedSend(self._address,
                                COMMAND_EXTENDED_TRIGGER_ALL_LINK_0X30_0X00,
                                user_data)
+            cmd.set_checksum()
             self._send_method(cmd, self._received_scene_triggered)
 
     def _on_message_received(self, msg):
-        self._update_subscribers(0xff)
+        if msg.cmd2 == 0x00:
+            onlevel = 0xff
+        else:
+            onlevel = msg.cmd2
+        self._update_subscribers(onlevel)
+        self.led.set_value(1 << (self._group - 1))
 
     def _off_message_received(self, msg):
         self._update_subscribers(0x00)
+        self.led.set_value(0)
 
     def _manual_change_received(self, msg):
         self._send_status_request()
@@ -582,6 +597,7 @@ class DimmableKeypad(State):
         cmd = ExtendedSend(self._address,
                            COMMAND_EXTENDED_GET_SET_0X2E_0X00,
                            userdata=user_data)
+        cmd.set_checksum()
         self._send_method(cmd, self._status_message_received)
 
     def _status_message_received(self, msg):
@@ -659,7 +675,50 @@ class DimmableKeypad(State):
         self._x10_all_bit_mask = userdata['d12']
         self._on_off_bit_mask = userdata['d13']
 
-    def _register_messages(self):
+    def _rem_register_messages(self):
+        self.log.debug('Registering callbacks for KeypadLinc device %s',
+                       self._address.human)
+        template_on_cleanup = StandardReceive.template(
+            commandtuple=COMMAND_LIGHT_ON_0X11_NONE,
+            address=self._address,
+            flags=MessageFlags.template(MESSAGE_TYPE_ALL_LINK_CLEANUP, None),
+            cmd2=self._group)
+        template_on_fast_cleanup = StandardReceive.template(
+            commandtuple=COMMAND_LIGHT_ON_FAST_0X12_NONE,
+            address=self._address,
+            flags=MessageFlags.template(MESSAGE_TYPE_ALL_LINK_CLEANUP, None),
+            cmd2=self._group)
+        template_off_cleanup = StandardReceive.template(
+            commandtuple=COMMAND_LIGHT_OFF_0X13_0X00,
+            address=self._address,
+            flags=MessageFlags.template(MESSAGE_TYPE_ALL_LINK_CLEANUP, None),
+            cmd2=self._group)
+        template_off_fast_cleanup = StandardReceive.template(
+            commandtuple=COMMAND_LIGHT_OFF_FAST_0X14_0X00,
+            address=self._address,
+            flags=MessageFlags.template(MESSAGE_TYPE_ALL_LINK_CLEANUP, None),
+            cmd2=self._group)
+        template_manual_cleanup = StandardReceive.template(
+            commandtuple=COMMAND_LIGHT_STOP_MANUAL_CHANGE_0X18_0X00,
+            address=self._address,
+            flags=MessageFlags.template(MESSAGE_TYPE_ALL_LINK_CLEANUP, None),
+            cmd2=self._group)
+        template_instant_cleanup = StandardReceive.template(
+            commandtuple=COMMAND_LIGHT_INSTANT_CHANGE_0X21_NONE,
+            address=self._address,
+            flags=MessageFlags.template(MESSAGE_TYPE_ALL_LINK_CLEANUP, None),
+            cmd2=self._group)
+        template_manual_off_cleanup = StandardReceive.template(
+            commandtuple=COMMAND_LIGHT_MANUALLY_TURNED_OFF_0X22_0X00,
+            address=self._address,
+            flags=MessageFlags.template(MESSAGE_TYPE_ALL_LINK_CLEANUP, None),
+            cmd2=self._group)
+        template_manual_on_cleanup = StandardReceive.template(
+            commandtuple=COMMAND_LIGHT_MANUALLY_TURNED_ON_0X23_0X00,
+            address=self._address,
+            flags=MessageFlags.template(MESSAGE_TYPE_ALL_LINK_CLEANUP, None),
+            cmd2=self._group)
+
         template_on_broadcast = StandardReceive.template(
             commandtuple=COMMAND_LIGHT_ON_0X11_NONE,
             address=self._address,
@@ -707,6 +766,23 @@ class DimmableKeypad(State):
             flags=MessageFlags.template(MESSAGE_TYPE_ALL_LINK_BROADCAST, None),
             cmd2=None)
 
+        self._message_callbacks.add(template_on_cleanup,
+                                    self._on_message_received)
+        self._message_callbacks.add(template_on_fast_cleanup,
+                                    self._on_message_received)
+        self._message_callbacks.add(template_off_cleanup,
+                                    self._off_message_received)
+        self._message_callbacks.add(template_off_fast_cleanup,
+                                    self._off_message_received)
+        self._message_callbacks.add(template_manual_cleanup,
+                                    self._manual_change_received)
+        self._message_callbacks.add(template_instant_cleanup,
+                                    self._manual_change_received)
+        self._message_callbacks.add(template_manual_off_cleanup,
+                                    self._manual_change_received)
+        self._message_callbacks.add(template_manual_on_cleanup,
+                                    self._manual_change_received)
+
         self._message_callbacks.add(template_on_broadcast,
                                     self._on_message_received)
         self._message_callbacks.add(template_on_fast_broadcast,
@@ -724,7 +800,8 @@ class DimmableKeypad(State):
         self._message_callbacks.add(template_manual_on_broadcast,
                                     self._manual_change_received)
 
-        # Status message received
+    def _register_messages(self):
+        super()._register_messages()
         template_status_recd = ExtendedReceive.template(
             address=self._address,
             commandtuple=COMMAND_EXTENDED_GET_SET_0X2E_0X00,
@@ -753,6 +830,7 @@ class DimmableKeypad(State):
         cmd = ExtendedSend(self._address,
                            COMMAND_EXTENDED_GET_SET_0X2E_0X00,
                            user_data)
+        cmd.set_checksum()
         self._set_sent_property(prop, val)
         return cmd
 
