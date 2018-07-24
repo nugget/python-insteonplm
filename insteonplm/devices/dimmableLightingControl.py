@@ -78,7 +78,7 @@ class DimmableLightingControl_2475F(DimmableLightingControl):
             self._message_callbacks, 0x00)
 
 
-class SwitchedLightingControl_2334_222(Device):
+class DimmableLightingControl_2334_222(Device):
     """On/Off KeypadLinc Switched Lighting Control."""
 
     def __init__(self, plm, address, cat, subcat, product_key=None,
@@ -91,7 +91,10 @@ class SwitchedLightingControl_2334_222(Device):
             self._address, "keypadButtonA", 0x01, self._send_msg,
             self._message_callbacks, 0x00)
 
+        self._led_bit_mask = 0x00
+
     def _led_on(self, group):
+        self.log.debug("DimmableLightingControl_2334_222._led_on was called")
         bitmask = 1 if self._stateList[0x01].led.value else 0
         for curr_group in self._stateList:
             bitshift = curr_group - 1
@@ -105,10 +108,12 @@ class SwitchedLightingControl_2334_222(Device):
         cmd = ExtendedSend(self._address,
                            COMMAND_EXTENDED_GET_SET_0X2E_0X00,
                            user_data)
+        cmd.set_checksum()
         self._led_changed = {'group': group, 'val': 1}
-        self._send_message(cmd, self._led_updated)
+        self._send_msg(cmd, self._led_updated)
 
     def _led_off(self, group):
+        self.log.debug("DimmableLightingControl_2334_222._led_off was called")
         bitmask = 1 if self._stateList[0x01].led.value else 0
         for curr_group in self._stateList:
             bitshift = curr_group - 1
@@ -122,8 +127,9 @@ class SwitchedLightingControl_2334_222(Device):
         cmd = ExtendedSend(self._address,
                            COMMAND_EXTENDED_GET_SET_0X2E_0X00,
                            user_data)
+        cmd.set_checksum()
         self._led_changed = {'group': group, 'val': 0}
-        self._send_message(cmd, self._led_updated)
+        self._send_msg(cmd, self._led_updated)
 
     def _led_updated(self, msg):
         group = self._led_changed.get('group')
@@ -137,11 +143,14 @@ class SwitchedLightingControl_2334_222(Device):
                 self._address, "keypadButton{}".format(button_list[group]),
                 group, self._send_msg, self._message_callbacks, 0x00)
 
-            self._stateList[group].on_method = self._led_on
-            self._stateList[group].off_method = self._led_off
+            self._stateList[group].led.on_method = self._led_on
+            self._stateList[group].led.off_method = self._led_off
+
+    def _set_led_value(self, group, val):
+        pass
 
 
-class SwitchedLightingControl_2334_222_8(SwitchedLightingControl_2334_222):
+class DimmableLightingControl_2334_222_8(DimmableLightingControl_2334_222):
     """Dimmable 8 Button KeypadLinc Switched Lighting Control."""
 
     def __init__(self, plm, address, cat, subcat, product_key=None,
@@ -154,7 +163,7 @@ class SwitchedLightingControl_2334_222_8(SwitchedLightingControl_2334_222):
         self._add_buttons(button_list)
 
 
-class SwitchedLightingControl_2334_222_6(SwitchedLightingControl_2334_222):
+class DimmableLightingControl_2334_222_6(DimmableLightingControl_2334_222):
     """Dimmable 6 Button KeypadLinc Switched Lighting Control."""
 
     def __init__(self, plm, address, cat, subcat, product_key=None,

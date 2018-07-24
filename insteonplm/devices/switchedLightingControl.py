@@ -136,7 +136,7 @@ class SwichedLightingControlKeypad(Device):
             self._stateList[group].off_method = self._led_off
 
 
-class SwitchedLightingControl_2487S_8(SwichedLightingControlKeypad):
+class SwitchedLightingControl_2334_222_8(SwichedLightingControlKeypad):
     """On/Off KeypadLinc Switched Lighting Control."""
 
     def __init__(self, plm, address, cat, subcat, product_key=None,
@@ -149,7 +149,7 @@ class SwitchedLightingControl_2487S_8(SwichedLightingControlKeypad):
         self._add_buttons(button_list)
 
 
-class SwitchedLightingControl_2487S_6(SwichedLightingControlKeypad):
+class SwitchedLightingControl_2334_222_6(SwichedLightingControlKeypad):
     """On/Off KeypadLinc Switched Lighting Control."""
 
     def __init__(self, plm, address, cat, subcat, product_key=None,
