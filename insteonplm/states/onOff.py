@@ -874,6 +874,7 @@ class OnOffKeypadLed(State):
 
     def _status_message_received(self, msg):
         self.log.debug("OnOffKeypadLed status message received with value 0x%02x", msg.cmd2)
+        self.log.debug("Status message: %s", msg)
         self._update_subscribers(msg.cmd2)
 
     def _set_led_value(self, group, val):
