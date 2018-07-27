@@ -2,11 +2,8 @@
 from insteonplm.devices import Device
 from insteonplm.states.dimmable import (DimmableSwitch,
                                         DimmableSwitch_Fan,
-                                        DimmableKeypadA,
-                                        DimmableKeypad)
-from insteonplm.messages.userdata import Userdata
-from insteonplm.messages.extendedSend import ExtendedSend
-from insteonplm.constants import COMMAND_EXTENDED_GET_SET_0X2E_0X00
+                                        DimmableKeypadA)
+from insteonplm.states.onOff import OnOffKeypad, OnOffKeypadLed
 
 
 class DimmableLightingControl(Device):
@@ -87,67 +84,23 @@ class DimmableLightingControl_2334_222(Device):
         super().__init__(plm, address, cat, subcat, product_key,
                          description, model)
 
+        self._leds = OnOffKeypadLed(
+            self._address, "keypadLEDs", 0x00, self._send_msg,
+            self._message_callbacks, 0x00, self._plm.loop)
+
         self._stateList[0x01] = DimmableKeypadA(
             self._address, "keypadButtonA", 0x01, self._send_msg,
-            self._message_callbacks, 0x00)
-
-        self._led_bit_mask = 0x00
-
-    def _led_on(self, group):
-        self.log.debug("DimmableLightingControl_2334_222._led_on was called")
-        bitmask = 1 if self._stateList[0x01].led.value else 0
-        for curr_group in self._stateList:
-            bitshift = curr_group - 1
-            ledvalue = self._stateList[curr_group].led.value
-            bitmask = ((1 if ledvalue else 0) << bitshift) | bitmask
-
-        bitmask = bitmask | 1 << group - 1
-        user_data = Userdata({'d1': 0x01,
-                              'd2': 0x09,
-                              'd3': bitmask})
-        cmd = ExtendedSend(self._address,
-                           COMMAND_EXTENDED_GET_SET_0X2E_0X00,
-                           user_data)
-        cmd.set_checksum()
-        self._led_changed = {'group': group, 'val': 1}
-        self._send_msg(cmd, self._led_updated)
-
-    def _led_off(self, group):
-        self.log.debug("DimmableLightingControl_2334_222._led_off was called")
-        bitmask = 1 if self._stateList[0x01].led.value else 0
-        for curr_group in self._stateList:
-            bitshift = curr_group - 1
-            ledvalue = self._stateList[curr_group].led.value
-            bitmask = ((1 if ledvalue else 0) << bitshift) | bitmask
-
-        bitmask = bitmask & 0xff ^ 1 << group - 1
-        user_data = Userdata({'d1': 0x01,
-                              'd2': 0x09,
-                              'd3': bitmask})
-        cmd = ExtendedSend(self._address,
-                           COMMAND_EXTENDED_GET_SET_0X2E_0X00,
-                           user_data)
-        cmd.set_checksum()
-        self._led_changed = {'group': group, 'val': 0}
-        self._send_msg(cmd, self._led_updated)
-
-    def _led_updated(self, msg):
-        group = self._led_changed.get('group')
-        if group:
-            val = self._led_changed.get('val')
-            self._stateList[group].led.notify_subscribers(val)
+            self._message_callbacks, 0x00, self._leds)
 
     def _add_buttons(self, button_list):
         for group in button_list:
-            self._stateList[group] = DimmableKeypad(
+            self._stateList[group] = OnOffKeypad(
                 self._address, "keypadButton{}".format(button_list[group]),
-                group, self._send_msg, self._message_callbacks, 0x00)
+                group, self._send_msg, self._message_callbacks, 0x00,
+                self._plm.loop, self._leds)
 
-            self._stateList[group].led.on_method = self._led_on
-            self._stateList[group].led.off_method = self._led_off
-
-    def _set_led_value(self, group, val):
-        pass
+            self._leds.register_led_updates(self._stateList[group].led_changed,
+                                            group)
 
 
 class DimmableLightingControl_2334_222_8(DimmableLightingControl_2334_222):

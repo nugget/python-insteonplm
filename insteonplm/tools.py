@@ -318,6 +318,30 @@ class Tools():
             pass
         return device
 
+    def kpl_status(self, address, group):
+        """Get the status of a KPL button."""
+        addr = Address(address)
+        device = self.plm.devices[addr.id]
+        device.states[group].async_refresh_state()
+
+    def kpl_on(self, address, group):
+        """Get the status of a KPL button."""
+        addr = Address(address)
+        device = self.plm.devices[addr.id]
+        device.states[group].on()
+
+    def kpl_off(self, address, group):
+        """Get the status of a KPL button."""
+        addr = Address(address)
+        device = self.plm.devices[addr.id]
+        device.states[group].off()
+
+    def kpl_set_on_mask(self, address, group, mask):
+        """Get the status of a KPL button."""
+        addr = Address(address)
+        device = self.plm.devices[addr.id]
+        device.states[group].set_on_mask(mask)
+
 
 class Commander(object):
     """Command object to manage itneractive sessions."""
@@ -1002,6 +1026,117 @@ class Commander(object):
                            'required.')
             self.do_help('add_x10_device')
 
+    def do_kpl_status(self, args):
+        """ Get the status of a KeypadLinc button.
+
+        Usage:
+            kpl_status address group
+        """
+
+        params = args.split()
+        address = None
+        group = None
+
+        try:
+            address = params[0]
+            group = int(params[1])
+        except IndexError:
+            _LOGGING.error("Address and group are regquired")
+            self.do_help('kpl_status')
+        except TypeError:
+            _LOGGING.error("Group must be an integer")
+            self.do_help('kpl_status')
+
+        if address and group:
+            self.tools.kpl_status(address, group)
+
+    def do_kpl_on(self, args):
+        """ Turn on a KeypadLinc button.
+
+        Usage:
+            kpl_on address group
+        """
+
+        params = args.split()
+        address = None
+        group = None
+
+        try:
+            address = params[0]
+            group = int(params[1])
+        except IndexError:
+            _LOGGING.error("Address and group are regquired")
+            self.do_help('kpl_status')
+        except TypeError:
+            _LOGGING.error("Group must be an integer")
+            self.do_help('kpl_status')
+
+        if address and group:
+            self.tools.kpl_on(address, group)
+
+    def do_kpl_off(self, args):
+        """ Turn off a KeypadLinc button.
+
+        Usage:
+            kpl_on address group
+        """
+
+        params = args.split()
+        address = None
+        group = None
+
+        try:
+            address = params[0]
+            group = int(params[1])
+        except IndexError:
+            _LOGGING.error("Address and group are regquired")
+            self.do_help('kpl_status')
+        except TypeError:
+            _LOGGING.error("Group must be an integer")
+            self.do_help('kpl_status')
+
+        if address and group:
+            self.tools.kpl_off(address, group)
+
+    def do_kpl_set_on_mask(self, args):
+        """ Set the on mask for a KeypadLinc button.
+
+        Usage:
+            kpl_set_on_mask address group mask
+        """
+
+        params = args.split()
+        address = None
+        group = None
+        mask_string = None
+        mask = None
+
+        try:
+            address = params[0]
+            group = int(params[1])
+            mask_string = params[2]
+            if mask_string[0:2].lower() == '0x':
+                mask = binascii.unhexlify(mask_string[2:])
+            else:
+                mask = int(mask_string)
+        except IndexError:
+            _LOGGING.error("Address, group and mask are regquired")
+            self.do_help('kpl_status')
+        except TypeError:
+            _LOGGING.error("Group must be an integer")
+            self.do_help('kpl_status')
+
+        if address and group and mask:
+            self.tools.kpl_set_on_mask(address, group, mask)
+
+    def do_poll_devices(self, args):
+        """Poll all devices for current status.
+
+        Useage:
+            poll_devices
+        """
+        self.tools.plm.poll_devices()
+
 
 def monitor():
     """Connect to receiver and show events as they occur.
@@ -1079,7 +1214,7 @@ def interactive():
     except KeyboardInterrupt:
         if cmd.tools.plm:
             if cmd.tools.plm.transport:
-                _LOGGING.info('Closing the session')
+                # _LOGGING.info('Closing the session')
                 cmd.tools.plm.transport.close()
         loop.stop()
         pending = asyncio.Task.all_tasks(loop=loop)
