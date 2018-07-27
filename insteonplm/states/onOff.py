@@ -361,7 +361,7 @@ class OpenClosedRelay(OnOffStateBase):
         self._update_subscribers(0x00)
 
 
-class OnOffKeypadA(OnOffStateBase):
+class OnOffKeypadA(OnOffSwitch):
     """Device state for a controllable keypad button A On/Off switch."""
 
     def __init__(self, address, statename, group, send_message_method,

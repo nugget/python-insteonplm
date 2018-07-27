@@ -4,7 +4,8 @@ from insteonplm.states.onOff import (OnOffSwitch,
                                      OnOffSwitch_OutletTop,
                                      OnOffSwitch_OutletBottom,
                                      OnOffKeypadA,
-                                     OnOffKeypad)
+                                     OnOffKeypad,
+                                     OnOffKeypadLed)
 from insteonplm.messages.userdata import Userdata
 from insteonplm.messages.extendedSend import ExtendedSend
 from insteonplm.constants import COMMAND_EXTENDED_GET_SET_0X2E_0X00
