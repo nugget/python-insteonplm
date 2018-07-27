@@ -228,43 +228,45 @@ class IM(Device, asyncio.Protocol):
         yield from self._write_transport_lock.acquire()
         while True:
             # wait for an item from the queue
-            # try:
-            #     with async_timeout.timeout(WAIT_TIMEOUT):
-            msg_info = yield from self._send_queue.get()
-            msg = msg_info.get('msg')
-            wait_nak = msg_info.get('wait_nak')
-            wait_timeout = msg_info.get('wait_timeout')
-            # except asyncio.TimeoutError:
-            #     self.log.debug('No new messages received.')
-            #     break
-            # process the item
-            self.log.debug('Writing message: %s', msg)
-            write_bytes = msg.bytes
-            if hasattr(msg, 'acknak') and msg.acknak:
-                write_bytes = write_bytes[:-1]
-            if self.transport:
-                self.log.debug('Transport is open')
-                self.transport.write(msg.bytes)
-            else:
-                self.log.debug("Transport is not open. Cannot write")
-            if wait_nak:
-                self.log.debug('Waiting for ACK or NAK message')
-                is_nak = False
-                try:
-                    with async_timeout.timeout(ACKNAK_TIMEOUT):
-                        while True:
-                            acknak = yield from self._acknak_queue.get()
-                            if msg.matches_pattern(acknak):
-                                self.log.debug('ACK or NAK received')
-                                self.log.debug(acknak)
-                                is_nak = acknak.isnak
-                            break
-                except asyncio.TimeoutError:
-                    self.log.debug('No ACK or NAK message received.')
-                    is_nak = True
-                if is_nak:
-                    self._handle_nak(msg)
-            yield from asyncio.sleep(wait_timeout, loop=self._loop)
+            try:
+                msg_info = yield from self._send_queue.get()
+                msg = msg_info.get('msg')
+                wait_nak = msg_info.get('wait_nak')
+                wait_timeout = msg_info.get('wait_timeout')
+                self.log.debug('Writing message: %s', msg)
+                write_bytes = msg.bytes
+                if hasattr(msg, 'acknak') and msg.acknak:
+                    write_bytes = write_bytes[:-1]
+                if self.transport:
+                    self.log.debug('Transport is open')
+                    self.transport.write(msg.bytes)
+                else:
+                    self.log.debug("Transport is not open. Cannot write")
+                if wait_nak:
+                    self.log.debug('Waiting for ACK or NAK message')
+                    is_nak = False
+                    try:
+                        with async_timeout.timeout(ACKNAK_TIMEOUT):
+                            while True:
+                                acknak = yield from self._acknak_queue.get()
+                                if msg.matches_pattern(acknak):
+                                    self.log.debug('ACK or NAK received')
+                                    self.log.debug(acknak)
+                                    is_nak = acknak.isnak
+                                break
+                    except asyncio.TimeoutError:
+                        self.log.debug('No ACK or NAK message received.')
+                        is_nak = True
+                    if is_nak:
+                        self._handle_nak(msg)
+                yield from asyncio.sleep(wait_timeout, loop=self._loop)
+                
+            except asyncio.CancelledError:
+                return
+            except GeneratorExit:
+                return
+            except Exception:
+                return
         self._write_transport_lock.release()
 
     def _get_plm_info(self):

@@ -88,15 +88,17 @@ class Device(object):
         self._model = model
 
         self._last_communication_received = datetime.datetime(1, 1, 1, 1, 1, 1)
-        self._recent_messages = asyncio.Queue(loop=self._plm.loop)
-        self._send_msg_queue = asyncio.Queue(loop=self._plm.loop)
         self._product_data_in_aldb = False
         self._stateList = StateList()
-        self._send_msg_lock = asyncio.Lock(loop=self._plm.loop)
         self._sent_msg_wait_for_directACK = {}
-        self._directACK_received_queue = asyncio.Queue(loop=self._plm.loop)
         self._message_callbacks = MessageCallback()
         self._aldb = ALDB(self._send_msg, self._plm.loop, self._address)
+
+        self._recent_messages = asyncio.Queue(loop=self._plm.loop)
+        self._send_msg_queue = asyncio.Queue(loop=self._plm.loop)
+        self._directACK_received_queue = asyncio.Queue(loop=self._plm.loop)
+        self._process_send_queue_lock = asyncio.Lock(loop=self._plm.loop)
+        self._send_msg_lock = asyncio.Lock(loop=self._plm.loop)
 
         self._register_messages()
         asyncio.ensure_future(self._process_send_queue(), loop=self._plm.loop)
@@ -411,29 +413,42 @@ class Device(object):
                     'callback': callback,
                     'on_timeout': on_timeout}
         self._send_msg_queue.put_nowait(msg_info)
-        if not self._send_msg_lock.locked():
+        if not self._process_send_queue_lock.locked():
             asyncio.ensure_future(self._process_send_queue(),
                                   loop=self._plm.loop)
         self.log.debug('Ending Device._send_msg')
 
     @asyncio.coroutine
     def _process_send_queue(self):
-        if self._send_msg_lock.locked():
+        if self._process_send_queue_lock.locked():
             return
         self.log.debug('Starting Device._process_send_queue')
-        yield from self._send_msg_lock
+        yield from self._process_send_queue_lock
         while True:
             try:
+                yield from self._send_msg_lock
                 msg_info = yield from self._send_msg_queue.get()
                 if msg_info:
                     msg = msg_info.get("msg")
                     callback = msg_info.get("callback")
                     if callback:
                         self._sent_msg_wait_for_directACK = msg_info
-                self._plm.send_msg(msg)
+                    else:
+                        if self._send_msg_lock.locked():
+                            self._send_msg_lock.release()
+                    self._plm.send_msg(msg)
+            except asyncio.CancelledError:
+                return
+            except GeneratorExit:
+                return
             except Exception:
-                if self._send_msg_lock.locked():
-                    self._send_msg_lock.release()
+                return
+
+        self.log.debug("Releasing process send queue lock lock")
+        if self._process_send_queue_lock.locked():
+            self._process_send_queue_lock.release()
+        if self._send_msg_lock.locked():
+            self._send_msg_lock.release()
         self.log.debug('Ending Device._process_send_queue')
 
     @asyncio.coroutine
@@ -449,12 +464,17 @@ class Device(object):
             except asyncio.TimeoutError:
                 self.log.debug('No direct ACK messages received.')
                 break
-        self.log.debug('Releasing lock')
+
+        # self.log.debug('Holding lock for 10 seconds')
+        # yield from asyncio.sleep(10, loop=self._plm.loop)
+        self.log.debug('Releasing lock after processing direct ACK')
         self._send_msg_lock.release()
         if msg or self._sent_msg_wait_for_directACK.get('on_timeout'):
             callback = self._sent_msg_wait_for_directACK.get('callback', None)
             if callback is not None:
+                self.log.debug("Calling %s", callback)
                 callback(msg)
+                self.log.debug("Called %s", callback)
         self._sent_msg_wait_for_directACK = {}
         self.log.debug('Ending Device._wait_for_direct_ACK')
 
@@ -538,6 +558,8 @@ class X10Device(object):
 
         self._plm.send_msg(msg, wait_timeout=2)
         if not wait_ack:
+            self.log.debug("No directACK wait")
+            self.log.debug("Releasing lock")
             self._send_msg_lock.release()
         self.log.debug('Ending Device._process_send_queue')
 
