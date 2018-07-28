@@ -223,8 +223,8 @@ def test_switchedLightingControl_2475F():
 
         callbacks = fanLincStatus()
 
-        device = DimmableLightingControl_2475F.create(
-            mockPLM, address, cat, subcat, product_key, description, model)
+        device = DimmableLightingControl_2475F(mockPLM, address, cat, subcat,
+                                               product_key, description, model)
         
         mockPLM.devices[device.address.hex] = device
         

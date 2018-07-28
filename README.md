@@ -61,8 +61,7 @@ to be general-purpose and should be usable for other applications as well.
 ## Requirements
 
 - Python 3.4, 3.5 or 3.6 with asyncio
-- Posix based system (currently does not work on Windows due to a serial port
-issue)
+- Posix based system (currently does not work on Windows due to a serial port issue)
 - Some form of Insteon PLM or INSTEON USB Stick
 - At least one Insteon device
 
@@ -157,27 +156,31 @@ Command line options for the interactive tool are:
 
 Inside the command line tool use `help` to obtain a list of available commands.
 The current list of available commands is:
-
-     -  connect            Connect to the IM
-     -  exit               Exit the tool
-     -  help               List available commands
-     -  list_devices       Print a list of the available devices
-     -  load_aldb          Read and load a device All-Link database
-     -  on_off_test        Test a device with simple on/off commands
-     -  print_aldb         Print the All-Link database for a device
-     -  running_tasks      List the tasks running in the background
-     -  set_device         Set the IM device path
-     -  set_log_level      Set the log message display level
-     -  set_workdir        Set the WORKDIR to load and save device info
-     -  start_all_linking  Set the IM to All-Linking mode
-     -  write_aldb         Write a record to the device All-Link database
-                           !!!! BE CAREFUL WITH THIS COMMAND !!!!!
+```
+ -  add_all_link        Add an All-Link record to the IM and a device.
+ -  add_device_override Add a device override to the IM.
+ -  add_x10_device      Add an X10 device to the IM
+ -  connect             Connect to the IM
+ -  del_all_link        Delete an all link record from the IM and a device
+ -  exit                Exit the tool
+ -  help                List available commands
+ -  list_devices        Print a list of the available devices
+ -  load_aldb           Read and load a device All-Link database
+ -  on_off_test         Test a device with simple on/off commands
+ -  print_aldb          Print the All-Link database for a device
+ -  running_tasks       List tasks running in the background
+ -  set_device          Set the IM device path
+ -  set_log_level       Set the log message display level
+ -  set_workdir         Set the WORKDIR to load and save device info
+ -  write_aldb          Write a record to the device All-Link database
+                            !!!! BE CAREFUL WITH THIS COMMAND !!!!!
+```
 
 For help with a specific command type `help command_name`.
 
 ## Known Issues
 
-- There's basically no documentation.
+- The [documentation](https://github.com/nugget/python-insteonplm/wiki) is limited.
 - Other issues are located in our [issues] list on GitHub.
 
 [issues]: https://github.com/nugget/python-insteonplm/issues
@@ -202,9 +205,11 @@ For help with a specific command type `help command_name`.
 
 #### Documentation
 
-There is no documentation other than this README file. A repository has been
-started but is basically empty. If you would like to drive this effort please
-send a resume and a list of references to... Honestly, we will take anyone.
+Please see our [Wiki](https://github.com/nugget/python-insteonplm/wiki)
+section for documentation. This documentation is limited. If
+you would like to drive this effort please send a resume and a list of references
+to... Honestly, we will take anyone.
+
 PLEASE help. An [issue](https://github.com/nugget/python-insteonplm/issues/23)
 has been opened so just post your interest there.
 

@@ -22,7 +22,8 @@ from insteonplm.constants import (MESSAGE_ALL_LINK_CEANUP_FAILURE_REPORT_0X56,
                                   MESSAGE_START_CODE_0X02,
                                   MESSAGE_USER_RESET_DETECTED_0X55,
                                   MESSAGE_X10_MESSAGE_RECEIVED_0X52,
-                                  MESSAGE_X10_MESSAGE_SEND_0X63)
+                                  MESSAGE_X10_MESSAGE_SEND_0X63,
+                                  MESSAGE_SET_IM_CONFIGURATION_0X6B)
 from insteonplm.messages.standardReceive import StandardReceive
 from insteonplm.messages.extendedReceive import ExtendedReceive
 from insteonplm.messages.x10received import X10Received
@@ -41,9 +42,13 @@ from insteonplm.messages.x10send import X10Send
 from insteonplm.messages.startAllLinking import StartAllLinking
 from insteonplm.messages.cancelAllLinking import CancelAllLinking
 from insteonplm.messages.resetIM import ResetIM
+from insteonplm.messages.setImConfiguration import SetIMConfiguration
 from insteonplm.messages.getFirstAllLinkRecord import GetFirstAllLinkRecord
 from insteonplm.messages.getNextAllLinkRecord import GetNextAllLinkRecord
 from insteonplm.messages.getImConfiguration import GetImConfiguration
+
+
+_LOGGER = logging.getLogger(__name__)
 
 
 def create(rawmessage):
@@ -51,26 +56,36 @@ def create(rawmessage):
     rawmessage = _trim_buffer_garbage(rawmessage)
 
     if len(rawmessage) < 2:
-        return None
+        return (None, rawmessage)
 
     code = rawmessage[1]
     msgclass = _get_msg_class(code)
 
     msg = None
 
+    remaining_data = rawmessage
     if msgclass is None:
+        _LOGGER.debug('Did not find message class 0x%02x', rawmessage[1])
         rawmessage = rawmessage[1:]
-        msg = create(rawmessage)
+        rawmessage = _trim_buffer_garbage(rawmessage, False)
+        if rawmessage:
+            _LOGGER.debug('Create: %s', create)
+            _LOGGER.debug('rawmessage: %s', binascii.hexlify(rawmessage))
+            msg, remaining_data = create(rawmessage)
+        else:
+            remaining_data = rawmessage
     else:
         if iscomplete(rawmessage):
             msg = msgclass.from_raw_message(rawmessage)
-
-    return msg
+            if msg:
+                remaining_data = rawmessage[len(msg.bytes):]
+    _LOGGER.debug("Returning msg: %s", msg)
+    _LOGGER.debug('Returning buffer: %s', binascii.hexlify(remaining_data))
+    return (msg, remaining_data)
 
 
 def iscomplete(rawmessage):
     """Test if the raw message is a complete message."""
-    log = logging.getLogger(__name__)
 
     if len(rawmessage) < 2:
         return False
@@ -88,8 +103,8 @@ def iscomplete(rawmessage):
     if hasattr(msg, 'receivedSize') and msg.receivedSize:
         expectedSize = msg.receivedSize
     else:
-        log.error('Unable to find an receivedSize for code 0x%x',
-                  rawmessage[1])
+        _LOGGER.error('Unable to find an receivedSize for code 0x%x',
+                      rawmessage[1])
         return ValueError
 
     is_expected_size = False
@@ -157,6 +172,9 @@ def _get_msg_class(code):
                                  MESSAGE_GET_NEXT_ALL_LINK_RECORD_0X6A,
                                  GetNextAllLinkRecord)
     msg_classes = _add_msg_class(msg_classes,
+                                 MESSAGE_SET_IM_CONFIGURATION_0X6B,
+                                 SetIMConfiguration)
+    msg_classes = _add_msg_class(msg_classes,
                                  MESSAGE_GET_IM_CONFIGURATION_0X73,
                                  GetImConfiguration)
 
@@ -168,14 +186,14 @@ def _add_msg_class(msg_list, code, msg_class):
     return msg_list
 
 
-def _trim_buffer_garbage(rawmessage):
+def _trim_buffer_garbage(rawmessage, debug=True):
     """Remove leading bytes from a byte stream.
 
     A proper message byte stream begins with 0x02.
     """
-    log = logging.getLogger(__name__)
     while rawmessage and rawmessage[0] != MESSAGE_START_CODE_0X02:
-        log.debug('Buffer content: %s', binascii.hexlify(rawmessage))
+        if debug:
+            _LOGGER.debug('Buffer content: %s', binascii.hexlify(rawmessage))
+            _LOGGER.debug('Trimming leading buffer garbage')
         rawmessage = rawmessage[1:]
-        log.debug('Trimming leading buffer garbage')
     return rawmessage

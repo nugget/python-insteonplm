@@ -75,8 +75,8 @@ class MessageFlags(object):
     @property
     def isBroadcast(self):
         """Test if the message is a broadcast message type."""
-        return (self._messageType & MESSAGE_TYPE_BROADCAST_MESSAGE
-                == MESSAGE_TYPE_BROADCAST_MESSAGE)
+        return (self._messageType & MESSAGE_TYPE_BROADCAST_MESSAGE ==
+                MESSAGE_TYPE_BROADCAST_MESSAGE)
 
     @property
     def isDirect(self):

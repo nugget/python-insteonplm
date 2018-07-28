@@ -12,6 +12,7 @@ from insteonplm.messages.standardReceive import StandardReceive
 from insteonplm.messages.messageFlags import MessageFlags
 from insteonplm.states import State
 
+
 class LeakSensorState(Enum):
     """Enum to define dry/wet state of the leak sensor."""
     DRY = 0
@@ -273,7 +274,7 @@ class LeakSensorDryWet(State):
     """
 
     def __init__(self, address, statename, group, send_message_method,
-                 message_callbacks, defaultvalue=None, 
+                 message_callbacks, defaultvalue=None,
                  dry_wet: LeakSensorState=None):
         """Initialize the LeakSensorDry state."""
         super().__init__(address, statename, group, send_message_method,
@@ -294,7 +295,7 @@ class LeakSensorDryWet(State):
             target=bytearray([0x00, 0x00, self._group]),
             flags=MessageFlags.template(MESSAGE_TYPE_ALL_LINK_BROADCAST, None))
 
-        template_cleanup= StandardReceive.template(
+        template_cleanup = StandardReceive.template(
             commandtuple=COMMAND_LIGHT_ON_0X11_NONE,
             address=self._address,
             target=bytearray([0x00, 0x00, self._group]),
@@ -387,12 +388,18 @@ class LeakSensorHeartbeat(State):
             target=bytearray([0x00, 0x00, self._group]),
             flags=MessageFlags.template(MESSAGE_TYPE_ALL_LINK_CLEANUP, None))
 
-        self._message_callbacks.add(template_dry_broadcast, self._dry_message_received)
-        self._message_callbacks.add(template_wet_broadcast, self._wet_message_received)
-        self._message_callbacks.add(template_dry_all_link, self._dry_message_received)
-        self._message_callbacks.add(template_wet_all_link, self._wet_message_received)
-        self._message_callbacks.add(template_dry_cleanup, self._dry_message_received)
-        self._message_callbacks.add(template_wet_cleanup, self._wet_message_received)
+        self._message_callbacks.add(template_dry_broadcast,
+                                    self._dry_message_received)
+        self._message_callbacks.add(template_wet_broadcast,
+                                    self._wet_message_received)
+        self._message_callbacks.add(template_dry_all_link,
+                                    self._dry_message_received)
+        self._message_callbacks.add(template_wet_all_link,
+                                    self._wet_message_received)
+        self._message_callbacks.add(template_dry_cleanup,
+                                    self._dry_message_received)
+        self._message_callbacks.add(template_wet_cleanup,
+                                    self._wet_message_received)
 
     def register_dry_wet_callback(self, callback):
         """Register the callback for the wet and dry state callbacks."""

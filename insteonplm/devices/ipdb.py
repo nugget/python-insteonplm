@@ -3,32 +3,41 @@ import logging
 import collections
 
 from insteonplm.devices.unknowndevice import UnknownDevice
-from insteonplm.devices.generalController import GeneralController
+from insteonplm.devices.generalController import (GeneralController,
+                                                  GeneralController_2342,
+                                                  GeneralController_2342_4,
+                                                  GeneralController_2342_8)
 from insteonplm.devices.dimmableLightingControl import DimmableLightingControl
 from insteonplm.devices.dimmableLightingControl import DimmableLightingControl_2475F
 from insteonplm.devices.switchedLightingControl import SwitchedLightingControl
 from insteonplm.devices.switchedLightingControl import SwitchedLightingControl_2663_222
 from insteonplm.devices.securityHealthSafety import (SecurityHealthSafety,
-                                   SecurityHealthSafety_2421,
-                                   SecurityHealthSafety_2842_222,
-                                   SecurityHealthSafety_2852_222,
-                                   SecurityHealthSafety_2845_222,
-                                   SecurityHealthSafety_2982_222)
+                                                     SecurityHealthSafety_2421,
+                                                     SecurityHealthSafety_2842_222,
+                                                     SecurityHealthSafety_2852_222,
+                                                     SecurityHealthSafety_2845_222,
+                                                     SecurityHealthSafety_2982_222)
 
 from insteonplm.devices.sensorsActuators import SensorsActuators
 from insteonplm.devices.sensorsActuators import SensorsActuators_2450
+from insteonplm.devices.x10 import (X10OnOff, X10Dimmable, X10Sensor,
+                                    X10AllUnitsOff, X10AllLightsOn,
+                                    X10AllLightsOff)
 
 # pylint: disable=line-too-long
 # pylint: disable=too-few-public-methods
 
 Product = collections.namedtuple('Product', 'cat subcat product_key description model deviceclass')
 
+
+X10Product = collections.namedtuple('X10Product', 'feature deviceclass')
+
 # flake8: noqa
 class IPDB(object):
     """Embodies the INSTEON Product Database static data and access methods."""
 
     # pylint disable=line-too-long
-    products = [
+    _products = [
         Product(None, None, None, 'Unknown Device', '', UnknownDevice),
 
         Product(0x00, None, None, 'Generic General Controller', '', GeneralController),
@@ -40,18 +49,18 @@ class IPDB(object):
         Product(0x00, 0x0A, 0x000007, 'Poolux LCD Controller', '', GeneralController),
         Product(0x00, 0x0B, 0x000022, 'Range Extender', '2443', GeneralController),
         Product(0x00, 0x0C, 0x000028, 'IES Color Touchscreen', '', GeneralController),
-        Product(0x00, 0x10, None, 'Mini Remote - 4 Scene', '2444A2WH4', GeneralController),
-        Product(0x00, 0x11, None, 'Mini Remote - Switch', '2444A3', GeneralController),
-        Product(0x00, 0x12, None, 'Mini Remote - 8 Scene', '2444A2WH8', GeneralController),
-        Product(0x00, 0x14, None, 'Mini Remote - 4 Scene', '2342-432', GeneralController),
-        Product(0x00, 0x15, None, 'Mini Remote - Switch', '2342-442', GeneralController),
-        Product(0x00, 0x16, None, 'Mini Remote - 8 Scene', '2342-422', GeneralController),
-        Product(0x00, 0x17, None, 'Mini Remote - 4 Scene', '2342-532', GeneralController),
-        Product(0x00, 0x18, None, 'Mini Remote - 8 Scene', '2342-522', GeneralController),
-        Product(0x00, 0x19, None, 'Mini Remote - Switch', '2342-542', GeneralController),
-        Product(0x00, 0x1A, None, 'Mini Remote - 4 Scene', '2342-222', GeneralController),
-        Product(0x00, 0x1B, None, 'Mini Remote - 8 Scene', '2342-232', GeneralController),
-        Product(0x00, 0x1C, None, 'Mini Remote - Switch', '2342-242', GeneralController),
+        Product(0x00, 0x10, None, 'Mini Remote - 4 Scene', '2444A2WH4', GeneralController_2342_4),
+        Product(0x00, 0x11, None, 'Mini Remote - Switch', '2444A3', GeneralController_2342),
+        Product(0x00, 0x12, None, 'Mini Remote - 8 Scene', '2444A2WH8', GeneralController_2342_8),
+        Product(0x00, 0x14, None, 'Mini Remote - 4 Scene', '2342-432', GeneralController_2342_4),
+        Product(0x00, 0x15, None, 'Mini Remote - Switch', '2342-442', GeneralController_2342),
+        Product(0x00, 0x16, None, 'Mini Remote - 8 Scene', '2342-422', GeneralController_2342_8),
+        Product(0x00, 0x17, None, 'Mini Remote - 4 Scene', '2342-532', GeneralController_2342_4),
+        Product(0x00, 0x18, None, 'Mini Remote - 8 Scene', '2342-522', GeneralController_2342_8),
+        Product(0x00, 0x19, None, 'Mini Remote - Switch', '2342-542', GeneralController_2342),
+        Product(0x00, 0x1A, None, 'Mini Remote - 4 Scene', '2342-222', GeneralController_2342_4),
+        Product(0x00, 0x1B, None, 'Mini Remote - 8 Scene', '2342-232', GeneralController_2342_8),
+        Product(0x00, 0x1C, None, 'Mini Remote - Switch', '2342-242', GeneralController_2342),
         Product(0x00, 0x1D, 0x000022, 'Range Extender', '2992-222', GeneralController),
 
         Product(0x01, None, None, 'Generic Dimmable Lighting Control', '', DimmableLightingControl),
@@ -323,34 +332,66 @@ class IPDB(object):
         Product(0xFF, 0x01, None, 'Unknown Device', '', UnknownDevice),
     ]
 
+    _x10_products = [
+        X10Product("onoff", X10OnOff),
+        X10Product("dimmable", X10Dimmable),
+        X10Product("sensor", X10Sensor),
+        X10Product("allunitsoff", X10AllUnitsOff),
+        X10Product("alllightson", X10AllLightsOn),
+        X10Product("alllightsoff", X10AllLightsOff)
+        ]
+
     def __init__(self):
         """Initialize the INSTEON Product Database (IPDB)."""
         self.log = logging.getLogger(__name__)
 
     def __len__(self):
         """Return the length of the product database."""
-        return len(self.products)
+        return len(self._products)  + len(self._x10_products)
 
     def __iter__(self):
         """Iterate through the product database."""
-        for product in self.products:
+        for product in self._products:
             yield product
 
     def __getitem__(self, key):
         """Return an item from the product database."""
         cat, subcat = key
 
-        for product in self.products:
+        device_product = None
+
+        for product in self._products:
             if cat == product.cat and subcat == product.subcat:
-                return product
+                device_product = product
 
         # We failed to find a device in the database, so we will make a best
         # guess from the cat and return the generic class
         #
 
-        for product in self.products:
-            if cat == product.cat and product.subcat is None:
-                return product
+        if not device_product:
+            for product in self._products:
+                if cat == product.cat and product.subcat is None:
+                    return product
 
         # We did not find the device or even a generic device of that category
-        return Product(cat, subcat, None, None, None, None)
+        if not device_product:
+            device_product = Product(cat, subcat, None, '', '', None)
+
+        return device_product
+
+    def x10(self, feature):
+        """Return an X10 device based on a feature.
+
+        Current features:
+        - OnOff
+        - Dimmable
+        """
+        x10_product = None
+        for product in self._x10_products:
+            if feature.lower() == product.feature:
+                x10_product = product
+
+        if not x10_product:
+            x10_product = X10Product(feature, None)
+
+        return x10_product

@@ -18,10 +18,14 @@ from insteonplm.constants import (
     COMMAND_GET_INSTEON_ENGINE_VERSION_0X0D_0X00,
     COMMAND_PING_0X0F_0X00,
     COMMAND_EXTENDED_READ_WRITE_ALDB_0X2F_0X00,
-    MESSAGE_TYPE_DIRECT_MESSAGE
+    MESSAGE_TYPE_DIRECT_MESSAGE,
+    MESSAGE_FLAG_DIRECT_MESSAGE_NAK_0XA0,
+    MESSAGE_STANDARD_MESSAGE_RECEIVED_0X50,
+    MESSAGE_EXTENDED_MESSAGE_RECEIVED_0X51
 )
 from insteonplm.messagecallback import MessageCallback
 from insteonplm.messages.extendedReceive import ExtendedReceive
+from insteonplm.messages.standardReceive import StandardReceive
 from insteonplm.messages.extendedSend import ExtendedSend
 from insteonplm.messages.messageFlags import MessageFlags
 from insteonplm.messages.standardSend import StandardSend
@@ -43,10 +47,22 @@ def create(plm, address, cat, subcat, firmware=None):
     deviceclass = product.deviceclass
     device = None
     if deviceclass is not None:
-        device = deviceclass.create(plm, address, cat, subcat,
-                                    product.product_key,
-                                    product.description,
-                                    product.model)
+        device = deviceclass(plm, address, cat, subcat,
+                             product.product_key,
+                             product.description,
+                             product.model)
+    return device
+
+
+def create_x10(plm, housecode, unitcode, feature):
+    """Create an X10 device from a feature definition."""
+    from insteonplm.devices.ipdb import IPDB
+    ipdb = IPDB()
+    product = ipdb.x10(feature)
+    deviceclass = product.deviceclass
+    device = None
+    if deviceclass:
+        device = deviceclass(plm, housecode, unitcode)
     return device
 
 
@@ -72,6 +88,7 @@ class Device(object):
         self._model = model
 
         self._last_communication_received = datetime.datetime(1, 1, 1, 1, 1, 1)
+        self._recent_messages = asyncio.Queue(loop=self._plm.loop)
         self._product_data_in_aldb = False
         self._stateList = StateList()
         self._send_msg_lock = asyncio.Lock(loop=self._plm.loop)
@@ -116,7 +133,7 @@ class Device(object):
     @property
     def id(self):
         """Return the ID of the device."""
-        return self._address.hex
+        return self._address.id
 
     @property
     def states(self):
@@ -141,13 +158,6 @@ class Device(object):
     @property
     def aldb(self):
         return self._aldb
-
-    @classmethod
-    def create(cls, plm, address, cat, subcat, product_key=None,
-               description=None, model=None):
-        """Factory method to create a device."""
-        return cls(plm, address, cat, subcat, product_key,
-                   description, model)
 
     # Public Methods
     def async_refresh_state(self):
@@ -269,11 +279,11 @@ class Device(object):
             pass
         else:
             self.log.info('mode: %s', mode)
-            raise ValueError
+            raise ValueError("Mode must be 'c' or 'r'")
         if isinstance(group, int):
             pass
         else:
-            raise ValueError
+            raise ValueError("Group must be an integer")
 
         target_addr = Address(target)
 
@@ -282,8 +292,16 @@ class Device(object):
                                 data1, data2, data3)
         self._aldb.add_loaded_callback(self._aldb_loaded_callback)
 
+    def del_aldb(self, mem_addr: int):
+        """Delete an All-Link Database record."""
+        self._aldb.del_record(mem_addr)
+        self._aldb.add_loaded_callback(self._aldb_loaded_callback)
+
     def _handle_aldb_record_received(self, msg):
         self._aldb.record_received(msg)
+
+    def _handle_pre_nak(self, msg):
+        self.async_refresh_state()
 
     def _register_messages(self):
             ext_msg_aldb_record = ExtendedReceive.template(
@@ -293,8 +311,20 @@ class Device(object):
                 flags=MessageFlags.template(
                     messageType=MESSAGE_TYPE_DIRECT_MESSAGE,
                     extended=1))
+            std_msg_pre_nak = StandardReceive.template(
+                flags=MessageFlags.template(
+                    messageType=MESSAGE_FLAG_DIRECT_MESSAGE_NAK_0XA0),
+                cmd2=0xfc)
+            ext_msg_pre_nak = ExtendedReceive.template(
+                flags=MessageFlags.template(
+                    messageType=MESSAGE_FLAG_DIRECT_MESSAGE_NAK_0XA0),
+                cmd2=0xfc)
             self._message_callbacks.add(ext_msg_aldb_record,
                                         self._handle_aldb_record_received)
+            self._message_callbacks.add(std_msg_pre_nak,
+                                        self._handle_pre_nak)
+            self._message_callbacks.add(ext_msg_pre_nak,
+                                        self._handle_pre_nak)
 
     # Send / Receive message processing
     def receive_message(self, msg):
@@ -317,12 +347,61 @@ class Device(object):
                 self._directACK_received_queue.put_nowait(msg)
             else:
                 self.log.debug('But Direct ACK not expected')
-        callbacks = self._message_callbacks.get_callbacks_from_message(msg)
-        for callback in callbacks:
-            self.log.debug('Scheduling msg callback: %s', callback)
-            self._plm.loop.call_soon(callback, msg)
+        if not self._is_duplicate(msg):
+            callbacks = self._message_callbacks.get_callbacks_from_message(msg)
+            for callback in callbacks:
+                self.log.debug('Scheduling msg callback: %s', callback)
+                self._plm.loop.call_soon(callback, msg)
+        else:
+            self.log.debug('msg is duplicate')
+            self.log.debug(msg)
         self._last_communication_received = datetime.datetime.now()
         self.log.debug('Ending Device.receive_message')
+
+    def _is_duplicate(self, msg):
+        if msg.code not in [MESSAGE_STANDARD_MESSAGE_RECEIVED_0X50,
+                            MESSAGE_EXTENDED_MESSAGE_RECEIVED_0X51]:
+            return False
+
+        recent_messages = []
+        while not self._recent_messages.empty():
+            recent_message = self._recent_messages.get_nowait()
+            if recent_message:
+                msg_received = recent_message.get("received")
+                if msg_received >= (datetime.datetime.now() -
+                                    datetime.timedelta(0, 0, 500000)):
+                    recent_messages.append(recent_message)
+        if not recent_messages:
+            self._save_recent_message(msg)
+            return False
+
+        for recent_message in recent_messages:
+            prev_msg = recent_message.get('msg')
+            self._recent_messages.put_nowait(recent_message)
+            prev_cmd1 = prev_msg.cmd1
+            if prev_msg.flags.isAllLinkBroadcast:
+                prev_group = prev_msg.target.bytes[2]
+            elif prev_msg.flags.isAllLinkCleanup:
+                prev_group = prev_msg.cmd2
+
+            if msg.flags.isAllLinkCleanup or msg.flags.isAllLinkBroadcast:
+                cmd1 = msg.cmd1
+                if msg.flags.isAllLinkBroadcast:
+                    group = msg.target.bytes[2]
+                else:
+                    group = msg.cmd2
+                if prev_cmd1 == cmd1 and prev_group == group:
+                    return True
+                else:
+                    self._save_recent_message(msg)
+            else:
+                self._save_recent_message(msg)
+                return False
+
+    def _save_recent_message(self, msg):
+        recent_message = {"msg": msg,
+                          "received": datetime.datetime.now()}
+        self._recent_messages.put_nowait(recent_message)
 
     def _send_msg(self, msg, callback=None, on_timeout=False):
         self.log.debug('Starting Device._send_msg')
@@ -370,6 +449,86 @@ class Device(object):
 
     def _aldb_loaded_callback(self):
         self._plm.devices.save_device_info()
+
+
+class X10Device(object):
+    """X10 device class."""
+
+    def __init__(self, plm, housecode, unitcode):
+        """Initialize the X10Device class."""
+        self._address = Address.x10(housecode, unitcode)
+        self._plm = plm
+        self._description = "Generic X10 device"
+        self._model = ''
+        self._aldb = ALDB(None, None, self._address, version=ALDBVersion.Null)
+        self._message_callbacks = MessageCallback()
+        self._stateList = StateList()
+        self._send_msg_lock = asyncio.Lock(loop=self._plm.loop)
+        self.log = logging.getLogger()
+
+    @property
+    def address(self):
+        """X10 device address."""
+        return self._address
+
+    @property
+    def description(self):
+        """Return the INSTEON device description."""
+        return self._description
+
+    @property
+    def model(self):
+        """Return the INSTEON device model number."""
+        return self._model
+
+    @property
+    def id(self):
+        """Return the ID of the device."""
+        return self._address.id
+
+    @property
+    def states(self):
+        """Return the device states/groups."""
+        return self._stateList
+
+    @property
+    def aldb(self):
+        """Return the device All-Link Database."""
+        return self._aldb
+
+    # Send / Receive message processing
+    def receive_message(self, msg):
+        self.log.debug('Starting X10Device.receive_message')
+        if hasattr(msg, 'isack') and msg.isack:
+            self.log.debug('Got Message ACK')
+            if self._send_msg_lock.locked():
+                self._send_msg_lock.release()
+        callbacks = self._message_callbacks.get_callbacks_from_message(msg)
+        self.log.debug('Found %d callbacks for msg %s', len(callbacks), msg)
+        for callback in callbacks:
+            self.log.debug('Scheduling msg callback: %s', callback)
+            self._plm.loop.call_soon(callback, msg)
+        self._last_communication_received = datetime.datetime.now()
+        self.log.debug('Ending Device.receive_message')
+
+    def _send_msg(self, msg, wait_ack=True):
+        self.log.debug('Starting Device._send_msg')
+        write_message_coroutine = self._process_send_queue(msg, wait_ack)
+        asyncio.ensure_future(write_message_coroutine,
+                              loop=self._plm.loop)
+        self.log.debug('Ending Device._send_msg')
+
+    @asyncio.coroutine
+    def _process_send_queue(self, msg, wait_ack):
+        self.log.debug('Starting Device._process_send_queue')
+        yield from self._send_msg_lock
+        if self._send_msg_lock.locked():
+            self.log.debug("Lock is locked from yeild from")
+
+        self._plm.send_msg(msg, wait_timeout=2)
+        if not wait_ack:
+            self._send_msg_lock.release()
+        self.log.debug('Ending Device._process_send_queue')
 
 
 class StateList(object):
@@ -789,6 +948,51 @@ class ALDB(object):
             self._send_method(msg, self._handle_write_aldb_ack, True)
             self._load_action = LoadAction(mem_addr, 1,  0)
 
+    def del_record(self, mem_addr: int):
+        """Write an All-Link database record."""
+        record = self._records.get(mem_addr)
+        if not record:
+            self.log.error('Must load the ALDB record before deleting it')
+        else:
+            self._prior_status = self._status
+            self._status = ALDBStatus.LOADING
+            mem_hi = mem_addr >> 8
+            mem_lo = mem_addr & 0xff
+            controller = record.control_flags.is_controller
+            control_flag = ControlFlags(False, controller, True, False, False)
+            addr = record.address
+            addr_lo = addr.bytes[0]
+            addr_mid = addr.bytes[1]
+            addr_hi = addr.bytes[2]
+            group = record.group
+            data1 = record.data1
+            data2 = record.data2
+            data3 = record.data3
+            chksum = 0xff - ((0x2f + 0x02 + mem_hi + mem_lo + 0x08 +
+                              control_flag.byte +
+                              addr_lo + addr_mid + addr_hi +
+                              group + data1 + data2 + data3) & 0xff) + 1
+            userdata = Userdata({'d1': 0,
+                                 'd2': 0x02,
+                                 'd3': mem_hi,
+                                 'd4': mem_lo,
+                                 'd5': 0x08,
+                                 'd6': control_flag.byte,
+                                 'd7': group,
+                                 'd8': addr_lo,
+                                 'd9': addr_mid,
+                                 'd10': addr_hi,
+                                 'd11': data1,
+                                 'd12': data2,
+                                 'd13': data3,
+                                 'd14': chksum})
+            msg = ExtendedSend(self._address,
+                               COMMAND_EXTENDED_READ_WRITE_ALDB_0X2F_0X00,
+                               userdata=userdata)
+            self.log.info('writing message %s', msg)
+            self._send_method(msg, self._handle_write_aldb_ack, True)
+            self._load_action = LoadAction(mem_addr, 1,  0)
+
     def find_matching_link(self, mode, group, addr):
         """Finds a matching link in the current device.
 
@@ -865,7 +1069,7 @@ class ALDB(object):
         if msg:
             self.log.info('Device confirmed ALDB message write')
             try:
-                v = self._records.pop(self._load_action.mem_addr)
+                self._records.pop(self._load_action.mem_addr)
             except KeyError:
                 pass
             asyncio.ensure_future(self.load(self._load_action.mem_addr, 1, 0),
