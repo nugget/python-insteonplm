@@ -421,7 +421,7 @@ class DimmableKeypadA(DimmableSwitch):
                          message_callbacks, defaultvalue)
 
         self._updatemethod = self._send_status_request
-        self._led = leds
+        self._leds = leds
 
     def led_on(self):
         self._leds.on(self._group)
