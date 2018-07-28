@@ -235,6 +235,7 @@ class IM(Device, asyncio.Protocol):
                 wait_timeout = msg_info.get('wait_timeout')
                 self.log.debug('Writing message: %s', msg)
                 write_bytes = msg.bytes
+                is_nak = False
                 if hasattr(msg, 'acknak') and msg.acknak:
                     write_bytes = write_bytes[:-1]
                 if self.transport:
@@ -244,7 +245,6 @@ class IM(Device, asyncio.Protocol):
                     self.log.debug("Transport is not open. Cannot write")
                 if wait_nak:
                     self.log.debug('Waiting for ACK or NAK message')
-                    is_nak = False
                     try:
                         with async_timeout.timeout(ACKNAK_TIMEOUT):
                             while True:
