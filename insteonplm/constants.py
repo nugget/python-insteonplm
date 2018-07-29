@@ -173,46 +173,56 @@ COMMAND_THERMOSTAT_TEMPERATURE_UP_0X68_NONE = {'cmd1': 0x68, 'cmd2': None}
 COMMAND_THERMOSTAT_TEMPERATURE_DOWN_0X69_NONE = {'cmd1': 0x69, 'cmd2': None}
 COMMAND_THERMOSTAT_GET_ZONE_INFORMATION_0X6A_NONE = {'cmd1': 0x6A,
                                                      'cmd2': None}
-COMMAND_THERMOSTAT_CONTROLLOAD_INITIALIZATION_VALUES_0X6B_0X00 = {
+COMMAND_THERMOSTAT_CONTROL_LOAD_INITIALIZATION_VALUES_0X6B_0X00 = {
     'cmd1': 0x6B, 'cmd2': 0x00}
-COMMAND_THERMOSTAT_CONTROLLOAD_EEPROM_FROM_RAM_0X6B_0X01 = {'cmd1': 0x6B,
-                                                            'cmd2': 0x01}
-COMMAND_THERMOSTAT_CONTROLGET_THERMOSTAT_MODE_0X6B_0X02 = {'cmd1': 0x6B,
-                                                           'cmd2': 0x02}
-COMMAND_THERMOSTAT_CONTROLGET_AMBIENT_TEMPERATURE_0X6B_0X03 = {'cmd1': 0x6B,
-                                                               'cmd2': 0x03}
-COMMAND_THERMOSTAT_CONTROLON_HEAT_0X6B_0X04 = {'cmd1': 0x6B, 'cmd2': 0x04}
-COMMAND_THERMOSTAT_CONTROLON_COOL_0X6B_0X05 = {'cmd1': 0x6B, 'cmd2': 0x05}
-COMMAND_THERMOSTAT_CONTROLON_AUTO_0X6B_0X06 = {'cmd1': 0x6B, 'cmd2': 0x06}
-COMMAND_THERMOSTAT_CONTROLON_FAN_0X6B_0X07 = {'cmd1': 0x6B, 'cmd2': 0x07}
-COMMAND_THERMOSTAT_CONTROLOFF_FAN_0X6B_0X08 = {'cmd1': 0x6B, 'cmd2': 0x08}
-COMMAND_THERMOSTAT_CONTROLOFF_ALL_0X6B_0X09 = {'cmd1': 0x6B, 'cmd2': 0x09}
-COMMAND_THERMOSTAT_CONTROLPROGRAM_HEAT_0X6B_0X0A = {'cmd1': 0x6B, 'cmd2': 0x0A}
-COMMAND_THERMOSTAT_CONTROLPROGRAM_COOL_0X6B_0X0B = {'cmd1': 0x6B, 'cmd2': 0x0B}
-COMMAND_THERMOSTAT_CONTROLPROGRAM_AUTO_0X6B_0X0C = {'cmd1': 0x6B, 'cmd2': 0x0C}
-COMMAND_THERMOSTAT_CONTROLGET_EQUIPMENT_STATE_0X6B_0X0D = {'cmd1': 0x6B,
-                                                           'cmd2': 0x0D}
-COMMAND_THERMOSTAT_CONTROLSET_EQUIPMENT_STATE_0X6B_0X0E = {'cmd1': 0x6B,
-                                                           'cmd2': 0x0E}
-COMMAND_THERMOSTAT_CONTROLGET_TEMPERATURE_UNITS_0X6B_0X0F = {'cmd1': 0x6B,
+COMMAND_THERMOSTAT_CONTROL_LOAD_EEPROM_FROM_RAM_0X6B_0X01 = {'cmd1': 0x6B,
+                                                             'cmd2': 0x01}
+COMMAND_THERMOSTAT_CONTROL_GET_MODE_0X6B_0X02 = {'cmd1': 0x6B, 'cmd2': 0x02}
+COMMAND_THERMOSTAT_CONTROL_GET_AMBIENT_TEMPERATURE_0X6B_0X03 = {'cmd1': 0x6B,
+                                                                'cmd2': 0x03}
+COMMAND_THERMOSTAT_CONTROL_ON_HEAT_0X6B_0X04 = {'cmd1': 0x6B, 'cmd2': 0x04}
+COMMAND_THERMOSTAT_CONTROL_ON_COOL_0X6B_0X05 = {'cmd1': 0x6B, 'cmd2': 0x05}
+COMMAND_THERMOSTAT_CONTROL_ON_AUTO_0X6B_0X06 = {'cmd1': 0x6B, 'cmd2': 0x06}
+COMMAND_THERMOSTAT_CONTROL_ON_FAN_0X6B_0X07 = {'cmd1': 0x6B, 'cmd2': 0x07}
+COMMAND_THERMOSTAT_CONTROL_OFF_FAN_0X6B_0X08 = {'cmd1': 0x6B, 'cmd2': 0x08}
+COMMAND_THERMOSTAT_CONTROL_OFF_ALL_0X6B_0X09 = {'cmd1': 0x6B, 'cmd2': 0x09}
+COMMAND_THERMOSTAT_CONTROL_PROGRAM_HEAT_0X6B_0X0A = {'cmd1': 0x6B,
+                                                     'cmd2': 0x0A}
+COMMAND_THERMOSTAT_CONTROL_PROGRAM_COOL_0X6B_0X0B = {'cmd1': 0x6B,
+                                                     'cmd2': 0x0B}
+COMMAND_THERMOSTAT_CONTROL_PROGRAM_AUTO_0X6B_0X0C = {'cmd1': 0x6B,
+                                                     'cmd2': 0x0C}
+COMMAND_THERMOSTAT_CONTROL_GET_EQUIPMENT_STATE_0X6B_0X0D = {'cmd1': 0x6B,
+                                                            'cmd2': 0x0D}
+COMMAND_THERMOSTAT_CONTROL_SET_EQUIPMENT_STATE_0X6B_0X0E = {'cmd1': 0x6B,
+                                                            'cmd2': 0x0E}
+COMMAND_THERMOSTAT_CONTROL_GET_TEMPERATURE_UNITS_0X6B_0X0F = {'cmd1': 0x6B,
                                                              'cmd2': 0x0F}
-COMMAND_THERMOSTAT_CONTROLSET_FAHRENHEIT_0X6B_0X10 = {'cmd1': 0x6B,
+COMMAND_THERMOSTAT_CONTROL_SET_FAHRENHEIT_0X6B_0X10 = {'cmd1': 0x6B,
                                                       'cmd2': 0x10}
-COMMAND_THERMOSTAT_CONTROLSET_CELSIUS_0X6B_0X11 = {'cmd1': 0x6B, 'cmd2': 0x11}
-COMMAND_THERMOSTAT_CONTROLGET_FAN_ON_SPEED_0X6B_0X12 = {'cmd1': 0x6B,
-                                                        'cmd2': 0x12}
-COMMAND_THERMOSTAT_CONTROLSET_FAN_ON_SPEED_LOW_0X6B_0X13 = {'cmd1': 0x6B,
-                                                            'cmd2': 0x13}
-COMMAND_THERMOSTAT_CONTROLSET_FAN_ON_SPEED_MEDIUM_0X6B_0X14 = {'cmd1': 0x6B,
-                                                               'cmd2': 0x14}
-COMMAND_THERMOSTAT_CONTROLSET_FAN_ON_SPEED_HIGH_0X6B_0X15 = {'cmd1': 0x6B,
-                                                             'cmd2': 0x15}
-COMMAND_THERMOSTAT_CONTROLENABLE_STATUS_CHANGE_MESSAGE_0X6B_0X16 = {
+COMMAND_THERMOSTAT_CONTROL_SET_CELSIUS_0X6B_0X11 = {'cmd1': 0x6B, 'cmd2': 0x11}
+COMMAND_THERMOSTAT_CONTROL_GET_FAN_ON_SPEED_0X6B_0X12 = {'cmd1': 0x6B,
+                                                         'cmd2': 0x12}
+COMMAND_THERMOSTAT_CONTROL_SET_FAN_ON_SPEED_LOW_0X6B_0X13 = {'cmd1': 0x6B,
+                                                             'cmd2': 0x13}
+COMMAND_THERMOSTAT_CONTROL_SET_FAN_ON_SPEED_MEDIUM_0X6B_0X14 = {'cmd1': 0x6B,
+                                                                'cmd2': 0x14}
+COMMAND_THERMOSTAT_CONTROL_SET_FAN_ON_SPEED_HIGH_0X6B_0X15 = {'cmd1': 0x6B,
+                                                              'cmd2': 0x15}
+COMMAND_THERMOSTAT_CONTROL_ENABLE_STATUS_CHANGE_MESSAGE_0X6B_0X16 = {
     'cmd1': 0x6B, 'cmd2': 0x16}
-COMMAND_THERMOSTAT_CONTROLDISABLE_STATUS_CHANGE_MESSAGE_0X6B_0X17 = {
+COMMAND_THERMOSTAT_CONTROL_DISABLE_STATUS_CHANGE_MESSAGE_0X6B_0X17 = {
     'cmd1': 0x6B, 'cmd2': 0x17}
 COMMAND_THERMOSTAT_SET_COOL_SETPOINT_0X6C_NONE = {'cmd1': 0x6C, 'cmd2': None}
 COMMAND_THERMOSTAT_SET_HEAT_SETPOINT_0X6D_NONE = {'cmd1': 0x6D, 'cmd2': None}
+COMMAND_THERMOSTAT_TEMPERATURE_STATUS_0X6E_NONE = {'cmd1': 0x6E, 'cmd2': None}
+COMMAND_THERMOSTAT_HUMIDITY_STATUS_0X6F_NONE = {'cmd1': 0x6F, 'cmd2': None}
+COMMAND_THERMOSTAT_MODE_STATUS_0X70_NONE = {'cmd1': 0x70, 'cmd2': None}
+COMMAND_THERMOSTAT_COOL_SET_POINT_STATUS_0X71_NONE = {'cmd1': 0x71,
+                                                      'cmd2': None}
+COMMAND_THERMOSTAT_HEAT_SET_POINT_STATUS_0X72_NONE = {'cmd1': 0x72,
+                                                      'cmd2': None}
+
 COMMAND_LEAK_DETECTOR_ANNOUNCE_0X70_NONE = {'cmd1': 0X70, 'cmd2': None}
 COMMAND_ASSIGN_TO_COMPANION_GROUP_0X81_0X00 = {'cmd1': 0x81, 'cmd2': 0x00}
 
@@ -377,3 +387,12 @@ X10_COMMAND_STATUS_REQUEST = 0x0D
 class X10CommandType(Enum):
     DIRECT = 0,
     BROADCAST = 1
+
+
+class ThermostatMode(Enum):
+    OFF = 0x00,
+    HEAT = 0x01,
+    COOL = 0x02,
+    AUTO = 0x03,
+    FAN_AUTO = 0x04,
+    FAN_ALWAYS_ON = 0x8
