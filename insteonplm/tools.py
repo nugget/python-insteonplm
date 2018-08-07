@@ -73,7 +73,8 @@ class Tools():
     @asyncio.coroutine
     def connect(self, poll_devices=False, device=None, workdir=None):
         yield from self.aldb_load_lock.acquire()
-        _LOGGING.info('Connecting to Insteon PLM at %s', self.device)
+        device = self.host if self.host else self.device
+        _LOGGING.info('Connecting to Insteon Modem at %s', device)
         self.device = device if device else self.device
         self.workdir = workdir if workdir else self.workdir
         conn = yield from insteonplm.Connection.create(
@@ -85,6 +86,7 @@ class Tools():
             loop=self.loop,
             poll_devices=poll_devices,
             workdir=self.workdir)
+        _LOGGING.info('Connecton made to Insteon Modem at %s', device)
         conn.protocol.add_device_callback(self.async_new_device_callback)
         conn.protocol.add_all_link_done_callback(
             self.async_aldb_loaded_callback)
@@ -1177,7 +1179,7 @@ def monitor():
         if monTool.plm:
             if monTool.plm.transport:
                 _LOGGING.info('Closing the session')
-                monTool.plm.transport.close()
+                asyncio.ensure_future(monTool.plm.transport.close(), loop=loop)
         loop.stop()
         pending = asyncio.Task.all_tasks(loop=loop)
         for task in pending:

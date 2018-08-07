@@ -8,7 +8,7 @@ import asyncio
 import binascii
 import logging
 import serial
-import serial.aio
+from serial.aio import create_serial_connection
 
 from insteonplm.plm import PLM, Hub
 
@@ -28,6 +28,7 @@ def create_http_connection(loop, protocol_factory, host, port=25105,
     session = aiohttp.ClientSession(auth=auth, connector=connector)
     protocol = protocol_factory()
     transport = HttpTransport(loop, protocol, session, host, port)
+    _LOGGER.debug("create_http_connection Finished creating connection")
     return (transport, protocol)
 
 
@@ -67,6 +68,7 @@ class Connection:
         :type update_callback:
             callable
         """
+        _LOGGER.debug("Starting Connection.create")
         conn = cls()
 
         conn.device = device
@@ -76,7 +78,7 @@ class Connection:
         conn.port = port
         conn._loop = loop or asyncio.get_event_loop()
         conn._retry_interval = 1
-        conn._closed = False
+        conn._closed = True
         conn._closing = False
         conn._halted = False
         conn._auto_reconnect = auto_reconnect
@@ -84,6 +86,7 @@ class Connection:
         def connection_lost():
             """Function callback for Protocol when connection is lost."""
             if conn._auto_reconnect and not conn._closing:
+                _LOGGER.debug("Reconnecting to transport")
                 ensure_future(conn._reconnect(), loop=conn._loop)
 
         protocol_class = PLM
@@ -97,6 +100,7 @@ class Connection:
 
         yield from conn._reconnect()
 
+        _LOGGER.debug("Ending Connection.create")
         return conn
 
     @property
@@ -108,55 +112,32 @@ class Connection:
         """
         return self.protocol.transport
 
-    def _get_retry_interval(self):
-        return self._retry_interval
-
     def _reset_retry_interval(self):
         self._retry_interval = 1
 
     def _increase_retry_interval(self):
         self._retry_interval = min(300, 1.5 * self._retry_interval)
 
-    # TODO:
-    # This code need to change to handle serial or HTTP connections.
     @asyncio.coroutine
     def _reconnect(self):
-        while True:
-            try:
-                if self._halted:
-                    yield from asyncio.sleep(2, loop=self._loop)
-                else:
-                    if self.host:
-                        _LOGGER.info('Connecting to Hub on %s', self.host)
-                        auth = aiohttp.BasicAuth(self.username, self.password)
-                        connector = aiohttp.TCPConnector(
-                            limit=1, loop=self._loop, keepalive_timeout=10)
-                        yield from create_http_connection(
-                            self._loop, lambda: self.protocol,
-                            self.host, port=self.port,
-                            auth=auth, connector=connector)
-                    else:
-                        _LOGGER.info('Connecting to PLM on %s', self.device)
-                        yield from serial.aio.create_serial_connection(
-                            self._loop, lambda: self.protocol,
-                            self.device, baudrate=19200)
-                        self._reset_retry_interval()
-                    return
+        _LOGGER.debug('starting Connection._reconnect')
+        yield from self._connect()
+        while self._closed:
+            yield from self._retry_connection()
+        _LOGGER.debug('ending Connection._reconnect')
 
-            except OSError:
-                self._increase_retry_interval()
-                interval = self._get_retry_interval()
-                _LOGGER.warning('Connecting failed, retry in %i seconds: %s',
-                                interval, self.device)
-                yield from asyncio.sleep(interval, loop=self._loop)
-
-    def close(self):
+    @asyncio.coroutine
+    def close(self, event):
         """Close the PLM device connection and don't try to reconnect."""
+        print('Will this show up???')
         _LOGGER.warning('Closing connection to PLM')
         self._closing = True
         self._auto_reconnect = False
+        yield from self.protocol.close()
         if self.protocol.transport:
             self.protocol.transport.close()
+        yield from asyncio.sleep(0, loop=self._loop)
+        _LOGGER.warning('PLM Closed...')
 
     def halt(self):
         """Close the PLM device connection and wait for a resume() request."""
@@ -175,6 +156,57 @@ class Connection:
         """Developer tool for debugging forensics."""
         attrs = vars(self)
         return ', '.join("%s: %s" % item for item in attrs.items())
+
+    @asyncio.coroutine
+    def _retry_connection(self):
+        _LOGGER.debug('starting Connection._retry_connection')
+        device = self.host if self.host else self.device
+        self._increase_retry_interval()
+        _LOGGER.warning('Connection failed, retry in %i seconds: %s',
+                        self._retry_interval, device)
+        yield from asyncio.sleep(self._retry_interval, loop=self._loop)
+        _LOGGER.debug('Starting _connect')
+        yield from self._connect()
+        _LOGGER.debug('ending Connection._retry_connection')
+
+    @asyncio.coroutine
+    def _connect(self):
+        _LOGGER.debug('starting Connection._connect')
+        if self.host:
+            connected = yield from self._connect_http()
+        else:
+            connected =  yield from self._connect_serial()
+        _LOGGER.debug('ending Connection._connect')
+        return connected
+
+    @asyncio.coroutine
+    def _connect_http(self):
+        _LOGGER.info('Connecting to Hub on %s', self.host)
+        auth = aiohttp.BasicAuth(self.username, self.password)
+        connector = aiohttp.TCPConnector(
+            limit=1, loop=self._loop, keepalive_timeout=10)
+        _LOGGER.debug('Creating http connection')
+        transport, protocol = yield from create_http_connection(
+            self._loop, lambda: self.protocol,
+            self.host, port=self.port,
+            auth=auth, connector=connector)
+        connected = yield from transport.test_connection()
+        if connected:
+            transport.resume_reading()
+        self._closed = not connected
+        return connected
+
+    @asyncio.coroutine
+    def _connect_serial(self):
+        _LOGGER.info('Connecting to PLM on %s', self.device)
+        try:
+            transport, protocol = yield from create_serial_connection(
+                self._loop, lambda: self.protocol,
+                self.device, baudrate=19200)
+            self._closed = False
+        except OSError:
+            self._closed = True
+        return not self._closed
 
 
 class HttpTransport(asyncio.Transport):
@@ -211,10 +243,9 @@ class HttpTransport(asyncio.Transport):
         self._poll_wait_time = 0.0005
         self._read_write_lock = asyncio.Lock(loop=self._loop)
         self._last_read = asyncio.Queue(loop=self._loop)
-
-        # TODO: restart _ensure_reader if it fails or if the connection
-        # is lost.
-        asyncio.ensure_future(self._ensure_reader(), loop=self._loop)
+        self._restart_reader = True
+        _LOGGER.debug("Starting the reader in HttpTrasnport __init__")
+        self._reader_task = None
 
     def abort(self):
         self._session.close()
@@ -222,25 +253,31 @@ class HttpTransport(asyncio.Transport):
     def can_write_eof(self):
         return False
 
+    def is_closing(self):
+        return self._closing
+
     def close(self):
-        _LOGGER.debug("Closing session")
-        self._loop.run_until_complete(self._close())
-        _LOGGER.info("Hub Session closed")
+        _LOGGER.debug("Closing Hub session")
+        asyncio.ensure_future(self._close(), loop=self._loop)
 
     @asyncio.coroutine
     def _close(self):
+        _LOGGER.debug('Closing the connection-------------------------------------------------------------------')
+        #self.pause_reading()
+        self._closing = True
         yield from self._session.close()
         yield from asyncio.sleep(0, loop=self._loop)
-        self._closing = True
+        _LOGGER.info("Hub Session closed")
 
     def get_write_buffer_size(self):
         return 0
 
     def pause_reading(self):
-        self._loop.call_soon(self._lock_read, True)
+        self._stop_reader(False)
 
     def resume_reading(self):
-        self._loop.call_soon(self._lock_read, False)
+        self._restart_reader = True
+        self._start_reader()
 
     def set_write_buffer_limits(self, high=None, low=None):
         raise NotImplementedError(
@@ -255,15 +292,52 @@ class HttpTransport(asyncio.Transport):
         asyncio.ensure_future(coro_write, loop=self._loop)
 
     @asyncio.coroutine
+    def test_connection(self):
+        url = 'http://{:s}:{:d}/buffstatus.xml'.format(self._host, self._port)
+        try:
+            response = yield from self._session.get(url, timeout=5)
+            if response and response.status == 200:
+                _LOGGER.debug('Test connection status is %d', response.status)
+                return True
+            else:
+                self._log_error(response.status)
+        except Exception as e:
+            _LOGGER.error('An unknown error occured: %s', str(e))
+        _LOGGER.debug('Connection test failed')
+        self.close()
+        return False
+
+    @asyncio.coroutine
     def _async_write(self, url):
+        return_status = 500
+        if self._session.closed:
+            _LOGGER.warning("Session closed, cannot write to Hub")
+            return
         _LOGGER.debug("Writing message: %s", url)
-        yield from self._read_write_lock
-        resp = yield from self._session.post(url)
-        self._write_last_read(0)
+        try:
+            yield from self._read_write_lock
+            response = yield from self._session.post(url, timeout=5)
+            return_status = response.status
+            _LOGGER.debug("Post status: %s", response.status)
+            if response.status == 200:
+                self._write_last_read(0)
+            else:
+                self._log_error(response.status)
+                self._stop_reader(False)
+        except aiohttp.client_exceptions.ServerDisconnectedError:
+            _LOGGER.error('Reconnect to Hub (ServerDisconnectedError)')
+            self._stop_reader(True)
+        except aiohttp.client_exceptions.ClientConnectorError:
+            _LOGGER.error('Reconnect to Hub (ClientConnectorError)')
+            self._stop_reader(True)
+        except asyncio.TimeoutError:
+            _LOGGER.error('Reconnect to Hub (TimeoutError)')
+            self._stop_reader(True)
+
+
         if self._read_write_lock.locked():
             self._read_write_lock.release()
-        _LOGGER.debug("Post status: %s", resp.status)
-        return resp.status
+        return return_status
 
     def write_eof(self):
         raise NotImplementedError(
@@ -285,31 +359,60 @@ class HttpTransport(asyncio.Transport):
 
     @asyncio.coroutine
     def _ensure_reader(self):
+        _LOGGER.info('Hub reader started')
         yield from self._clear_buffer()
         self._write_last_read(0)
         url = 'http://{:s}:{:d}/buffstatus.xml'.format(self._host, self._port)
+        _LOGGER.debug('Calling connection made')
         self._loop.call_soon(self._protocol.connection_made(self))
-        while True:
-            if self._session.closed:
-                return
-            yield from self._read_write_lock
-            last_stop = 0
-            if not self._last_read.empty():
-                last_stop = self._last_read.get_nowait()
-            response = yield from self._session.get(url)
-            buffer = None
-            if response.status == 200:
-                html = yield from response.text()
-                last_stop, buffer = self._parse_buffer(html, last_stop)
-                self._write_last_read(last_stop)
-            # TODO: handle status codes
-            if self._read_write_lock.locked():
-                self._read_write_lock.release()
-            if buffer:
-                _LOGGER.debug('New buffer: %s', buffer)
-                bin_buffer = binascii.unhexlify(buffer)
-                self._protocol.data_received(bin_buffer)
-            yield from asyncio.sleep(1, loop=self._loop)
+        while self._restart_reader:
+            try:
+                if self._session.closed:
+                    self._stop_reader(False)
+                    return
+                yield from self._read_write_lock
+                last_stop = 0
+                if not self._last_read.empty():
+                    last_stop = self._last_read.get_nowait()
+                response = yield from self._session.get(url, timeout=5)
+                buffer = None
+                # _LOGGER.debug("Reader status: %d", response.status)
+                if response.status == 200:
+                    html = yield from response.text()
+                    last_stop, buffer = self._parse_buffer(html, last_stop)
+                    self._write_last_read(last_stop)
+                else:
+                    self._log_error(response.status)
+                    self._stop_reader(False)
+                # TODO: handle other status codes
+                if self._read_write_lock.locked():
+                    self._read_write_lock.release()
+                if buffer:
+                    _LOGGER.debug('New buffer: %s', buffer)
+                    bin_buffer = binascii.unhexlify(buffer)
+                    self._protocol.data_received(bin_buffer)
+                yield from asyncio.sleep(1, loop=self._loop)
+            
+            except asyncio.CancelledError:
+                _LOGGER.debug('Stop connection to Hub (loop stopped)')
+                self._stop_reader(False)
+            except GeneratorExit:
+                _LOGGER.debug('Stop connection to Hub (GeneratorExit)')
+                self._stop_reader(False)
+            except aiohttp.client_exceptions.ServerDisconnectedError:
+                _LOGGER.debug('Reconnect to Hub (ServerDisconnectedError)')
+                self._stop_reader(True)
+            except aiohttp.client_exceptions.ClientConnectorError:
+                _LOGGER.debug('Reconnect to Hub (ClientConnectorError)')
+                self._stop_reader(True)
+            except asyncio.TimeoutError:
+                _LOGGER.error('Reconnect to Hub (TimeoutError)')
+                self._stop_reader(True)
+            except Exception as e:
+                _LOGGER.debug('Stop reading due to %s', str(e))
+                self._stop_reader(False)
+        _LOGGER.info('Hub reader stopped')
+        return
 
     def _parse_buffer(self, html, last_stop):
         buffer = ''
@@ -340,3 +443,41 @@ class HttpTransport(asyncio.Transport):
         while not self._last_read.empty():
             self._last_read.get_nowait()
         self._last_read.put_nowait(val)
+
+    def _start_reader(self, future=None):
+        if self._restart_reader:
+            _LOGGER.debug("Starting the buffer reader")
+            self._reader_task = asyncio.ensure_future(self._ensure_reader(),
+                                                loop=self._loop)
+            self._reader_task.add_done_callback(self._start_reader)
+
+    def _stop_reader(self, reconnect=False):
+        _LOGGER.debug('Stopping the reader and reconnect is %s', reconnect)
+        self._restart_reader = False
+        if self._reader_task:
+            self._reader_task.remove_done_callback(self._start_reader)
+            self._reader_task.cancel()
+        self._protocol.pause_writing()
+        if not self._session.closed:
+            _LOGGER.debug('Session is open so we close it')
+            self.close()
+        if reconnect:
+            _LOGGER.debug("We want to reconnect so we do...")
+            self._protocol.connection_lost(True)
+
+    def _log_error(self, error):
+        # TODO: handle other status codes
+        if response.status == 401:
+            _LOGGER.error('Athentication error, check your configuration')
+            _LOGGER.error('If configuration is correct and restart the Hub')
+            _LOGGER.error('System must be restared to reconnect to hub')
+        elif response.status == 404:
+            _LOGGER.error('Hub not found at http://%s:%d, check configuration',
+                          self._host, self._port)
+        elif response.status in range(500, 600):
+            _LOGGER.error('Hub returned a server error')
+            _LOGGER.error('Restart the Hub and try again')
+        else:
+            _LOGGER.error('An unknown error has occured')
+            _LOGGER.error('Check the configuration and restart the Hub and '
+                          'the application')

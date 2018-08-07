@@ -24,7 +24,7 @@ from insteonplm.messages.getNextAllLinkRecord import GetNextAllLinkRecord
 from insteonplm.messages.allLinkRecordResponse import AllLinkRecordResponse
 from insteonplm.messages.x10received import X10Received
 
-from .mockConnection import MockConnection
+from .mockConnection import MockConnection, wait_for_plm_command
 from .mockCallbacks import MockCallbacks
 
 _LOGGER = logging.getLogger()
@@ -32,19 +32,6 @@ SEND_MSG_WAIT = 1.1
 SEND_MSG_ACKNAK_WAIT = .2
 DIRECT_ACK_WAIT_TIMEOUT = 3.1
 RECV_MSG_WAIT = .1
-
-
-@asyncio.coroutine
-def wait_for_plm_command(plm, cmd, loop):
-    try:
-        with async_timeout.timeout(10, loop=loop):
-            while not plm.transport.lastmessage == cmd.hex:
-                yield from asyncio.sleep(.1, loop=loop)
-            _LOGGER.info('Expected message sent %s', cmd)
-            return True
-    except asyncio.TimeoutError:
-        _LOGGER.error('Expected message not sent %s', cmd)
-        return False
 
 
 @asyncio.coroutine
@@ -205,6 +192,8 @@ def do_plm(loop):
     if not cmd_sent:
         assert False
 
+    plm.pause_writing()
+
 
 @asyncio.coroutine
 def do_plm_x10(loop):
@@ -265,6 +254,8 @@ def do_plm_x10(loop):
     plm.data_received(msg.bytes)
     yield from asyncio.sleep(.1, loop=loop)
     assert cb.callbackvalue1 == 0x00
+
+    plm.pause_writing()
 
 
 def test_plm():
