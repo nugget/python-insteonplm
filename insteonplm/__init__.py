@@ -6,6 +6,7 @@ Insteon Powerline modems like the 2413U and 2412S.
 import aiohttp
 import asyncio
 import binascii
+from contextlib import suppress
 import logging
 import serial
 from serial.aio import create_serial_connection
@@ -262,8 +263,6 @@ class HttpTransport(asyncio.Transport):
 
     @asyncio.coroutine
     def _close(self):
-        _LOGGER.debug('Closing the connection-------------------------------------------------------------------')
-        #self.pause_reading()
         self._closing = True
         yield from self._session.close()
         yield from asyncio.sleep(0, loop=self._loop)
@@ -273,7 +272,7 @@ class HttpTransport(asyncio.Transport):
         return 0
 
     def pause_reading(self):
-        self._stop_reader(False)
+        asycnio.ensure_future(self._stop_reader(False), loop=self._loop)
 
     def resume_reading(self):
         self._restart_reader = True
@@ -323,16 +322,16 @@ class HttpTransport(asyncio.Transport):
                 self._write_last_read(0)
             else:
                 self._log_error(response.status)
-                self._stop_reader(False)
+                yield from self._stop_reader(False)
         except aiohttp.client_exceptions.ServerDisconnectedError:
             _LOGGER.error('Reconnect to Hub (ServerDisconnectedError)')
-            self._stop_reader(True)
+            yield from self._stop_reader(True)
         except aiohttp.client_exceptions.ClientConnectorError:
             _LOGGER.error('Reconnect to Hub (ClientConnectorError)')
-            self._stop_reader(True)
+            yield from self._stop_reader(True)
         except asyncio.TimeoutError:
             _LOGGER.error('Reconnect to Hub (TimeoutError)')
-            self._stop_reader(True)
+            yield from self._stop_reader(True)
 
 
         if self._read_write_lock.locked():
@@ -368,7 +367,7 @@ class HttpTransport(asyncio.Transport):
         while self._restart_reader:
             try:
                 if self._session.closed:
-                    self._stop_reader(False)
+                    yield from self._stop_reader(False)
                     return
                 yield from self._read_write_lock
                 last_stop = 0
@@ -383,7 +382,7 @@ class HttpTransport(asyncio.Transport):
                     self._write_last_read(last_stop)
                 else:
                     self._log_error(response.status)
-                    self._stop_reader(False)
+                    yield from self._stop_reader(False)
                 # TODO: handle other status codes
                 if self._read_write_lock.locked():
                     self._read_write_lock.release()
@@ -395,22 +394,22 @@ class HttpTransport(asyncio.Transport):
             
             except asyncio.CancelledError:
                 _LOGGER.debug('Stop connection to Hub (loop stopped)')
-                self._stop_reader(False)
+                yield from self._stop_reader(False)
             except GeneratorExit:
                 _LOGGER.debug('Stop connection to Hub (GeneratorExit)')
-                self._stop_reader(False)
+                yield from self._stop_reader(False)
             except aiohttp.client_exceptions.ServerDisconnectedError:
                 _LOGGER.debug('Reconnect to Hub (ServerDisconnectedError)')
-                self._stop_reader(True)
+                yield from self._stop_reader(True)
             except aiohttp.client_exceptions.ClientConnectorError:
                 _LOGGER.debug('Reconnect to Hub (ClientConnectorError)')
-                self._stop_reader(True)
+                yield from self._stop_reader(True)
             except asyncio.TimeoutError:
                 _LOGGER.error('Reconnect to Hub (TimeoutError)')
-                self._stop_reader(True)
+                yield from self._stop_reader(True)
             except Exception as e:
                 _LOGGER.debug('Stop reading due to %s', str(e))
-                self._stop_reader(False)
+                yield from self._stop_reader(False)
         _LOGGER.info('Hub reader stopped')
         return
 
@@ -448,19 +447,23 @@ class HttpTransport(asyncio.Transport):
         if self._restart_reader:
             _LOGGER.debug("Starting the buffer reader")
             self._reader_task = asyncio.ensure_future(self._ensure_reader(),
-                                                loop=self._loop)
+                                                      loop=self._loop)
             self._reader_task.add_done_callback(self._start_reader)
 
+    @asyncio.coroutine
     def _stop_reader(self, reconnect=False):
         _LOGGER.debug('Stopping the reader and reconnect is %s', reconnect)
         self._restart_reader = False
         if self._reader_task:
             self._reader_task.remove_done_callback(self._start_reader)
             self._reader_task.cancel()
+            with suppress(asyncio.CancelledError):
+                yield from self._reader_task
+                yield from ascynio.sleep(0, loop=self._loop)
         self._protocol.pause_writing()
         if not self._session.closed:
             _LOGGER.debug('Session is open so we close it')
-            self.close()
+            yield from self._close()
         if reconnect:
             _LOGGER.debug("We want to reconnect so we do...")
             self._protocol.connection_lost(True)
