@@ -79,8 +79,8 @@ def create(rawmessage):
             msg = msgclass.from_raw_message(rawmessage)
             if msg:
                 remaining_data = rawmessage[len(msg.bytes):]
-    _LOGGER.debug("Returning msg: %s", msg)
-    _LOGGER.debug('Returning buffer: %s', binascii.hexlify(remaining_data))
+    # _LOGGER.debug("Returning msg: %s", msg)
+    # _LOGGER.debug('Returning buffer: %s', binascii.hexlify(remaining_data))
     return (msg, remaining_data)
 
 

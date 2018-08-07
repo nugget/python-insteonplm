@@ -844,7 +844,7 @@ class OnOffKeypadLed(State):
         button_callbacks = self._button_observer_callbacks.get(button)
         if not button_callbacks:
             self._button_observer_callbacks[button] = []
-        self.log.info('New callback for button %d', button)
+        self.log.debug('New callback for button %d', button)
         self._button_observer_callbacks[button].append(callback)
 
     @asyncio.coroutine
