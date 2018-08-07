@@ -88,7 +88,7 @@ class IM(Device, asyncio.Protocol):
         self.transport = None
 
         self._register_message_handlers()
-        self._quick_start = True
+        self._quick_start = False
         self._writer_task = None
         self._restart_writer = False
         self.resume_writing()
