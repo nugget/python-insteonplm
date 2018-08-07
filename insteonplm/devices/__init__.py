@@ -517,6 +517,8 @@ class Device(object):
         self._restart_send_queue = False
         if self._process_send_queue_lock.locked():
             self._process_send_queue_lock.release()
+        else:
+            return
         if self._send_msg_lock.locked():
             self._send_msg_lock.release()
         if self._send_queue_task:
@@ -526,7 +528,7 @@ class Device(object):
             with suppress(asyncio.CancelledError):
                 yield from self._send_queue_task
                 yield from asyncio.sleep(0, loop=self._plm.loop)
-
+                self.log.debug('Task: %s', self._send_queue_task)
 
 
 class X10Device(object):
@@ -589,8 +591,9 @@ class X10Device(object):
         self._last_communication_received = datetime.datetime.now()
         self.log.debug('Ending Device.receive_message')
 
-    def stop():
-        """Stop the writer for a clean shutdown."""
+    @asyncio.coroutine
+    def close(self):
+        """Close the writer for a clean shutdown."""
         # Nothing actually needed here.
         pass
 

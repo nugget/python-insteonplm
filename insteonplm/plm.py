@@ -233,8 +233,11 @@ class IM(Device, asyncio.Protocol):
         self.pause_writing()
         for addr in self.devices:
             device = self.devices[addr]
+            self.log.debug('Device:: %s', device)
             yield from device.close()
+            yield from asyncio.sleep(0, loop=self._loop)
         yield from super().close()
+        yield from asyncio.sleep(0, loop=self._loop)
 
     @asyncio.coroutine
     def _setup_devices(self):
@@ -475,6 +478,7 @@ class IM(Device, asyncio.Protocol):
         else:
             self.log.error('Device %s not in the IPDB.',
                            Address(address).human)
+            asyncio.ensure_future(device.close(), loop=self._loop)
         self.log.info('Total Devices Found: %d', len(self.devices))
 
     def _update_aldb_records(self, linkcode, address, group):
@@ -540,6 +544,9 @@ class IM(Device, asyncio.Protocol):
                         self.log.info('Device with id %s added to device list '
                                       'from ALDB data.',
                                       device.id)
+                else:
+                    asyncio.ensure_future(device.close(), loop=self._loop)
+
         # Check again that the device is not alreay added, otherwise queue it
         # up for Get ID request
         if self.devices[msg.address.id] is None:
@@ -560,7 +567,10 @@ class IM(Device, asyncio.Protocol):
         # or in previous calls to _handle_get_next_all_link_record_nak
         for addr in self.devices:
             try:
-                self._aldb_response_queue.pop(addr)
+                response = self._aldb_response_queue.pop(addr)
+                if response:
+                    device = response.get('device')
+                    asyncio.ensure_future(device.close(), loop=self._loop)
             except KeyError:
                 pass
 
@@ -579,12 +589,13 @@ class IM(Device, asyncio.Protocol):
                                  'device_override')
                 self.log.warning('configuration.')
                 staleaddr.append(addr)
-
                 for callback in self._cb_device_not_active:
                     callback(Address(addr))
 
         for addr in staleaddr:
-            self._aldb_response_queue.pop(addr)
+            response = self._aldb_response_queue.pop(addr)
+            device = response.get('device')
+            asyncio.ensure_future(device.close(), loop=self._loop)
 
         num_devices_not_added = len(self._aldb_response_queue)
 
