@@ -202,7 +202,6 @@ class IPDB(object):
         Product(0x03, 0x0D, 0x000035, 'SimpleHomeNet EZX10RF', '', None),
         Product(0x03, 0x0F, 0x00003B, 'EZX10IR', '', None),
         Product(0x03, 0x10, None, 'SmartLinc', '2412N', None),
-        Product(0x03, 0x10, None, 'SmartLinc', '2412N', None),
         Product(0x03, 0x11, None, 'PowerLinc Serial Modem', '2413S', None),
         Product(0x03, 0x13, 0x000030, 'PowerLinc USB Modem', '2412UH', None),
         Product(0x03, 0x14, 0x00000C, 'PowerLinc Serial Modem', '2412SH', None),
