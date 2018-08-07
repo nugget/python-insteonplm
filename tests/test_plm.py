@@ -274,12 +274,33 @@ def test_plm():
     """Main test for the PLM."""
     logging.basicConfig(level=logging.DEBUG)
     loop = asyncio.get_event_loop()
-    #loop.run_until_complete(do_plm(loop))
+    loop.run_until_complete(do_plm(loop))
+    open_tasks = asyncio.Task.all_tasks(loop=loop)
+    #loop.stop()
+    for task in open_tasks:
+        if hasattr(task, 'name'):
+            name = task.name
+        else:
+            name = str(task)
+        _LOGGER.error('Task: %s', name)
+        if not task.done():
+            loop.run_until_complete(task)
+        
 
 
 def test_plm_x10():
     """Test X10 message handling."""
     logging.basicConfig(level=logging.DEBUG)
     loop = asyncio.get_event_loop()
-    #loop.run_until_complete(do_plm_x10(loop))
+    loop.run_until_complete(do_plm_x10(loop))
+    open_tasks = asyncio.Task.all_tasks(loop=loop)
+    #loop.stop()
+    for task in open_tasks:
+        if hasattr(task, 'name'):
+            name = task.name
+        else:
+            name = str(task)
+        _LOGGER.error('Task: %s', name)
+        if not task.done():
+            loop.run_until_complete(task)
     

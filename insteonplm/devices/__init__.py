@@ -511,6 +511,7 @@ class Device(object):
             self._send_queue_task = asyncio.ensure_future(
                 self._process_send_queue(), loop=self._plm.loop)
             self._send_queue_task.add_done_callback(self._start_send_queue)
+            self._send_queue_task.name = self.address.human
 
     @asyncio.coroutine
     def _stop_send_queue(self):
