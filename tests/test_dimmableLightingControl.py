@@ -1,6 +1,8 @@
 """Test Dimmable Lighting Control devices."""
 
 import asyncio
+import logging
+
 from insteonplm.constants import (COMMAND_LIGHT_OFF_0X13_0X00,
                                   COMMAND_LIGHT_ON_0X11_NONE,
                                   COMMAND_LIGHT_STATUS_REQUEST_0X19_0X00,
@@ -16,6 +18,8 @@ from insteonplm.devices.dimmableLightingControl import (
 from .mockPLM import MockPLM
 from .mockCallbacks import MockCallbacks
 
+_LOGGING = logging.getLogger(__name__)
+_LOGGING.setLevel(logging.DEBUG)
 
 def test_dimmableLightingControl():
     """Test generic Dimmable Lighting Control devices."""
@@ -98,6 +102,16 @@ def test_dimmableLightingControl():
 
     loop = asyncio.get_event_loop()
     loop.run_until_complete(run_test(loop))
+    open_tasks = asyncio.Task.all_tasks(loop=loop)
+    #loop.stop()
+    for task in open_tasks:
+        if hasattr(task, 'name'):
+            name = task.name
+            _LOGGING.error('Device: %s Task: %s', task.name, task)
+        else:
+            _LOGGING.error('Task: %s', task)
+        if not task.done():
+            loop.run_until_complete(task)
 
 
 def test_dimmableLightingControl_manual_changes():
@@ -147,6 +161,16 @@ def test_dimmableLightingControl_manual_changes():
 
     loop = asyncio.get_event_loop()
     loop.run_until_complete(run_test(loop))
+    open_tasks = asyncio.Task.all_tasks(loop=loop)
+    #loop.stop()
+    for task in open_tasks:
+        if hasattr(task, 'name'):
+            name = task.name
+            _LOGGING.error('Device: %s Task: %s', task.name, task)
+        else:
+            _LOGGING.error('Task: %s', task)
+        if not task.done():
+            loop.run_until_complete(task)
 
 
 def test_dimmableLightingControl_status():
@@ -198,6 +222,16 @@ def test_dimmableLightingControl_status():
 
     loop = asyncio.get_event_loop()
     loop.run_until_complete(run_test(loop))
+    open_tasks = asyncio.Task.all_tasks(loop=loop)
+    #loop.stop()
+    for task in open_tasks:
+        if hasattr(task, 'name'):
+            name = task.name
+            _LOGGING.error('Device: %s Task: %s', task.name, task)
+        else:
+            _LOGGING.error('Task: %s', task)
+        if not task.done():
+            loop.run_until_complete(task)
 
 
 def test_switchedLightingControl_2475F():
@@ -276,6 +310,16 @@ def test_switchedLightingControl_2475F():
 
     loop = asyncio.get_event_loop()
     loop.run_until_complete(run_test(loop))
+    open_tasks = asyncio.Task.all_tasks(loop=loop)
+    #loop.stop()
+    for task in open_tasks:
+        if hasattr(task, 'name'):
+            name = task.name
+            _LOGGING.error('Device: %s Task: %s', task.name, task)
+        else:
+            _LOGGING.error('Task: %s', task)
+        if not task.done():
+            loop.run_until_complete(task)
 
 
 def test_dimmableLightingControl_2475F_status():
@@ -321,3 +365,13 @@ def test_dimmableLightingControl_2475F_status():
 
     loop = asyncio.get_event_loop()
     loop.run_until_complete(run_test(loop))
+    open_tasks = asyncio.Task.all_tasks(loop=loop)
+    #loop.stop()
+    for task in open_tasks:
+        if hasattr(task, 'name'):
+            name = task.name
+            _LOGGING.error('Device: %s Task: %s', task.name, task)
+        else:
+            _LOGGING.error('Task: %s', task)
+        if not task.done():
+            loop.run_until_complete(task)

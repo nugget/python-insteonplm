@@ -84,6 +84,16 @@ def test_switchedLightingControl():
 
     loop = asyncio.get_event_loop()
     loop.run_until_complete(run_test(loop))
+    open_tasks = asyncio.Task.all_tasks(loop=loop)
+    #loop.stop()
+    for task in open_tasks:
+        if hasattr(task, 'name'):
+            name = task.name
+            _LOGGING.error('Device: %s Task: %s', task.name, task)
+        else:
+            _LOGGING.error('Task: %s', task)
+        if not task.done():
+            loop.run_until_complete(task)
 
 
 def test_switchedLightingControl_maual_changes():
@@ -132,6 +142,16 @@ def test_switchedLightingControl_maual_changes():
 
     loop = asyncio.get_event_loop()
     loop.run_until_complete(run_test(loop))
+    open_tasks = asyncio.Task.all_tasks(loop=loop)
+    #loop.stop()
+    for task in open_tasks:
+        if hasattr(task, 'name'):
+            name = task.name
+            _LOGGING.error('Device: %s Task: %s', task.name, task)
+        else:
+            _LOGGING.error('Task: %s', task)
+        if not task.done():
+            loop.run_until_complete(task)
 
 
 def test_switchedLightingControl_status():
@@ -182,6 +202,16 @@ def test_switchedLightingControl_status():
 
     loop = asyncio.get_event_loop()
     loop.run_until_complete(run_test(loop))
+    open_tasks = asyncio.Task.all_tasks(loop=loop)
+    #loop.stop()
+    for task in open_tasks:
+        if hasattr(task, 'name'):
+            name = task.name
+            _LOGGING.error('Device: %s Task: %s', task.name, task)
+        else:
+            _LOGGING.error('Task: %s', task)
+        if not task.done():
+            loop.run_until_complete(task)
 
 
 def test_switchedLightingControl_2663_222():
@@ -288,6 +318,16 @@ def test_switchedLightingControl_2663_222():
 
     loop = asyncio.get_event_loop()
     loop.run_until_complete(run_test(loop))
+    open_tasks = asyncio.Task.all_tasks(loop=loop)
+    #loop.stop()
+    for task in open_tasks:
+        if hasattr(task, 'name'):
+            name = task.name
+            _LOGGING.error('Device: %s Task: %s', task.name, task)
+        else:
+            _LOGGING.error('Task: %s', task)
+        if not task.done():
+            loop.run_until_complete(task)
 
 
 def test_switchedLightingControl_2663_222_manual_change():
@@ -355,6 +395,16 @@ def test_switchedLightingControl_2663_222_manual_change():
 
     loop = asyncio.get_event_loop()
     loop.run_until_complete(run_test(loop))
+    open_tasks = asyncio.Task.all_tasks(loop=loop)
+    #loop.stop()
+    for task in open_tasks:
+        if hasattr(task, 'name'):
+            name = task.name
+            _LOGGING.error('Device: %s Task: %s', task.name, task)
+        else:
+            _LOGGING.error('Task: %s', task)
+        if not task.done():
+            loop.run_until_complete(task)
 
 
 def test_switchedLightingControl_2663_222_status():
@@ -416,3 +466,13 @@ def test_switchedLightingControl_2663_222_status():
 
     loop = asyncio.get_event_loop()
     loop.run_until_complete(run_test(loop))
+    open_tasks = asyncio.Task.all_tasks(loop=loop)
+    #loop.stop()
+    for task in open_tasks:
+        if hasattr(task, 'name'):
+            name = task.name
+            _LOGGING.error('Device: %s Task: %s', task.name, task)
+        else:
+            _LOGGING.error('Task: %s', task)
+        if not task.done():
+            loop.run_until_complete(task)

@@ -28,6 +28,16 @@ def test_create_device():
 
     loop = asyncio.get_event_loop()
     loop.run_until_complete(run_test(loop))
+    open_tasks = asyncio.Task.all_tasks(loop=loop)
+    #loop.stop()
+    for task in open_tasks:
+        if hasattr(task, 'name'):
+            name = task.name
+            _LOGGING.error('Device: %s Task: %s', task.name, task)
+        else:
+            _LOGGING.error('Task: %s', task)
+        if not task.done():
+            loop.run_until_complete(task)
 
 
 def test_create_device_from_bytearray():
@@ -46,6 +56,17 @@ def test_create_device_from_bytearray():
 
     loop = asyncio.get_event_loop()
     loop.run_until_complete(run_test(loop))
+    
+    open_tasks = asyncio.Task.all_tasks(loop=loop)
+    #loop.stop()
+    for task in open_tasks:
+        if hasattr(task, 'name'):
+            name = task.name
+            _LOGGING.error('Device: %s Task: %s', task.name, task)
+        else:
+            _LOGGING.error('Task: %s', task)
+        if not task.done():
+            loop.run_until_complete(task)
 
 
 def test_send_msg():
@@ -88,14 +109,14 @@ def test_send_msg():
         
     loop = asyncio.get_event_loop()
     loop.run_until_complete(run_test(loop))
+    
+    open_tasks = asyncio.Task.all_tasks(loop=loop)
     #loop.stop()
-    #pending = asyncio.Task.all_tasks(loop=loop)
-    #for task in pending:
-    #    task.cancel()
-    #    try:
-    #        loop.run_until_complete(task)
-    #    except asyncio.CancelledError:
-    #        pass
-    #    except KeyboardInterrupt:
-    #        pass
-    #loop.close()
+    for task in open_tasks:
+        if hasattr(task, 'name'):
+            name = task.name
+            _LOGGING.error('Device: %s Task: %s', task.name, task)
+        else:
+            _LOGGING.error('Task: %s', task)
+        if not task.done():
+            loop.run_until_complete(task)

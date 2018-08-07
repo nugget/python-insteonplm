@@ -199,7 +199,12 @@ def do_plm(loop):
     yield from asyncio.sleep(0, loop=loop)
     open_tasks = asyncio.Task.all_tasks(loop=loop)
     for task in open_tasks:
-        _LOGGER.error('Task: %s', task)
+        if hasattr(task, 'name'):
+            name = task.name
+            _LOGGER.error('Device: %s Task: %s', task.name, task)
+        else:
+            _LOGGER.error('Task: %s', task)
+    _LOGGER.debug('---------------------------------- do_plm complete --------------------------------------------')
 
 
 @asyncio.coroutine
@@ -267,7 +272,12 @@ def do_plm_x10(loop):
     yield from asyncio.sleep(0, loop=loop)
     open_tasks = asyncio.Task.all_tasks(loop=loop)
     for task in open_tasks:
-        _LOGGER.error('Task: %s', task)
+        if hasattr(task, 'name'):
+            name = task.name
+            _LOGGER.error('Device: %s Task: %s', task.name, task)
+        else:
+            _LOGGER.error('Task: %s', task)
+    _LOGGER.debug('---------------------------------- do_plm_x10 complete --------------------------------------------')
 
 
 def test_plm():
@@ -280,13 +290,12 @@ def test_plm():
     for task in open_tasks:
         if hasattr(task, 'name'):
             name = task.name
+            _LOGGER.error('Device: %s Task: %s', task.name, task)
         else:
-            name = str(task)
-        _LOGGER.error('Task: %s', name)
+            _LOGGER.error('Task: %s', task)
         if not task.done():
             loop.run_until_complete(task)
         
-
 
 def test_plm_x10():
     """Test X10 message handling."""
@@ -298,9 +307,9 @@ def test_plm_x10():
     for task in open_tasks:
         if hasattr(task, 'name'):
             name = task.name
+            _LOGGER.error('Device: %s Task: %s', task.name, task)
         else:
-            name = str(task)
-        _LOGGER.error('Task: %s', name)
+            _LOGGER.error('Task: %s', task)
         if not task.done():
             loop.run_until_complete(task)
     
