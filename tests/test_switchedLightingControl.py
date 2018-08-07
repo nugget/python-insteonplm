@@ -80,6 +80,8 @@ def test_switchedLightingControl():
         assert plm.sentmessage == sentmsg.hex
         assert callbacks.callbackvalue1 == 0x00
 
+        yield from device.close()
+
     loop = asyncio.get_event_loop()
     loop.run_until_complete(run_test(loop))
 
@@ -125,6 +127,8 @@ def test_switchedLightingControl_maual_changes():
         plm.message_received(receivedmsg)
         yield from asyncio.sleep(.1, loop=loop)
         assert callbacks.callbackvalue1 == 0x00
+
+        yield from device.close()
 
     loop = asyncio.get_event_loop()
     loop.run_until_complete(run_test(loop))
@@ -173,6 +177,8 @@ def test_switchedLightingControl_status():
         sentmsg = StandardSend(address, COMMAND_LIGHT_STATUS_REQUEST_0X19_0X00)
         assert plm.sentmessage == sentmsg.hex
         assert callbacks.callbackvalue1 == 0xff
+
+        yield from device.close()
 
     loop = asyncio.get_event_loop()
     loop.run_until_complete(run_test(loop))
@@ -278,6 +284,8 @@ def test_switchedLightingControl_2663_222():
         assert plm.sentmessage == sentmsg.hex
         assert callbacks.callbackvalue2 == 0x00
 
+        yield from device.close()
+
     loop = asyncio.get_event_loop()
     loop.run_until_complete(run_test(loop))
 
@@ -343,6 +351,8 @@ def test_switchedLightingControl_2663_222_manual_change():
         yield from asyncio.sleep(.1, loop=loop)
         assert callbacks.callbackvalue2 == 0x00
 
+        yield from device.close()
+
     loop = asyncio.get_event_loop()
     loop.run_until_complete(run_test(loop))
 
@@ -401,6 +411,8 @@ def test_switchedLightingControl_2663_222_status():
         mockPLM.message_received(statusmsg)
         yield from asyncio.sleep(.1, loop)
         assert callbacks.lightOnLevel2 == 0x00
+
+        yield from device.close()
 
     loop = asyncio.get_event_loop()
     loop.run_until_complete(run_test(loop))

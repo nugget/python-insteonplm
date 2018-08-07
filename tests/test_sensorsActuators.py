@@ -77,5 +77,7 @@ def test_SensorsActuators_2450_status():
         assert callbacks.callbackvalue1 == 0xff
         assert callbacks.callbackvalue2 == 1
 
+        yield from device.close()
+
     loop = asyncio.get_event_loop()
     loop.run_until_complete(run_test(loop))
