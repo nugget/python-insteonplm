@@ -264,7 +264,7 @@ def do_plm_x10(loop):
 
     yield from plm.close()
     _LOGGER.error('PLM closed in test_x10')
-    yield from asyncio.sleep(10, loop=loop)
+    yield from asyncio.sleep(0, loop=loop)
     open_tasks = asyncio.Task.all_tasks(loop=loop)
     for task in open_tasks:
         _LOGGER.error('Task: %s', task)
