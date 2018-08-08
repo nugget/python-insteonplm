@@ -272,7 +272,7 @@ class HttpTransport(asyncio.Transport):
         return 0
 
     def pause_reading(self):
-        asycnio.ensure_future(self._stop_reader(False), loop=self._loop)
+        asyncio.ensure_future(self._stop_reader(False), loop=self._loop)
 
     def resume_reading(self):
         self._restart_reader = True
@@ -459,8 +459,8 @@ class HttpTransport(asyncio.Transport):
             self._reader_task.cancel()
             with suppress(asyncio.CancelledError):
                 yield from self._reader_task
-                yield from ascynio.sleep(0, loop=self._loop)
-        self._protocol.pause_writing()
+                yield from asyncio.sleep(0, loop=self._loop)
+        yield from self._protocol.pause_writing()
         if not self._session.closed:
             _LOGGER.debug('Session is open so we close it')
             yield from self._close()

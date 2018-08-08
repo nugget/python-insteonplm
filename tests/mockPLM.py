@@ -37,10 +37,3 @@ class MockPLM(object):
         for callback in (
                 self._message_callbacks.get_callbacks_from_message(msg)):
             callback(msg)
-
-    @asyncio.coroutine
-    def close_devices(self):
-        """Stop the device message queue."""
-        for addr in self.devices:
-            yield from self.devices[addr].close()
-            yield from asyncio.sleep(1, loop=self.loop)

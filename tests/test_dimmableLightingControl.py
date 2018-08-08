@@ -23,6 +23,7 @@ _LOGGING.setLevel(logging.DEBUG)
 
 def test_dimmableLightingControl():
     """Test generic Dimmable Lighting Control devices."""
+    @asyncio.coroutine
     def run_test(loop):
         """Asyncio test to run."""
         plm = MockPLM(loop)
@@ -97,9 +98,6 @@ def test_dimmableLightingControl():
         assert plm.sentmessage == sentmsg.hex
         assert callbacks.callbackvalue1 == 0x55
 
-        yield from device.close()
-        yield from asyncio.sleep(0, loop=loop)
-
     loop = asyncio.get_event_loop()
     loop.run_until_complete(run_test(loop))
     open_tasks = asyncio.Task.all_tasks(loop=loop)
@@ -116,6 +114,7 @@ def test_dimmableLightingControl():
 
 def test_dimmableLightingControl_manual_changes():
     """Test manual changes to Dimmable Lighting Controls."""
+    @asyncio.coroutine
     def run_test(loop):
         """Asyncio test method."""
         plm = MockPLM(loop)
@@ -157,8 +156,6 @@ def test_dimmableLightingControl_manual_changes():
         yield from asyncio.sleep(.1, loop=loop)
         assert callbacks.callbackvalue1 == 0x00
 
-        yield from plm.close_devices()
-
     loop = asyncio.get_event_loop()
     loop.run_until_complete(run_test(loop))
     open_tasks = asyncio.Task.all_tasks(loop=loop)
@@ -175,6 +172,7 @@ def test_dimmableLightingControl_manual_changes():
 
 def test_dimmableLightingControl_status():
     """Test status updates for Dimmable Lighting Controls."""
+    @asyncio.coroutine
     def run_test(loop):
         """Asyncio test to run."""
         plm = MockPLM(loop)
@@ -218,8 +216,6 @@ def test_dimmableLightingControl_status():
         assert plm.sentmessage == sentmsg.hex
         assert callbacks.callbackvalue1 == 0x27
 
-        yield from plm.close_devices()
-
     loop = asyncio.get_event_loop()
     loop.run_until_complete(run_test(loop))
     open_tasks = asyncio.Task.all_tasks(loop=loop)
@@ -236,6 +232,7 @@ def test_dimmableLightingControl_status():
 
 def test_switchedLightingControl_2475F():
     """Test device 2475F."""
+    @asyncio.coroutine
     def run_test(loop):
         """Asyncio test."""
         class fanLincStatus(object):
@@ -306,8 +303,6 @@ def test_switchedLightingControl_2475F():
         assert callbacks.lightOnLevel == 0x55
         assert callbacks.fanOnLevel == 0x77
 
-        yield from device.close()
-
     loop = asyncio.get_event_loop()
     loop.run_until_complete(run_test(loop))
     open_tasks = asyncio.Task.all_tasks(loop=loop)
@@ -324,6 +319,7 @@ def test_switchedLightingControl_2475F():
 
 def test_dimmableLightingControl_2475F_status():
     """Test device 2475F status updates."""
+    @asyncio.coroutine
     def run_test(loop):
         """Asyncio test."""
         plm = MockPLM(loop)
@@ -360,8 +356,6 @@ def test_dimmableLightingControl_2475F_status():
             address, COMMAND_LIGHT_STATUS_REQUEST_0X19_NONE, cmd2=0x03)
         assert plm.sentmessage == sentmsg.hex
         assert callbacks.callbackvalue1 == 0x27
-
-        yield from plm.close_devices()
 
     loop = asyncio.get_event_loop()
     loop.run_until_complete(run_test(loop))

@@ -99,13 +99,9 @@ class Device(object):
         self._recent_messages = asyncio.Queue(loop=self._plm.loop)
         self._send_msg_queue = asyncio.Queue(loop=self._plm.loop)
         self._directACK_received_queue = asyncio.Queue(loop=self._plm.loop)
-        self._process_send_queue_lock = asyncio.Lock(loop=self._plm.loop)
         self._send_msg_lock = asyncio.Lock(loop=self._plm.loop)
 
         self._register_messages()
-        self._restart_send_queue = True
-        self._send_queue_task = None
-        self._start_send_queue()
 
     # Public properties
     @property
@@ -306,11 +302,6 @@ class Device(object):
         self._aldb.del_record(mem_addr)
         self._aldb.add_loaded_callback(self._aldb_loaded_callback)
 
-    @asyncio.coroutine
-    def close(self):
-        """Stop the writer for a clean shutdown."""
-        yield from self._stop_send_queue()
-
     def _handle_aldb_record_received(self, msg):
         self._aldb.record_received(msg)
 
@@ -425,51 +416,24 @@ class Device(object):
                     'callback': callback,
                     'on_timeout': on_timeout}
         self._send_msg_queue.put_nowait(msg_info)
+        asyncio.ensure_future(self._process_send_queue(), loop=self._plm.loop)
         self.log.debug('Ending Device._send_msg')
+
 
     @asyncio.coroutine
     def _process_send_queue(self):
-        if self._process_send_queue_lock.locked():
-            return
-        yield from self._process_send_queue_lock
         self.log.debug('Starting Device._process_send_queue')
-        while self._restart_send_queue:
-            try:
-                try:
-                    with async_timeout.timeout(3*60):
-                        yield from self._send_msg_lock
-                except asyncio.TimeoutError:
-                    self.log.info('Bypassing device send lock after 3 min')
-                msg_info = yield from self._send_msg_queue.get()
-                if msg_info:
-                    msg = msg_info.get("msg")
-                    callback = msg_info.get("callback")
-                    if callback:
-                        self._sent_msg_wait_for_directACK = msg_info
-                    else:
-                        if self._send_msg_lock.locked():
-                            self._send_msg_lock.release()
-                    self._plm.send_msg(msg)
-            except asyncio.CancelledError:
-                asyncio.ensure_future(self._stop_send_queue(),
-                                        loop=self._plm.loop)
-            except GeneratorExit:
-                asyncio.ensure_future(self._stop_send_queue(),
-                                        loop=self._plm.loop)
-            except CancelledError:
-                asyncio.ensure_future(self._stop_send_queue(),
-                                        loop=self._plm.loop)
-            except asyncio.CancelledError:
-                asyncio.ensure_future(self._stop_send_queue(),
-                                        loop=self._plm.loop)
-            except Exception:
-                asyncio.ensure_future(self._stop_send_queue(),
-                                        loop=self._plm.loop)
-
-        if self._process_send_queue_lock.locked():
-            self._process_send_queue_lock.release()
+        yield from self._send_msg_lock
         if self._send_msg_lock.locked():
-            self._send_msg_lock.release()
+            self.log.debug("Lock is locked from yeild from")
+        msg_info = yield from self._send_msg_queue.get()
+        msg = msg_info.get('msg')
+        callback = msg_info.get('callback')
+        if callback:
+            self._sent_msg_wait_for_directACK = msg_info
+        self._plm.send_msg(msg)
+        #if self._send_msg_lock.locked():
+        #    self._send_msg_lock.release()
         self.log.debug('Ending Device._process_send_queue')
 
     @asyncio.coroutine
@@ -504,32 +468,6 @@ class Device(object):
 
     def _aldb_loaded_callback(self):
         self._plm.devices.save_device_info()
-
-    def _start_send_queue(self, task=None):
-        if self._restart_send_queue:
-            self.log.debug('Restarting send queue for %s', self.address.human)
-            self._send_queue_task = asyncio.ensure_future(
-                self._process_send_queue(), loop=self._plm.loop)
-            self._send_queue_task.add_done_callback(self._start_send_queue)
-            self._send_queue_task.name = self.address.human
-
-    @asyncio.coroutine
-    def _stop_send_queue(self):
-        self._restart_send_queue = False
-        if self._process_send_queue_lock.locked():
-            self._process_send_queue_lock.release()
-        else:
-            return
-        if self._send_msg_lock.locked():
-            self._send_msg_lock.release()
-        if self._send_queue_task:
-            self.log.debug('Stopping send queue for %s', self.address.human)
-            self._send_queue_task.remove_done_callback(self._start_send_queue)
-            self._send_queue_task.cancel()
-            with suppress(asyncio.CancelledError):
-                yield from self._send_queue_task
-                yield from asyncio.sleep(0, loop=self._plm.loop)
-                self.log.debug('Task: %s', self._send_queue_task)
 
 
 class X10Device(object):

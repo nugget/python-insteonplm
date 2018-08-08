@@ -45,9 +45,6 @@ def _onOffSenorTest(onOffClass, loop):
     yield from asyncio.sleep(.1, loop=loop)
     assert callbacks.callbackvalue1 == 1
 
-    yield from device.close()
-    yield from asyncio.sleep(0, loop=loop)
-
     device = onOffClass(plm, address, cat, subcat, product_key,
                         description, model)
     device.states[0x01].register_updates(callbacks.callbackmethod1)
@@ -57,8 +54,6 @@ def _onOffSenorTest(onOffClass, loop):
     plm.message_received(msg)
     yield from asyncio.sleep(.1, loop=loop)
     assert callbacks.callbackvalue1 == 0
-
-    yield from device.close()
 
 
 def test_securityhealthsafety():
@@ -99,9 +94,6 @@ def test_securityhealthsafety():
         yield from asyncio.sleep(.1, loop=loop)
         assert callbacks.callbackvalue1 == cmd2
 
-        yield from device.close()
-        yield from asyncio.sleep(0, loop=loop)
-
         device = SecurityHealthSafety(plm, address, cat, subcat,
                                       product_key, description, model)
         device.states[0x01].register_updates(callbacks.callbackmethod1)
@@ -111,9 +103,6 @@ def test_securityhealthsafety():
         plm.message_received(msg)
         yield from asyncio.sleep(.1, loop=loop)
         assert callbacks.callbackvalue1 == 0x00
-
-        yield from device.close()
-        yield from asyncio.sleep(0, loop=loop)
 
     loop = asyncio.get_event_loop()
     loop.run_until_complete(run_test(loop))
@@ -156,9 +145,6 @@ def test_securityhealthsafety_2982_222():
         plm.message_received(msg)
         yield from asyncio.sleep(.1, loop=loop)
         assert callbacks.callbackvalue1 == 0x6f
-
-        yield from device.close()
-        yield from asyncio.sleep(0, loop=loop)
 
     loop = asyncio.get_event_loop()
     loop.run_until_complete(run_test(loop))
@@ -278,9 +264,6 @@ def test_securityHealthSafety_2852_222():
         assert callbacks.callbackvalue1 == 0
         assert callbacks.callbackvalue2 == 1
         assert callbacks.callbackvalue4 == 0x13
-
-        yield from device.close()
-        yield from asyncio.sleep(0, loop=loop)
 
     loop = asyncio.get_event_loop()
     loop.run_until_complete(_run_test(loop))

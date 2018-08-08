@@ -133,7 +133,7 @@ class IM(Device, asyncio.Protocol):
             self.log.warning('Lost connection to modem: %s', exc)
 
         self.transport = None
-        self.pause_writing()
+        asyncio.ensure_future(self.pause_writing(), loop=self.loop)
 
         if self._connection_lost_callback:
             self._connection_lost_callback()
@@ -213,12 +213,15 @@ class IM(Device, asyncio.Protocol):
         msg = SetIMConfiguration(0x40)
         self.send_msg(msg)
 
+    @asyncio.coroutine
     def pause_writing(self):
         """Pause writing."""
         self._restart_writer = False
         if self._writer_task:
             self._writer_task.remove_done_callback(self.resume_writing)
             self._writer_task.cancel()
+            yield from self._writer_task
+            yield from asyncio.sleep(0, loop=self._loop)
 
     def resume_writing(self, task=None):
         """Resume writing."""
@@ -230,13 +233,7 @@ class IM(Device, asyncio.Protocol):
     @asyncio.coroutine
     def close(self):
         """Close all writers for all devices for a clean shutdown."""
-        self.pause_writing()
-        for addr in self.devices:
-            device = self.devices[addr]
-            self.log.debug('Device:: %s', device)
-            yield from device.close()
-            yield from asyncio.sleep(0, loop=self._loop)
-        yield from super().close()
+        yield from self.pause_writing()
         yield from asyncio.sleep(0, loop=self._loop)
 
     @asyncio.coroutine
@@ -478,7 +475,6 @@ class IM(Device, asyncio.Protocol):
         else:
             self.log.error('Device %s not in the IPDB.',
                            Address(address).human)
-            asyncio.ensure_future(device.close(), loop=self._loop)
         self.log.info('Total Devices Found: %d', len(self.devices))
 
     def _update_aldb_records(self, linkcode, address, group):
@@ -544,8 +540,6 @@ class IM(Device, asyncio.Protocol):
                         self.log.info('Device with id %s added to device list '
                                       'from ALDB data.',
                                       device.id)
-                else:
-                    asyncio.ensure_future(device.close(), loop=self._loop)
 
         # Check again that the device is not alreay added, otherwise queue it
         # up for Get ID request
@@ -567,10 +561,7 @@ class IM(Device, asyncio.Protocol):
         # or in previous calls to _handle_get_next_all_link_record_nak
         for addr in self.devices:
             try:
-                response = self._aldb_response_queue.pop(addr)
-                if response:
-                    device = response.get('device')
-                    asyncio.ensure_future(device.close(), loop=self._loop)
+                self._aldb_response_queue.pop(addr)
             except KeyError:
                 pass
 
@@ -593,9 +584,7 @@ class IM(Device, asyncio.Protocol):
                     callback(Address(addr))
 
         for addr in staleaddr:
-            response = self._aldb_response_queue.pop(addr)
-            device = response.get('device')
-            asyncio.ensure_future(device.close(), loop=self._loop)
+            self._aldb_response_queue.pop(addr)
 
         num_devices_not_added = len(self._aldb_response_queue)
 

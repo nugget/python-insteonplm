@@ -19,12 +19,12 @@ _INSTEON_LOGGER.setLevel(logging.DEBUG)
 
 def test_create_device():
     """Test create device."""
+    @asyncio.coroutine
     def run_test(loop):
-        plm = MockPLM()
+        plm = MockPLM(loop)
         device = insteonplm.devices.create(plm, '112233', 0x01, 0x0d, None)
         assert device.id == '112233'
         assert isinstance(device, DimmableLightingControl)
-        yield from device.close()
 
     loop = asyncio.get_event_loop()
     loop.run_until_complete(run_test(loop))
@@ -42,6 +42,7 @@ def test_create_device():
 
 def test_create_device_from_bytearray():
     """Test create device from byte array."""
+    @asyncio.coroutine
     def run_test(loop):
         plm = MockPLM(loop)
         target = bytearray()
@@ -52,7 +53,6 @@ def test_create_device_from_bytearray():
                                            None)
         assert device.id == '112233'
         assert isinstance(device, DimmableLightingControl)
-        yield from device.close()
 
     loop = asyncio.get_event_loop()
     loop.run_until_complete(run_test(loop))
@@ -104,8 +104,6 @@ def test_send_msg():
         # Confirm that the OFF command made it to the PLM
         assert mockPLM.sentmessage == StandardSend(
             address, COMMAND_LIGHT_OFF_0X13_0X00).hex
-
-        yield from device.close()
         
     loop = asyncio.get_event_loop()
     loop.run_until_complete(run_test(loop))
