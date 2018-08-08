@@ -136,6 +136,14 @@ class ExtendedSend(Message):
         """Test if message is a NAK."""
         return self._acknak is not None and self._acknak == MESSAGE_NAK
 
+    def set_checksum(self):
+        """Set byte 14 of the userdata to a checksum value."""
+        data_sum = self.cmd1 + self.cmd2
+        for i in range(1, 14):
+            data_sum += self._userdata['d{:d}'.format(i)]
+        chksum = 0xff - (data_sum & 0xff) + 1
+        self._userdata['d14'] = chksum
+
     def _message_properties(self):
         return [{'address': self._address},
                 {'flags': self._messageFlags},

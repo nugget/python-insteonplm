@@ -88,6 +88,10 @@ class IM(Device, asyncio.Protocol):
         self.transport = None
 
         self._register_message_handlers()
+        self._quick_start = False
+        self._writer_task = None
+        self._restart_writer = False
+        self.resume_writing()
 
     # public properties
     @property
@@ -129,6 +133,7 @@ class IM(Device, asyncio.Protocol):
             self.log.warning('Lost connection to modem: %s', exc)
 
         self.transport = None
+        asyncio.ensure_future(self.pause_writing(), loop=self.loop)
 
         if self._connection_lost_callback:
             self._connection_lost_callback()
@@ -164,12 +169,10 @@ class IM(Device, asyncio.Protocol):
         Message are sent in the order they are placed in the queue.
         """
         self.log.debug("Starting: send_msg")
-        write_message_coroutine = self._write_message_from_send_queue()
         wait_info = {'msg': msg,
                      'wait_nak': wait_nak,
                      'wait_timeout': wait_timeout}
         self._send_queue.put_nowait(wait_info)
-        asyncio.ensure_future(write_message_coroutine, loop=self._loop)
         self.log.debug("Ending: send_msg")
 
     def start_all_linking(self, mode, group):
@@ -211,43 +214,70 @@ class IM(Device, asyncio.Protocol):
         self.send_msg(msg)
 
     @asyncio.coroutine
+    def pause_writing(self):
+        """Pause writing."""
+        self._restart_writer = False
+        if self._writer_task:
+            self._writer_task.remove_done_callback(self.resume_writing)
+            self._writer_task.cancel()
+            yield from self._writer_task
+            yield from asyncio.sleep(0, loop=self._loop)
+
+    def resume_writing(self, task=None):
+        """Resume writing."""
+        if self._restart_writer:
+            self._writer_task = asyncio.ensure_future(
+                self._write_message_from_send_queue(), loop=self._loop)
+            self._writer_task.add_done_callback(self.resume_writing)
+
+    @asyncio.coroutine
+    def close(self):
+        """Close all writers for all devices for a clean shutdown."""
+        yield from self.pause_writing()
+        yield from asyncio.sleep(0, loop=self._loop)
+
+    @asyncio.coroutine
     def _setup_devices(self):
         yield from self.devices.load_saved_device_info()
         self.log.debug('Found %d saved devices',
                        len(self.devices.saved_devices))
         self._get_plm_info()
         self.devices.add_known_devices(self)
-        self._load_all_link_database()
+        if self._quick_start:
+            self._complete_setup()
+        else:
+            self._load_all_link_database()
 
     @asyncio.coroutine
     def _write_message_from_send_queue(self):
-        if not self._write_transport_lock.locked():
-            self.log.debug('Aquiring write lock')
-            yield from self._write_transport_lock.acquire()
-            while True:
-                # wait for an item from the queue
-                try:
-                    with async_timeout.timeout(WAIT_TIMEOUT):
-                        msg_info = yield from self._send_queue.get()
-                        msg = msg_info.get('msg')
-                        wait_nak = msg_info.get('wait_nak')
-                        wait_timeout = msg_info.get('wait_timeout')
-                except asyncio.TimeoutError:
-                    self.log.debug('No new messages received.')
-                    break
-                # process the item
+        self.log.error('Starting PLM write message from send queue')
+        if self._write_transport_lock.locked():
+            return
+        self.log.debug('Aquiring write lock')
+        yield from self._write_transport_lock.acquire()
+        while self._restart_writer:
+            # wait for an item from the queue
+            try:
+                msg_info = yield from self._send_queue.get()
+                msg = msg_info.get('msg')
+                wait_nak = msg_info.get('wait_nak')
+                wait_timeout = msg_info.get('wait_timeout')
                 self.log.debug('Writing message: %s', msg)
                 write_bytes = msg.bytes
+                is_nak = False
                 if hasattr(msg, 'acknak') and msg.acknak:
                     write_bytes = write_bytes[:-1]
-                if self.transport:
+                if not self.transport.is_closing():
                     self.log.debug('Transport is open')
                     self.transport.write(msg.bytes)
                 else:
                     self.log.debug("Transport is not open. Cannot write")
+                    # Put the message back in the queue for reprocessing
+                    # Should we pause the writer now or assume someone else is?
+                    self._send_queue.put_nowait(msg_info)
+                    wait_nak = False
                 if wait_nak:
                     self.log.debug('Waiting for ACK or NAK message')
-                    is_nak = False
                     try:
                         with async_timeout.timeout(ACKNAK_TIMEOUT):
                             while True:
@@ -263,7 +293,18 @@ class IM(Device, asyncio.Protocol):
                     if is_nak:
                         self._handle_nak(msg)
                 yield from asyncio.sleep(wait_timeout, loop=self._loop)
+            except asyncio.CancelledError:
+                self.log.error('Stopping PLM writer due to CancelledError')
+                self._restart_writer = False
+            except GeneratorExit:
+                self.log.error('Stopping PLM writer due to GeneratorExit')
+                self._restart_writer = False
+            except Exception as e:
+                self.log.error('Stopping PLM writer due to %s', str(e))
+                self._restart_writer = False
+        if self._write_transport_lock.locked():
             self._write_transport_lock.release()
+        self.log.error('Ending PLM write message from send queue')
 
     def _get_plm_info(self):
         """Request PLM Info."""
@@ -350,10 +391,10 @@ class IM(Device, asyncio.Protocol):
             msg, buffer = insteonplm.messages.create(buffer)
 
             if msg is not None:
-                self.log.debug('Msg buffer: %s', msg.hex)
+                # self.log.debug('Msg buffer: %s', msg.hex)
                 self._recv_queue.appendleft(msg)
 
-            self.log.debug('Post buffer: %s', binascii.hexlify(buffer))
+            # self.log.debug('Post buffer: %s', binascii.hexlify(buffer))
             if len(buffer) < 2:
                 self.log.debug('Buffer too short to have a message')
                 worktodo = False
@@ -499,6 +540,7 @@ class IM(Device, asyncio.Protocol):
                         self.log.info('Device with id %s added to device list '
                                       'from ALDB data.',
                                       device.id)
+
         # Check again that the device is not alreay added, otherwise queue it
         # up for Get ID request
         if self.devices[msg.address.id] is None:
@@ -538,7 +580,6 @@ class IM(Device, asyncio.Protocol):
                                  'device_override')
                 self.log.warning('configuration.')
                 staleaddr.append(addr)
-
                 for callback in self._cb_device_not_active:
                     callback(Address(addr))
 
@@ -555,13 +596,16 @@ class IM(Device, asyncio.Protocol):
                                   self._handle_get_next_all_link_record_nak,
                                   None)
         else:
-            self.devices.save_device_info()
-            while len(self._cb_load_all_link_db_done) > 0:
-                callback = self._cb_load_all_link_db_done.pop()
-                callback()
-            if self._poll_devices:
-                self._loop.call_soon(self.poll_devices)
+            self._complete_setup()
         self.log.debug('Ending _handle_get_next_all_link_record_nak')
+
+    def _complete_setup(self):
+        self.devices.save_device_info()
+        while len(self._cb_load_all_link_db_done) > 0:
+            callback = self._cb_load_all_link_db_done.pop()
+            callback()
+        if self._poll_devices:
+            self._loop.call_soon(self.poll_devices)
 
     def _handle_nak(self, msg):
         if msg.code == GetFirstAllLinkRecord.code or \
@@ -667,6 +711,9 @@ class PLM(IM):
         self.log.info('Connection established to PLM')
         self.transport = transport
 
+        self._restart_writer = True
+        self.resume_writing()
+
         # Testing to see if this fixes the 2413S issue
         self.transport.serial.timeout = 1
         self.transport.serial.write_timeout = 1
@@ -704,5 +751,10 @@ class Hub(IM):
         self.log.info('Connection established to Hub')
         self.log.debug('Transport: %s', transport)
         self.transport = transport
+
+        self._restart_writer = True
+        self.resume_writing()
+
         coro = self._setup_devices()
         asyncio.ensure_future(coro, loop=self._loop)
+

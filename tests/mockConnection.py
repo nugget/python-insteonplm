@@ -1,11 +1,25 @@
 """Mock Connection for the PLM."""
 
 import asyncio
+import async_timeout
 import binascii
 import logging
 
 
 _LOGGER = logging.getLogger()
+
+
+@asyncio.coroutine
+def wait_for_plm_command(plm, cmd, loop):
+    try:
+        with async_timeout.timeout(10, loop=loop):
+            while not plm.transport.lastmessage == cmd.hex:
+                yield from asyncio.sleep(.1, loop=loop)
+            _LOGGER.info('Expected message sent %s', cmd)
+            return True
+    except asyncio.TimeoutError:
+        _LOGGER.error('Expected message not sent %s', cmd)
+        return False
 
 
 # pylint: disable=too-few-public-methods
@@ -59,6 +73,9 @@ class MockConnection():
                 """Mock write data to the Connection."""
                 self.lastmessage = binascii.hexlify(data).decode()
                 _LOGGER.info('Message sent: %s', self.lastmessage)
+
+            def is_closing(self):
+                return False
 
         conn.transport = Transport()
         return conn

@@ -1,4 +1,5 @@
 """Mock PLM class for testing devices."""
+import asyncio
 import logging
 from insteonplm.messagecallback import MessageCallback
 from insteonplm.linkedDevices import LinkedDevices

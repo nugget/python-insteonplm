@@ -12,27 +12,61 @@ from tests.mockPLM import MockPLM
 from insteonplm.devices import DIRECT_ACK_WAIT_TIMEOUT
 
 _LOGGING = logging.getLogger(__name__)
+_LOGGING.setLevel(logging.DEBUG)
+_INSTEON_LOGGER = logging.getLogger('insteonplm')
+_INSTEON_LOGGER.setLevel(logging.DEBUG)
 
 
 def test_create_device():
     """Test create device."""
-    plm = MockPLM()
-    device = insteonplm.devices.create(plm, '112233', 0x01, 0x0d, None)
-    assert device.id == '112233'
-    assert isinstance(device, DimmableLightingControl)
+    @asyncio.coroutine
+    def run_test(loop):
+        plm = MockPLM(loop)
+        device = insteonplm.devices.create(plm, '112233', 0x01, 0x0d, None)
+        assert device.id == '112233'
+        assert isinstance(device, DimmableLightingControl)
+
+    loop = asyncio.get_event_loop()
+    loop.run_until_complete(run_test(loop))
+    open_tasks = asyncio.Task.all_tasks(loop=loop)
+    #loop.stop()
+    for task in open_tasks:
+        if hasattr(task, 'name'):
+            name = task.name
+            _LOGGING.error('Device: %s Task: %s', task.name, task)
+        else:
+            _LOGGING.error('Task: %s', task)
+        if not task.done():
+            loop.run_until_complete(task)
 
 
 def test_create_device_from_bytearray():
     """Test create device from byte array."""
-    plm = MockPLM()
-    target = bytearray()
-    target.append(0x01)
-    target.append(0x0d)
-    device = insteonplm.devices.create(plm, '112233',
-                                       target[0], target[1],
-                                       None)
-    assert device.id == '112233'
-    assert isinstance(device, DimmableLightingControl)
+    @asyncio.coroutine
+    def run_test(loop):
+        plm = MockPLM(loop)
+        target = bytearray()
+        target.append(0x01)
+        target.append(0x0d)
+        device = insteonplm.devices.create(plm, '112233',
+                                           target[0], target[1],
+                                           None)
+        assert device.id == '112233'
+        assert isinstance(device, DimmableLightingControl)
+
+    loop = asyncio.get_event_loop()
+    loop.run_until_complete(run_test(loop))
+    
+    open_tasks = asyncio.Task.all_tasks(loop=loop)
+    #loop.stop()
+    for task in open_tasks:
+        if hasattr(task, 'name'):
+            name = task.name
+            _LOGGING.error('Device: %s Task: %s', task.name, task)
+        else:
+            _LOGGING.error('Task: %s', task)
+        if not task.done():
+            loop.run_until_complete(task)
 
 
 def test_send_msg():
@@ -70,6 +104,17 @@ def test_send_msg():
         # Confirm that the OFF command made it to the PLM
         assert mockPLM.sentmessage == StandardSend(
             address, COMMAND_LIGHT_OFF_0X13_0X00).hex
-
+        
     loop = asyncio.get_event_loop()
     loop.run_until_complete(run_test(loop))
+    
+    open_tasks = asyncio.Task.all_tasks(loop=loop)
+    #loop.stop()
+    for task in open_tasks:
+        if hasattr(task, 'name'):
+            name = task.name
+            _LOGGING.error('Device: %s Task: %s', task.name, task)
+        else:
+            _LOGGING.error('Task: %s', task)
+        if not task.done():
+            loop.run_until_complete(task)
