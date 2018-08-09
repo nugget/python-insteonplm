@@ -39,6 +39,9 @@ WAIT_TIMEOUT = 1.5
 ACKNAK_TIMEOUT = 2
 
 
+MessageInfo = collections.namedtuple('MessageInfo', 'msg wait_nak wait_timeout')
+
+
 class IM(Device, asyncio.Protocol):
     """The Insteon PLM IP control protocol handler.
 
@@ -168,12 +171,10 @@ class IM(Device, asyncio.Protocol):
 
         Message are sent in the order they are placed in the queue.
         """
-        self.log.debug("Starting: send_msg")
-        wait_info = {'msg': msg,
-                     'wait_nak': wait_nak,
-                     'wait_timeout': wait_timeout}
-        self._send_queue.put_nowait(wait_info)
-        self.log.debug("Ending: send_msg")
+        msg_info = MessageInfo(msg=msg, wait_nak=wait_nak,
+                               wait_timeout=wait_timeout)
+        self.log.debug("Queueing msg: %s", msg)
+        self._send_queue.put_nowait(msg_info)
 
     def start_all_linking(self, mode, group):
         """Put the IM into All-Linking mode.
@@ -227,7 +228,7 @@ class IM(Device, asyncio.Protocol):
         """Resume writing."""
         if self._restart_writer:
             self._writer_task = asyncio.ensure_future(
-                self._write_message_from_send_queue(), loop=self._loop)
+                self._get_message_from_send_queue(), loop=self._loop)
             self._writer_task.add_done_callback(self.resume_writing)
 
     @asyncio.coroutine
@@ -249,7 +250,7 @@ class IM(Device, asyncio.Protocol):
             self._load_all_link_database()
 
     @asyncio.coroutine
-    def _write_message_from_send_queue(self):
+    def _get_message_from_send_queue(self):
         self.log.error('Starting PLM write message from send queue')
         if self._write_transport_lock.locked():
             return
@@ -259,39 +260,9 @@ class IM(Device, asyncio.Protocol):
             # wait for an item from the queue
             try:
                 msg_info = yield from self._send_queue.get()
-                msg = msg_info.get('msg')
-                wait_nak = msg_info.get('wait_nak')
-                wait_timeout = msg_info.get('wait_timeout')
-                self.log.debug('Writing message: %s', msg)
-                write_bytes = msg.bytes
-                is_nak = False
-                if hasattr(msg, 'acknak') and msg.acknak:
-                    write_bytes = write_bytes[:-1]
-                if not self.transport.is_closing():
-                    self.log.debug('Transport is open')
-                    self.transport.write(msg.bytes)
-                else:
-                    self.log.debug("Transport is not open. Cannot write")
-                    # Put the message back in the queue for reprocessing
-                    # Should we pause the writer now or assume someone else is?
-                    self._send_queue.put_nowait(msg_info)
-                    wait_nak = False
-                if wait_nak:
-                    self.log.debug('Waiting for ACK or NAK message')
-                    try:
-                        with async_timeout.timeout(ACKNAK_TIMEOUT):
-                            while True:
-                                acknak = yield from self._acknak_queue.get()
-                                if msg.matches_pattern(acknak):
-                                    self.log.debug('ACK or NAK received')
-                                    self.log.debug(acknak)
-                                    is_nak = acknak.isnak
-                                break
-                    except asyncio.TimeoutError:
-                        self.log.debug('No ACK or NAK message received.')
-                        is_nak = True
-                    if is_nak:
-                        self._handle_nak(msg)
+                message_sent = False
+                while not message_sent:
+                    message_sent = yield from self._write_message(msg_info)
                 yield from asyncio.sleep(wait_timeout, loop=self._loop)
             except asyncio.CancelledError:
                 self.log.error('Stopping PLM writer due to CancelledError')
@@ -311,6 +282,43 @@ class IM(Device, asyncio.Protocol):
         self.log.info('Requesting PLM Info')
         msg = GetImInfo()
         self.send_msg(msg, wait_nak=True, wait_timeout=.5)
+
+    @asyncio.coroutine
+    def _write_message(self, msg_info: MessageInfo):
+        self.log.debug('TX: %s', msg_info.msg)
+        write_bytes = msg_info.msg.bytes
+        is_sent = False
+        if not self.transport.is_closing():
+            self.transport.write(msg_info.msg.bytes)
+            if msg_info.wait_nak:
+                self.log.debug('Waiting for ACK or NAK message')
+                is_sent = yield from self._wait_ack_nak(msg_info.msg)
+                if not is_sent:
+                    self._handle_nak(msg_info)
+            else:
+                is_sent = True
+        else:
+            self.log.debug("Transport is not open, waiting 5 seconds")
+            is_sent = False
+            yield from asyncio.sleep(5, loop=self._loop)
+        return is_sent
+
+    @asyncio.coroutine
+    def _wait_ack_nak(self, msg):
+        is_ack = False
+        try:
+            with async_timeout.timeout(ACKNAK_TIMEOUT):
+                while True:
+                    acknak = yield from self._acknak_queue.get()
+                    if msg.matches_pattern(acknak):
+                        self.log.debug('ACK or NAK received')
+                        self.log.debug(acknak)
+                        is_ack = acknak.isack
+                        break
+        except asyncio.TimeoutError:
+            self.log.debug('No ACK or NAK message received.')
+            is_ack = False
+        return is_ack
 
     def _load_all_link_database(self):
         """Load the ALL-Link Database into object."""
@@ -378,7 +386,6 @@ class IM(Device, asyncio.Protocol):
 
     @asyncio.coroutine
     def _peel_messages_from_buffer(self):
-        self.log.debug("Starting: _peel_messages_from_buffer")
         lastlooplen = 0
         worktodo = True
         buffer = bytearray()
@@ -415,7 +422,7 @@ class IM(Device, asyncio.Protocol):
         while worktodo:
             try:
                 msg = self._recv_queue.pop()
-                self.log.debug('Processing message %s', msg)
+                self.log.debug('RX: %s', msg)
                 callbacks = \
                     self._message_callbacks.get_callbacks_from_message(msg)
                 if hasattr(msg, 'isack') or hasattr(msg, 'isnak'):
@@ -429,8 +436,6 @@ class IM(Device, asyncio.Protocol):
             except IndexError:
                 self.log.debug('Last item in self._recv_queue reached.')
                 worktodo = False
-
-        self.log.debug("Finishing: _peel_messages_from_buffer")
 
     def _unpack_buffer(self):
         buffer = bytearray()
@@ -607,13 +612,12 @@ class IM(Device, asyncio.Protocol):
         if self._poll_devices:
             self._loop.call_soon(self.poll_devices)
 
-    def _handle_nak(self, msg):
-        if msg.code == GetFirstAllLinkRecord.code or \
-           msg.code == GetNextAllLinkRecord.code:
+    def _handle_nak(self, msg_info):
+        if msg_info.msg.code == GetFirstAllLinkRecord.code or \
+           msg_info.msg.code == GetNextAllLinkRecord.code:
             return
-        self.log.debug('No response or NAK message received for message')
-        self.log.debug(msg)
-        self.send_msg(msg)
+        self.log.debug('No response or NAK message received')
+        self.send_msg(msg_info.msg, msg_info.wait_nak, msg_info.wait_timeout)
 
     def _handle_get_plm_info(self, msg):
         from insteonplm.devices import ALDB
