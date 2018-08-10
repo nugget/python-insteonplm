@@ -1,7 +1,7 @@
 """Insteon Device Classes."""
 import asyncio
 import async_timeout
-import collections
+from collections import namedtuple
 from concurrent.futures import CancelledError
 from contextlib import suppress
 import datetime
@@ -20,6 +20,7 @@ from insteonplm.constants import (
     COMMAND_GET_INSTEON_ENGINE_VERSION_0X0D_0X00,
     COMMAND_PING_0X0F_0X00,
     COMMAND_EXTENDED_READ_WRITE_ALDB_0X2F_0X00,
+    MESSAGE_ACK,
     MESSAGE_TYPE_DIRECT_MESSAGE,
     MESSAGE_FLAG_DIRECT_MESSAGE_NAK_0XA0,
     MESSAGE_STANDARD_MESSAGE_RECEIVED_0X50,
@@ -39,6 +40,10 @@ ALDB_RECORD_TIMEOUT = 10
 ALDB_RECORD_RETRIES = 20
 ALDB_ALL_RECORD_TIMEOUT = 30
 ALDB_ALL_RECORD_RETRIES = 5
+
+
+LoadAction = namedtuple('LoadAction', 'mem_addr rec_count retries')
+DeviceInfo = namedtuple('DeviceInfo', 'address cat subcat firmware')
 
 
 def create(plm, address, cat, subcat, firmware=None):
@@ -310,28 +315,127 @@ class Device(object):
         self.log.warning('Checking status to confirm if message was processed')
         self.async_refresh_state()
 
+    def _handle_get_device_info_ack(self, msg):
+        asyncio.ensure_future(self._wait_device_info(msg), loop=self._loop)
+
+    def _handle_assign_to_all_link_group(self, msg):
+        cat = 0xff
+        subcat = 0
+        product_key = 0
+        if msg.code == StandardReceive.code and msg.flags.isBroadcast:
+            self.log.debug('Received broadcast ALDB group assigment request.')
+            cat = msg.targetLow
+            subcat = msg.targetMed
+            product_key = msg.targetHi
+            self._add_device_from_prod_data(msg.address, cat,
+                                            subcat, product_key)
+        elif msg.code == AllLinkComplete.code:
+            if msg.linkcode in [0, 1, 3]:
+                self.log.debug('Received ALDB complete response.')
+                cat = msg.category
+                subcat = msg.subcategory
+                product_key = msg.firmware
+                self._add_device_from_prod_data(msg.address, cat,
+                                                subcat, product_key)
+                self._update_aldb_records(msg.linkcode, msg.address, msg.group)
+            else:
+                self.log.debug('Received ALDB delete response.')
+                self._update_aldb_records(msg.linkcode, msg.address, msg.group)
+
+    def _add_device_from_prod_data(self, address, cat, subcat, product_key):
+        self.log.debug('Received Device ID with address: %s  '
+                       'cat: 0x%x  subcat: 0x%x', address, cat, subcat)
+        device = self.devices.create_device_from_category(
+            self, address, cat, subcat, product_key)
+        if device:
+            if not self.devices[device.id]:
+                self.devices[device.id] = device
+                self.log.info('Device with id %s added to device list.',
+                              device.id)
+        else:
+            self.log.error('Device %s not in the IPDB.',
+                           Address(address).human)
+        self.log.info('Total Devices Found: %d', len(self.devices))
+
+    def _update_aldb_records(self, linkcode, address, group):
+        """Refresh the IM and device ALDB records."""
+        device = self.devices[Address(address).id]
+        if device and device.aldb.status in [ALDBStatus.LOADED,
+                                             ALDBStatus.PARTIAL]:
+            for mem_addr in device.aldb:
+                rec = device.aldb[mem_addr]
+                if linkcode in [0, 1, 3]:
+                    if rec.control_flags.is_high_water_mark:
+                        self.log.info('Removing HWM recordd %04x', mem_addr)
+                        device.aldb.pop(mem_addr)
+                    elif not rec.control_flags.is_in_use:
+                        self.log.info('Removing not in use recordd %04x',
+                                      mem_addr)
+                        device.aldb.pop(mem_addr)
+                else:
+                    if rec.address == self.address and rec.group == group:
+                        self.log.info('Removing record %04x with addr %s and '
+                                      'group %d', mem_addr, rec.address,
+                                      rec.group)
+                        device.aldb.pop(mem_addr)
+            device.read_aldb()
+            device.aldb.add_loaded_callback(self._refresh_aldb())
+
+    def _wait_device_info(self, msg):
+        info_recd = False
+        try:
+            with async_timeout.timeout(2):
+                device_info_msg = yield from self._device_info_queue.get()
+                address = device_info_msg.address
+                cat = device_info_msg.targetLow
+                subcat = device_info_msg.targetMed
+                product_key = device_info_msg.targetHi
+                self._add_device_from_prod_data(address, cat,
+                                                subcat, product_key)
+                self._aldb_device_recs.pop(msg.address.id)
+                if device_info_msg.address == msg.address:
+                    info_recd = True
+        except asyncio.TimeoutError:
+            info_recd = False
+
+        if not info_recd:
+            self._aldb_device_recs[msg.address.id]['device'].id_request()
+
     def _register_messages(self):
-            ext_msg_aldb_record = ExtendedReceive.template(
-                address=self._address,
-                commandtuple=COMMAND_EXTENDED_READ_WRITE_ALDB_0X2F_0X00,
-                userdata=Userdata.template({'d2': 1}),
-                flags=MessageFlags.template(
-                    messageType=MESSAGE_TYPE_DIRECT_MESSAGE,
-                    extended=1))
-            std_msg_pre_nak = StandardReceive.template(
-                flags=MessageFlags.template(
-                    messageType=MESSAGE_FLAG_DIRECT_MESSAGE_NAK_0XA0),
-                cmd2=0xfc)
-            ext_msg_pre_nak = ExtendedReceive.template(
-                flags=MessageFlags.template(
-                    messageType=MESSAGE_FLAG_DIRECT_MESSAGE_NAK_0XA0),
-                cmd2=0xfc)
-            self._message_callbacks.add(ext_msg_aldb_record,
-                                        self._handle_aldb_record_received)
-            self._message_callbacks.add(std_msg_pre_nak,
-                                        self._handle_pre_nak)
-            self._message_callbacks.add(ext_msg_pre_nak,
-                                        self._handle_pre_nak)
+        std_assign_all_link = StandardReceive.template(
+            commandtuple=COMMAND_ASSIGN_TO_ALL_LINK_GROUP_0X01_NONE)
+
+        ext_msg_aldb_record = ExtendedReceive.template(
+            address=self._address,
+            commandtuple=COMMAND_EXTENDED_READ_WRITE_ALDB_0X2F_0X00,
+            userdata=Userdata.template({'d2': 1}),
+            flags=MessageFlags.template(
+                messageType=MESSAGE_TYPE_DIRECT_MESSAGE,
+                extended=1))
+        std_msg_pre_nak = StandardReceive.template(
+            flags=MessageFlags.template(
+                messageType=MESSAGE_FLAG_DIRECT_MESSAGE_NAK_0XA0),
+            cmd2=0xfc)
+        ext_msg_pre_nak = ExtendedReceive.template(
+            flags=MessageFlags.template(
+                messageType=MESSAGE_FLAG_DIRECT_MESSAGE_NAK_0XA0),
+            cmd2=0xfc)
+        std_device_id_ack = StandardReceive(
+            commandtuple=COMMAND_ID_REQUEST_0X10_0X00,
+            acknak=MESSAGE_ACK)
+
+        self._message_callbacks.add(std_assign_all_link,
+                                    self._handle_assign_to_all_link_group)
+        self._message_callbacks.add(ext_msg_aldb_record,
+                                    self._handle_aldb_record_received)
+        self._message_callbacks.add(std_msg_pre_nak,
+                                    self._handle_pre_nak)
+        self._message_callbacks.add(ext_msg_pre_nak,
+                                    self._handle_pre_nak)
+        self._message_callbacks.add(template_all_link_complete,
+                                    self._handle_assign_to_all_link_group)
+        self._message_callbacks.add(template_device_info_ack,
+                                    self._handle_get_device_info_ack)
 
     # Send / Receive message processing
     def receive_message(self, msg):
@@ -805,9 +909,6 @@ class ALDBVersion(Enum):
     v1 = 1,
     v2 = 2,
     v2cs = 20
-
-
-LoadAction = collections.namedtuple('LoadAction', 'mem_addr rec_count retries')
 
 
 class ALDB(object):

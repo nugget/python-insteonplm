@@ -3,7 +3,7 @@
 import asyncio
 import logging
 import binascii
-from collections import deque
+from collections import deque, namedtuple
 
 import async_timeout
 
@@ -39,7 +39,7 @@ WAIT_TIMEOUT = 1.5
 ACKNAK_TIMEOUT = 2
 
 
-MessageInfo = collections.namedtuple('MessageInfo', 'msg wait_nak wait_timeout')
+MessageInfo = namedtuple('MessageInfo', 'msg wait_nak wait_timeout')
 
 
 class IM(Device, asyncio.Protocol):
@@ -73,7 +73,9 @@ class IM(Device, asyncio.Protocol):
         self._recv_queue = deque([])
         self._send_queue = asyncio.Queue(loop=self._loop)
         self._acknak_queue = asyncio.Queue(loop=self._loop)
-        self._aldb_response_queue = {}
+        self._device_info_queue = asyncio.Queue(loop=self._loop)
+        self._next_all_link_rec_nak_retries = 0
+        self._aldb_device_recs = {}
         self._devices = LinkedDevices(loop, workdir)
         self._poll_devices = poll_devices
         self._load_aldb = load_aldb
@@ -263,7 +265,7 @@ class IM(Device, asyncio.Protocol):
                 message_sent = False
                 while not message_sent:
                     message_sent = yield from self._write_message(msg_info)
-                yield from asyncio.sleep(wait_timeout, loop=self._loop)
+                yield from asyncio.sleep(msg_info.wait_timeout, loop=self._loop)
             except asyncio.CancelledError:
                 self.log.error('Stopping PLM writer due to CancelledError')
                 self._restart_writer = False
@@ -305,20 +307,42 @@ class IM(Device, asyncio.Protocol):
 
     @asyncio.coroutine
     def _wait_ack_nak(self, msg):
-        is_ack = False
+        is_sent = False
+        is_ack_nak = False
         try:
             with async_timeout.timeout(ACKNAK_TIMEOUT):
-                while True:
+                while not is_ack_nak:
                     acknak = yield from self._acknak_queue.get()
-                    if msg.matches_pattern(acknak):
-                        self.log.debug('ACK or NAK received')
-                        self.log.debug(acknak)
-                        is_ack = acknak.isack
-                        break
+                    is_ack_nak = self._msg_is_ack_nak(msg, acknak)
+                    is_sent = self._msg_is_sent(acknak)
         except asyncio.TimeoutError:
             self.log.debug('No ACK or NAK message received.')
-            is_ack = False
-        return is_ack
+            is_sent = False
+        return is_sent
+
+    def _msg_is_ack_nak(self, msg, acknak):
+        if not hasattr(acknak, 'isack'):
+            return False
+        if msg.matches_pattern(acknak):
+            self.log.debug('ACK or NAK received')
+            return True
+        return False
+
+    def _msg_is_sent(self, acknak):
+        # All Link record NAK is a valid last record response
+        # However, we want to retry 3 times to make sure 
+        # it is a valid last record response and not a true NAK
+        if ((acknak.code == GetFirstAllLinkRecord.code or
+                acknak.code == GetNextAllLinkRecord.code) and
+                acknak.isnak):
+            if self._next_all_link_rec_nak_retries < 3:
+                self.log.debug('Next ALDB Record NAK retry %d',
+                               self._next_all_link_rec_nak_retries)
+                self._next_all_link_rec_nak_retries += 1
+                return False
+            else:
+                return True
+        return acknak.isack
 
     def _load_all_link_database(self):
         """Load the ALL-Link Database into object."""
@@ -345,14 +369,14 @@ class IM(Device, asyncio.Protocol):
 
     # Inbound message handlers sepcific to the IM
     def _register_message_handlers(self):
-        template_assign_all_link = StandardReceive.template(
-            commandtuple=COMMAND_ASSIGN_TO_ALL_LINK_GROUP_0X01_NONE)
         template_all_link_response = AllLinkRecordResponse(None, None, None,
                                                            None, None, None)
         template_get_im_info = GetImInfo()
         template_next_all_link_rec = GetNextAllLinkRecord(acknak=MESSAGE_NAK)
         template_all_link_complete = AllLinkComplete(None, None, None,
                                                      None, None, None)
+        template_device_info_ack = StandardReceive.template(
+            commandtuple=COMMAND_ID_REQUEST_0X10_0X00, acknak=MESSAGE_ACK)
         template_x10_send = X10Send(None, None, MESSAGE_ACK)
         template_x10_received = X10Received(None, None)
 
@@ -371,10 +395,6 @@ class IM(Device, asyncio.Protocol):
         self._message_callbacks.add(
             template_next_all_link_rec,
             self._handle_get_next_all_link_record_nak)
-
-        self._message_callbacks.add(
-            template_all_link_complete,
-            self._handle_assign_to_all_link_group)
 
         self._message_callbacks.add(
             template_x10_send,
@@ -443,68 +463,6 @@ class IM(Device, asyncio.Protocol):
             buffer.extend(self._buffer.get_nowait())
         return buffer
 
-    def _handle_assign_to_all_link_group(self, msg):
-        cat = 0xff
-        subcat = 0
-        product_key = 0
-        if msg.code == StandardReceive.code and msg.flags.isBroadcast:
-            self.log.debug('Received broadcast ALDB group assigment request.')
-            cat = msg.targetLow
-            subcat = msg.targetMed
-            product_key = msg.targetHi
-            self._add_device_from_prod_data(msg.address, cat,
-                                            subcat, product_key)
-        elif msg.code == AllLinkComplete.code:
-            if msg.linkcode in [0, 1, 3]:
-                self.log.debug('Received ALDB complete response.')
-                cat = msg.category
-                subcat = msg.subcategory
-                product_key = msg.firmware
-                self._add_device_from_prod_data(msg.address, cat,
-                                                subcat, product_key)
-                self._update_aldb_records(msg.linkcode, msg.address, msg.group)
-            else:
-                self.log.debug('Received ALDB delete response.')
-                self._update_aldb_records(msg.linkcode, msg.address, msg.group)
-
-    def _add_device_from_prod_data(self, address, cat, subcat, product_key):
-        self.log.debug('Received Device ID with address: %s  '
-                       'cat: 0x%x  subcat: 0x%x', address, cat, subcat)
-        device = self.devices.create_device_from_category(
-            self, address, cat, subcat, product_key)
-        if device:
-            if self.devices[device.id] is None:
-                self.devices[device.id] = device
-                self.log.info('Device with id %s added to device list.',
-                              device.id)
-        else:
-            self.log.error('Device %s not in the IPDB.',
-                           Address(address).human)
-        self.log.info('Total Devices Found: %d', len(self.devices))
-
-    def _update_aldb_records(self, linkcode, address, group):
-        """Refresh the IM and device ALDB records."""
-        device = self.devices[Address(address).id]
-        if device and device.aldb.status in [ALDBStatus.LOADED,
-                                             ALDBStatus.PARTIAL]:
-            for mem_addr in device.aldb:
-                rec = device.aldb[mem_addr]
-                if linkcode in [0, 1, 3]:
-                    if rec.control_flags.is_high_water_mark:
-                        self.log.info('Removing HWM recordd %04x', mem_addr)
-                        device.aldb.pop(mem_addr)
-                    elif not rec.control_flags.is_in_use:
-                        self.log.info('Removing not in use recordd %04x',
-                                      mem_addr)
-                        device.aldb.pop(mem_addr)
-                else:
-                    if rec.address == self.address and rec.group == group:
-                        self.log.info('Removing record %04x with addr %s and '
-                                      'group %d', mem_addr, rec.address,
-                                      rec.group)
-                        device.aldb.pop(mem_addr)
-            device.read_aldb()
-            device.aldb.add_loaded_callback(self._refresh_aldb())
 
     def _refresh_aldb(self):
         self.aldb.clear()
@@ -548,34 +506,39 @@ class IM(Device, asyncio.Protocol):
 
         # Check again that the device is not alreay added, otherwise queue it
         # up for Get ID request
-        if self.devices[msg.address.id] is None:
+        if not self.devices[msg.address.id]:
+            self.log.debug('Found new device %s', msg.address.id)
             unknowndevice = self.devices.create_device_from_category(
                 self, msg.address.hex, None, None, None)
-            self._aldb_response_queue[msg.address.id] = {
+            self._aldb_device_recs[msg.address.id] = {
                 'device': unknowndevice, 'retries': 0}
 
         self._get_next_all_link_record()
 
     def _handle_get_next_all_link_record_nak(self, msg):
         # When the last All-Link record is reached the PLM sends a NAK
+        if self._next_all_link_rec_nak_retries < 3:
+            return
         self._aldb.status = ALDBStatus.LOADED
         self.log.debug('All-Link device records found in ALDB: %d',
-                       len(self._aldb_response_queue))
+                       len(self._aldb_device_recs))
 
+        self._get_device_info()
+
+    def _get_device_info(self):
+        self.log.debug('Starting _get_device_info')
         # Remove records for devices found in the ALDB
         # or in previous calls to _handle_get_next_all_link_record_nak
         for addr in self.devices:
-            try:
-                self._aldb_response_queue.pop(addr)
-            except KeyError:
-                pass
+            self._device_info_received(addr)
 
         staleaddr = []
-        for addr in self._aldb_response_queue:
-            retries = self._aldb_response_queue[addr]['retries']
+        for addr in self._aldb_device_recs:
+            self.log.debug('Getting device info for %s', Address(addr).human)
+            retries = self._aldb_device_recs[addr]['retries']
             if retries < 5:
-                self._aldb_response_queue[addr]['device'].id_request()
-                self._aldb_response_queue[addr]['retries'] = retries + 1
+                self._aldb_device_recs[addr]['device'].id_request()
+                self._aldb_device_recs[addr]['retries'] = retries + 1
             else:
                 self.log.warning('Device %s found in the ALDB not responding.',
                                  addr)
@@ -589,20 +552,21 @@ class IM(Device, asyncio.Protocol):
                     callback(Address(addr))
 
         for addr in staleaddr:
-            self._aldb_response_queue.pop(addr)
+            self._device_info_received(addr)
 
-        num_devices_not_added = len(self._aldb_response_queue)
+        num_devices_not_added = len(self._aldb_device_recs)
 
         if num_devices_not_added > 0:
             # Schedule _handle_get_next_all_link_record_nak to run again later
             # if some devices did not respond
+            for addr in self._aldb_device_recs:
+                self.log.debug('Requesting info for %s', addr)
             delay = num_devices_not_added * 3
             self._loop.call_later(delay,
-                                  self._handle_get_next_all_link_record_nak,
-                                  None)
+                                  self._get_device_info)
         else:
             self._complete_setup()
-        self.log.debug('Ending _handle_get_next_all_link_record_nak')
+        self.log.debug('Ending _get_device_info')
 
     def _complete_setup(self):
         self.devices.save_device_info()
