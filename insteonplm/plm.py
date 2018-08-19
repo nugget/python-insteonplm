@@ -532,6 +532,7 @@ class IM(Device, asyncio.Protocol):
                 self, msg.address.hex, None, None, None)
             self._aldb_devices[msg.address.id] = unknowndevice
 
+        self._next_all_link_rec_nak_retries = 0
         self._get_next_all_link_record()
 
     def _handle_get_next_all_link_record_nak(self, msg):
