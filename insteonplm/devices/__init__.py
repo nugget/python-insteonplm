@@ -430,7 +430,13 @@ class Device(object):
         self._device_info_queue.put_nowait(msg)
 
     def _handle_all_link_complete(self, msg):
-        self.aldb.pop(self.aldb[:-1].mem_addr)
+        last_record = None
+        for mem_addr in self.aldb:
+            aldb_rec = self.aldb[mem_addr]
+            if aldb_rec.control_flags.is_high_water_mark:
+                last_record = mem_addr
+        if last_record:
+            self.aldb.pop(last_record)
         self.read_aldb()
 
     def _register_messages(self):
