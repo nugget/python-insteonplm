@@ -3,7 +3,6 @@ import asyncio
 import async_timeout
 from collections import namedtuple
 from concurrent.futures import CancelledError
-from contextlib import suppress
 import datetime
 from enum import Enum
 import logging
@@ -21,12 +20,14 @@ from insteonplm.constants import (
     COMMAND_PING_0X0F_0X00,
     COMMAND_EXTENDED_READ_WRITE_ALDB_0X2F_0X00,
     MESSAGE_ACK,
+    MESSAGE_TYPE_BROADCAST_MESSAGE,
     MESSAGE_TYPE_DIRECT_MESSAGE,
     MESSAGE_FLAG_DIRECT_MESSAGE_NAK_0XA0,
     MESSAGE_STANDARD_MESSAGE_RECEIVED_0X50,
     MESSAGE_EXTENDED_MESSAGE_RECEIVED_0X51
 )
 from insteonplm.messagecallback import MessageCallback
+from insteonplm.messages.allLinkComplete import AllLinkComplete
 from insteonplm.messages.extendedReceive import ExtendedReceive
 from insteonplm.messages.standardReceive import StandardReceive
 from insteonplm.messages.extendedSend import ExtendedSend
@@ -79,7 +80,7 @@ class Device(object):
     def __init__(self, plm, address, cat, subcat, product_key=0x00,
                  description='', model=''):
         """Initialize the Device class."""
-        self.log = logging.getLogger(__name__)
+        self.log = logging.getLogger()
 
         self._plm = plm
 
@@ -104,7 +105,9 @@ class Device(object):
         self._recent_messages = asyncio.Queue(loop=self._plm.loop)
         self._send_msg_queue = asyncio.Queue(loop=self._plm.loop)
         self._directACK_received_queue = asyncio.Queue(loop=self._plm.loop)
+        self._device_info_queue = asyncio.Queue(loop=self._plm.loop)
         self._send_msg_lock = asyncio.Lock(loop=self._plm.loop)
+        self._device_info_retries = 0
 
         self._register_messages()
 
@@ -177,6 +180,10 @@ class Device(object):
 
     def id_request(self):
         """Request a device ID from a device."""
+        import inspect
+        curframe = inspect.currentframe()
+        calframe = inspect.getouterframes(curframe, 2)
+        self.log.debug('caller name: %s', calframe[1][3])
         msg = StandardSend(self.address, COMMAND_ID_REQUEST_0X10_0X00)
         self._plm.send_msg(msg)
 
@@ -316,7 +323,9 @@ class Device(object):
         self.async_refresh_state()
 
     def _handle_get_device_info_ack(self, msg):
-        asyncio.ensure_future(self._wait_device_info(msg), loop=self._loop)
+        self.log.debug('Starting _handle_get_device_info_ack with message:')
+        self.log.debug(msg)
+        asyncio.ensure_future(self._wait_device_info(msg), loop=self._plm.loop)
 
     def _handle_assign_to_all_link_group(self, msg):
         cat = 0xff
@@ -345,17 +354,20 @@ class Device(object):
     def _add_device_from_prod_data(self, address, cat, subcat, product_key):
         self.log.debug('Received Device ID with address: %s  '
                        'cat: 0x%x  subcat: 0x%x', address, cat, subcat)
-        device = self.devices.create_device_from_category(
-            self, address, cat, subcat, product_key)
+        device = self._plm.devices.create_device_from_category(
+            self._plm, address, cat, subcat, product_key)
         if device:
-            if not self.devices[device.id]:
-                self.devices[device.id] = device
+            if not self._plm.devices[device.id]:
+                self._plm.devices[device.id] = device
                 self.log.info('Device with id %s added to device list.',
                               device.id)
+            self.log.info('Total Devices Found: %d', len(self._plm.devices))
+            self._plm.aldb_device_handled(self._address)
+            self._plm.devices.save_device_info()
         else:
             self.log.error('Device %s not in the IPDB.',
                            Address(address).human)
-        self.log.info('Total Devices Found: %d', len(self.devices))
+            self._plm.device_not_active(self.address)
 
     def _update_aldb_records(self, linkcode, address, group):
         """Refresh the IM and device ALDB records."""
@@ -381,29 +393,70 @@ class Device(object):
             device.read_aldb()
             device.aldb.add_loaded_callback(self._refresh_aldb())
 
+    @asyncio.coroutine
     def _wait_device_info(self, msg):
-        info_recd = False
+        self.log.debug('Starting _wait_device_info for device %s in %s',
+                       msg.address.human, self._address.human)
         try:
-            with async_timeout.timeout(2):
+            with async_timeout.timeout(6):
                 device_info_msg = yield from self._device_info_queue.get()
-                address = device_info_msg.address
-                cat = device_info_msg.targetLow
-                subcat = device_info_msg.targetMed
-                product_key = device_info_msg.targetHi
-                self._add_device_from_prod_data(address, cat,
-                                                subcat, product_key)
-                self._aldb_device_recs.pop(msg.address.id)
-                if device_info_msg.address == msg.address:
-                    info_recd = True
+                self.log.debug('_wait_device_info got device_id message %s',
+                               device_info_msg)
         except asyncio.TimeoutError:
-            info_recd = False
+            self.log.debug('_wait_device_info timeout reached for message %s in %s',
+                           msg.address.human, self._address.human)
+            if self._device_info_retries < 5:
+                self._device_info_retries += 1
+                self.log.debug('Device %s id_request retry %d',
+                               self.address.human, self._device_info_retries)
+                self.id_request()
+            else:
+                self.log.warning('Device %s did not respond to an ID request',
+                                 self.address.human)
+                self.log.warning('Use a device override to define the device '
+                                 'type')
+                self._plm.device_not_active(self.address)
+            return
+        self._device_info_retries = 0
+        address = device_info_msg.address
+        cat = device_info_msg.targetLow
+        subcat = device_info_msg.targetMed
+        product_key = device_info_msg.targetHi
+        self._add_device_from_prod_data(address, cat, subcat, product_key)
 
-        if not info_recd:
-            self._aldb_device_recs[msg.address.id]['device'].id_request()
+    def _handle_device_info_response(self, msg):
+        self.log.debug('Got device_id for %s in %s', msg.address.human,
+                       self._address.human)
+        self._device_info_queue.put_nowait(msg)
+
+    def _handle_all_link_complete(self, msg):
+        self.aldb.pop(self.aldb[:-1].mem_addr)
+        self.read_aldb()
 
     def _register_messages(self):
+        self.log.debug('Registering messages for %s', self._address.human)
+        std_device_info_request_ack = StandardSend.template(
+            address=self._address,
+            commandtuple=COMMAND_ID_REQUEST_0X10_0X00,
+            acknak=MESSAGE_ACK)
+        self.log.debug('ID ACK: %s', std_device_info_request_ack)
+        self._message_callbacks.add(std_device_info_request_ack,
+                                    self._handle_get_device_info_ack)
+
+        std_device_info_response = StandardReceive.template(
+            address=self._address,
+            commandtuple=COMMAND_ASSIGN_TO_ALL_LINK_GROUP_0X01_NONE,
+            flags=MessageFlags.template(
+                messageType=MESSAGE_TYPE_BROADCAST_MESSAGE))
+        self._message_callbacks.add(std_device_info_response,
+                                    self._handle_device_info_response)
+
         std_assign_all_link = StandardReceive.template(
-            commandtuple=COMMAND_ASSIGN_TO_ALL_LINK_GROUP_0X01_NONE)
+            address=self._address,
+            commandtuple=COMMAND_ASSIGN_TO_ALL_LINK_GROUP_0X01_NONE,
+            flags=MessageFlags.template(MESSAGE_TYPE_DIRECT_MESSAGE))
+        self._message_callbacks.add(std_assign_all_link,
+                                    self._handle_assign_to_all_link_group)
 
         ext_msg_aldb_record = ExtendedReceive.template(
             address=self._address,
@@ -412,30 +465,27 @@ class Device(object):
             flags=MessageFlags.template(
                 messageType=MESSAGE_TYPE_DIRECT_MESSAGE,
                 extended=1))
+        self._message_callbacks.add(ext_msg_aldb_record,
+                                    self._handle_aldb_record_received)
+
         std_msg_pre_nak = StandardReceive.template(
             flags=MessageFlags.template(
                 messageType=MESSAGE_FLAG_DIRECT_MESSAGE_NAK_0XA0),
             cmd2=0xfc)
+        self._message_callbacks.add(std_msg_pre_nak,
+                                    self._handle_pre_nak)
+
         ext_msg_pre_nak = ExtendedReceive.template(
             flags=MessageFlags.template(
                 messageType=MESSAGE_FLAG_DIRECT_MESSAGE_NAK_0XA0),
             cmd2=0xfc)
-        std_device_id_ack = StandardReceive(
-            commandtuple=COMMAND_ID_REQUEST_0X10_0X00,
-            acknak=MESSAGE_ACK)
-
-        self._message_callbacks.add(std_assign_all_link,
-                                    self._handle_assign_to_all_link_group)
-        self._message_callbacks.add(ext_msg_aldb_record,
-                                    self._handle_aldb_record_received)
-        self._message_callbacks.add(std_msg_pre_nak,
-                                    self._handle_pre_nak)
         self._message_callbacks.add(ext_msg_pre_nak,
                                     self._handle_pre_nak)
+
+        template_all_link_complete = AllLinkComplete(None, None, None,
+                                                     None, None, None)
         self._message_callbacks.add(template_all_link_complete,
-                                    self._handle_assign_to_all_link_group)
-        self._message_callbacks.add(template_device_info_ack,
-                                    self._handle_get_device_info_ack)
+                                    self._handle_all_link_complete)
 
     # Send / Receive message processing
     def receive_message(self, msg):
@@ -523,7 +573,6 @@ class Device(object):
         asyncio.ensure_future(self._process_send_queue(), loop=self._plm.loop)
         self.log.debug('Ending Device._send_msg')
 
-
     @asyncio.coroutine
     def _process_send_queue(self):
         self.log.debug('Starting Device._process_send_queue')
@@ -536,8 +585,8 @@ class Device(object):
         if callback:
             self._sent_msg_wait_for_directACK = msg_info
         self._plm.send_msg(msg)
-        #if self._send_msg_lock.locked():
-        #    self._send_msg_lock.release()
+        # if self._send_msg_lock.locked():
+        #     self._send_msg_lock.release()
         self.log.debug('Ending Device._process_send_queue')
 
     @asyncio.coroutine
