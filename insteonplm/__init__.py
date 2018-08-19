@@ -8,7 +8,6 @@ import asyncio
 import binascii
 from contextlib import suppress
 import logging
-import serial
 from serial.aio import create_serial_connection
 
 from insteonplm.plm import PLM, Hub
@@ -176,7 +175,7 @@ class Connection:
         if self.host:
             connected = yield from self._connect_http()
         else:
-            connected =  yield from self._connect_serial()
+            connected = yield from self._connect_serial()
         _LOGGER.debug('ending Connection._connect')
         return connected
 
@@ -333,7 +332,6 @@ class HttpTransport(asyncio.Transport):
             _LOGGER.error('Reconnect to Hub (TimeoutError)')
             yield from self._stop_reader(True)
 
-
         if self._read_write_lock.locked():
             self._read_write_lock.release()
         return return_status
@@ -391,7 +389,7 @@ class HttpTransport(asyncio.Transport):
                     bin_buffer = binascii.unhexlify(buffer)
                     self._protocol.data_received(bin_buffer)
                 yield from asyncio.sleep(1, loop=self._loop)
-            
+
             except asyncio.CancelledError:
                 _LOGGER.debug('Stop connection to Hub (loop stopped)')
                 yield from self._stop_reader(False)
@@ -468,16 +466,16 @@ class HttpTransport(asyncio.Transport):
             _LOGGER.debug("We want to reconnect so we do...")
             self._protocol.connection_lost(True)
 
-    def _log_error(self, error):
+    def _log_error(self, status):
         # TODO: handle other status codes
-        if response.status == 401:
+        if status == 401:
             _LOGGER.error('Athentication error, check your configuration')
             _LOGGER.error('If configuration is correct and restart the Hub')
             _LOGGER.error('System must be restared to reconnect to hub')
-        elif response.status == 404:
+        elif status == 404:
             _LOGGER.error('Hub not found at http://%s:%d, check configuration',
                           self._host, self._port)
-        elif response.status in range(500, 600):
+        elif status in range(500, 600):
             _LOGGER.error('Hub returned a server error')
             _LOGGER.error('Restart the Hub and try again')
         else:
