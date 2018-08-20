@@ -1,5 +1,6 @@
 """On/Off states."""
 import asyncio
+import async_timeout
 
 from insteonplm.constants import (COMMAND_LIGHT_MANUALLY_TURNED_ON_0X23_0X00,
                                   COMMAND_LIGHT_MANUALLY_TURNED_OFF_0X22_0X00,
@@ -11,7 +12,6 @@ from insteonplm.constants import (COMMAND_LIGHT_MANUALLY_TURNED_ON_0X23_0X00,
                                   COMMAND_LIGHT_STATUS_REQUEST_0X19_0X01,
                                   MESSAGE_TYPE_ALL_LINK_BROADCAST,
                                   MESSAGE_TYPE_ALL_LINK_CLEANUP,
-                                  MESSAGE_TYPE_DIRECT_MESSAGE,
                                   COMMAND_EXTENDED_TRIGGER_ALL_LINK_0X30_0X00,
                                   COMMAND_EXTENDED_GET_SET_0X2E_0X00)
 from insteonplm.messages.standardSend import StandardSend
@@ -22,6 +22,8 @@ from insteonplm.messages.messageFlags import MessageFlags
 from insteonplm.messages.userdata import Userdata
 from insteonplm.states import State
 from insteonplm.utils import bit_is_set, set_bit
+
+DIMMABLE_KEYPAD_SCENE_ON_LEVEL = 'scene_on_level'
 
 
 class OnOffStateBase(State):
@@ -516,9 +518,9 @@ class OnOffKeypad(OnOffStateBase):
 
     def set_on_level(self, val):
         """Set on level for the button/group."""
-        set_cmd = self._create_set_property_msg("_on_level", 0x06,
-                                                val)
-        self._send_method(set_cmd, self._property_set)
+        on_cmd = self._create_set_property_msg("_on_level", 0x06,
+                                               val)
+        self._send_method(on_cmd, self._property_set)
         self._send_method(on_cmd, self._on_message_received)
 
     def set_led_brightness(self, brightness):
@@ -607,11 +609,11 @@ class OnOffKeypad(OnOffStateBase):
         self._send_method(cmd, self._status_message_received, True)
 
     def _on_message_received(self, msg):
-        #if msg.cmd2 == 0x00:
-        #    onlevel = 0xff
-        #else:
-        #    onlevel = msg.cmd2
-        #self._update_subscribers(onlevel)
+        # if msg.cmd2 == 0x00:
+        #     onlevel = 0xff
+        # else:
+        #     onlevel = msg.cmd2
+        # self._update_subscribers(onlevel)
         if not self.led_is_on():
             self.log.debug("LED is off and button was turned on")
             self._update_subscribers(1)
@@ -620,7 +622,7 @@ class OnOffKeypad(OnOffStateBase):
             self.log.debug("LED is already on when button turned on?")
 
     def _off_message_received(self, msg):
-        #self._update_subscribers(0x00)
+        # self._update_subscribers(0x00)
         if self.led_is_on():
             self.log.debug("LED is on and button was turned off")
             self._update_subscribers(0)
@@ -697,7 +699,7 @@ class OnOffKeypad(OnOffStateBase):
         if self._status_response_lock.locked():
             self._status_response_lock.release()
         user_data = msg.userdata
-        #self._update_subscribers(user_data['d8'])
+        # self._update_subscribers(user_data['d8'])
         self._set_status_data(user_data)
 
     def _property_set(self, msg):
@@ -709,12 +711,12 @@ class OnOffKeypad(OnOffStateBase):
 
     def _received_scene_triggered(self, msg):
         scene_level = self._sent_property.get('prop')
-        val = self._sent_property.get('val')
+        # val = self._sent_property.get('val')
         self.log.debug('Calling DimmableKeypad _received_scene_triggered '
                        'for group %s with on level %s',
                        self._group, scene_level)
         if scene_level == DIMMABLE_KEYPAD_SCENE_ON_LEVEL:
-            #self._update_subscribers(val)
+            # self._update_subscribers(val)
             self._leds.manual_on(self._group)
 
     def _set_status_data(self, userdata):
@@ -873,7 +875,8 @@ class OnOffKeypadLed(State):
         self._send_method(led_status_msg, self._status_message_received)
 
     def _status_message_received(self, msg):
-        self.log.debug("OnOffKeypadLed status message received with value 0x%02x", msg.cmd2)
+        self.log.debug('OnOffKeypadLed status message received with value '
+                       '0x%02x', msg.cmd2)
         self.log.debug("Status message: %s", msg)
         self._update_subscribers(msg.cmd2)
 
@@ -903,11 +906,12 @@ class OnOffKeypadLed(State):
             old = 'on' if old_bit_set else 'off'
             new = 'on' if new_bit_set else 'off'
             self.log.debug('Button %d was %s now is %s', button, old, new)
-            #if old_bit_set != new_bit_set:
+            # if old_bit_set != new_bit_set:
             callbacks = self._button_observer_callbacks.get(button)
             if callbacks:
                 for callback in callbacks:
-                    self.log.debug('Calling button update callback %s', callback)
+                    self.log.debug('Calling button update callback %s',
+                                   callback)
                     callback(self._address, button, int(new_bit_set))
             else:
                 self.log.debug("No callbacks found for button %d", button)

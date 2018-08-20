@@ -49,11 +49,12 @@ def rawX10_to_bytes(rawX10):
 
 def bit_is_set(bitmask, bit):
     """Return True if a specific bit is set in a bitmask.
-    
+
     Uses the low bit is 1 and the high bit is 8.
     """
     bitshift = bit - 1
     return bool(bitmask & (1 << bitshift))
+
 
 def set_bit(bitmask, bit, is_on):
     """Set the value of a bit in a bitmask on or off.
