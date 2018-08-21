@@ -13,7 +13,7 @@ from insteonplm.constants import (X10_COMMAND_ALL_UNITS_OFF,
                                   X10_COMMAND_BRIGHT)
 
 
-_LOGGER = logging.getLogger()
+_LOGGER = logging.getLogger(__name__)
 
 
 class X10OnOffSwitch(State):
@@ -117,7 +117,6 @@ class X10DimmableSwitch(X10OnOffSwitch):
             change = setlevel - self._value
             increment = 255 / self._steps
             steps = round(abs(change) / increment)
-            print('Steps: ', steps)
             if change > 0:
                 method = self.brighten
                 self._value += round(steps * increment)

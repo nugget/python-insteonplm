@@ -271,7 +271,7 @@ class IM(Device, asyncio.Protocol):
 
     @asyncio.coroutine
     def _get_message_from_send_queue(self):
-        self.log.error('Starting PLM write message from send queue')
+        self.log.debug('Starting PLM write message from send queue')
         if self._write_transport_lock.locked():
             return
         self.log.debug('Aquiring write lock')
@@ -286,17 +286,17 @@ class IM(Device, asyncio.Protocol):
                 yield from asyncio.sleep(msg_info.wait_timeout,
                                          loop=self._loop)
             except asyncio.CancelledError:
-                self.log.error('Stopping PLM writer due to CancelledError')
+                self.log.error('Stopping Insteon Modem writer due to CancelledError')
                 self._restart_writer = False
             except GeneratorExit:
-                self.log.error('Stopping PLM writer due to GeneratorExit')
+                self.log.error('Stopping Insteon Modem writer due to GeneratorExit')
                 self._restart_writer = False
             except Exception as e:
-                self.log.error('Stopping PLM writer due to %s', str(e))
+                self.log.error('Stopping Insteon Modem writer due to %s', str(e))
                 self._restart_writer = False
         if self._write_transport_lock.locked():
             self._write_transport_lock.release()
-        self.log.error('Ending PLM write message from send queue')
+        self.log.debug('Ending PLM write message from send queue')
 
     def _get_plm_info(self):
         """Request PLM Info."""

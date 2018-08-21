@@ -129,8 +129,7 @@ class Connection:
     @asyncio.coroutine
     def close(self, event):
         """Close the PLM device connection and don't try to reconnect."""
-        print('Will this show up???')
-        _LOGGER.warning('Closing connection to PLM')
+        _LOGGER.info('Closing connection to Insteon Modem (PLM or Hub)')
         self._closing = True
         self._auto_reconnect = False
         yield from self.protocol.close()
@@ -470,7 +469,7 @@ class HttpTransport(asyncio.Transport):
         # TODO: handle other status codes
         if status == 401:
             _LOGGER.error('Athentication error, check your configuration')
-            _LOGGER.error('If configuration is correct and restart the Hub')
+            _LOGGER.error('If configuration is correct, restart the Hub')
             _LOGGER.error('System must be restared to reconnect to hub')
         elif status == 404:
             _LOGGER.error('Hub not found at http://%s:%d, check configuration',

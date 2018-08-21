@@ -80,7 +80,7 @@ class Device(object):
     def __init__(self, plm, address, cat, subcat, product_key=0x00,
                  description='', model=''):
         """Initialize the Device class."""
-        self.log = logging.getLogger()
+        self.log = logging.getLogger(__name__)
 
         self._plm = plm
 
@@ -365,7 +365,7 @@ class Device(object):
             self._plm.aldb_device_handled(self._address)
             self._plm.devices.save_device_info()
         else:
-            self.log.error('Device %s not in the IPDB.',
+            self.log.warning('Device %s not in the Insteon Product Database (IPDB).',
                            Address(address).human)
             self._plm.device_not_active(self.address)
 
@@ -642,7 +642,7 @@ class X10Device(object):
         self._message_callbacks = MessageCallback()
         self._stateList = StateList()
         self._send_msg_lock = asyncio.Lock(loop=self._plm.loop)
-        self.log = logging.getLogger()
+        self.log = logging.getLogger(__name__)
 
     @property
     def address(self):
@@ -894,7 +894,7 @@ class ControlFlags(object):
         self._used_before = bool(used_before)
         self._bit5 = bool(bit5)
         self._bit4 = bool(bit4)
-        self.log = logging.getLogger()
+        self.log = logging.getLogger(__name__)
 
     @property
     def is_in_use(self):

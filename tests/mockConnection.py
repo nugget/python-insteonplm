@@ -6,7 +6,7 @@ import binascii
 import logging
 
 
-_LOGGER = logging.getLogger()
+_LOGGER = logging.getLogger(__name__)
 
 
 @asyncio.coroutine

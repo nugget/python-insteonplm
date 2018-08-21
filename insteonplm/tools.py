@@ -11,7 +11,7 @@ from insteonplm.address import Address
 from insteonplm.devices import Device, ALDBStatus
 
 __all__ = ('Tools', 'monitor', 'interactive')
-_LOGGING = logging.getLogger()
+_LOGGING = logging.getLogger(__name__)
 PROMPT = 'insteonplm: '
 INTRO = ('INSTEON PLM interactive command processor.\n'
          'Type `help` for a list of commands.\n\n'
@@ -97,7 +97,6 @@ class Tools():
 
     @asyncio.coroutine
     def monitor_mode(self, poll_devices=False, device=None, workdir=None):
-        print("Running monitor mode")
         yield from self.connect(poll_devices=False, device=None, workdir=None)
         self.plm.monitor_mode()
 
