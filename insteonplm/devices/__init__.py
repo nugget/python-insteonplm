@@ -269,9 +269,11 @@ class Device(object):
     def read_aldb(self, mem_addr=0x0000, num_recs=0):
         """Read the device All-Link Database."""
         if self._aldb.version == ALDBVersion.Null:
-            self.log.info('Device does not contain an ALDB')
+            self.log.info('Device %s does not contain an All-Link Database',
+                          self._address.human)
         else:
-            self.log.info('Reading ALDB for device %s', self._address)
+            self.log.info('Reading All-Link Database for device %s',
+                          self._address.human)
             asyncio.ensure_future(self._aldb.load(mem_addr, num_recs),
                                   loop=self._plm.loop)
             self._aldb.add_loaded_callback(self._aldb_loaded_callback)
@@ -295,7 +297,7 @@ class Device(object):
         if isinstance(mode, str) and mode.lower() in ['c', 'r']:
             pass
         else:
-            self.log.info('mode: %s', mode)
+            self.log.error('Insteon link mode: %s', mode)
             raise ValueError("Mode must be 'c' or 'r'")
         if isinstance(group, int):
             pass
@@ -318,7 +320,8 @@ class Device(object):
         self._aldb.record_received(msg)
 
     def _handle_pre_nak(self, msg):
-        self.log.warning('Device returned a pre-NAK message')
+        self.log.warning('Device %s returned a pre-NAK message',
+                         self._address.human)
         self.log.warning('Checking status to confirm if message was processed')
         self.async_refresh_state()
 
@@ -359,13 +362,13 @@ class Device(object):
         if device:
             if not self._plm.devices[device.id]:
                 self._plm.devices[device.id] = device
-                self.log.info('Device with id %s added to device list.',
-                              device.id)
-            self.log.info('Total Devices Found: %d', len(self._plm.devices))
+                self.log.debug('Device with id %s added to device list.',
+                               device.id)
+            self.log.info('Total Insteon devices found: %d', len(self._plm.devices))
             self._plm.aldb_device_handled(self._address)
             self._plm.devices.save_device_info()
         else:
-            self.log.error('Device %s not in the IPDB.',
+            self.log.warning('Device %s not in the Insteon Product Database',
                            Address(address).human)
             self._plm.device_not_active(self.address)
 
@@ -378,17 +381,17 @@ class Device(object):
                 rec = device.aldb[mem_addr]
                 if linkcode in [0, 1, 3]:
                     if rec.control_flags.is_high_water_mark:
-                        self.log.info('Removing HWM recordd %04x', mem_addr)
+                        self.log.debug('Removing HWM record %04x', mem_addr)
                         device.aldb.pop(mem_addr)
                     elif not rec.control_flags.is_in_use:
-                        self.log.info('Removing not in use recordd %04x',
-                                      mem_addr)
+                        self.log.debug('Removing not in use record %04x',
+                                       mem_addr)
                         device.aldb.pop(mem_addr)
                 else:
                     if rec.address == self.address and rec.group == group:
-                        self.log.info('Removing record %04x with addr %s and '
-                                      'group %d', mem_addr, rec.address,
-                                      rec.group)
+                        self.log.debug('Removing record %04x with addr %s and '
+                                       'group %d', mem_addr, rec.address,
+                                       rec.group)
                         device.aldb.pop(mem_addr)
             device.read_aldb()
             device.aldb.add_loaded_callback(self._refresh_aldb())
@@ -1094,7 +1097,8 @@ class ALDB(object):
                      data1=0x00, data2=0x00, data3=0x00):
         """Write an All-Link database record."""
         if not (self._have_first_record() and self._have_last_record()):
-            self.log.error('Must load the ALDB before writing to it')
+            self.log.error('Must load the Insteon All-Link Datbase before '
+                           'writing to it')
         else:
             self._prior_status = self._status
             self._status = ALDBStatus.LOADING
@@ -1135,7 +1139,8 @@ class ALDB(object):
         """Write an All-Link database record."""
         record = self._records.get(mem_addr)
         if not record:
-            self.log.error('Must load the ALDB record before deleting it')
+            self.log.error('Must load the Insteon All-Link Datbase record '
+                           'before deleting it')
         else:
             self._prior_status = self._status
             self._status = ALDBStatus.LOADING
@@ -1250,7 +1255,8 @@ class ALDB(object):
 
     def _handle_write_aldb_ack(self, msg):
         if msg:
-            self.log.info('Device confirmed ALDB message write')
+            self.log.info('Device %s confirmed All-Link record was written',
+                          self._address.human)
             try:
                 self._records.pop(self._load_action.mem_addr)
             except KeyError:
@@ -1258,7 +1264,8 @@ class ALDB(object):
             asyncio.ensure_future(self.load(self._load_action.mem_addr, 1, 0),
                                   loop=self._loop)
         else:
-            self.log.info('Device did not confirm ALDB message write')
+            self.log.info('Device %s did not confirm All-Link record was '
+                          'written', self._address.human)
             self._status = self._prior_status
 
     @asyncio.coroutine
@@ -1301,16 +1308,17 @@ class ALDB(object):
             asyncio.ensure_future(self.load(mem_addr, rec_count, retries),
                                   loop=self._loop)
         elif read_complete or self._have_all_records():
-            self.log.info('ALDB load complete for device %s', self._address)
+            self.log.info('All-Link Database load complete for device %s',
+                          self._address)
             self._load_finished(ALDBStatus.LOADED)
         else:
             if self._records:
-                self.log.warning('ALDB partially loaded for device %s',
-                                 self._address)
+                self.log.warning('Insteon All-Link Database partially loaded '
+                                 'for device %s', self._address)
                 self._load_finished(ALDBStatus.PARTIAL)
             else:
-                self.log.warning('ALDB failed to load for device %s',
-                                 self._address)
+                self.log.warning('Insteon All-Link Database  failed to load '
+                                 'for device %s', self._address)
                 self._load_finished(ALDBStatus.FAILED)
 
     def _load_finished(self, status):

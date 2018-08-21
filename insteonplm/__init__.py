@@ -129,26 +129,25 @@ class Connection:
     @asyncio.coroutine
     def close(self, event):
         """Close the PLM device connection and don't try to reconnect."""
-        print('Will this show up???')
-        _LOGGER.warning('Closing connection to PLM')
+        _LOGGER.info('Closing connection to Insteon Modem')
         self._closing = True
         self._auto_reconnect = False
         yield from self.protocol.close()
         if self.protocol.transport:
             self.protocol.transport.close()
         yield from asyncio.sleep(0, loop=self._loop)
-        _LOGGER.warning('PLM Closed...')
+        _LOGGER.info('Insteon Modem connection closed')
 
     def halt(self):
         """Close the PLM device connection and wait for a resume() request."""
-        _LOGGER.warning('Halting connection to PLM')
+        _LOGGER.warning('Halting connection to Insteon Modem')
         self._halted = True
         if self.protocol.transport:
             self.protocol.transport.close()
 
     def resume(self):
         """Resume the PLM device connection if we have been halted."""
-        _LOGGER.warning('Resuming connection to PLM')
+        _LOGGER.warning('Resuming connection to Insteon Modem')
         self._halted = False
 
     @property
@@ -181,7 +180,7 @@ class Connection:
 
     @asyncio.coroutine
     def _connect_http(self):
-        _LOGGER.info('Connecting to Hub on %s', self.host)
+        _LOGGER.info('Connecting to Insteon Hub on %s', self.host)
         auth = aiohttp.BasicAuth(self.username, self.password)
         connector = aiohttp.TCPConnector(
             limit=1, loop=self._loop, keepalive_timeout=10)
@@ -198,7 +197,7 @@ class Connection:
 
     @asyncio.coroutine
     def _connect_serial(self):
-        _LOGGER.info('Connecting to PLM on %s', self.device)
+        _LOGGER.info('Connecting to Insteon PLM on %s', self.device)
         try:
             transport, protocol = yield from create_serial_connection(
                 self._loop, lambda: self.protocol,
@@ -265,7 +264,7 @@ class HttpTransport(asyncio.Transport):
         self._closing = True
         yield from self._session.close()
         yield from asyncio.sleep(0, loop=self._loop)
-        _LOGGER.info("Hub Session closed")
+        _LOGGER.info("Insteon Hub session closed")
 
     def get_write_buffer_size(self):
         return 0
@@ -356,7 +355,7 @@ class HttpTransport(asyncio.Transport):
 
     @asyncio.coroutine
     def _ensure_reader(self):
-        _LOGGER.info('Hub reader started')
+        _LOGGER.info('Insteon Hub reader started')
         yield from self._clear_buffer()
         self._write_last_read(0)
         url = 'http://{:s}:{:d}/buffstatus.xml'.format(self._host, self._port)
@@ -408,7 +407,7 @@ class HttpTransport(asyncio.Transport):
             except Exception as e:
                 _LOGGER.debug('Stop reading due to %s', str(e))
                 yield from self._stop_reader(False)
-        _LOGGER.info('Hub reader stopped')
+        _LOGGER.info('Insteon Hub reader stopped')
         return
 
     def _parse_buffer(self, html, last_stop):
