@@ -131,9 +131,9 @@ class IM(Device, asyncio.Protocol):
     def connection_lost(self, exc):
         """Called when asyncio.Protocol loses the network connection."""
         if exc is None:
-            self.log.warning('eof from modem?')
+            self.log.warning('End of file received from Insteon Modem')
         else:
-            self.log.warning('Lost connection to modem: %s', exc)
+            self.log.warning('Lost connection to Insteon Modem: %s', exc)
 
         self.transport = None
         asyncio.ensure_future(self.pause_writing(), loop=self.loop)
@@ -271,7 +271,7 @@ class IM(Device, asyncio.Protocol):
 
     @asyncio.coroutine
     def _get_message_from_send_queue(self):
-        self.log.error('Starting PLM write message from send queue')
+        self.log.debug('Starting Insteon Modem write message from send queue')
         if self._write_transport_lock.locked():
             return
         self.log.debug('Aquiring write lock')
@@ -286,21 +286,24 @@ class IM(Device, asyncio.Protocol):
                 yield from asyncio.sleep(msg_info.wait_timeout,
                                          loop=self._loop)
             except asyncio.CancelledError:
-                self.log.error('Stopping PLM writer due to CancelledError')
+                self.log.info('Stopping Insteon Modem writer due to '
+                              'CancelledError')
                 self._restart_writer = False
             except GeneratorExit:
-                self.log.error('Stopping PLM writer due to GeneratorExit')
+                self.log.error('Stopping Insteon Modem writer due to '
+                               'GeneratorExit')
                 self._restart_writer = False
             except Exception as e:
-                self.log.error('Stopping PLM writer due to %s', str(e))
+                self.log.error('Stopping Insteon Modem writer due to %s',
+                               str(e))
                 self._restart_writer = False
         if self._write_transport_lock.locked():
             self._write_transport_lock.release()
-        self.log.error('Ending PLM write message from send queue')
+        self.log.debug('Ending Insteon Modem write message from send queue')
 
     def _get_plm_info(self):
         """Request PLM Info."""
-        self.log.info('Requesting PLM Info')
+        self.log.info('Requesting Insteon Modem Info')
         msg = GetImInfo()
         self.send_msg(msg, wait_nak=True, wait_timeout=.5)
 
@@ -520,9 +523,8 @@ class IM(Device, asyncio.Protocol):
                         self.devices.has_saved(device.address.id):
                     if self.devices[device.id] is None:
                         self.devices[device.id] = device
-                        self.log.info('Device with id %s added to device list '
-                                      'from ALDB data.',
-                                      device.id)
+                        self.log.debug('Device with id %s added to device list '
+                                       'from ALDB data.', device.id)
 
         # Check again that the device is not already added, otherwise queue it
         # up for Get ID request
