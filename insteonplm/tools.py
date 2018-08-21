@@ -11,7 +11,7 @@ from insteonplm.address import Address
 from insteonplm.devices import Device, ALDBStatus
 
 __all__ = ('Tools', 'monitor', 'interactive')
-_LOGGING = logging.getLogger()
+_LOGGING = logging.getLogger(__name__)
 PROMPT = 'insteonplm: '
 INTRO = ('INSTEON PLM interactive command processor.\n'
          'Type `help` for a list of commands.\n\n'

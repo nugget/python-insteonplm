@@ -10,7 +10,7 @@ class MockPLM(object):
 
     def __init__(self, loop=None):
         """Initialize the MockPLM class."""
-        self.log = logging.getLogger()
+        self.log = logging.getLogger(__name__)
         self.sentmessage = ''
         self._message_callbacks = MessageCallback()
         self.loop = loop

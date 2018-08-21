@@ -27,7 +27,7 @@ from insteonplm.messages.x10received import X10Received
 from .mockConnection import MockConnection, wait_for_plm_command
 from .mockCallbacks import MockCallbacks
 
-_LOGGER = logging.getLogger()
+_LOGGER = logging.getLogger(__name__)
 _INSTEON_LOGGER = logging.getLogger('insteonplm')
 _INSTEON_LOGGER.setLevel(logging.DEBUG)
 SEND_MSG_WAIT = 1.1
