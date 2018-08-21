@@ -18,7 +18,7 @@ from .mockPLM import MockPLM
 from .mockCallbacks import MockCallbacks
 
 import logging
-_LOGGING = logging.getLogger()
+_LOGGING = logging.getLogger(__name__)
 _LOGGING.setLevel(logging.DEBUG)
 
 def test_switchedLightingControl():

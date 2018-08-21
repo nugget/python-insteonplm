@@ -21,7 +21,7 @@ from .mockCallbacks import MockCallbacks
 from .mockPLM import MockPLM
 
 
-_LOGGER = logging.getLogger()
+_LOGGER = logging.getLogger(__name__)
 
 
 def test_x10OnOff():
