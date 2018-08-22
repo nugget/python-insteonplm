@@ -13,7 +13,7 @@ from insteonplm.constants import (X10_COMMAND_ALL_UNITS_OFF,
                                   X10_COMMAND_BRIGHT)
 
 
-_LOGGER = logging.getLogger()
+_LOGGER = logging.getLogger(__name__)
 
 
 class X10OnOffSwitch(State):

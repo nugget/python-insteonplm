@@ -14,7 +14,7 @@ if len(long_description) < 100:
 
 setup(
     name='insteonplm',
-    version='0.11.7',
+    version='0.12.3',
     author='David McNett',
     author_email='nugget@macnugget.org',
     url='https://github.com/nugget/python-insteonplm',
@@ -36,7 +36,8 @@ setup(
     install_requires=[
         'pyserial==3.2.0',
         'pyserial-asyncio',
-        'async_timeout'
+        'async_timeout',
+        'aiohttp'
     ],
     entry_points={
         'console_scripts': ['insteonplm_monitor = insteonplm.tools:monitor',

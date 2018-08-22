@@ -1,5 +1,6 @@
 """Test Security Health and Saftey devices."""
 import asyncio
+import logging
 
 from insteonplm.constants import (COMMAND_LIGHT_OFF_0X13_0X00,
                                   COMMAND_LIGHT_ON_0X11_NONE,
@@ -14,6 +15,9 @@ from insteonplm.messages.standardReceive import StandardReceive
 from insteonplm.messages.messageFlags import MessageFlags
 from .mockPLM import MockPLM
 from .mockCallbacks import MockCallbacks
+
+_LOGGING = logging.getLogger(__name__)
+_LOGGING.setLevel(logging.DEBUG)
 
 @asyncio.coroutine
 def _onOffSenorTest(onOffClass, loop):
@@ -102,7 +106,16 @@ def test_securityhealthsafety():
 
     loop = asyncio.get_event_loop()
     loop.run_until_complete(run_test(loop))
-
+    open_tasks = asyncio.Task.all_tasks(loop=loop)
+    #loop.stop()
+    for task in open_tasks:
+        if hasattr(task, 'name'):
+            name = task.name
+            _LOGGING.error('Device: %s Task: %s', task.name, task)
+        else:
+            _LOGGING.error('Task: %s', task)
+        if not task.done():
+            loop.run_until_complete(task)
 
 
 def test_securityhealthsafety_2982_222():
@@ -135,6 +148,16 @@ def test_securityhealthsafety_2982_222():
 
     loop = asyncio.get_event_loop()
     loop.run_until_complete(run_test(loop))
+    open_tasks = asyncio.Task.all_tasks(loop=loop)
+    #loop.stop()
+    for task in open_tasks:
+        if hasattr(task, 'name'):
+            name = task.name
+            _LOGGING.error('Device: %s Task: %s', task.name, task)
+        else:
+            _LOGGING.error('Task: %s', task)
+        if not task.done():
+            loop.run_until_complete(task)
 
 
 def test_securityHealthSafety_2842_222():
@@ -142,6 +165,16 @@ def test_securityHealthSafety_2842_222():
     loop = asyncio.get_event_loop()
     loop.run_until_complete(
         _onOffSenorTest(SecurityHealthSafety_2842_222, loop))
+    open_tasks = asyncio.Task.all_tasks(loop=loop)
+    #loop.stop()
+    for task in open_tasks:
+        if hasattr(task, 'name'):
+            name = task.name
+            _LOGGING.error('Device: %s Task: %s', task.name, task)
+        else:
+            _LOGGING.error('Task: %s', task)
+        if not task.done():
+            loop.run_until_complete(task)
 
 
 def test_securityHealthSafety_2845_2222():
@@ -149,6 +182,16 @@ def test_securityHealthSafety_2845_2222():
     loop = asyncio.get_event_loop()
     loop.run_until_complete(
         _onOffSenorTest(SecurityHealthSafety_2845_222, loop))
+    open_tasks = asyncio.Task.all_tasks(loop=loop)
+    #loop.stop()
+    for task in open_tasks:
+        if hasattr(task, 'name'):
+            name = task.name
+            _LOGGING.error('Device: %s Task: %s', task.name, task)
+        else:
+            _LOGGING.error('Task: %s', task)
+        if not task.done():
+            loop.run_until_complete(task)
 
 
 def test_securityHealthSafety_2852_222():
@@ -223,5 +266,14 @@ def test_securityHealthSafety_2852_222():
         assert callbacks.callbackvalue4 == 0x13
 
     loop = asyncio.get_event_loop()
-    loop.run_until_complete(
-        _run_test(loop))
+    loop.run_until_complete(_run_test(loop))
+    open_tasks = asyncio.Task.all_tasks(loop=loop)
+    #loop.stop()
+    for task in open_tasks:
+        if hasattr(task, 'name'):
+            name = task.name
+            _LOGGING.error('Device: %s Task: %s', task.name, task)
+        else:
+            _LOGGING.error('Task: %s', task)
+        if not task.done():
+            loop.run_until_complete(task)

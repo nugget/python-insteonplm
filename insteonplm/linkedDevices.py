@@ -100,7 +100,7 @@ class LinkedDevices(object):
     def add_override(self, addr, key, value):
         """Register an attribute override for a device."""
         address = Address(str(addr)).id
-        self.log.info('New override for %s %s is %s', address, key, value)
+        self.log.debug('New override for %s %s is %s', address, key, value)
         device_override = self._overrides.get(address, {})
         device_override[key] = value
         self._overrides[address] = device_override
@@ -148,9 +148,8 @@ class LinkedDevices(object):
                 device = self.create_device_from_category(
                         plm, addr, cat, subcat, product_key)
                 if device:
-                    self.log.info('Device with id %s added to device list '
-                                  'from saved device data.',
-                                  addr)
+                    self.log.debug('Device with id %s added to device list '
+                                   'from saved device data.', addr)
                     aldb_status = saved_device.get('aldb_status', 0)
                     device.aldb.status = ALDBStatus(aldb_status)
                     aldb = saved_device.get('aldb', {})
@@ -166,9 +165,8 @@ class LinkedDevices(object):
                 device = self.create_device_from_category(
                         plm, addr, cat, subcat, product_key)
                 if device:
-                    self.log.info('Device with id %s added to device list '
-                                  'from device override data.',
-                                  addr)
+                    self.log.debug('Device with id %s added to device list '
+                                   'from device override data.', addr)
                     self[addr] = device
 
     # Save device information

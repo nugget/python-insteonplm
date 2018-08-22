@@ -21,7 +21,7 @@ from .mockCallbacks import MockCallbacks
 from .mockPLM import MockPLM
 
 
-_LOGGER = logging.getLogger()
+_LOGGER = logging.getLogger(__name__)
 
 
 def test_x10OnOff():
@@ -63,6 +63,16 @@ def test_x10OnOff():
     
     loop = asyncio.get_event_loop()
     loop.run_until_complete(run_test(loop))
+    open_tasks = asyncio.Task.all_tasks(loop=loop)
+    #loop.stop()
+    for task in open_tasks:
+        if hasattr(task, 'name'):
+            name = task.name
+            _LOGGER.error('Device: %s Task: %s', task.name, task)
+        else:
+            _LOGGER.error('Task: %s', task)
+        if not task.done():
+            loop.run_until_complete(task)
 
 
 def test_dimmable():
@@ -93,6 +103,16 @@ def test_dimmable():
     
     loop = asyncio.get_event_loop()
     loop.run_until_complete(run_test(loop))
+    open_tasks = asyncio.Task.all_tasks(loop=loop)
+    #loop.stop()
+    for task in open_tasks:
+        if hasattr(task, 'name'):
+            name = task.name
+            _LOGGER.error('Device: %s Task: %s', task.name, task)
+        else:
+            _LOGGER.error('Task: %s', task)
+        if not task.done():
+            loop.run_until_complete(task)
 
 
 def test_on_received():
@@ -118,6 +138,16 @@ def test_on_received():
 
     loop = asyncio.get_event_loop()
     loop.run_until_complete(run_test(loop))
+    open_tasks = asyncio.Task.all_tasks(loop=loop)
+    #loop.stop()
+    for task in open_tasks:
+        if hasattr(task, 'name'):
+            name = task.name
+            _LOGGER.error('Device: %s Task: %s', task.name, task)
+        else:
+            _LOGGER.error('Task: %s', task)
+        if not task.done():
+            loop.run_until_complete(task)
 
 
 def test_all_unit_types():
@@ -156,3 +186,13 @@ def test_all_units_on_off():
 
     loop = asyncio.get_event_loop()
     loop.run_until_complete(run_test(loop))
+    open_tasks = asyncio.Task.all_tasks(loop=loop)
+    #loop.stop()
+    for task in open_tasks:
+        if hasattr(task, 'name'):
+            name = task.name
+            _LOGGER.error('Device: %s Task: %s', task.name, task)
+        else:
+            _LOGGER.error('Task: %s', task)
+        if not task.done():
+            loop.run_until_complete(task)

@@ -24,27 +24,16 @@ from insteonplm.messages.getNextAllLinkRecord import GetNextAllLinkRecord
 from insteonplm.messages.allLinkRecordResponse import AllLinkRecordResponse
 from insteonplm.messages.x10received import X10Received
 
-from .mockConnection import MockConnection
+from .mockConnection import MockConnection, wait_for_plm_command
 from .mockCallbacks import MockCallbacks
 
-_LOGGER = logging.getLogger()
+_LOGGER = logging.getLogger(__name__)
+_INSTEON_LOGGER = logging.getLogger('insteonplm')
+_INSTEON_LOGGER.setLevel(logging.DEBUG)
 SEND_MSG_WAIT = 1.1
 SEND_MSG_ACKNAK_WAIT = .2
 DIRECT_ACK_WAIT_TIMEOUT = 3.1
 RECV_MSG_WAIT = .1
-
-
-@asyncio.coroutine
-def wait_for_plm_command(plm, cmd, loop):
-    try:
-        with async_timeout.timeout(10, loop=loop):
-            while not plm.transport.lastmessage == cmd.hex:
-                yield from asyncio.sleep(.1, loop=loop)
-            _LOGGER.info('Expected message sent %s', cmd)
-            return True
-    except asyncio.TimeoutError:
-        _LOGGER.error('Expected message not sent %s', cmd)
-        return False
 
 
 @asyncio.coroutine
@@ -79,7 +68,7 @@ def do_plm(loop):
                                                   subcat=0x20, firmware=0x00,
                                                   acknak=MESSAGE_ACK)
     plm.data_received(msg.bytes)
-    yield from asyncio.sleep(RECV_MSG_WAIT)
+    yield from asyncio.sleep(RECV_MSG_WAIT, loop=loop)
     assert plm.address == Address('1a2b3c')
     assert plm.cat == 0x03
     assert plm.subcat == 0x20
@@ -93,7 +82,7 @@ def do_plm(loop):
         assert False
     msg = GetFirstAllLinkRecord(MESSAGE_ACK)
     plm.data_received(msg.bytes)
-    yield from asyncio.sleep(RECV_MSG_WAIT)
+    yield from asyncio.sleep(RECV_MSG_WAIT, loop=loop)
 
     msg = AllLinkRecordResponse(
         flags=0x00, group=0x01, address='4d5e6f',
@@ -109,7 +98,16 @@ def do_plm(loop):
         assert False
     msg = GetNextAllLinkRecord(MESSAGE_NAK)
     plm.data_received(msg.bytes)
-    yield from asyncio.sleep(RECV_MSG_WAIT)
+    yield from asyncio.sleep(RECV_MSG_WAIT, loop=loop)
+    msg = GetNextAllLinkRecord(MESSAGE_NAK)
+    plm.data_received(msg.bytes)
+    yield from asyncio.sleep(RECV_MSG_WAIT, loop=loop)
+    msg = GetNextAllLinkRecord(MESSAGE_NAK)
+    plm.data_received(msg.bytes)
+    yield from asyncio.sleep(RECV_MSG_WAIT, loop=loop)
+    msg = GetNextAllLinkRecord(MESSAGE_NAK)
+    plm.data_received(msg.bytes)
+    yield from asyncio.sleep(RECV_MSG_WAIT, loop=loop)
 
     _LOGGER.info('Replying with Device Info Record')
     _LOGGER.info('________________________________')
@@ -126,7 +124,7 @@ def do_plm(loop):
         commandtuple={'cmd1': 0x01, 'cmd2': 0x00},
         flags=MESSAGE_FLAG_BROADCAST_0X80)
     plm.data_received(msg.bytes)
-    yield from asyncio.sleep(RECV_MSG_WAIT)
+    yield from asyncio.sleep(RECV_MSG_WAIT, loop=loop)
     for addr in plm.devices:
         _LOGGER.info('Device: %s', addr)
 
@@ -139,14 +137,14 @@ def do_plm(loop):
     msg = StandardSend('4d5e6f', COMMAND_LIGHT_STATUS_REQUEST_0X19_0X00,
                        acknak=MESSAGE_ACK)
     plm.data_received(msg.bytes)
-    yield from asyncio.sleep(RECV_MSG_WAIT)
+    yield from asyncio.sleep(RECV_MSG_WAIT, loop=loop)
 
     msg = insteonplm.messages.standardReceive.StandardReceive(
         address='4d5e6f', target='1a2b3c',
         commandtuple={'cmd1': 0x17, 'cmd2': 0xaa},
         flags=0x20)
     plm.data_received(msg.bytes)
-    yield from asyncio.sleep(RECV_MSG_WAIT)
+    yield from asyncio.sleep(RECV_MSG_WAIT, loop=loop)
 
     assert plm.devices['4d5e6f'].states[0x01].value == 0xaa
 
@@ -168,7 +166,7 @@ def do_plm(loop):
     plm.data_received(msg.bytes)
 
     # Let the Direct ACK timeout expire
-    yield from asyncio.sleep(DIRECT_ACK_WAIT_TIMEOUT)
+    yield from asyncio.sleep(DIRECT_ACK_WAIT_TIMEOUT, loop=loop)
 
     # Test that the Off command has now sent
     msg = StandardSend('4d5e6f', COMMAND_LIGHT_OFF_0X13_0X00)
@@ -205,6 +203,18 @@ def do_plm(loop):
     if not cmd_sent:
         assert False
 
+    yield from plm.close()
+    _LOGGER.error('PLM closed in test_plm')
+    yield from asyncio.sleep(0, loop=loop)
+    open_tasks = asyncio.Task.all_tasks(loop=loop)
+    for task in open_tasks:
+        if hasattr(task, 'name'):
+            name = task.name
+            _LOGGER.error('Device: %s Task: %s', task.name, task)
+        else:
+            _LOGGER.error('Task: %s', task)
+    _LOGGER.debug('---------------------------------- do_plm complete --------------------------------------------')
+
 
 @asyncio.coroutine
 def do_plm_x10(loop):
@@ -230,7 +240,7 @@ def do_plm_x10(loop):
                                                   subcat=0x20, firmware=0x00,
                                                   acknak=MESSAGE_ACK)
     plm.data_received(msg.bytes)
-    yield from asyncio.sleep(RECV_MSG_WAIT)
+    yield from asyncio.sleep(RECV_MSG_WAIT, loop=loop)
 
     _LOGGER.info('Replying with an All-Link Record NAK')
     _LOGGER.info('____________________________________')
@@ -240,7 +250,7 @@ def do_plm_x10(loop):
         assert False
     msg = GetFirstAllLinkRecord(MESSAGE_NAK)
     plm.data_received(msg.bytes)
-    yield from asyncio.sleep(RECV_MSG_WAIT)
+    yield from asyncio.sleep(RECV_MSG_WAIT, loop=loop)
 
     _LOGGER.info('Add X10 device and receive messages')
     _LOGGER.info('____________________________________')
@@ -266,16 +276,49 @@ def do_plm_x10(loop):
     yield from asyncio.sleep(.1, loop=loop)
     assert cb.callbackvalue1 == 0x00
 
+    yield from plm.close()
+    _LOGGER.error('PLM closed in test_x10')
+    yield from asyncio.sleep(0, loop=loop)
+    open_tasks = asyncio.Task.all_tasks(loop=loop)
+    for task in open_tasks:
+        if hasattr(task, 'name'):
+            name = task.name
+            _LOGGER.error('Device: %s Task: %s', task.name, task)
+        else:
+            _LOGGER.error('Task: %s', task)
+    _LOGGER.debug('---------------------------------- do_plm_x10 complete --------------------------------------------')
+
 
 def test_plm():
     """Main test for the PLM."""
     logging.basicConfig(level=logging.DEBUG)
     loop = asyncio.get_event_loop()
     loop.run_until_complete(do_plm(loop))
-
+    open_tasks = asyncio.Task.all_tasks(loop=loop)
+    #loop.stop()
+    for task in open_tasks:
+        if hasattr(task, 'name'):
+            name = task.name
+            _LOGGER.error('Device: %s Task: %s', task.name, task)
+        else:
+            _LOGGER.error('Task: %s', task)
+        if not task.done():
+            loop.run_until_complete(task)
+        
 
 def test_plm_x10():
     """Test X10 message handling."""
     logging.basicConfig(level=logging.DEBUG)
     loop = asyncio.get_event_loop()
     loop.run_until_complete(do_plm_x10(loop))
+    open_tasks = asyncio.Task.all_tasks(loop=loop)
+    #loop.stop()
+    for task in open_tasks:
+        if hasattr(task, 'name'):
+            name = task.name
+            _LOGGER.error('Device: %s Task: %s', task.name, task)
+        else:
+            _LOGGER.error('Task: %s', task)
+        if not task.done():
+            loop.run_until_complete(task)
+    

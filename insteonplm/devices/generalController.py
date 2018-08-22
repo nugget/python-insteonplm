@@ -27,7 +27,7 @@ class GeneralController_2342(Device):
                          description, model)
 
         self._stateList[0x01] = DimmableRemote(
-            self._address, "onLevelButton", 0x01, self._send_msg,
+            self._address, "remoteButton", 0x01, self._send_msg,
             self._message_callbacks, 0x00)
 
 
@@ -42,7 +42,7 @@ class GeneralController_2342_4(Device):
         button_list = {1: 'A', 2: 'B', 3: 'C', 4: 'D'}
         for group in button_list:
             self._stateList[group] = DimmableRemote(
-                self._address, "onLevelButton{}".format(button_list[group]),
+                self._address, "remoteButton{}".format(button_list[group]),
                 group, self._send_msg, self._message_callbacks, 0x00)
 
 
@@ -58,5 +58,5 @@ class GeneralController_2342_8(Device):
                        5: 'F', 6: 'E', 7: 'H', 8: 'G'}
         for group in button_list:
             self._stateList[group] = DimmableRemote(
-                self._address, "onLevelButton{}".format(button_list[group]),
+                self._address, "remoteButton{}".format(button_list[group]),
                 group, self._send_msg, self._message_callbacks, 0x00)

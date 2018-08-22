@@ -1,6 +1,9 @@
 """INSTEON Device Type Dimmable Lighting Control Module."""
 from insteonplm.devices import Device
-from insteonplm.states.dimmable import DimmableSwitch, DimmableSwitch_Fan
+from insteonplm.states.dimmable import (DimmableSwitch,
+                                        DimmableSwitch_Fan,
+                                        DimmableKeypadA)
+from insteonplm.states.onOff import OnOffKeypad, OnOffKeypadLed
 
 
 class DimmableLightingControl(Device):
@@ -70,3 +73,57 @@ class DimmableLightingControl_2475F(DimmableLightingControl):
         self._stateList[0x02] = DimmableSwitch_Fan(
             self._address, "fanOnLevel", 0x02, self._send_msg,
             self._message_callbacks, 0x00)
+
+
+class DimmableLightingControl_2334_222(Device):
+    """On/Off KeypadLinc Switched Lighting Control."""
+
+    def __init__(self, plm, address, cat, subcat, product_key=None,
+                 description=None, model=None):
+        """Initialize the SwichedLightingControlKeypad device class."""
+        super().__init__(plm, address, cat, subcat, product_key,
+                         description, model)
+
+        self._leds = OnOffKeypadLed(
+            self._address, "keypadLEDs", 0x00, self._send_msg,
+            self._message_callbacks, 0x00, self._plm.loop)
+
+        self._stateList[0x01] = DimmableKeypadA(
+            self._address, "keypadButtonA", 0x01, self._send_msg,
+            self._message_callbacks, 0x00, self._leds)
+
+    def _add_buttons(self, button_list):
+        for group in button_list:
+            self._stateList[group] = OnOffKeypad(
+                self._address, "keypadButton{}".format(button_list[group]),
+                group, self._send_msg, self._message_callbacks, 0x00,
+                self._plm.loop, self._leds)
+
+            self._leds.register_led_updates(self._stateList[group].led_changed,
+                                            group)
+
+
+class DimmableLightingControl_2334_222_8(DimmableLightingControl_2334_222):
+    """Dimmable 8 Button KeypadLinc Switched Lighting Control."""
+
+    def __init__(self, plm, address, cat, subcat, product_key=None,
+                 description=None, model=None):
+        """Initialize the SwitchedLightingControl_2487S device class."""
+        super().__init__(plm, address, cat, subcat, product_key,
+                         description, model)
+
+        button_list = {2: 'B', 3: 'C', 4: 'D', 5: 'E', 6: 'F', 7: 'G', 8: 'H'}
+        self._add_buttons(button_list)
+
+
+class DimmableLightingControl_2334_222_6(DimmableLightingControl_2334_222):
+    """Dimmable 6 Button KeypadLinc Switched Lighting Control."""
+
+    def __init__(self, plm, address, cat, subcat, product_key=None,
+                 description=None, model=None):
+        """Initialize the SwitchedLightingControl_2487S device class."""
+        super().__init__(plm, address, cat, subcat, product_key,
+                         description, model)
+
+        button_list = {3: 'C', 4: 'D', 5: 'E', 6: 'F', 7: 'G'}
+        self._add_buttons(button_list)

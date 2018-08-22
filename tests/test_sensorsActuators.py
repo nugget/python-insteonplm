@@ -1,6 +1,8 @@
 """Test INSTEON Sensor Actuator devices."""
 
 import asyncio
+import logging
+
 from insteonplm.constants import (COMMAND_LIGHT_ON_0X11_NONE,
                                   COMMAND_LIGHT_STATUS_REQUEST_0X19_0X00,
                                   COMMAND_LIGHT_STATUS_REQUEST_0X19_0X01,
@@ -14,6 +16,9 @@ from insteonplm.messages.standardReceive import StandardReceive
 from insteonplm.messages.messageFlags import MessageFlags
 from .mockPLM import MockPLM
 from .mockCallbacks import MockCallbacks
+
+_LOGGING = logging.getLogger(__name__)
+_LOGGING.setLevel(logging.DEBUG)
 
 
 def test_SensorsActuators_2450_status():
@@ -79,3 +84,13 @@ def test_SensorsActuators_2450_status():
 
     loop = asyncio.get_event_loop()
     loop.run_until_complete(run_test(loop))
+    open_tasks = asyncio.Task.all_tasks(loop=loop)
+    #loop.stop()
+    for task in open_tasks:
+        if hasattr(task, 'name'):
+            name = task.name
+            _LOGGING.error('Device: %s Task: %s', task.name, task)
+        else:
+            _LOGGING.error('Task: %s', task)
+        if not task.done():
+            loop.run_until_complete(task)

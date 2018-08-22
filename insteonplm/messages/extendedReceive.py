@@ -73,7 +73,7 @@ class ExtendedReceive(Message):
         msg._messageFlags = MessageFlags(flags)
         msg._cmd1 = cmd1
         msg._cmd2 = cmd2out
-        msg._userdata = Userdata(userdata)
+        msg._userdata = Userdata.create_pattern(userdata)
         return msg
 
     @property

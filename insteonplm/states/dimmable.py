@@ -24,6 +24,8 @@ from insteonplm.messages.standardReceive import StandardReceive
 from insteonplm.messages.messageFlags import MessageFlags
 from insteonplm.states import State
 
+DIMMABLE_KEYPAD_SCENE_ON_LEVEL = "sceneOnLevel"
+
 
 class DimmableSwitch(State):
     """Device state representing an On/Off switch that is controllable.
@@ -46,47 +48,51 @@ class DimmableSwitch(State):
                          message_callbacks, defaultvalue)
 
         self._updatemethod = self._send_status_request
+        self._register_messages()
 
+    def _register_messages(self):
         self.log.debug('Registering callbacks for DimmableSwitch device %s',
                        self._address.human)
         template_on_cleanup = StandardReceive.template(
             commandtuple=COMMAND_LIGHT_ON_0X11_NONE,
             address=self._address,
-            flags=MessageFlags.template(MESSAGE_TYPE_ALL_LINK_CLEANUP, None))
+            flags=MessageFlags.template(MESSAGE_TYPE_ALL_LINK_CLEANUP, None),
+            cmd2=self._group)
         template_on_fast_cleanup = StandardReceive.template(
             commandtuple=COMMAND_LIGHT_ON_FAST_0X12_NONE,
             address=self._address,
-            flags=MessageFlags.template(MESSAGE_TYPE_ALL_LINK_CLEANUP, None))
+            flags=MessageFlags.template(MESSAGE_TYPE_ALL_LINK_CLEANUP, None),
+            cmd2=self._group)
         template_off_cleanup = StandardReceive.template(
             commandtuple=COMMAND_LIGHT_OFF_0X13_0X00,
             address=self._address,
             flags=MessageFlags.template(MESSAGE_TYPE_ALL_LINK_CLEANUP, None),
-            cmd2=None)
+            cmd2=self._group)
         template_off_fast_cleanup = StandardReceive.template(
             commandtuple=COMMAND_LIGHT_OFF_FAST_0X14_0X00,
             address=self._address,
             flags=MessageFlags.template(MESSAGE_TYPE_ALL_LINK_CLEANUP, None),
-            cmd2=None)
+            cmd2=self._group)
         template_manual_cleanup = StandardReceive.template(
             commandtuple=COMMAND_LIGHT_STOP_MANUAL_CHANGE_0X18_0X00,
             address=self._address,
             flags=MessageFlags.template(MESSAGE_TYPE_ALL_LINK_CLEANUP, None),
-            cmd2=None)
+            cmd2=self._group)
         template_instant_cleanup = StandardReceive.template(
             commandtuple=COMMAND_LIGHT_INSTANT_CHANGE_0X21_NONE,
             address=self._address,
             flags=MessageFlags.template(MESSAGE_TYPE_ALL_LINK_CLEANUP, None),
-            cmd2=None)
+            cmd2=self._group)
         template_manual_off_cleanup = StandardReceive.template(
             commandtuple=COMMAND_LIGHT_MANUALLY_TURNED_OFF_0X22_0X00,
             address=self._address,
             flags=MessageFlags.template(MESSAGE_TYPE_ALL_LINK_CLEANUP, None),
-            cmd2=None)
+            cmd2=self._group)
         template_manual_on_cleanup = StandardReceive.template(
             commandtuple=COMMAND_LIGHT_MANUALLY_TURNED_ON_0X23_0X00,
             address=self._address,
             flags=MessageFlags.template(MESSAGE_TYPE_ALL_LINK_CLEANUP, None),
-            cmd2=None)
+            cmd2=self._group)
 
         template_on_broadcast = StandardReceive.template(
             commandtuple=COMMAND_LIGHT_ON_0X11_NONE,
@@ -222,10 +228,11 @@ class DimmableSwitch(State):
         self._send_method(status_command, self._status_message_received)
 
     def _status_message_received(self, msg):
+        self.log.debug("DimmableSwitch status message received called")
         self._update_subscribers(msg.cmd2)
 
 
-class DimmableSwitch_Fan(State):
+class DimmableSwitch_Fan(DimmableSwitch):
     """Device state representing a controlable bottom outlet On/Off switch.
 
     Available methods are:
@@ -250,6 +257,7 @@ class DimmableSwitch_Fan(State):
         """Turn on the fan."""
         on_command = ExtendedSend(self._address, COMMAND_LIGHT_ON_0X11_NONE,
                                   self._udata, cmd2=FAN_SPEED_MEDIUM)
+        on_command.set_checksum()
         self._send_method(on_command, self._on_message_received)
 
     def set_level(self, val):
@@ -261,12 +269,14 @@ class DimmableSwitch_Fan(State):
             set_command = ExtendedSend(self._address,
                                        COMMAND_LIGHT_ON_0X11_NONE,
                                        self._udata, cmd2=speed)
+            set_command.set_checksum()
             self._send_method(set_command, self._on_message_received)
 
     def off(self):
         """Turn off the fan."""
         off_command = ExtendedSend(self._address,
                                    COMMAND_LIGHT_OFF_0X13_0X00, self._udata)
+        off_command.set_checksum()
         self._send_method(off_command, self._off_message_received)
         self.log.debug('Ending DimmableSwitch_Fan.off')
 
@@ -394,3 +404,37 @@ class DimmableRemote(State):
                                     self._manual_change_received)
         self._message_callbacks.add(template_manual_on_broadcast,
                                     self._manual_change_received)
+
+
+class DimmableKeypadA(DimmableSwitch):
+    """Device state for a controllable keypad button A On/Off switch."""
+
+    def __init__(self, address, statename, group, send_message_method,
+                 message_callbacks, defaultvalue, leds):
+        super().__init__(address, statename, group, send_message_method,
+                         message_callbacks, defaultvalue)
+
+        self._updatemethod = self._send_status_request
+        self._leds = leds
+
+    def led_on(self):
+        self._leds.on(self._group)
+
+    def led_off(self):
+        self._leds.off(self._group)
+
+    def led_is_on(self):
+        return self._leds.is_on(self._group)
+
+    def _on_message_received(self, msg):
+        super()._on_message_received(msg)
+        self._leds.async_refresh_state()
+
+    def _off_message_received(self, msg):
+        super()._off_message_received(msg)
+        self._leds.async_refresh_state()
+
+    def _send_status_request(self):
+        switch_status_msg = StandardSend(
+            self._address, COMMAND_LIGHT_STATUS_REQUEST_0X19_0X00)
+        self._send_method(switch_status_msg, self._status_message_received)
