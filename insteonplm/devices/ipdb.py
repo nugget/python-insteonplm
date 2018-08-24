@@ -23,6 +23,7 @@ from insteonplm.devices.securityHealthSafety import (SecurityHealthSafety,
                                                      SecurityHealthSafety_2982_222)
 from insteonplm.devices.sensorsActuators import (SensorsActuators,
                                                  SensorsActuators_2450)
+from insteonplm.devices.windowCoverings import WindowCovering
 from insteonplm.devices.x10 import (X10OnOff, X10Dimmable, X10Sensor,
                                     X10AllUnitsOff, X10AllLightsOn,
                                     X10AllLightsOff)
@@ -296,9 +297,9 @@ class IPDB(object):
 
         Product(0x0E, None, None, 'Generic Window Coverings', '', None),
         Product(0x0E, 0x00, 0x000000B, 'Somfy Drape Controller RF Bridge', '', None),
-        Product(0x0E, 0x01, 0x0000000, 'Micro Open/Close', '2444-222', None),
-        Product(0x0E, 0x02, 0x0000000, 'Micro Open/Close', '2444-422', None),
-        Product(0x0E, 0x03, 0x0000000, 'Micro Open/Close', '2444-522', None),
+        Product(0x0E, 0x01, 0x0000000, 'Micro Open/Close', '2444-222', WindowCovering),
+        Product(0x0E, 0x02, 0x0000000, 'Micro Open/Close', '2444-422', WindowCovering),
+        Product(0x0E, 0x03, 0x0000000, 'Micro Open/Close', '2444-522', WindowCovering),
 
         Product(0x0F, None, None, 'Generic Plumbing Controller', '', None),
         Product(0x0F, 0x00, 0x000000E, 'Weiland Doors Central Drive and Controller', '', None),
