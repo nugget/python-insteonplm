@@ -472,7 +472,8 @@ class IM(Device, asyncio.Protocol):
                     else:
                         try:
                             device = self._aldb_devices[msg.address.id]
-                            device.receive_message(msg)
+                            if device:
+                                device.receive_message(msg)
                         except KeyError:
                             pass
                 for callback in callbacks:
