@@ -291,15 +291,21 @@ class HttpTransport(asyncio.Transport):
     @asyncio.coroutine
     def test_connection(self):
         url = 'http://{:s}:{:d}/buffstatus.xml'.format(self._host, self._port)
+        response = None
         try:
-            response = yield from self._session.get(url, timeout=5)
+            response = yield from self._session.get(url, timeout=30)
             if response and response.status == 200:
                 _LOGGER.debug('Test connection status is %d', response.status)
                 return True
             else:
                 self._log_error(response.status)
         except Exception as e:
-            _LOGGER.error('An unknown error occured: %s', str(e))
+            if response:
+                status = response.status
+            else:
+                status = 99
+            _LOGGER.error('An unknown error occured: %s with status %s',
+                          str(e), status)
         _LOGGER.debug('Connection test failed')
         self.close()
         return False
