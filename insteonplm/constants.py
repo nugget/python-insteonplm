@@ -392,9 +392,9 @@ class X10CommandType(Enum):
 
 
 class ThermostatMode(Enum):
-    OFF = 0x00,
-    HEAT = 0x01,
-    COOL = 0x02,
-    AUTO = 0x03,
-    FAN_AUTO = 0x04,
+    OFF = 0x00
+    HEAT = 0x01
+    COOL = 0x02
+    AUTO = 0x03
+    FAN_AUTO = 0x04
     FAN_ALWAYS_ON = 0x8

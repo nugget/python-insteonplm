@@ -584,19 +584,24 @@ class Device(object):
 
     @asyncio.coroutine
     def _process_send_queue(self):
-        self.log.debug('Starting Device._process_send_queue')
+        self.log.debug('Starting %s Device._process_send_queue',
+                       self._address.human)
         yield from self._send_msg_lock
         if self._send_msg_lock.locked():
             self.log.debug("Lock is locked from yeild from")
         msg_info = yield from self._send_msg_queue.get()
         msg = msg_info.get('msg')
         callback = msg_info.get('callback')
+        self._plm.send_msg(msg)
         if callback:
             self._sent_msg_wait_for_directACK = msg_info
-        self._plm.send_msg(msg)
-        # if self._send_msg_lock.locked():
-        #     self._send_msg_lock.release()
-        self.log.debug('Ending Device._process_send_queue')
+        else:
+            if self._send_msg_lock.locked():
+                self._send_msg_lock.release()
+                self.log.debug('Device %s msg_lock unlocked',
+                               self._address.human)
+        self.log.debug('Ending %s Device._process_send_queue',
+                       self._address.human)
 
     @asyncio.coroutine
     def _wait_for_direct_ACK(self):
@@ -619,12 +624,12 @@ class Device(object):
         self.log.debug('Releasing lock after processing direct ACK')
         if self._send_msg_lock.locked():
             self._send_msg_lock.release()
+            self.log.debug('Device %s msg_lock unlocked',
+                            self._address.human)
         if msg or self._sent_msg_wait_for_directACK.get('on_timeout'):
             callback = self._sent_msg_wait_for_directACK.get('callback', None)
             if callback is not None:
-                self.log.debug("Calling %s", callback)
                 callback(msg)
-                self.log.debug("Called %s", callback)
         self._sent_msg_wait_for_directACK = {}
         self.log.debug('Ending Device._wait_for_direct_ACK')
 
