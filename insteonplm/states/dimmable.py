@@ -214,7 +214,8 @@ class DimmableSwitch(State):
         self._send_method(dim_command)
 
     def _on_message_received(self, msg):
-        self._update_subscribers(msg.cmd2)
+        cmd2 = msg.cmd2 if msg.cmd2 else 255
+        self._update_subscribers(cmd2)
 
     def _off_message_received(self, msg):
         self._update_subscribers(0x00)
@@ -279,12 +280,6 @@ class DimmableSwitch_Fan(DimmableSwitch):
         off_command.set_checksum()
         self._send_method(off_command, self._off_message_received)
         self.log.debug('Ending DimmableSwitch_Fan.off')
-
-    def _on_message_received(self, msg):
-        self._update_subscribers(0xff)
-
-    def _off_message_received(self, msg):
-        self._update_subscribers(0x00)
 
     def _status_request(self):
         status_command = StandardSend(self._address,
