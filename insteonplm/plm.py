@@ -364,7 +364,6 @@ class IM(Device, asyncio.Protocol):
         """Load the ALL-Link Database into object."""
         self.log.debug("Starting: _load_all_link_database")
         self.devices.state = 'loading'
-        self._next_all_link_rec_nak_retries = 0
         self._get_first_all_link_record()
         self.log.debug("Ending: _load_all_link_database")
 
@@ -372,6 +371,12 @@ class IM(Device, asyncio.Protocol):
         """Request first ALL-Link record."""
         self.log.debug("Starting: _get_first_all_link_record")
         self.log.info('Requesting ALL-Link Records')
+        if self.aldb.status == ALDBStatus.LOADED:
+            self._next_all_link_rec_nak_retries = 3
+            self._handle_get_next_all_link_record_nak(None)
+            return
+        self.aldb.clear()
+        self._next_all_link_rec_nak_retries = 0
         msg = GetFirstAllLinkRecord()
         self.send_msg(msg, wait_nak=True, wait_timeout=.5)
         self.log.debug("Ending: _get_first_all_link_record")
