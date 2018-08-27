@@ -155,7 +155,8 @@ class Cover(State):
             self._send_method(set_command, self._open_message_received)
 
     def _open_message_received(self, msg):
-        self._update_subscribers(msg.cmd2)
+        cmd2 = msg.cmd2 if msg.cmd2 else 255
+        self._update_subscribers(cmd2)
 
     def _closed_message_received(self, msg):
         self._update_subscribers(0x00)
