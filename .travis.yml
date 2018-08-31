@@ -1,8 +1,8 @@
 sudo: false
-python:
-- 3.5.3
-- 3.6
-env:
+# python:
+# - 3.5.3
+# - 3.6
+# env:
 
 matrix:
   fast_finish: true
@@ -15,20 +15,13 @@ matrix:
       env: TOXENV=py35
     - python: 3.6
       env: TOXENV=py36
-  exclude:
-    - python: 3.5.3
-      env:
-    - python: 3.6
-      env:
   allow_failures:
-#    - python: 3.5.3
-#      env: TOXENV=flake8
-#    - python: 3.5.3
-#      env: TOXENV=pylint
     - python: 3.5.3
-      env:
-    - python: 3.6
-      env:
+      env: TOXENV=flake8
+    - python: 3.5.3
+      env: TOXENV=pylint
+    - python: 3.5.3
+      env: TOXENV=lint
 
 cache:
   directories:
