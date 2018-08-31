@@ -6,6 +6,8 @@ from insteonplm.constants import MESSAGE_START_CODE_0X02
 from insteonplm.messages.messageFlags import MessageFlags
 from insteonplm.messages.userdata import Userdata
 
+_LOGGER = logging.getLogger(__name__)
+
 
 class ClassPropertyMetaClass(type):
     """Meta class for Message class.
@@ -42,7 +44,6 @@ class Message(metaclass=ClassPropertyMetaClass):
     _sendSize = 0
     _receivedSize = 0
     _description = "Empty message"
-    log = logging.getLogger(__name__)
 
     def __str__(self):
         """String representation of an INSTEON message."""

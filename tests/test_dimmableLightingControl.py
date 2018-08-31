@@ -21,8 +21,10 @@ from .mockCallbacks import MockCallbacks
 _LOGGING = logging.getLogger(__name__)
 _LOGGING.setLevel(logging.DEBUG)
 
+
 def test_dimmableLightingControl():
     """Test generic Dimmable Lighting Control devices."""
+    # pylint: disable=too-many-statements
     @asyncio.coroutine
     def run_test(loop):
         """Asyncio test to run."""
@@ -101,10 +103,9 @@ def test_dimmableLightingControl():
     loop = asyncio.get_event_loop()
     loop.run_until_complete(run_test(loop))
     open_tasks = asyncio.Task.all_tasks(loop=loop)
-    #loop.stop()
+
     for task in open_tasks:
         if hasattr(task, 'name'):
-            name = task.name
             _LOGGING.error('Device: %s Task: %s', task.name, task)
         else:
             _LOGGING.error('Task: %s', task)
@@ -159,10 +160,8 @@ def test_dimmableLightingControl_manual_changes():
     loop = asyncio.get_event_loop()
     loop.run_until_complete(run_test(loop))
     open_tasks = asyncio.Task.all_tasks(loop=loop)
-    #loop.stop()
     for task in open_tasks:
         if hasattr(task, 'name'):
-            name = task.name
             _LOGGING.error('Device: %s Task: %s', task.name, task)
         else:
             _LOGGING.error('Task: %s', task)
@@ -219,10 +218,9 @@ def test_dimmableLightingControl_status():
     loop = asyncio.get_event_loop()
     loop.run_until_complete(run_test(loop))
     open_tasks = asyncio.Task.all_tasks(loop=loop)
-    #loop.stop()
+
     for task in open_tasks:
         if hasattr(task, 'name'):
-            name = task.name
             _LOGGING.error('Device: %s Task: %s', task.name, task)
         else:
             _LOGGING.error('Task: %s', task)
@@ -235,16 +233,18 @@ def test_switchedLightingControl_2475F():
     @asyncio.coroutine
     def run_test(loop):
         """Asyncio test."""
-        class fanLincStatus(object):
+        class fanLincStatus():
             """Callback class to capture sensor changes."""
 
             lightOnLevel = None
             fanOnLevel = None
 
+            # pylint: disable=unused-argument
             def device_status_callback1(self, device_id, state, value):
                 """Callback method to capture light changes."""
                 self.lightOnLevel = value
 
+            # pylint: disable=unused-argument
             def device_status_callback2(self, device_id, state, value):
                 """Callback method to capture fan changes."""
                 self.fanOnLevel = value
@@ -263,9 +263,9 @@ def test_switchedLightingControl_2475F():
 
         device = DimmableLightingControl_2475F(mockPLM, address, cat, subcat,
                                                product_key, description, model)
-        
+
         mockPLM.devices[device.address.hex] = device
-        
+
         assert device.states[0x01].name == 'lightOnLevel'
         assert device.states[0x02].name == 'fanOnLevel'
 
@@ -306,10 +306,9 @@ def test_switchedLightingControl_2475F():
     loop = asyncio.get_event_loop()
     loop.run_until_complete(run_test(loop))
     open_tasks = asyncio.Task.all_tasks(loop=loop)
-    #loop.stop()
+
     for task in open_tasks:
         if hasattr(task, 'name'):
-            name = task.name
             _LOGGING.error('Device: %s Task: %s', task.name, task)
         else:
             _LOGGING.error('Task: %s', task)
@@ -334,7 +333,7 @@ def test_dimmableLightingControl_2475F_status():
 
         device = DimmableLightingControl_2475F(plm, address, cat, subcat,
                                                product_key, description, model)
-        
+
         plm.devices[device.address.hex] = device
         callbacks = MockCallbacks()
         device.states[0x02].register_updates(callbacks.callbackmethod1)
@@ -360,10 +359,9 @@ def test_dimmableLightingControl_2475F_status():
     loop = asyncio.get_event_loop()
     loop.run_until_complete(run_test(loop))
     open_tasks = asyncio.Task.all_tasks(loop=loop)
-    #loop.stop()
+
     for task in open_tasks:
         if hasattr(task, 'name'):
-            name = task.name
             _LOGGING.error('Device: %s Task: %s', task.name, task)
         else:
             _LOGGING.error('Task: %s', task)

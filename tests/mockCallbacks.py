@@ -1,13 +1,16 @@
 """Mock callback module to support device and state testing."""
 import logging
 
+_LOGGER = logging.getLogger(__name__)
 
-class MockCallbacks(object):
+
+# pylint: disable=unused-argument
+# pylint: disable=too-many-instance-attributes
+class MockCallbacks():
     """Mock callback class to support device and state testing."""
 
     def __init__(self):
         """Initialize the MockCallbacks Class."""
-        self.log = logging.getLogger(__name__)
         self.callbackvalue1 = None
         self.callbackvalue2 = None
         self.callbackvalue3 = None
@@ -18,48 +21,52 @@ class MockCallbacks(object):
         self.callbackvalue8 = None
         self.callbackvalue9 = None
 
-    def callbackmethod1(self, id, state, value):
+    def callbackmethod1(self, addr, state, value):
         """Callback method 1."""
-        self.log.debug('Called method 1 callback with name %s and value %s',
-                       state, value)
+        self._report_callback(1, addr, state, value)
         self.callbackvalue1 = value
 
-    def callbackmethod2(self, id, state, value):
+    def callbackmethod2(self, addr, state, value):
         """Callback method 2."""
-        self.log.debug('Called method 2 callback')
+        self._report_callback(2, addr, state, value)
         self.callbackvalue2 = value
 
-    def callbackmethod3(self, id, state, value):
+    def callbackmethod3(self, addr, state, value):
         """Callback method 3."""
-        self.log.debug('Called method 3 callback')
+        self._report_callback(3, addr, state, value)
         self.callbackvalue3 = value
 
-    def callbackmethod4(self, id, state, value):
+    def callbackmethod4(self, addr, state, value):
         """Callback method 5."""
-        self.log.debug('Called method 4 callback')
+        self._report_callback(4, addr, state, value)
         self.callbackvalue4 = value
 
-    def callbackmethod5(self, id, state, value):
+    def callbackmethod5(self, addr, state, value):
         """Callback method 5."""
-        self.log.debug('Called method 5 callback')
+        self._report_callback(5, addr, state, value)
         self.callbackvalue5 = value
 
-    def callbackmethod6(self, id, state, value):
+    def callbackmethod6(self, addr, state, value):
         """Callback method 6."""
-        self.log.debug('Called method 6 callback')
+        self._report_callback(6, addr, state, value)
         self.callbackvalue6 = value
 
-    def callbackmethod7(self, id, state, value):
+    def callbackmethod7(self, addr, state, value):
         """Callback method 7."""
-        self.log.debug('Called method 7 callback')
+        self._report_callback(7, addr, state, value)
         self.callbackvalue7 = value
 
-    def callbackmethod8(self, id, state, value):
+    def callbackmethod8(self, addr, state, value):
         """Callback method 8."""
-        self.log.debug('Called method 8 callback')
+        self._report_callback(8, addr, state, value)
         self.callbackvalue8 = value
 
-    def callbackmethod9(self, id, state, value):
+    def callbackmethod9(self, addr, state, value):
         """Callback method 9."""
-        self.log.debug('Called method 9 callback')
+        _LOGGER.debug('Called method 9 callback')
         self.callbackvalue9 = value
+
+    @staticmethod
+    def _report_callback(callback, addr, state, value):
+        _LOGGER.debug('Called method %d for address %s group %s value %s',
+                      callback, addr, state, value)

@@ -1,5 +1,7 @@
 """On/Off states."""
 import asyncio
+import logging
+
 import async_timeout
 
 from insteonplm.constants import (COMMAND_LIGHT_MANUALLY_TURNED_ON_0X23_0X00,
@@ -23,6 +25,7 @@ from insteonplm.messages.userdata import Userdata
 from insteonplm.states import State
 from insteonplm.utils import bit_is_set, set_bit
 
+_LOGGER = logging.getLogger(__name__)
 DIMMABLE_KEYPAD_SCENE_ON_LEVEL = 'scene_on_level'
 
 
@@ -50,14 +53,17 @@ class OnOffStateBase(State):
 
         self._register_messages()
 
+    # pylint: disable=unused-argument
     def _on_message_received(self, msg):
         """An ON has been received."""
         self._update_subscribers(0xff)
 
+    # pylint: disable=unused-argument
     def _off_message_received(self, msg):
         """An OFF has been received."""
         self._update_subscribers(0x00)
 
+    # pylint: disable=unused-argument
     def _manual_change_received(self, msg):
         """A manual change message has been received."""
         self._send_status_request()
@@ -354,10 +360,12 @@ class OpenClosedRelay(OnOffStateBase):
                                      COMMAND_LIGHT_OFF_0X13_0X00)
         self._send_method(close_command, self._close_message_received)
 
+    # pylint: disable=unused-argument
     def _open_message_received(self, msg):
         """An OPEN message has been received."""
         self._update_subscribers(0xff)
 
+    # pylint: disable=unused-argument
     def _close_message_received(self, msg):
         """A CLOSE message has been received."""
         self._update_subscribers(0x00)
@@ -375,12 +383,15 @@ class OnOffKeypadA(OnOffSwitch):
         self._leds = leds
 
     def led_on(self):
+        """Turn the LED is on."""
         self._leds.on(self._group)
 
     def led_off(self):
+        """Turn the LED off."""
         self._leds.off(self._group)
 
     def led_is_on(self):
+        """Return if the LED is on."""
         return self._leds.is_on(self._group)
 
     def _on_message_received(self, msg):
@@ -397,6 +408,8 @@ class OnOffKeypadA(OnOffSwitch):
         self._send_method(switch_status_msg, self._status_message_received)
 
 
+# pylint: disable=too-many-instance-attributes
+# pylint: disable=too-many-public-methods
 class OnOffKeypad(OnOffStateBase):
     """Device state representing a controllable keypad button On/Off switch."""
 
@@ -486,10 +499,11 @@ class OnOffKeypad(OnOffStateBase):
         """Return if the LED is on for the button."""
         return self._leds.is_on(self._group)
 
+    # pylint: disable=unused-argument
     def led_changed(self, addr, group, val):
         """Capture a change to the LED for this button."""
-        self.log.debug("Button %d LED changed from %d to %d",
-                       self._group, self._value, val)
+        _LOGGER.debug("Button %d LED changed from %d to %d",
+                      self._group, self._value, val)
         led_on = bool(val)
         if led_on != bool(self._value):
             self._update_subscribers(int(led_on))
@@ -560,8 +574,8 @@ class OnOffKeypad(OnOffStateBase):
                            COMMAND_EXTENDED_TRIGGER_ALL_LINK_0X30_0X00,
                            user_data)
         cmd.set_checksum()
-        self.log.debug('Calling scene_on and sending reponse to '
-                       '_received_scene_triggered')
+        _LOGGER.debug('Calling scene_on and sending reponse to '
+                      '_received_scene_triggered')
         self._send_method(cmd, self._received_scene_triggered)
 
     def scene_off(self):
@@ -582,7 +596,7 @@ class OnOffKeypad(OnOffStateBase):
     def scene_level(self, level):
         """Trigger group/scene to input level."""
         if level == 0:
-            self.trigger_off()
+            self.scene_off()
         else:
             user_data = Userdata({'d1': self._group,
                                   'd2': 0x00,
@@ -608,66 +622,58 @@ class OnOffKeypad(OnOffStateBase):
         cmd.set_checksum()
         self._send_method(cmd, self._status_message_received, True)
 
+    # pylint: disable=unused-argument
     def _on_message_received(self, msg):
-        # if msg.cmd2 == 0x00:
-        #     onlevel = 0xff
-        # else:
-        #     onlevel = msg.cmd2
-        # self._update_subscribers(onlevel)
         if not self.led_is_on():
-            self.log.debug("LED is off and button was turned on")
+            _LOGGER.debug("LED is off and button was turned on")
             self._update_subscribers(1)
             self._leds.manual_on(self._group)
         else:
-            self.log.debug("LED is already on when button turned on?")
+            _LOGGER.debug("LED is already on when button turned on?")
 
+    # pylint: disable=unused-argument
     def _off_message_received(self, msg):
-        # self._update_subscribers(0x00)
         if self.led_is_on():
-            self.log.debug("LED is on and button was turned off")
+            _LOGGER.debug("LED is on and button was turned off")
             self._update_subscribers(0)
             self._leds.manual_off(self._group)
         else:
-            self.log.debug("LED is already off when button turned off?")
+            _LOGGER.debug("LED is already off when button turned off?")
 
+    # pylint: disable=unused-argument
     def _manual_change_received(self, msg):
         self._updatemethod()
 
+    # pylint: disable=unused-argument
     def _status_message_received(self, msg):
         """Confirmation that the status message is coming.
 
         The real status message is the extended direct message.
         """
-        self.log.debug('Status message was acknowledged')
-        if self._loop:
-            self.log.debug("Loop is defined")
-        else:
-            self.log.debug("Loop not defined")
         if not self._status_received:
             asyncio.ensure_future(self._confirm_status_received(),
                                   loop=self._loop)
-        self.log.debug('Got here')
 
     @asyncio.coroutine
     def _confirm_status_received(self):
-        self.log.debug("Confirming actual status is received")
+        _LOGGER.debug("Confirming actual status is received")
         if self._status_received:
-            self.log.debug('Status was received')
+            _LOGGER.debug('Status was received')
             return
 
         yield from self._status_response_lock
         try:
             with async_timeout.timeout(2):
                 yield from self._status_response_lock
-                self.log.debug("Actual status received")
+                _LOGGER.debug("Actual status received")
         except asyncio.TimeoutError:
-            self.log.debug('No status message received')
+            _LOGGER.debug('No status message received')
             if self._status_retries < 10:
-                self.log.debug('Resending request')
+                _LOGGER.debug('Resending request')
                 self._status_retries += 1
                 self.extended_status_request()
             else:
-                self.log.debug('Too many retries')
+                _LOGGER.debug('Too many retries')
                 self._status_retries = 0
         if self._status_response_lock.locked():
             self._status_response_lock.release()
@@ -695,7 +701,7 @@ class OnOffKeypad(OnOffStateBase):
         """
         self._status_received = True
         self._status_retries = 0
-        self.log.debug("Extended status message received")
+        _LOGGER.debug("Extended status message received")
         if self._status_response_lock.locked():
             self._status_response_lock.release()
         user_data = msg.userdata
@@ -712,9 +718,9 @@ class OnOffKeypad(OnOffStateBase):
     def _received_scene_triggered(self, msg):
         scene_level = self._sent_property.get('prop')
         # val = self._sent_property.get('val')
-        self.log.debug('Calling DimmableKeypad _received_scene_triggered '
-                       'for group %s with on level %s',
-                       self._group, scene_level)
+        _LOGGER.debug('Calling DimmableKeypad _received_scene_triggered '
+                      'for group %s with on level %s',
+                      self._group, scene_level)
         if scene_level == DIMMABLE_KEYPAD_SCENE_ON_LEVEL:
             # self._update_subscribers(val)
             self._leds.manual_on(self._group)
@@ -829,10 +835,12 @@ class OnOffKeypadLed(State):
                               loop=self._loop)
 
     def manual_on(self, group):
+        """Turn the LED on."""
         self._set_led_value(group, 1)
         self._send_status_request()
 
     def manual_off(self, group):
+        """Turn the LED off."""
         self._set_led_value(group, 0)
         self._send_status_request()
 
@@ -846,12 +854,12 @@ class OnOffKeypadLed(State):
         button_callbacks = self._button_observer_callbacks.get(button)
         if not button_callbacks:
             self._button_observer_callbacks[button] = []
-        self.log.debug('New callback for button %d', button)
+        _LOGGER.debug('New callback for button %d', button)
         self._button_observer_callbacks[button].append(callback)
 
     @asyncio.coroutine
     def _send_led_on_off_request(self, group, val):
-        self.log.debug("OnOffKeypadLed._send_led_on_off_request was called")
+        _LOGGER.debug("OnOffKeypadLed._send_led_on_off_request was called")
         yield from self._send_led_change_lock
         self._new_value = set_bit(self._value, group, bool(val))
 
@@ -864,6 +872,7 @@ class OnOffKeypadLed(State):
         msg.set_checksum()
         self._send_method(msg, self._on_off_ack_received, True)
 
+    # pylint: disable=unused-argument
     def _on_off_ack_received(self, msg):
         self._update_subscribers(self._new_value)
         if self._send_led_change_lock.locked():
@@ -875,9 +884,9 @@ class OnOffKeypadLed(State):
         self._send_method(led_status_msg, self._status_message_received)
 
     def _status_message_received(self, msg):
-        self.log.debug('OnOffKeypadLed status message received with value '
-                       '0x%02x', msg.cmd2)
-        self.log.debug("Status message: %s", msg)
+        _LOGGER.debug('OnOffKeypadLed status message received with value '
+                      '0x%02x', msg.cmd2)
+        _LOGGER.debug("Status message: %s", msg)
         self._update_subscribers(msg.cmd2)
 
     def _set_led_value(self, group, val):
@@ -905,13 +914,13 @@ class OnOffKeypadLed(State):
             new_bit_set = bit_is_set(self._value, button)
             old = 'on' if old_bit_set else 'off'
             new = 'on' if new_bit_set else 'off'
-            self.log.debug('Button %d was %s now is %s', button, old, new)
+            _LOGGER.debug('Button %d was %s now is %s', button, old, new)
             # if old_bit_set != new_bit_set:
             callbacks = self._button_observer_callbacks.get(button)
             if callbacks:
                 for callback in callbacks:
-                    self.log.debug('Calling button update callback %s',
-                                   callback)
+                    _LOGGER.debug('Calling button update callback %s',
+                                  callback)
                     callback(self._address, button, int(new_bit_set))
             else:
-                self.log.debug("No callbacks found for button %d", button)
+                _LOGGER.debug("No callbacks found for button %d", button)

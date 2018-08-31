@@ -32,13 +32,16 @@ from insteonplm.devices.x10 import (X10OnOff, X10Dimmable, X10Sensor,
 # pylint: disable=line-too-long
 # pylint: disable=too-few-public-methods
 
+_LOGGER = logging.getLogger(__name__)
+
+
 Product = collections.namedtuple('Product', 'cat subcat product_key description model deviceclass')
 
 
 X10Product = collections.namedtuple('X10Product', 'feature deviceclass')
 
 # flake8: noqa
-class IPDB(object):
+class IPDB():
     """Embodies the INSTEON Product Database static data and access methods."""
 
     # pylint disable=line-too-long
@@ -111,7 +114,7 @@ class IPDB(object):
         Product(0x01, 0x2B, 0x000091, 'Wall Dimmer - 1000W', '4711', DimmableLightingControl),
         Product(0x01, 0x2C, 0x000092, 'In-Line Dimmer', '4712', DimmableLightingControl),
         Product(0x01, 0x2D, 0x00009E, 'SwitchLinc Dimmer', '2477DH', DimmableLightingControl),
-        Product(0x01, 0x2E, None, 'FanLinc', '2475F',  DimmableLightingControl_2475F),
+        Product(0x01, 0x2E, None, 'FanLinc', '2475F', DimmableLightingControl_2475F),
         Product(0x01, 0x2F, None, 'KeypadLinc Schedule Timer with Dimmer', '2484DST6', DimmableLightingControl),
         Product(0x01, 0x30, None, 'SwitchLinc Dimmer', '2476D', DimmableLightingControl),
         Product(0x01, 0x31, None, 'SwitchLinc Dimmer', '2478D', DimmableLightingControl),
@@ -345,10 +348,6 @@ class IPDB(object):
         X10Product("alllightson", X10AllLightsOn),
         X10Product("alllightsoff", X10AllLightsOff)
         ]
-
-    def __init__(self):
-        """Initialize the INSTEON Product Database (IPDB)."""
-        self.log = logging.getLogger(__name__)
 
     def __len__(self):
         """Return the length of the product database."""

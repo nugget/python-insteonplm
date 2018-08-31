@@ -8,7 +8,7 @@ __all__ = ('Address')
 _LOGGER = logging.getLogger(__name__)
 
 
-class Address(object):
+class Address():
     """Datatype definition for INSTEON device address handling."""
 
     def __init__(self, addr):
@@ -42,15 +42,13 @@ class Address(object):
         """Test for less than."""
         if isinstance(other, Address):
             return str(self) < str(other)
-        else:
-            raise TypeError
+        raise TypeError
 
     def __gt__(self, other):
         """Test for greater than."""
         if isinstance(other, Address):
             return str(self) > str(other)
-        else:
-            raise TypeError
+        raise TypeError
 
     def __hash__(self):
         """Create a hash code for the Address object."""
@@ -133,12 +131,13 @@ class Address(object):
     @property
     def id(self):
         """Return the ID of the device address."""
-        id = ''
+        dev_id = ''
         if self._is_x10:
-            id = 'x10{}{:02d}'.format(self.x10_housecode, self.x10_unitcode)
+            dev_id = 'x10{}{:02d}'.format(self.x10_housecode,
+                                          self.x10_unitcode)
         else:
-            id = self.hex
-        return id
+            dev_id = self.hex
+        return dev_id
 
     @property
     def is_x10(self):

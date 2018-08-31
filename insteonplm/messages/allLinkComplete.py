@@ -69,26 +69,17 @@ class AllLinkComplete(Message):
     @property
     def isresponder(self):
         """Return if the link record is a responder."""
-        if self.linkcode == 0:
-            return True
-        else:
-            return False
+        return bool(self.linkcode == 0)
 
     @property
     def iscontroller(self):
         """Return if the link record is a controller."""
-        if self.linkcode == 1:
-            return True
-        else:
-            return False
+        return bool(self.linkcode == 1)
 
     @property
     def isdeleted(self):
         """Return if the link record is deleted."""
-        if self.linkcode == 0xFF:
-            return True
-        else:
-            return False
+        return bool(self.linkcode == 0xFF)
 
     def _message_properties(self):
         return [{'linkcode': self._linkcode},

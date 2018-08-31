@@ -38,6 +38,8 @@ class SensorBase(State):
         super().__init__(address, statename, group, send_message_method,
                          message_callbacks, defaultvalue)
 
+        self._is_responder = False
+
         template_on_broadcast = StandardReceive.template(
             commandtuple=COMMAND_LIGHT_ON_0X11_NONE,
             address=self._address,
@@ -74,6 +76,7 @@ class SensorBase(State):
         self._message_callbacks.add(template_off_group,
                                     self._sensor_off_command_received)
 
+    # pylint: disable=unused-argument
     def _sensor_on_command_received(self, msg):
         """Message handler for Standard or Extended sensor on messages.
 
@@ -83,6 +86,7 @@ class SensorBase(State):
         """
         self._update_subscribers(msg.cmd2)
 
+    # pylint: disable=unused-argument
     def _sensor_off_command_received(self, msg):
         """Message handler for Standard or Extended sensor off messages.
 
@@ -120,6 +124,7 @@ class OnOffSensor(SensorBase):
     - register_updates(self, callback)
     """
 
+    # pylint: disable=unused-argument
     def _sensor_on_command_received(self, msg):
         """Message handler for Standard or Extended sensor on messages.
 
@@ -247,9 +252,11 @@ class IoLincSensor(SensorBase):
                                       COMMAND_LIGHT_STATUS_REQUEST_0X19_0X01)
         self._send_method(status_command, self._status_message_received)
 
+    # pylint: disable=unused-argument
     def _open_message_received(self, msg):
         self._update_subscribers(0x01)
 
+    # pylint: disable=unused-argument
     def _close_message_received(self, msg):
         self._update_subscribers(0x00)
 
@@ -275,7 +282,7 @@ class LeakSensorDryWet(State):
 
     def __init__(self, address, statename, group, send_message_method,
                  message_callbacks, defaultvalue=None,
-                 dry_wet: LeakSensorState=None):
+                 dry_wet=None):
         """Initialize the LeakSensorDry state."""
         super().__init__(address, statename, group, send_message_method,
                          message_callbacks, defaultvalue)
@@ -321,6 +328,7 @@ class LeakSensorDryWet(State):
             value = 1
         self._update_subscribers(value)
 
+    # pylint: disable=unused-argument
     def _dry_wet_message_received(self, msg):
         """The sensor is reporting a dry or a wet state."""
         for callback in self._dry_wet_callbacks:
@@ -412,12 +420,14 @@ class LeakSensorHeartbeat(State):
         else:
             self._update_subscribers(0x13)
 
+    # pylint: disable=unused-argument
     def _dry_message_received(self, msg):
         """The sensor is reporting a dry state."""
         for callback in self._dry_wet_callbacks:
             callback(LeakSensorState.DRY)
         self._update_subscribers(0x11)
 
+    # pylint: disable=unused-argument
     def _wet_message_received(self, msg):
         """The sensor is reporting a wet state."""
         for callback in self._dry_wet_callbacks:

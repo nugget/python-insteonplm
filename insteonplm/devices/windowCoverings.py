@@ -3,7 +3,6 @@ from insteonplm.devices import Device
 from insteonplm.states.cover import Cover
 
 
-
 class WindowCovering(Device):
     """Window Covering Controller.
 

@@ -21,14 +21,13 @@ def unitcode_to_byte(unitcode):
 
 def byte_to_housecode(bytecode):
     """Return an X10 housecode value from a byte value."""
-    rev_hc = dict([reversed(i) for i in HC_LOOKUP.items()])
-    return rev_hc.get(bytecode).upper()
+    hc = list(HC_LOOKUP.keys())[list(HC_LOOKUP.values()).index(bytecode)]
+    return hc.upper()
 
 
 def byte_to_unitcode(bytecode):
     """Return an X10 unitcode value from a byte value."""
-    rev_dc = dict([reversed(i) for i in UC_LOOKUP.items()])
-    return rev_dc.get(bytecode)
+    return list(UC_LOOKUP.keys())[list(UC_LOOKUP.values()).index(bytecode)]
 
 
 def x10_command_type(command):

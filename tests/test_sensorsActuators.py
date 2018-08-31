@@ -85,10 +85,9 @@ def test_SensorsActuators_2450_status():
     loop = asyncio.get_event_loop()
     loop.run_until_complete(run_test(loop))
     open_tasks = asyncio.Task.all_tasks(loop=loop)
-    #loop.stop()
+
     for task in open_tasks:
         if hasattr(task, 'name'):
-            name = task.name
             _LOGGING.error('Device: %s Task: %s', task.name, task)
         else:
             _LOGGING.error('Task: %s', task)

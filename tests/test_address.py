@@ -4,7 +4,7 @@ from insteonplm.address import Address
 
 def test_textstring():
     """Test Address created from text string."""
-    addr = Address('1a2b3c')    
+    addr = Address('1a2b3c')
     assert addr.human == '1A.2B.3C'
     assert addr.hex == '1a2b3c'
     assert addr.bytes == b'\x1a\x2b\x3c'
@@ -44,10 +44,12 @@ def test_eq():
 
     assert addr1.matches_pattern(addr2)
     assert addr3.matches_pattern(addr1)
-    assert not (addr2.matches_pattern(addr3))
+    assert not addr2.matches_pattern(addr3)
     assert addr2.matches_pattern(addr2)
 
+
 def test_x10():
+    """Test X10 device address."""
     addr = Address.x10('A', 5)
 
     assert addr.hex == '000601'

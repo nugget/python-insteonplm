@@ -1,4 +1,5 @@
 """Window Coverings states."""
+import logging
 
 from insteonplm.constants import (COMMAND_LIGHT_INSTANT_CHANGE_0X21_NONE,
                                   COMMAND_LIGHT_MANUALLY_TURNED_OFF_0X22_0X00,
@@ -14,6 +15,8 @@ from insteonplm.messages.standardSend import StandardSend
 from insteonplm.messages.standardReceive import StandardReceive
 from insteonplm.messages.messageFlags import MessageFlags
 from insteonplm.states import State
+
+_LOGGER = logging.getLogger(__name__)
 
 
 class Cover(State):
@@ -36,8 +39,8 @@ class Cover(State):
         self._register_messages()
 
     def _register_messages(self):
-        self.log.debug('Registering callbacks for Cover device %s',
-                       self._address.human)
+        _LOGGER.debug('Registering callbacks for Cover device %s',
+                      self._address.human)
         template_on_broadcast = StandardReceive.template(
             commandtuple=COMMAND_LIGHT_ON_0X11_NONE,
             address=self._address,
@@ -158,9 +161,11 @@ class Cover(State):
         cmd2 = msg.cmd2 if msg.cmd2 else 255
         self._update_subscribers(cmd2)
 
+    # pylint: disable=unused-argument
     def _closed_message_received(self, msg):
         self._update_subscribers(0x00)
 
+    # pylint: disable=unused-argument
     def _manual_change_received(self, msg):
         self._send_status_request()
 
@@ -170,5 +175,5 @@ class Cover(State):
         self._send_method(status_command, self._status_message_received)
 
     def _status_message_received(self, msg):
-        self.log.debug("Cover status message received called")
+        _LOGGER.debug("Cover status message received called")
         self._update_subscribers(msg.cmd2)

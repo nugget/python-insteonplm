@@ -62,15 +62,19 @@ class StandardSend(Message):
 
     # pylint: disable=protected-access
     @classmethod
-    def template(cls, address=None, commandtuple={}, cmd2=-1, flags=None,
-                 acknak=None):
+    def template(cls, address=None, commandtuple=None,
+                 cmd2=-1, flags=None, acknak=None):
         """Create a message template for use in callbacks."""
         msgraw = bytearray([0x02, cls._code])
         msgraw.extend(bytes(cls._receivedSize))
         msg = StandardSend.from_raw_message(msgraw)
 
-        cmd1 = commandtuple.get('cmd1', None)
-        cmd2out = commandtuple.get('cmd2', None)
+        if commandtuple:
+            cmd1 = commandtuple.get('cmd1')
+            cmd2out = commandtuple.get('cmd2')
+        else:
+            cmd1 = None
+            cmd2out = None
 
         if cmd2 is not -1:
             cmd2out = cmd2

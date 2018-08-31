@@ -112,16 +112,21 @@ linked to the IM. For help with linking please see the section on the
 After the module loads the All-Link database it queries each device to identify
 what type of device it is. This can take quite a while (5-15 sec per
 device). Once it identifies the devices it saves them in the `WORKDIR` so that
-future startups are faster. 
+future startups are faster.
+
 
 Currently there is an issue with the command line [Tools] not finding battery
 operated devices since they don't respond to device information requests.
-This is being addressed in future releases. This is not an issue if used with 
+This is being addressed in future releases. This is not an issue if used with
+
 [Home Assistant] through the use of device overrides.
 
 ## Tools
 
-The package installs a message monitor and a command line interface.   
+The package installs a message monitor and a command line interface.
+
+
+
 
 #### Message Monitoring
 

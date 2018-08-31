@@ -36,13 +36,13 @@ class X10Dimmable(X10Device):
 
         self._stateList[0x01] = X10DimmableSwitch(
             self._address, "x10DimmableSwitch", 0x01, self._send_msg,
-            self._message_callbacks, 0x00)
+            self._message_callbacks, 0x00, dim_steps)
 
 
 class X10Sensor(X10Device):
     """General X10 On / Off Sensor Device Class."""
 
-    def __init__(self, plm, housecode, unitcode, dim_steps=22):
+    def __init__(self, plm, housecode, unitcode):
         super().__init__(plm, housecode, unitcode)
         self._description = 'X10 On / Off Sensor Device'
 
@@ -65,6 +65,7 @@ class X10AllUnitsOff(X10Device):
         self._stateList[0x01].register_updates(self._reset_state)
         self._register_messages()
 
+    # pylint: disable=unused-argument
     def _reset_state(self, addr, name, val):
         loop = self._plm.loop
         if val == 0x00:
@@ -96,6 +97,7 @@ class X10AllLightsOn(X10Device):
         self._stateList[0x01].register_updates(self._reset_state)
         self._register_messages()
 
+    # pylint: disable=unused-argument
     def _reset_state(self, addr, name, val):
         loop = self._plm.loop
         if val == 0xff:
@@ -127,6 +129,7 @@ class X10AllLightsOff(X10Device):
         self._stateList[0x01].register_updates(self._reset_state)
         self._register_messages()
 
+    # pylint: disable=unused-argument
     def _reset_state(self, addr, name, val):
         loop = self._plm.loop
         if val == 0x00:

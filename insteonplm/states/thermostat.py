@@ -1,5 +1,5 @@
 """Thermostat states."""
-
+import logging
 from insteonplm.constants import (
     COMMAND_EXTENDED_GET_SET_0X2E_0X00,
     # COMMAND_THERMOSTAT_TEMPERATURE_UP_0X68_NONE,
@@ -30,6 +30,8 @@ from insteonplm.messages.messageFlags import MessageFlags
 from insteonplm.messages.userdata import Userdata
 from insteonplm.states import State
 
+_LOGGER = logging.getLogger(__name__)
+
 
 class Temperature(State):
     """A state representing a temperature sensor."""
@@ -41,7 +43,7 @@ class Temperature(State):
                                           send_message_method,
                                           message_callbacks, defaultvalue)
 
-        self._update_method = self._send_status_request()
+        self._update_method = self._send_status_request
 
         self._register_messages()
 
@@ -88,7 +90,7 @@ class Humidity(State):
             address, statename, group, send_message_method,
             message_callbacks, defaultvalue)
 
-        self._update_method = self._send_status_request()
+        self._update_method = self._send_status_request
 
         self._register_messages()
 
@@ -134,7 +136,7 @@ class SystemMode(State):
             address, statename, group, send_message_method, message_callbacks,
             defaultvalue)
 
-        self._update_method = self._send_status_request()
+        self._update_method = self._send_status_request
 
         self._register_messages()
 
@@ -251,7 +253,7 @@ class FanMode(State):
             address, statename, group, send_message_method, message_callbacks,
             defaultvalue)
 
-        self._update_method = self._send_status_request()
+        self._update_method = self._send_status_request
 
         self._register_messages()
 
@@ -438,7 +440,7 @@ class HeatSetPoint(State):
         self._update_subscribers(msg.cmd2/2)
 
     def _register_messages(self):
-        self.log.debug('Starting HeatSetPoint register_messages')
+        _LOGGER.debug('Starting HeatSetPoint register_messages')
         heat_set_point_status = StandardReceive.template(
             address=self._address,
             commandtuple=COMMAND_THERMOSTAT_HEAT_SET_POINT_STATUS_0X72_NONE,
@@ -450,7 +452,7 @@ class HeatSetPoint(State):
             cmd2=0x02,
             flags=MessageFlags.template(MESSAGE_TYPE_DIRECT_MESSAGE, True),
             userdata=Userdata.template({"d1": 0x01}))
-        self.log.debug('Reg Ext Status: %s', ext_status_recd)
+        _LOGGER.debug('Reg Ext Status: %s', ext_status_recd)
         self._message_callbacks.add(ext_status_recd,
                                     self._ext_status_received)
 

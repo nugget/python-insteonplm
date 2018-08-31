@@ -1,5 +1,5 @@
 """Test message creation."""
-
+# pylint: disable=unused-variable
 import insteonplm.messages
 from insteonplm.messages.allLinkComplete import AllLinkComplete
 from insteonplm.messages.allLinkRecordResponse import (

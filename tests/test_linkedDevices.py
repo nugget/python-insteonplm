@@ -14,7 +14,7 @@ def test_create_device_from_category():
 
     description = 'Icon SwitchLinc Relay (Lixar)'
     model = '2676R-B'
-    
+
     linkedDevices = LinkedDevices()
     dev = linkedDevices.create_device_from_category(plm, addr, cat, subcat)
 
@@ -34,7 +34,7 @@ def test_create_device_from_category_generic_device():
 
     description = 'Generic Switched Lighting Control'
     model = ''
-    
+
     linkedDevices = LinkedDevices()
     dev = linkedDevices.create_device_from_category(plm, addr, cat, subcat)
 

@@ -23,7 +23,8 @@ from insteonplm.constants import (MESSAGE_ALL_LINK_CEANUP_FAILURE_REPORT_0X56,
                                   MESSAGE_USER_RESET_DETECTED_0X55,
                                   MESSAGE_X10_MESSAGE_RECEIVED_0X52,
                                   MESSAGE_X10_MESSAGE_SEND_0X63,
-                                  MESSAGE_SET_IM_CONFIGURATION_0X6B)
+                                  MESSAGE_SET_IM_CONFIGURATION_0X6B,
+                                  MESSAGE_MANAGE_ALL_LINK_RECORD_0X6F)
 from insteonplm.messages.standardReceive import StandardReceive
 from insteonplm.messages.extendedReceive import ExtendedReceive
 from insteonplm.messages.x10received import X10Received
@@ -46,6 +47,7 @@ from insteonplm.messages.setImConfiguration import SetIMConfiguration
 from insteonplm.messages.getFirstAllLinkRecord import GetFirstAllLinkRecord
 from insteonplm.messages.getNextAllLinkRecord import GetNextAllLinkRecord
 from insteonplm.messages.getImConfiguration import GetImConfiguration
+from insteonplm.messages.manageAllLinkRecord import ManageAllLinkRecord
 
 
 _LOGGER = logging.getLogger(__name__)
@@ -90,7 +92,7 @@ def iscomplete(rawmessage):
     if len(rawmessage) < 2:
         return False
 
-    elif rawmessage[0] != 0x02:
+    if rawmessage[0] != 0x02:
         raise ValueError('message does not start with 0x02')
 
     messageBuffer = bytearray()
@@ -171,6 +173,9 @@ def _get_msg_class(code):
     msg_classes = _add_msg_class(msg_classes,
                                  MESSAGE_GET_NEXT_ALL_LINK_RECORD_0X6A,
                                  GetNextAllLinkRecord)
+    msg_classes = _add_msg_class(msg_classes,
+                                 MESSAGE_MANAGE_ALL_LINK_RECORD_0X6F,
+                                 ManageAllLinkRecord)
     msg_classes = _add_msg_class(msg_classes,
                                  MESSAGE_SET_IM_CONFIGURATION_0X6B,
                                  SetIMConfiguration)
