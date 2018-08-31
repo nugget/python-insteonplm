@@ -136,7 +136,7 @@ class Connection:
                username=None, password=None, port=25010,
                auto_reconnect=True, loop=None, workdir=None,
                poll_devices=True):
-        """Initiate a connection to a specific device.
+        """Create a connection to a specific device.
 
         Here is where we supply the device and callback callables we
         expect for this PLM class object.
@@ -168,7 +168,7 @@ class Connection:
                    auto_reconnect)
 
         def connection_lost():
-            """Function callback for Protocol when connection is lost."""
+            """Respond to Protocol connection lost."""
             if conn.auto_reconnect and not conn.closing:
                 _LOGGER.debug("Reconnecting to transport")
                 ensure_future(conn.reconnect(), loop=conn.loop)

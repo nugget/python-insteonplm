@@ -391,12 +391,14 @@ X10_COMMAND_STATUS_REQUEST = 0x0D
 
 class X10CommandType(Enum):
     """X10 command types."""
+
     DIRECT = 0
     BROADCAST = 1
 
 
 class ThermostatMode(Enum):
     """Thermostat system modes."""
+
     OFF = 0x00
     HEAT = 0x01
     COOL = 0x02

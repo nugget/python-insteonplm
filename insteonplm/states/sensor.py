@@ -15,6 +15,7 @@ from insteonplm.states import State
 
 class LeakSensorState(Enum):
     """Enum to define dry/wet state of the leak sensor."""
+
     DRY = 0
     WET = 1
 
@@ -330,7 +331,7 @@ class LeakSensorDryWet(State):
 
     # pylint: disable=unused-argument
     def _dry_wet_message_received(self, msg):
-        """The sensor is reporting a dry or a wet state."""
+        """Report a dry or a wet state."""
         for callback in self._dry_wet_callbacks:
             callback(self._dry_wet_type)
         self._update_subscribers(0x01)
@@ -422,14 +423,14 @@ class LeakSensorHeartbeat(State):
 
     # pylint: disable=unused-argument
     def _dry_message_received(self, msg):
-        """The sensor is reporting a dry state."""
+        """Report a dry state."""
         for callback in self._dry_wet_callbacks:
             callback(LeakSensorState.DRY)
         self._update_subscribers(0x11)
 
     # pylint: disable=unused-argument
     def _wet_message_received(self, msg):
-        """The sensor is reporting a wet state."""
+        """Report a wet state."""
         for callback in self._dry_wet_callbacks:
             callback(LeakSensorState.WET)
         self._update_subscribers(0x13)

@@ -21,7 +21,7 @@ class Address():
         return self.id
 
     def __str__(self):
-        """String representation of the Address object."""
+        """Return the Address object as a string."""
         return self.id
 
     def __eq__(self, other):

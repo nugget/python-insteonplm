@@ -44,7 +44,7 @@ MessageInfo = namedtuple('MessageInfo', 'msg wait_nak wait_timeout')
 # pylint: disable=too-many-instance-attributes
 # pylint: disable=too-many-public-methods
 class IM(Device, asyncio.Protocol):
-    """The Insteon PLM IP control protocol handler.
+    """Handle the Insteon PLM IP control protocol.
 
         This class is expected to be wrapped inside a Connection class object
         which will maintain the socket and handle auto-reconnects.
@@ -115,11 +115,17 @@ class IM(Device, asyncio.Protocol):
 
     # asyncio.protocol interface methods
     def connection_made(self, transport):
-        """Called when asyncio.Protocol establishes the network connection."""
+        """Complete the network connection
+        
+        Called when asyncio.Protocol establishes the network connection.
+        """
         raise NotImplementedError
 
     def data_received(self, data):
-        """Called when asyncio.Protocol detects received data from network."""
+        """Receive data from the protocol.
+
+        Called when asyncio.Protocol detects received data from network.
+        """
         _LOGGER.debug("Starting: data_received")
         _LOGGER.debug('Received %d bytes from PLM: %s',
                       len(data), binascii.hexlify(data))
@@ -130,7 +136,10 @@ class IM(Device, asyncio.Protocol):
         _LOGGER.debug("Finishing: data_received")
 
     def connection_lost(self, exc):
-        """Called when asyncio.Protocol loses the network connection."""
+        """Reestablish the connection to the transport.
+
+        Called when asyncio.Protocol loses the network connection.
+        """
         if exc is None:
             _LOGGER.warning('End of file received from Insteon Modem')
         else:
@@ -187,6 +196,7 @@ class IM(Device, asyncio.Protocol):
                   3 - Device that initiated All-Linking is Controller
                 255 = Delete All-Link
             group: All-Link group number (0 - 255)
+
         """
         msg = StartAllLinking(mode, group)
         self.send_msg(msg)
@@ -723,24 +733,24 @@ class IM(Device, asyncio.Protocol):
 
 
 class PLM(IM):
-    """Insteon PowerLinc Modem device.
+    """Provide an Insteon PowerLinc Modem device.
+    
+    This class is expected to be wrapped inside a Connection class object
+    which will maintain the socket and handle auto-reconnects.
+    
+        :param connection_lost_callback:
+            called when connection is lost to device (optional)
+        :param loop:
+            asyncio event loop (optional)
+        :param workdir:
+            Working directory name to save device information (optional)
 
-        This class is expected to be wrapped inside a Connection class object
-        which will maintain the socket and handle auto-reconnects.
-
-            :param connection_lost_callback:
-                called when connection is lost to device (optional)
-            :param loop:
-                asyncio event loop (optional)
-            :param workdir:
-                Working directory name to save device information (optional)
-
-            :type: connection_lost_callback:
-                callable
-            :type loop:
-                asyncio.loop
-            :type workdir:
-                string - valid directory path
+        :type: connection_lost_callback:
+            callable
+        :type loop:
+            asyncio.loop
+        :type workdir:
+            string - valid directory path
     """
 
     # asyncio.protocol interface methods
@@ -763,24 +773,24 @@ class PLM(IM):
 
 
 class Hub(IM):
-    """Insteon Hub device.
+    """Provide an Insteon Hub device.
+    
+    This class is expected to be wrapped inside a Connection class object
+    which will maintain the socket and handle auto-reconnects.
 
-        This class is expected to be wrapped inside a Connection class object
-        which will maintain the socket and handle auto-reconnects.
+        :param connection_lost_callback:
+            called when connection is lost to device (optional)
+        :param loop:
+            asyncio event loop (optional)
+        :param workdir:
+            Working directory name to save device information (optional)
 
-            :param connection_lost_callback:
-                called when connection is lost to device (optional)
-            :param loop:
-                asyncio event loop (optional)
-            :param workdir:
-                Working directory name to save device information (optional)
-
-            :type: connection_lost_callback:
-                callable
-            :type loop:
-                asyncio.loop
-            :type workdir:
-                string - valid directory path
+        :type: connection_lost_callback:
+            callable
+        :type loop:
+            asyncio.loop
+        :type workdir:
+            string - valid directory path
     """
 
     # asyncio.protocol interface methods
