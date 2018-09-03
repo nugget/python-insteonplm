@@ -43,7 +43,6 @@ class State():
     def __init__(self, address, statename, group, send_message_method,
                  message_callbacks, defaultvalue=None):
         """Initialzie tthe State Class."""
-
         self._address = Address(address)
         self._observer_callbacks = []
         self._stateName = statename

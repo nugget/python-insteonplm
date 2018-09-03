@@ -18,7 +18,7 @@ class AllLinkCleanupStatusReport(Message):
     _description = 'INSTEON All-Link Cleanup Status Report Message Received'
 
     def __init__(self, acknak):
-        """Initalize the AllLinkCleanupStatusReport Class."""
+        """Init the AllLinkCleanupStatusReport Class."""
         self._acknak = self._setacknak(acknak)
 
     @classmethod

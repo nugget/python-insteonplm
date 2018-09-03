@@ -4,7 +4,6 @@ from insteonplm.devices import ControlFlags
 
 def test_control_flags():
     """Test ControlFlags class for input and output."""
-
     in_use = True
     not_in_use = False
     responder = 0

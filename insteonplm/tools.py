@@ -25,6 +25,7 @@ ALLOWEDCHARS = string.ascii_letters + string.digits + '_'
 # pylint: disable=too-many-instance-attributes
 class Tools():
     """Set of tools to support utility programs."""
+
     def __init__(self, loop, args=None):
         """Create Tools class."""
         # common variables
@@ -361,6 +362,7 @@ class Commander():
     """Command object to manage itneractive sessions."""
 
     def __init__(self, loop, args=None):
+        """Init the Commander class."""
         self.loop = loop
 
         self.tools = Tools(loop, args)
@@ -851,9 +853,9 @@ class Commander():
         Usage:
             set_log_level i|v
         Parameters:
-            log_level: i - info
-                       v - verbose
-    """
+            log_level: i - info | v - verbose
+
+        """
         if arg in ['i', 'v']:
             _LOGGING.info('Setting log level to %s', arg)
             if arg == 'i':
@@ -923,6 +925,7 @@ class Commander():
             help [command]
         Parameters:
             command: Optional - command name to display detailed help
+
         """
         cmds = arg.split()
 
@@ -1052,12 +1055,11 @@ class Commander():
             self.do_help('add_x10_device')
 
     def do_kpl_status(self, args):
-        """ Get the status of a KeypadLinc button.
+        """Get the status of a KeypadLinc button.
 
         Usage:
             kpl_status address group
         """
-
         params = args.split()
         address = None
         group = None
@@ -1076,12 +1078,11 @@ class Commander():
             self.tools.kpl_status(address, group)
 
     def do_kpl_on(self, args):
-        """ Turn on a KeypadLinc button.
+        """Turn on a KeypadLinc button.
 
         Usage:
             kpl_on address group
         """
-
         params = args.split()
         address = None
         group = None
@@ -1100,12 +1101,11 @@ class Commander():
             self.tools.kpl_on(address, group)
 
     def do_kpl_off(self, args):
-        """ Turn off a KeypadLinc button.
+        """Turn off a KeypadLinc button.
 
         Usage:
             kpl_on address group
         """
-
         params = args.split()
         address = None
         group = None
@@ -1124,12 +1124,11 @@ class Commander():
             self.tools.kpl_off(address, group)
 
     def do_kpl_set_on_mask(self, args):
-        """ Set the on mask for a KeypadLinc button.
+        """Set the on mask for a KeypadLinc button.
 
         Usage:
             kpl_set_on_mask address group mask
         """
-
         params = args.split()
         address = None
         group = None
@@ -1218,8 +1217,10 @@ def monitor():
 
 
 def interactive():
-    """Wrapper for an interactive session for manual commands to be entered."""
+    """Create an interactive command line tool.
 
+    Wrapper for an interactive session for manual commands to be entered.
+    """
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--device', default='/dev/ttyUSB0',
                         help='Path to PLM device')

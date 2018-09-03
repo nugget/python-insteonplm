@@ -26,7 +26,7 @@ class SecurityHealthSafety(Device):
 
     def __init__(self, plm, address, cat, subcat, product_key=None,
                  description=None, model=None):
-        """Initialize the SecurityHealthSafety device class."""
+        """Init the SecurityHealthSafety device class."""
         super().__init__(plm, address, cat, subcat, product_key,
                          description, model)
 
@@ -55,7 +55,7 @@ class SecurityHealthSafety_2421(Device):
 
     def __init__(self, plm, address, cat, subcat, product_key=None,
                  description=None, model=None):
-        """Initialize the SecurityHealthSafety_2421 device class."""
+        """Init the SecurityHealthSafety_2421 device class."""
         super().__init__(plm, address, cat, subcat, product_key,
                          description, model)
 
@@ -84,7 +84,7 @@ class SecurityHealthSafety_2842_222(Device):
 
     def __init__(self, plm, address, cat, subcat, product_key=None,
                  description=None, model=None):
-        """Initialize the SecurityHealthSafety_2842_222 device class."""
+        """Init the SecurityHealthSafety_2842_222 device class."""
         super().__init__(plm, address, cat, subcat, product_key,
                          description, model)
 
@@ -121,7 +121,7 @@ class SecurityHealthSafety_2845_222(Device):
 
     def __init__(self, plm, address, cat, subcat, product_key=None,
                  description=None, model=None):
-        """Initialize the SecurityHealthSafety_2845_222 device class."""
+        """Init the SecurityHealthSafety_2845_222 device class."""
         super().__init__(plm, address, cat, subcat, product_key,
                          description, model)
 
@@ -150,7 +150,7 @@ class SecurityHealthSafety_2852_222(Device):
 
     def __init__(self, plm, address, cat, subcat, product_key=None,
                  description=None, model=None):
-        """Initialize the SecurityHealthSafety_2852_222 device class."""
+        """Init the SecurityHealthSafety_2852_222 device class."""
         super().__init__(plm, address, cat, subcat, product_key,
                          description, model)
 
@@ -213,7 +213,7 @@ class SecurityHealthSafety_2982_222(Device):
 
     def __init__(self, plm, address, cat, subcat, product_key=None,
                  description=None, model=None):
-        """Initialize the SecurityHealthSafety_2982_222 Class."""
+        """Init the SecurityHealthSafety_2982_222 Class."""
         super().__init__(plm, address, cat, subcat, product_key,
                          description, model)
 

@@ -20,7 +20,7 @@ class GetFirstAllLinkRecord(Message):
     _description = 'Insteon Get First All Link Record Message'
 
     def __init__(self, acknak=None):
-        """Initialize the GetFirstAllLinkRecord Class."""
+        """Init the GetFirstAllLinkRecord Class."""
         self._acknak = self._setacknak(acknak)
 
     @classmethod

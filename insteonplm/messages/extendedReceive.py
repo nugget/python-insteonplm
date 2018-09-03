@@ -21,7 +21,7 @@ class ExtendedReceive(Message):
 
     def __init__(self, address, target, commandtuple, userdata, cmd2=None,
                  flags=0x10):
-        """Initialize the ExtendedRecieve message class."""
+        """Init the ExtendedRecieve message class."""
         if commandtuple.get('cmd1', None) is not None:
             cmd1 = commandtuple['cmd1']
             cmd2out = commandtuple['cmd2']

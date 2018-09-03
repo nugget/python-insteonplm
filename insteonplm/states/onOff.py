@@ -45,7 +45,7 @@ class OnOffStateBase(State):
 
     def __init__(self, address, statename, group, send_message_method,
                  message_callbacks, defaultvalue=None):
-        """Initialize the OnOffStateBase."""
+        """Init the OnOffStateBase."""
         super().__init__(address, statename, group, send_message_method,
                          message_callbacks, defaultvalue)
 
@@ -55,17 +55,17 @@ class OnOffStateBase(State):
 
     # pylint: disable=unused-argument
     def _on_message_received(self, msg):
-        """An ON has been received."""
+        """Receive a ON message."""
         self._update_subscribers(0xff)
 
     # pylint: disable=unused-argument
     def _off_message_received(self, msg):
-        """An OFF has been received."""
+        """Receive An OFF message."""
         self._update_subscribers(0x00)
 
     # pylint: disable=unused-argument
     def _manual_change_received(self, msg):
-        """A manual change message has been received."""
+        """Receive a manual change message."""
         self._send_status_request()
 
     def _send_status_request(self):
@@ -76,7 +76,7 @@ class OnOffStateBase(State):
                           self._status_message_received)
 
     def _status_message_received(self, msg):
-        """A status message has been received."""
+        """Receive a status message."""
         if msg.cmd2 == 0x00:
             self._update_subscribers(0x00)
         else:
@@ -226,7 +226,7 @@ class OnOffSwitch_OutletTop(OnOffStateBase):
 
     def __init__(self, address, statename, group, send_message_method,
                  message_callbacks, defaultvalue=None):
-        """Initalize the OnOffSwitch_OutletTop Class."""
+        """Init the OnOffSwitch_OutletTop Class."""
         super().__init__(address, statename, group, send_message_method,
                          message_callbacks, defaultvalue)
 
@@ -285,7 +285,7 @@ class OnOffSwitch_OutletBottom(OnOffStateBase):
 
     def __init__(self, address, statename, group, send_message_method,
                  set_message_callback_method, defaultvalue=None):
-        """Initialize the OnOffSwitch_OutletBottom."""
+        """Init the OnOffSwitch_OutletBottom."""
         super().__init__(address, statename, group, send_message_method,
                          set_message_callback_method, defaultvalue)
 
@@ -316,7 +316,7 @@ class OnOffSwitch_OutletBottom(OnOffStateBase):
         self._send_method(status_command, self._status_message_received)
 
     def _status_message_received(self, msg):
-        """A status message has been received.
+        """Receive a status message.
 
         The following status values can be recieve:
             0x00 = Both Outlets Off
@@ -362,12 +362,12 @@ class OpenClosedRelay(OnOffStateBase):
 
     # pylint: disable=unused-argument
     def _open_message_received(self, msg):
-        """An OPEN message has been received."""
+        """Receive an OPEN message."""
         self._update_subscribers(0xff)
 
     # pylint: disable=unused-argument
     def _close_message_received(self, msg):
-        """A CLOSE message has been received."""
+        """Receive a CLOSE message."""
         self._update_subscribers(0x00)
 
 
@@ -376,6 +376,7 @@ class OnOffKeypadA(OnOffSwitch):
 
     def __init__(self, address, statename, group, send_message_method,
                  message_callbacks, defaultvalue, leds):
+        """Init the OnOffKeypadA class."""
         super().__init__(address, statename, group, send_message_method,
                          message_callbacks, defaultvalue)
 
@@ -416,7 +417,7 @@ class OnOffKeypad(OnOffStateBase):
     def __init__(self, address, statename, group, send_message_method,
                  set_message_callback_method, defaultvalue=None,
                  loop=None, leds=None):
-        """Initialize the OnOffKeypad Class."""
+        """Init the OnOffKeypad Class."""
         super().__init__(address, statename, group, send_message_method,
                          set_message_callback_method, defaultvalue)
 
@@ -646,7 +647,7 @@ class OnOffKeypad(OnOffStateBase):
 
     # pylint: disable=unused-argument
     def _status_message_received(self, msg):
-        """Confirmation that the status message is coming.
+        """Receive confirmation that the status message is coming.
 
         The real status message is the extended direct message.
         """
@@ -679,8 +680,9 @@ class OnOffKeypad(OnOffStateBase):
             self._status_response_lock.release()
 
     def _status_extended_message_received(self, msg):
-        """ Status message received.:
+        """Receeive an extended status message.
 
+        Status message received:
             cmd1:  0x2e
             cmd2:  0x00
             flags: Direct Extended
@@ -792,6 +794,7 @@ class OnOffKeypad(OnOffStateBase):
                 0x0a: X10 All bit mask
                 0x0c: Trigger group bit mask
             val: New property value
+
         """
         user_data = Userdata({'d1': self.group,
                               'd2': cmd,
@@ -813,6 +816,7 @@ class OnOffKeypadLed(State):
 
     def __init__(self, address, statename, group, send_message_method,
                  message_callbacks, defaultvalue=None, loop=None):
+        """Init the OnOffKeypadLed class."""
         super().__init__(address, statename, group, send_message_method,
                          message_callbacks, defaultvalue)
 
@@ -845,7 +849,7 @@ class OnOffKeypadLed(State):
         self._send_status_request()
 
     def is_on(self, group):
-        """Returns if the LED for a button/group is on."""
+        """Return if the LED for a button/group is on."""
         val = self._value & 1 << group - 1
         return bool(val)
 

@@ -46,23 +46,25 @@ MessageInfo = namedtuple('MessageInfo', 'msg wait_nak wait_timeout')
 class IM(Device, asyncio.Protocol):
     """Handle the Insteon PLM IP control protocol.
 
-        This class is expected to be wrapped inside a Connection class object
-        which will maintain the socket and handle auto-reconnects.
+    This class is expected to be wrapped inside a Connection class object
+    which will maintain the socket and handle auto-reconnects.
 
-            :param connection_lost_callback:
-                called when connection is lost to device (optional)
-            :param loop:
-                asyncio event loop (optional)
-            :param workdir:
-                Working directory name to save device information (optional)
+    Parameters:
+        connection_lost_callback: (optional, callable) called when connection
+        is lost to device as defined by asyncio.Protocol
 
-            :type: connection_lost_callback:
-                callable
-            :type loop:
-                asyncio.loop
-            :type workdir:
-                string - valid directory path
-        """
+        loop: (optional, asyncio.loop) asyncio event loop
+
+        workdir: (optional, string) Working directory name to save device
+        information
+
+        poll_devices: (optional, bool) indicates if the modem should poll the
+        devices for status after startup, default is True
+
+        load_aldb; (optional, bool) indicates if the modem should load the
+        All-Link Database on startup, default is True
+
+    """
 
     def __init__(self, loop=None, connection_lost_callback=None,
                  workdir=None, poll_devices=True, load_aldb=True):
@@ -115,8 +117,8 @@ class IM(Device, asyncio.Protocol):
 
     # asyncio.protocol interface methods
     def connection_made(self, transport):
-        """Complete the network connection
-        
+        """Complete the network connection.
+
         Called when asyncio.Protocol establishes the network connection.
         """
         raise NotImplementedError
@@ -734,10 +736,10 @@ class IM(Device, asyncio.Protocol):
 
 class PLM(IM):
     """Provide an Insteon PowerLinc Modem device.
-    
+
     This class is expected to be wrapped inside a Connection class object
     which will maintain the socket and handle auto-reconnects.
-    
+
         :param connection_lost_callback:
             called when connection is lost to device (optional)
         :param loop:
@@ -755,7 +757,10 @@ class PLM(IM):
 
     # asyncio.protocol interface methods
     def connection_made(self, transport):
-        """Called when asyncio.Protocol establishes the network connection."""
+        """Start the PLM connection process.
+
+        Called when asyncio.Protocol establishes the network connection.
+        """
         _LOGGER.info('Connection established to PLM')
         self.transport = transport
 
@@ -774,7 +779,7 @@ class PLM(IM):
 
 class Hub(IM):
     """Provide an Insteon Hub device.
-    
+
     This class is expected to be wrapped inside a Connection class object
     which will maintain the socket and handle auto-reconnects.
 
@@ -795,7 +800,10 @@ class Hub(IM):
 
     # asyncio.protocol interface methods
     def connection_made(self, transport):
-        """Called when asyncio.Protocol establishes the network connection."""
+        """Start the Hub connection process.
+
+        Called when asyncio.Protocol establishes the network connection.
+        """
         _LOGGER.info('Connection established to Hub')
         _LOGGER.debug('Transport: %s', transport)
         self.transport = transport

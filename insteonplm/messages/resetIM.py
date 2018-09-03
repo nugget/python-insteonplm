@@ -19,7 +19,7 @@ class ResetIM(Message):
     _description = 'Insteon Reset IM Message'
 
     def __init__(self, acknak=None):
-        """Initialize the ResetIM Class."""
+        """Init the ResetIM Class."""
         self._acknak = self._setacknak(acknak)
 
     @classmethod

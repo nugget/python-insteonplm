@@ -78,7 +78,7 @@ def test_dimmable():
         housecode = 'C'  # byte 0x02
         unitcode = 9     # byte 0x07
         newval = 200
-        steps = round(newval / (255/22)) + 1
+        steps = round(newval / (255 / 22)) + 1
         _LOGGER.info('Steps %d', steps)
         plm = MockPLM(loop)
         cb = MockCallbacks()

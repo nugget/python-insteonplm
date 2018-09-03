@@ -18,7 +18,7 @@ class MessageFlags():
     """Message Flags class use in Standard and Extended messages."""
 
     def __init__(self, flags=0x00):
-        """Initialize the MessageFlags class."""
+        """Init the MessageFlags class."""
         self._messageType = None
         self._extended = None
         self._hopsLeft = None
@@ -32,21 +32,21 @@ class MessageFlags():
         return self.hex
 
     def __str__(self):
-        """String representation of message flags."""
+        """Return a string representation of message flags."""
         return self.hex
 
     def __eq__(self, other):
         """Test for equality."""
         if hasattr(other, 'messageType'):
-            return self._messageType == other.messageType and \
-                   self._extended == other.extended
+            is_eq = self._messageType == other.messageType
+            is_eq = is_eq and self._extended == other.extended
+            return is_eq
         return False
 
     def __ne__(self, other):
         """Test for not equals."""
         if hasattr(other, 'messageType'):
-            return self._messageType == other.messageType and \
-                   self._extended == other.extended
+            return not self.__eq__(other)
         return True
 
     def matches_pattern(self, other):

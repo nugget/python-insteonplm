@@ -10,7 +10,7 @@ class MockPLM():
     """Mock PLM class for testing devices."""
 
     def __init__(self, loop=None):
-        """Initialize the MockPLM class."""
+        """Init the MockPLM class."""
         self.sentmessage = ''
         self._message_callbacks = MessageCallback()
         self.loop = loop

@@ -35,7 +35,7 @@ class SensorBase(State):
 
     def __init__(self, address, statename, group, send_message_method,
                  message_callbacks, defaultvalue=None):
-        """Initialize the State state."""
+        """Init the State state."""
         super().__init__(address, statename, group, send_message_method,
                          message_callbacks, defaultvalue)
 
@@ -151,7 +151,7 @@ class SmokeCO2Sensor(SensorBase):
 
     def __init__(self, address, statename, group, send_message_method,
                  message_callbacks, defaultvalue=None):
-        """Initialize the State state."""
+        """Init the State state."""
         super().__init__(address, statename, group, send_message_method,
                          message_callbacks, defaultvalue)
 
@@ -194,7 +194,7 @@ class IoLincSensor(SensorBase):
 
     def __init__(self, address, statename, group, send_message_method,
                  message_callbacks, defaultvalue=None):
-        """Initialize the IoLinkSensor."""
+        """Init the IoLinkSensor."""
         super().__init__(address, statename, group, send_message_method,
                          message_callbacks, defaultvalue)
 
@@ -284,7 +284,7 @@ class LeakSensorDryWet(State):
     def __init__(self, address, statename, group, send_message_method,
                  message_callbacks, defaultvalue=None,
                  dry_wet=None):
-        """Initialize the LeakSensorDry state."""
+        """Init the LeakSensorDry state."""
         super().__init__(address, statename, group, send_message_method,
                          message_callbacks, defaultvalue)
 
@@ -352,7 +352,7 @@ class LeakSensorHeartbeat(State):
 
     def __init__(self, address, statename, group, send_message_method,
                  message_callbacks, defaultvalue=None):
-        """Initialize the LeakSensorDry state."""
+        """Init the LeakSensorDry state."""
         super().__init__(address, statename, group, send_message_method,
                          message_callbacks, defaultvalue)
 

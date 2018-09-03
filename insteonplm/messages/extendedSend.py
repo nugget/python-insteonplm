@@ -32,7 +32,7 @@ class ExtendedSend(Message):
 
     def __init__(self, address, commandtuple, userdata, cmd2=None,
                  flags=0x10, acknak=None):
-        """Initialize the ExtendedSend message class."""
+        """Init the ExtendedSend message class."""
         if commandtuple.get('cmd1', None) is not None:
             cmd1 = commandtuple['cmd1']
             cmd2out = commandtuple['cmd2']

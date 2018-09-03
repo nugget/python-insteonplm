@@ -17,7 +17,7 @@ class AllLinkCleanupFailureReport(Message):
     _description = 'INSTEON All-Link Failure Report Message'
 
     def __init__(self, group, address):
-        """Initialize the AllLinkCleanupFailureReport Class."""
+        """Init the AllLinkCleanupFailureReport Class."""
         self._group = group
         self._address = Address(address)
         self._failedFlag = 0x01

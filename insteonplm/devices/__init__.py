@@ -86,10 +86,8 @@ class Device():
 
     def __init__(self, plm, address, cat, subcat, product_key=0x00,
                  description='', model=''):
-        """Initialize the Device class."""
-
+        """Init the Device class."""
         self._plm = plm
-
         self._address = Address(address)
         self._cat = cat
         self._subcat = subcat
@@ -809,7 +807,7 @@ class X10Device():
     """X10 device class."""
 
     def __init__(self, plm, housecode, unitcode):
-        """Initialize the X10Device class."""
+        """Init the X10Device class."""
         self._address = Address.x10(housecode, unitcode)
         self._plm = plm
         self._description = "Generic X10 device"
@@ -898,7 +896,7 @@ class StateList():
     """Internal class used to hold a list of device states."""
 
     def __init__(self):
-        """Initialize the StateList Class."""
+        """Init the StateList Class."""
         self._stateList = {}
 
     def __len__(self):
@@ -1051,7 +1049,7 @@ class ALDBRecord():
             mode = 'R'
         rec = [{'memory': self._memoryLocation},
                {'inuse': self._control_flags.is_in_use},
-               {'mode':  mode},
+               {'mode': mode},
                {'highwater': self._control_flags.is_high_water_mark},
                {'group': self.group},
                {'address': self.address},
@@ -1065,7 +1063,7 @@ class ControlFlags():
     """Represents a ControlFlag byte of an ALDB record."""
 
     def __init__(self, in_use, controller, used_before, bit5=0, bit4=0):
-        """Initialize the ControlFlags Class."""
+        """Init the ControlFlags Class."""
         self._in_use = bool(in_use)
         self._controller = bool(controller)
         self._used_before = bool(used_before)
@@ -1074,37 +1072,37 @@ class ControlFlags():
 
     @property
     def is_in_use(self):
-        """Returns True if the record is in use."""
+        """Return True if the record is in use."""
         return self._in_use
 
     @property
     def is_available(self):
-        """Returns True if the recored is availabe for use."""
+        """Return True if the recored is availabe for use."""
         return not self._in_use
 
     @property
     def is_controller(self):
-        """Returns True if the device is a controller."""
+        """Return True if the device is a controller."""
         return self._controller
 
     @property
     def is_responder(self):
-        """Returns True if the device is a responder."""
+        """Return True if the device is a responder."""
         return not self._controller
 
     @property
     def is_high_water_mark(self):
-        """Returns True if this is the last record."""
+        """Return True if this is the last record."""
         return not self._used_before
 
     @property
     def is_used_before(self):
-        """Returns True if this is not the last record."""
+        """Return True if this is not the last record."""
         return self._used_before
 
     @property
     def byte(self):
-        """Returns a byte representation of ControlFlags."""
+        """Return a byte representation of ControlFlags."""
         flags = int(self._in_use) << 7 \
             | int(self._controller) << 6 \
             | int(self._bit5) << 5 \
@@ -1127,6 +1125,7 @@ class ControlFlags():
 
 class ALDBStatus(Enum):
     """All-Link Database load status."""
+
     EMPTY = 0
     LOADING = 1
     LOADED = 2
@@ -1136,6 +1135,7 @@ class ALDBStatus(Enum):
 
 class ALDBVersion(Enum):
     """All-Link Database version."""
+
     Null = 0
     v1 = 1
     v2 = 2
@@ -1351,7 +1351,7 @@ class ALDB():
             self._load_action = LoadAction(mem_addr, 1, 0)
 
     def find_matching_link(self, mode, group, addr):
-        """Finds a matching link in the current device.
+        """Find a matching link in the current device.
 
         Mode: r | c is the mode of the link in the linked device
               This method will search for a corresponding link in the
@@ -1503,7 +1503,7 @@ class ALDB():
 
     def _set_load_action(self, mem_addr, rec_count, retries,
                          read_complete=False):
-        """Calculates the next record to read.
+        """Calculate the next record to read.
 
         If the last record was successful and one record was being read then
         look for the next record until we get to the high water mark.

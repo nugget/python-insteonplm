@@ -39,7 +39,7 @@ def _parse_buffer(html, last_stop):
     raw_text = html.replace('<response><BS>', '')
     raw_text = raw_text.replace('</BS></response>', '')
     raw_text = raw_text.strip()
-    if raw_text[:200] == '0'*200:
+    if raw_text[:200] == '0' * 200:
         # Likely the buffer was cleared
         return (0, None)
     this_stop = int(raw_text[-2:], 16)
@@ -50,7 +50,7 @@ def _parse_buffer(html, last_stop):
         _LOGGER.debug('Buffer from %d to 200 and 0 to %d',
                       last_stop, this_stop)
         buffer_hi = raw_text[last_stop:200]
-        if buffer_hi == '0'*len(buffer_hi):
+        if buffer_hi == '0' * len(buffer_hi):
             # The buffer was probably reset since the last read
             buffer_hi = ''
         buffer_low = raw_text[0:this_stop]
@@ -66,7 +66,7 @@ class Connection:
 
     def __init__(self, device, host, username, password, port,
                  loop=None, retry_interval=1, auto_reconnect=True):
-        """Initialize the Connecton class."""
+        """Init the Connecton class."""
         self._device = device
         self._host = host
         self._username = username
@@ -314,7 +314,7 @@ class HttpTransport(asyncio.Transport):
     """
 
     def __init__(self, loop, protocol, session, host, port=25105):
-        """Initialize the HttpTransport class."""
+        """Init the HttpTransport class."""
         super().__init__()
         self._loop = loop
         self._protocol = protocol

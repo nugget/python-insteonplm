@@ -9,11 +9,11 @@ class Userdata():
     """Extended Message User Data Type."""
 
     def __init__(self, userdata=None):
-        """Initialize the Userdata Class."""
+        """Init the Userdata Class."""
         self._userdata = self.normalize(self.create_empty(0x00), userdata)
 
     def __len__(self):
-        """Initalize Userdata Class."""
+        """Init Userdata Class."""
         return len(self._userdata)
 
     def __str__(self):
@@ -59,7 +59,7 @@ class Userdata():
                 first = False
             else:
                 strout = strout + '.'
-            strout = strout + self.hex[i:i+2]
+            strout = strout + self.hex[i:i + 2]
         return strout
 
     @property
@@ -141,7 +141,7 @@ class Userdata():
         if len(userdata) == 14:
             for i in range(1, 15):
                 key = 'd{}'.format(i)
-                empty[key] = userdata[i-1]
+                empty[key] = userdata[i - 1]
         else:
             raise ValueError
         return empty

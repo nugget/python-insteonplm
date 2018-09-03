@@ -10,7 +10,7 @@ class MockCallbacks():
     """Mock callback class to support device and state testing."""
 
     def __init__(self):
-        """Initialize the MockCallbacks Class."""
+        """Init the MockCallbacks Class."""
         self.callbackvalue1 = None
         self.callbackvalue2 = None
         self.callbackvalue3 = None
@@ -22,47 +22,47 @@ class MockCallbacks():
         self.callbackvalue9 = None
 
     def callbackmethod1(self, addr, state, value):
-        """Callback method 1."""
+        """Receive notice of callback method 1."""
         self._report_callback(1, addr, state, value)
         self.callbackvalue1 = value
 
     def callbackmethod2(self, addr, state, value):
-        """Callback method 2."""
+        """Receive notice of callback method 2."""
         self._report_callback(2, addr, state, value)
         self.callbackvalue2 = value
 
     def callbackmethod3(self, addr, state, value):
-        """Callback method 3."""
+        """Receive notice of callback method 3."""
         self._report_callback(3, addr, state, value)
         self.callbackvalue3 = value
 
     def callbackmethod4(self, addr, state, value):
-        """Callback method 5."""
+        """Receive notice of callback method 5."""
         self._report_callback(4, addr, state, value)
         self.callbackvalue4 = value
 
     def callbackmethod5(self, addr, state, value):
-        """Callback method 5."""
+        """Receive notice of callback method 5."""
         self._report_callback(5, addr, state, value)
         self.callbackvalue5 = value
 
     def callbackmethod6(self, addr, state, value):
-        """Callback method 6."""
+        """Receive notice of callback method 6."""
         self._report_callback(6, addr, state, value)
         self.callbackvalue6 = value
 
     def callbackmethod7(self, addr, state, value):
-        """Callback method 7."""
+        """Receive notice of callback method 7."""
         self._report_callback(7, addr, state, value)
         self.callbackvalue7 = value
 
     def callbackmethod8(self, addr, state, value):
-        """Callback method 8."""
+        """Receive notice of callback method 8."""
         self._report_callback(8, addr, state, value)
         self.callbackvalue8 = value
 
     def callbackmethod9(self, addr, state, value):
-        """Callback method 9."""
+        """Receive notice of callback method 9."""
         _LOGGER.debug('Called method 9 callback')
         self.callbackvalue9 = value
 

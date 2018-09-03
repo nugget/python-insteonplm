@@ -38,7 +38,7 @@ class Temperature(State):
 
     def __init__(self, address, statename, group, send_message_method,
                  message_callbacks, defaultvalue=None):
-        """Initialize the Temperature state."""
+        """Init the Temperature state."""
         super(Temperature, self).__init__(address, statename, group,
                                           send_message_method,
                                           message_callbacks, defaultvalue)
@@ -55,10 +55,10 @@ class Temperature(State):
         self._send_method(msg, self._status_received)
 
     def _status_received(self, msg):
-        self._update_subscribers(msg.cmd2/2)
+        self._update_subscribers(msg.cmd2 / 2)
 
     def _temp_received(self, msg):
-        self._update_subscribers(msg.cmd2/2)
+        self._update_subscribers(msg.cmd2 / 2)
 
     def _register_messages(self):
         temp_msg = StandardReceive.template(
@@ -76,7 +76,7 @@ class Temperature(State):
 
     def _ext_status_received(self, msg):
         c_temp = msg.userdata['d10'] | (msg.userdata['d9'] << 8)
-        f_temp = c_temp/2*9/5 + 32
+        f_temp = c_temp * .1 * 9 / 5 + 32
         self._update_subscribers(f_temp)
 
 
@@ -85,7 +85,7 @@ class Humidity(State):
 
     def __init__(self, address, statename, group, send_message_method,
                  message_callbacks, defaultvalue=None):
-        """Initialize the Humidity state."""
+        """Init the Humidity state."""
         super(Humidity, self).__init__(
             address, statename, group, send_message_method,
             message_callbacks, defaultvalue)
@@ -131,7 +131,7 @@ class SystemMode(State):
 
     def __init__(self, address, statename, group, send_message_method,
                  message_callbacks, defaultvalue=None):
-        """Initialize the Humidity state."""
+        """Init the Humidity state."""
         super(SystemMode, self).__init__(
             address, statename, group, send_message_method, message_callbacks,
             defaultvalue)
@@ -248,7 +248,7 @@ class FanMode(State):
 
     def __init__(self, address, statename, group, send_message_method,
                  message_callbacks, defaultvalue=None):
-        """Initialize the Humidity state."""
+        """Init the Humidity state."""
         super(FanMode, self).__init__(
             address, statename, group, send_message_method, message_callbacks,
             defaultvalue)
@@ -351,7 +351,7 @@ class CoolSetPoint(State):
 
     def __init__(self, address, statename, group, send_message_method,
                  message_callbacks, defaultvalue=None):
-        """Initialize the Humidity state."""
+        """Init the Humidity state."""
         super(CoolSetPoint, self).__init__(
             address, statename, group, send_message_method, message_callbacks,
             defaultvalue)
@@ -365,13 +365,13 @@ class CoolSetPoint(State):
         msg = ExtendedSend(
             address=self._address,
             commandtuple=COMMAND_THERMOSTAT_SET_COOL_SETPOINT_0X6C_NONE,
-            cmd2=int(val*2),
+            cmd2=int(val * 2),
             userdata=Userdata())
         msg.set_checksum()
         self._send_method(msg, self._set_cool_point_ack)
 
     def _set_cool_point_ack(self, msg):
-        self._update_subscribers(msg.cmd2/2)
+        self._update_subscribers(msg.cmd2 / 2)
 
     def _send_status_request(self):
         msg = StandardSend(
@@ -381,7 +381,7 @@ class CoolSetPoint(State):
         self._send_method(msg, self._status_message_received)
 
     def _status_message_received(self, msg):
-        self._update_subscribers(msg.cmd2/2)
+        self._update_subscribers(msg.cmd2 / 2)
 
     def _register_messages(self):
         cool_set_point_status = StandardReceive.template(
@@ -398,7 +398,7 @@ class CoolSetPoint(State):
                                     self._ext_status_received)
 
     def _ext_status_received(self, msg):
-        cool_sp = msg.userdata['d7']/2
+        cool_sp = msg.userdata['d7'] / 2
         self._update_subscribers(cool_sp)
 
 
@@ -407,7 +407,7 @@ class HeatSetPoint(State):
 
     def __init__(self, address, statename, group, send_message_method,
                  message_callbacks, defaultvalue=None):
-        """Initialize the HeatSetPoint state."""
+        """Init the HeatSetPoint state."""
         super(HeatSetPoint, self).__init__(
             address, statename, group, send_message_method, message_callbacks,
             defaultvalue)
@@ -421,7 +421,7 @@ class HeatSetPoint(State):
         msg = ExtendedSend(
             address=self._address,
             commandtuple=COMMAND_THERMOSTAT_SET_HEAT_SETPOINT_0X6D_NONE,
-            cmd2=int(val*2),
+            cmd2=int(val * 2),
             userdata=Userdata())
         msg.set_checksum()
         self._send_method(msg, self._set_heat_point_ack)
@@ -437,7 +437,7 @@ class HeatSetPoint(State):
         self._send_method(msg, self._status_message_received)
 
     def _status_message_received(self, msg):
-        self._update_subscribers(msg.cmd2/2)
+        self._update_subscribers(msg.cmd2 / 2)
 
     def _register_messages(self):
         _LOGGER.debug('Starting HeatSetPoint register_messages')
@@ -457,5 +457,5 @@ class HeatSetPoint(State):
                                     self._ext_status_received)
 
     def _ext_status_received(self, msg):
-        heat_sp = msg.userdata['d12']/2
+        heat_sp = msg.userdata['d12'] / 2
         self._update_subscribers(heat_sp)

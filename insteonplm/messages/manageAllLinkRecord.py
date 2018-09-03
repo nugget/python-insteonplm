@@ -23,7 +23,7 @@ class ManageAllLinkRecord(Message):
 
     def __init__(self, control_code, flags, group, address,
                  linkdata1, linkdata2, linkdata3, acknak=None):
-        """Initialize the ManageAllLinkRecord Class."""
+        """Init the ManageAllLinkRecord Class."""
         self._controlCode = control_code
         self._controlFlags = flags
         self._group = group

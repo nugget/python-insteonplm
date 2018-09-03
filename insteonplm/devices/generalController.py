@@ -13,6 +13,7 @@ class GeneralController(Device):
 
     def __init__(self, plm, address, cat, subcat, product_key=0,
                  description='', model=''):
+        """Init the GeneralController class."""
         super().__init__(plm, address, cat, subcat, product_key,
                          description, model)
         self._aldb = ALDB(None, None, self._address, version=ALDBVersion.Null)
@@ -23,6 +24,7 @@ class GeneralController_2342(Device):
 
     def __init__(self, plm, address, cat, subcat, product_key=0,
                  description='', model=''):
+        """Init the GeneralController_2342 class."""
         super().__init__(plm, address, cat, subcat, product_key,
                          description, model)
 
@@ -36,6 +38,7 @@ class GeneralController_2342_4(Device):
 
     def __init__(self, plm, address, cat, subcat, product_key=0,
                  description='', model=''):
+        """Init the GeneralController_2342_4 class."""
         super().__init__(plm, address, cat, subcat, product_key,
                          description, model)
 
@@ -51,6 +54,7 @@ class GeneralController_2342_8(Device):
 
     def __init__(self, plm, address, cat, subcat, product_key=0,
                  description='', model=''):
+        """Init the GeneralController_2342_8 class."""
         super().__init__(plm, address, cat, subcat, product_key,
                          description, model)
 

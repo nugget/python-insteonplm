@@ -18,7 +18,7 @@ class AllLinkComplete(Message):
     _description = 'INSTEON ALL-Linking Completed Message Received'
 
     def __init__(self, linkcode, group, address, cat, subcat, firmware):
-        """Initialize the AllLinkComplete Class."""
+        """Init the AllLinkComplete Class."""
         self._linkcode = linkcode
         self._group = group
         self._address = Address(address)

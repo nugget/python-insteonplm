@@ -27,7 +27,7 @@ class MessageCallback():
     """
 
     def __init__(self):
-        """Initialize the MessageCallback class."""
+        """Init the MessageCallback class."""
         self._dict = {}
 
     def __len__(self):

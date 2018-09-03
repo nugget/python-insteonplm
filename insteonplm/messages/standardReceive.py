@@ -19,7 +19,7 @@ class StandardReceive(Message):
     _description = 'INSTEON Standard Message Received'
 
     def __init__(self, address, target, commandtuple, cmd2=None, flags=0x00):
-        """Initialize the StandardReceive message class."""
+        """Init the StandardReceive message class."""
         if commandtuple.get('cmd1') is not None:
             cmd1 = commandtuple['cmd1']
             cmd2out = commandtuple['cmd2']

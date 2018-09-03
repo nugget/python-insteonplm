@@ -23,7 +23,7 @@ class WindowCovering(Device):
 
     def __init__(self, plm, address, cat, subcat, product_key=None,
                  description=None, model=None):
-        """Initialize the WindowCovering Class."""
+        """Init the WindowCovering Class."""
         Device.__init__(self, plm, address, cat, subcat, product_key,
                         description, model)
 

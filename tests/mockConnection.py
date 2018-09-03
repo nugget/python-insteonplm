@@ -49,7 +49,7 @@ class MockConnection():
             """Mock serial class within Connection class."""
 
             def __init__(self):
-                """Initialize the mock Serial class."""
+                """Init the mock Serial class."""
                 self.write_timeout = 0
                 self.timeout = 0
 
@@ -57,7 +57,7 @@ class MockConnection():
             """Mock transport class within Connection class."""
 
             def __init__(self):
-                """Initialize the mock Transport class."""
+                """Init the mock Transport class."""
                 self.serial = Serial()
                 self.lastmessage = None
                 self._mock_buffer_size = 128

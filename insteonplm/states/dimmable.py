@@ -45,7 +45,7 @@ class DimmableSwitch(State):
 
     def __init__(self, address, statename, group, send_message_method,
                  message_callbacks, defaultvalue=None):
-        """Initalize the DimmableSwitch Class."""
+        """Init the DimmableSwitch Class."""
         super().__init__(address, statename, group, send_message_method,
                          message_callbacks, defaultvalue)
 
@@ -197,7 +197,7 @@ class DimmableSwitch(State):
         else:
             setlevel = 255
             if val < 1:
-                setlevel = val*100
+                setlevel = val * 100
             elif val <= 0xff:
                 setlevel = val
             set_command = StandardSend(
@@ -252,7 +252,7 @@ class DimmableSwitch_Fan(DimmableSwitch):
 
     def __init__(self, address, statename, group, send_message_method,
                  set_message_callback_method, defaultvalue=None):
-        """Initalize the DimmableSwitch_Fan Class."""
+        """Init the DimmableSwitch_Fan Class."""
         super().__init__(address, statename, group, send_message_method,
                          set_message_callback_method, defaultvalue)
 
@@ -317,7 +317,7 @@ class DimmableRemote(State):
 
     def __init__(self, address, statename, group, send_message_method,
                  message_callbacks, defaultvalue=None):
-        """Initalize the DimmableSwitch Class."""
+        """Init the DimmableSwitch Class."""
         super().__init__(address, statename, group, send_message_method,
                          message_callbacks, defaultvalue)
 
@@ -417,6 +417,7 @@ class DimmableKeypadA(DimmableSwitch):
 
     def __init__(self, address, statename, group, send_message_method,
                  message_callbacks, defaultvalue, leds):
+        """Init the DimmableKeypadA class."""
         super().__init__(address, statename, group, send_message_method,
                          message_callbacks, defaultvalue)
 

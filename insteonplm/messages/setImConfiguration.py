@@ -20,7 +20,7 @@ class SetIMConfiguration(Message):
     _description = 'INSTEON Set IM Configuration Message'
 
     def __init__(self, flags=None, acknak=None):
-        """Initialize the GetImInfo Class."""
+        """Init the GetImInfo Class."""
         self._imConfigurationFlags = flags
         self._acknak = self._setacknak(acknak)
 

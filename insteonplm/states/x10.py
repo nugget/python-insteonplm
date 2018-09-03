@@ -21,7 +21,7 @@ class X10OnOffSwitch(State):
 
     def __init__(self, address, statename, group, send_message_method,
                  message_callbacks, defaultvalue=None):
-        """Initialize the X10OnOff state."""
+        """Init the X10OnOff state."""
         super().__init__(address, statename, group, send_message_method,
                          message_callbacks, defaultvalue)
 
@@ -51,12 +51,12 @@ class X10OnOffSwitch(State):
 
     # pylint: disable=unused-argument
     def _on_message_received(self, msg):
-        """An ON has been received."""
+        """Receive an ON message."""
         self._update_subscribers(0xff)
 
     # pylint: disable=unused-argument
     def _off_message_received(self, msg):
-        """An OFF has been received."""
+        """Receive an OFF message."""
         self._update_subscribers(0x00)
 
     def _register_messages(self):
@@ -88,7 +88,7 @@ class X10DimmableSwitch(X10OnOffSwitch):
 
     def __init__(self, address, statename, group, send_message_method,
                  message_callbacks, defaultvalue=0, dim_steps=22):
-        """Initialize the Dimmable state."""
+        """Init the Dimmable state."""
         super().__init__(address, statename, group, send_message_method,
                          message_callbacks, defaultvalue)
 
@@ -96,7 +96,7 @@ class X10DimmableSwitch(X10OnOffSwitch):
 
     @property
     def steps(self):
-        """Number of steps from OFF to full ON."""
+        """Return the number of steps from OFF to full ON."""
         return self._steps
 
     @steps.setter
@@ -113,7 +113,7 @@ class X10DimmableSwitch(X10OnOffSwitch):
         else:
             setlevel = 255
             if val < 1:
-                setlevel = val*255
+                setlevel = val * 255
             elif val <= 0xff:
                 setlevel = val
             change = setlevel - self._value
@@ -184,7 +184,7 @@ class X10OnOffSensor(State):
 
     def __init__(self, address, statename, group, send_message_method,
                  message_callbacks, defaultvalue=None):
-        """Initialize the X10OnOff state."""
+        """Init the X10OnOff state."""
         super().__init__(address, statename, group, send_message_method,
                          message_callbacks, defaultvalue)
 
@@ -192,12 +192,12 @@ class X10OnOffSensor(State):
 
     # pylint: disable=unused-argument
     def _on_message_received(self, msg):
-        """An ON has been received."""
+        """Receive an ON message."""
         self._update_subscribers(0xff)
 
     # pylint: disable=unused-argument
     def _off_message_received(self, msg):
-        """An OFF has been received."""
+        """Receive an OFF message."""
         self._update_subscribers(0x00)
 
     def _register_messages(self):
@@ -221,19 +221,19 @@ class X10AllUnitsOffSensor(State):
 
     def __init__(self, address, statename, group, send_message_method,
                  message_callbacks, defaultvalue=0xff):
-        """Initialize the X10AllUnitsOff state."""
+        """Init the X10AllUnitsOff state."""
         super().__init__(address, statename, group, send_message_method,
                          message_callbacks, defaultvalue)
 
         self._register_messages()
 
     def reset(self):
-        """Reset the state to ON"""
+        """Reset the state to ON."""
         self._update_subscribers(0xff)
 
     # pylint: disable=unused-argument
     def _off_message_received(self, msg):
-        """An OFF has been received."""
+        """Receive an OFF message."""
         self._update_subscribers(0x00)
 
     def _register_messages(self):
@@ -248,19 +248,19 @@ class X10AllLightsOnSensor(State):
 
     def __init__(self, address, statename, group, send_message_method,
                  message_callbacks, defaultvalue=0x00):
-        """Initialize the X10AllLightsOn state."""
+        """Init the X10AllLightsOn state."""
         super().__init__(address, statename, group, send_message_method,
                          message_callbacks, defaultvalue)
 
         self._register_messages()
 
     def reset(self):
-        """Reset the state to OFF"""
+        """Reset the state to OFF."""
         self._update_subscribers(0x00)
 
     # pylint: disable=unused-argument
     def _on_message_received(self, msg):
-        """An ON has been received."""
+        """Receive an ON message."""
         self._update_subscribers(0xff)
 
     def _register_messages(self):
@@ -275,19 +275,19 @@ class X10AllLightsOffSensor(State):
 
     def __init__(self, address, statename, group, send_message_method,
                  message_callbacks, defaultvalue=0xff):
-        """Initialize the X10AllLightsOff state."""
+        """Init the X10AllLightsOff state."""
         super().__init__(address, statename, group, send_message_method,
                          message_callbacks, defaultvalue)
 
         self._register_messages()
 
     def reset(self):
-        """Reset the state to ON"""
+        """Reset the state to ON."""
         self._update_subscribers(0xff)
 
     # pylint: disable=unused-argument
     def _off_message_received(self, msg):
-        """An OFF has been received."""
+        """Receive an OFF message."""
         self._update_subscribers(0x00)
 
     def _register_messages(self):

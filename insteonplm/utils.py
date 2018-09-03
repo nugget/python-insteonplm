@@ -58,7 +58,8 @@ def bit_is_set(bitmask, bit):
 def set_bit(bitmask, bit, is_on):
     """Set the value of a bit in a bitmask on or off.
 
-    Uses the low bit is 1 and the high bit is 8."""
+    Uses the low bit is 1 and the high bit is 8.
+    """
     bitshift = bit - 1
     if is_on:
         return bitmask | (1 << bitshift)

@@ -20,7 +20,7 @@ class GetNextAllLinkRecord(Message):
     _description = 'Insteon Get Next All Link Record Message'
 
     def __init__(self, acknak=None):
-        """Initialize the GetNextAllLinkRecord Class."""
+        """Init the GetNextAllLinkRecord Class."""
         self._acknak = self._setacknak(acknak)
 
     @classmethod

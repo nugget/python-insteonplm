@@ -17,7 +17,7 @@ class X10Received(Message):
     _description = 'Insteon Get Next All Link Record Message'
 
     def __init__(self, rawX10, flag):
-        """Initialize X10Received Class."""
+        """Init X10Received Class."""
         self._rawX10 = rawX10
         self._flag = flag
 

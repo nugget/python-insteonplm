@@ -20,7 +20,7 @@ class AllLinkRecordResponse(Message):
     _description = 'INSTEON ALL-Link Record Response'
 
     def __init__(self, flags, group, address, linkdata1, linkdata2, linkdata3):
-        """Initalize the AllLinkRecordResponse Class."""
+        """Init the AllLinkRecordResponse Class."""
         self._controlFlags = flags
         self._group = group
         self._address = Address(address)

@@ -21,7 +21,7 @@ class ClimateControl_2441th(Device):
 
     def __init__(self, plm, address, cat, subcat, product_key=None,
                  description=None, model=None):
-        """Initialize the DimmableLightingControl Class."""
+        """Init the DimmableLightingControl Class."""
         Device.__init__(self, plm, address, cat, subcat, product_key,
                         description, model)
 

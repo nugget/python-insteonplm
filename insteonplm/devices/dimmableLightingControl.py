@@ -25,7 +25,7 @@ class DimmableLightingControl(Device):
 
     def __init__(self, plm, address, cat, subcat, product_key=None,
                  description=None, model=None):
-        """Initialize the DimmableLightingControl Class."""
+        """Init the DimmableLightingControl Class."""
         Device.__init__(self, plm, address, cat, subcat, product_key,
                         description, model)
 
@@ -63,7 +63,7 @@ class DimmableLightingControl_2475F(DimmableLightingControl):
 
     def __init__(self, plm, address, cat, subcat, product_key=None,
                  description=None, model=None):
-        """Initalize the DimmableLightingControl_2475F Class."""
+        """Init the DimmableLightingControl_2475F Class."""
         super().__init__(plm, address, cat, subcat, product_key,
                          description, model)
 
@@ -80,7 +80,7 @@ class DimmableLightingControl_2334_222(Device):
 
     def __init__(self, plm, address, cat, subcat, product_key=None,
                  description=None, model=None):
-        """Initialize the SwichedLightingControlKeypad device class."""
+        """Init the SwichedLightingControlKeypad device class."""
         super().__init__(plm, address, cat, subcat, product_key,
                          description, model)
 
@@ -108,7 +108,7 @@ class DimmableLightingControl_2334_222_8(DimmableLightingControl_2334_222):
 
     def __init__(self, plm, address, cat, subcat, product_key=None,
                  description=None, model=None):
-        """Initialize the SwitchedLightingControl_2487S device class."""
+        """Init the SwitchedLightingControl_2487S device class."""
         super().__init__(plm, address, cat, subcat, product_key,
                          description, model)
 
@@ -121,7 +121,7 @@ class DimmableLightingControl_2334_222_6(DimmableLightingControl_2334_222):
 
     def __init__(self, plm, address, cat, subcat, product_key=None,
                  description=None, model=None):
-        """Initialize the SwitchedLightingControl_2487S device class."""
+        """Init the SwitchedLightingControl_2487S device class."""
         super().__init__(plm, address, cat, subcat, product_key,
                          description, model)
 

@@ -22,7 +22,7 @@ class StandardSend(Message):
 
     def __init__(self, address, commandtuple, cmd2=None,
                  flags=0x00, acknak=None):
-        """Initialize the StandardSend message class."""
+        """Init the StandardSend message class."""
         if commandtuple.get('cmd1', None) is not None:
             cmd1 = commandtuple['cmd1']
             cmd2out = commandtuple['cmd2']

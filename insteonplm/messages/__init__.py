@@ -88,7 +88,6 @@ def create(rawmessage):
 
 def iscomplete(rawmessage):
     """Test if the raw message is a complete message."""
-
     if len(rawmessage) < 2:
         return False
 

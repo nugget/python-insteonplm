@@ -31,7 +31,7 @@ class Cover(State):
 
     def __init__(self, address, statename, group, send_message_method,
                  message_callbacks, defaultvalue=None):
-        """Initalize the Cover Class."""
+        """Init the Cover Class."""
         super().__init__(address, statename, group, send_message_method,
                          message_callbacks, defaultvalue)
 
@@ -136,7 +136,7 @@ class Cover(State):
         else:
             setlevel = 255
             if val < 1:
-                setlevel = val*100
+                setlevel = val * 100
             elif val <= 0xff:
                 setlevel = val
             set_command = StandardSend(
@@ -150,7 +150,7 @@ class Cover(State):
         else:
             setlevel = 255
             if val < 1:
-                setlevel = val*100
+                setlevel = val * 100
             elif val <= 0xff:
                 setlevel = val
             set_command = StandardSend(
