@@ -267,7 +267,10 @@ class Connection:
     @asyncio.coroutine
     def _connect_http(self):
         _LOGGER.info('Connecting to Insteon Hub on %s', self.host)
-        auth = aiohttp.BasicAuth(self.username, self.password)
+        if self.username:
+            auth = aiohttp.BasicAuth(self.username, self.password)
+        else:
+            auth = None
         connector = aiohttp.TCPConnector(
             limit=1, loop=self._loop, keepalive_timeout=10)
         _LOGGER.debug('Creating http connection')
@@ -457,7 +460,8 @@ class HttpTransport(asyncio.Transport):
         self._write_last_read(0)
         url = 'http://{:s}:{:d}/buffstatus.xml'.format(self._host, self._port)
         _LOGGER.debug('Calling connection made')
-        self._loop.call_soon(self._protocol.connection_made(self))
+        _LOGGER.debug('Protocol: %s', self._protocol)
+        self._protocol.connection_made(self)
         while self._restart_reader:
             try:
                 if self._session.closed:
