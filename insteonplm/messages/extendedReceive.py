@@ -21,7 +21,7 @@ class ExtendedReceive(Message):
 
     def __init__(self, address, target, commandtuple, userdata, cmd2=None,
                  flags=0x10):
-        """Initialize the ExtendedRecieve message class."""
+        """Init the ExtendedRecieve message class."""
         if commandtuple.get('cmd1', None) is not None:
             cmd1 = commandtuple['cmd1']
             cmd2out = commandtuple['cmd2']
@@ -55,15 +55,19 @@ class ExtendedReceive(Message):
 
     # pylint: disable=protected-access
     @classmethod
-    def template(cls, address=None, target=None, commandtuple={},
+    def template(cls, address=None, target=None, commandtuple=None,
                  userdata=None, cmd2=-1, flags=None):
         """Create message template for callbacks."""
         msgraw = bytearray([0x02, cls._code])
         msgraw.extend(bytes(cls._receivedSize))
         msg = ExtendedReceive.from_raw_message(msgraw)
 
-        cmd1 = commandtuple.get('cmd1', None)
-        cmd2out = commandtuple.get('cmd2', None)
+        if commandtuple:
+            cmd1 = commandtuple.get('cmd1')
+            cmd2out = commandtuple.get('cmd2')
+        else:
+            cmd1 = None
+            cmd2out = None
 
         if cmd2 is not -1:
             cmd2out = cmd2

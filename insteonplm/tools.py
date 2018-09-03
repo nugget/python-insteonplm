@@ -1,4 +1,5 @@
 """Provides a raw console to test module and demonstrate usage."""
+# pylint: disable=too-many-lines
 import argparse
 import asyncio
 import binascii
@@ -8,10 +9,11 @@ import sys
 
 import insteonplm
 from insteonplm.address import Address
-from insteonplm.devices import Device, ALDBStatus
+from insteonplm.devices import create, ALDBStatus
 
-__all__ = ('Tools', 'monitor', 'interactive')
+__all__ = ('Tools', 'Commander', 'monitor', 'interactive')
 _LOGGING = logging.getLogger(__name__)
+_INSTEONPLM_LOGGING = logging.getLogger('insteonplm')
 PROMPT = 'insteonplm: '
 INTRO = ('INSTEON PLM interactive command processor.\n'
          'Type `help` for a list of commands.\n\n'
@@ -20,8 +22,10 @@ INTRO = ('INSTEON PLM interactive command processor.\n'
 ALLOWEDCHARS = string.ascii_letters + string.digits + '_'
 
 
+# pylint: disable=too-many-instance-attributes
 class Tools():
     """Set of tools to support utility programs."""
+
     def __init__(self, loop, args=None):
         """Create Tools class."""
         # common variables
@@ -68,10 +72,13 @@ class Tools():
         if self.logfile:
             logging.basicConfig(level=self.loglevel, filename=self.logfile)
         else:
+            _LOGGING.info('Settig log level to %s', self.loglevel)
             _LOGGING.setLevel(self.loglevel)
+            _INSTEONPLM_LOGGING.setLevel(self.loglevel)
 
     @asyncio.coroutine
     def connect(self, poll_devices=False, device=None, workdir=None):
+        """Connect to the IM."""
         yield from self.aldb_load_lock.acquire()
         device = self.host if self.host else self.device
         _LOGGING.info('Connecting to Insteon Modem at %s', device)
@@ -97,8 +104,9 @@ class Tools():
 
     @asyncio.coroutine
     def monitor_mode(self, poll_devices=False, device=None, workdir=None):
+        """Place the IM in monitoring mode."""
         print("Running monitor mode")
-        yield from self.connect(poll_devices=False, device=None, workdir=None)
+        yield from self.connect(poll_devices, device, workdir)
         self.plm.monitor_mode()
 
     def async_new_device_callback(self, device):
@@ -111,22 +119,26 @@ class Tools():
             device.states[state].register_updates(
                 self.async_state_change_callback)
 
-    def async_state_change_callback(self, id, state, value):
-        _LOGGING.info('Device %s state %s value is changed to %02x',
-                      id, state, value)
+    # pylint: disable=no-self-use
+    def async_state_change_callback(self, addr, state, value):
+        """Log the state change."""
+        _LOGGING.info('Device %s state %s value is changed to %s',
+                      addr, state, value)
 
     def async_aldb_loaded_callback(self):
+        """Unlock the ALDB load lock when loading is complete."""
         if self.aldb_load_lock.locked():
             self.aldb_load_lock.release()
         _LOGGING.info('ALDB Loaded')
 
     @asyncio.coroutine
     def start_all_linking(self, linkcode, group, address=None):
+        """Start the All-Linking process with the IM and device."""
         _LOGGING.info('Starting the All-Linking process')
         if address:
             linkdevice = self.plm.devices[Address(address).id]
             if not linkdevice:
-                linkdevice = Device.create(self.plm, address, None, None)
+                linkdevice = create(self.plm, address, None, None)
             _LOGGING.info('Attempting to link the PLM to device %s. ',
                           address)
             self.plm.start_all_linking(linkcode, group)
@@ -203,8 +215,8 @@ class Tools():
                 device.states[group].off()
                 yield from asyncio.sleep(2, loop=self.loop)
             else:
-                _LOGGING.warn('Device %s with state %d is not an on/off'
-                              'device.', device.id, state.name)
+                _LOGGING.warning('Device %s with state %d is not an on/off'
+                                 'device.', device.id, state.name)
 
         else:
             _LOGGING.error('Could not find device %s', addr)
@@ -345,46 +357,49 @@ class Tools():
         device.states[group].set_on_mask(mask)
 
 
-class Commander(object):
+# pylint: disable=too-many-public-methods
+class Commander():
     """Command object to manage itneractive sessions."""
 
     def __init__(self, loop, args=None):
+        """Init the Commander class."""
         self.loop = loop
 
         self.tools = Tools(loop, args)
         self.stdout = sys.stdout
 
     def start(self):
+        """Start the command process loop."""
         self.loop.create_task(self._read_line())
         self.loop.create_task(self._greeting())
 
     @asyncio.coroutine
     def _read_line(self):
         while True:
-            input = yield from self.loop.run_in_executor(None,
-                                                         sys.stdin.readline)
-            yield from self._exec_cmd(input)
+            cmd = yield from self.loop.run_in_executor(None,
+                                                       sys.stdin.readline)
+            yield from self._exec_cmd(cmd)
             self.stdout.write(PROMPT)
             sys.stdout.flush()
 
     @asyncio.coroutine
-    def _exec_cmd(self, input):
+    def _exec_cmd(self, cmd):
         return_val = None
         func = None
-        if input.strip():
-            command, arg = self._parse_cmd(input)
+        if cmd.strip():
+            command, arg = self._parse_cmd(cmd)
             if command is None:
-                return self._invalid(input)
+                return self._invalid(cmd)
             if command == '':
-                return self._invalid(input)
-            else:
-                try:
-                    func = getattr(self, 'do_' + command)
-                except AttributeError:
-                    func = self._invalid
-                    arg = str(input)
-                except KeyboardInterrupt:
-                    func = None  # func(arg)
+                return self._invalid(cmd)
+
+            try:
+                func = getattr(self, 'do_' + command)
+            except AttributeError:
+                func = self._invalid
+                arg = str(cmd)
+            except KeyboardInterrupt:
+                func = None  # func(arg)
             if func:
                 if asyncio.iscoroutinefunction(func):
                     return_val = yield from func(arg)
@@ -392,21 +407,22 @@ class Commander(object):
                     return_val = func(arg)
         return return_val
 
-    def _parse_cmd(self, input):
-        input = input.strip()
+    # pylint: disable=no-self-use
+    def _parse_cmd(self, cmd):
+        cmd = cmd.strip()
         command = None
         arg = None
-        if input:
-            i, n = 0, len(input)
-            while i < n and input[i] in ALLOWEDCHARS:
+        if cmd:
+            i, n = 0, len(cmd)
+            while i < n and cmd[i] in ALLOWEDCHARS:
                 i += 1
-            command = input[:i]
-            arg = input[i:].strip()
+            command = cmd[:i]
+            arg = cmd[i:].strip()
         return command, arg
 
     @staticmethod
-    def _invalid(input):
-        _LOGGING.error("Invalid command: %s", input[:-1])
+    def _invalid(cmd):
+        _LOGGING.error("Invalid command: %s", cmd[:-1])
 
     async def _greeting(self):
         _LOGGING.info(INTRO)
@@ -443,6 +459,7 @@ class Commander(object):
                                           workdir=workdir)
         _LOGGING.info('Connection complete.')
 
+    # pylint: disable=unused-argument
     def do_running_tasks(self, arg):
         """List tasks running in the background.
 
@@ -486,6 +503,7 @@ class Commander(object):
             _LOGGING.error('Invalid address or group')
             self.do_help('on_off_test')
 
+    # pylint: disable=unused-argument
     def do_list_devices(self, args):
         """List devices loaded in the IM.
 
@@ -532,7 +550,7 @@ class Commander(object):
             except IndexError:
                 addr = None
 
-        if linkcode in [0, 1, 3] and group >= 0 and group <= 255:
+        if linkcode in [0, 1, 3] and 255 >= group >= 0:
             self.loop.create_task(
                 self.tools.start_all_linking(linkcode, group, addr))
         else:
@@ -835,14 +853,17 @@ class Commander(object):
         Usage:
             set_log_level i|v
         Parameters:
-            log_level: i - info
-                       v - verbose
-    """
+            log_level: i - info | v - verbose
+
+        """
         if arg in ['i', 'v']:
+            _LOGGING.info('Setting log level to %s', arg)
             if arg == 'i':
                 _LOGGING.setLevel(logging.INFO)
+                _INSTEONPLM_LOGGING.setLevel(logging.INFO)
             else:
                 _LOGGING.setLevel(logging.DEBUG)
+                _INSTEONPLM_LOGGING.setLevel(logging.DEBUG)
         else:
             _LOGGING.error('Log level value error.')
             self.do_help('set_log_level')
@@ -892,7 +913,7 @@ class Commander(object):
             workdir = params[0]
         except IndexError:
             _LOGGING.error('Device name required.')
-            self.help('set_workdir')
+            self.do_help('set_workdir')
 
         if workdir:
             self.tools.workdir = workdir
@@ -904,6 +925,7 @@ class Commander(object):
             help [command]
         Parameters:
             command: Optional - command name to display detailed help
+
         """
         cmds = arg.split()
 
@@ -912,7 +934,7 @@ class Commander(object):
             if func:
                 _LOGGING.info(func.__doc__)
             else:
-                _LOGGING.error('Command ', cmds[0], ' not found.')
+                _LOGGING.error('Command %s not found', cmds[0])
         else:
             _LOGGING.info("Available command list: ")
             for curr_cmd in dir(self.__class__):
@@ -920,14 +942,18 @@ class Commander(object):
                     print(" - ", curr_cmd[3:])
             _LOGGING.info("For help with a command type `help command`")
 
+    # pylint: disable=no-self-use
+    # pylint: disable=unused-argument
     def do_exit(self, arg):
         """Exit the application."""
         _LOGGING.info("Exiting")
         raise KeyboardInterrupt
 
+    # pylint: disable=no-self-use
+    # pylint: disable=unused-argument
     def do_test_logger(self, arg):
+        """Test the logging function."""
         _LOGGING.error("This is an error")
-        _LOGGING.warn("This is a warn")
         _LOGGING.warning("This is a warning")
         _LOGGING.info("This is an info")
         _LOGGING.debug("This is a debug")
@@ -1029,12 +1055,11 @@ class Commander(object):
             self.do_help('add_x10_device')
 
     def do_kpl_status(self, args):
-        """ Get the status of a KeypadLinc button.
+        """Get the status of a KeypadLinc button.
 
         Usage:
             kpl_status address group
         """
-
         params = args.split()
         address = None
         group = None
@@ -1053,12 +1078,11 @@ class Commander(object):
             self.tools.kpl_status(address, group)
 
     def do_kpl_on(self, args):
-        """ Turn on a KeypadLinc button.
+        """Turn on a KeypadLinc button.
 
         Usage:
             kpl_on address group
         """
-
         params = args.split()
         address = None
         group = None
@@ -1077,12 +1101,11 @@ class Commander(object):
             self.tools.kpl_on(address, group)
 
     def do_kpl_off(self, args):
-        """ Turn off a KeypadLinc button.
+        """Turn off a KeypadLinc button.
 
         Usage:
             kpl_on address group
         """
-
         params = args.split()
         address = None
         group = None
@@ -1101,12 +1124,11 @@ class Commander(object):
             self.tools.kpl_off(address, group)
 
     def do_kpl_set_on_mask(self, args):
-        """ Set the on mask for a KeypadLinc button.
+        """Set the on mask for a KeypadLinc button.
 
         Usage:
             kpl_set_on_mask address group mask
         """
-
         params = args.split()
         address = None
         group = None
@@ -1131,6 +1153,7 @@ class Commander(object):
         if address and group and mask:
             self.tools.kpl_set_on_mask(address, group, mask)
 
+    # pylint: disable=unused-argument
     def do_poll_devices(self, args):
         """Poll all devices for current status.
 
@@ -1194,8 +1217,10 @@ def monitor():
 
 
 def interactive():
-    """Wrapper for an interactive session for manual commands to be entered."""
+    """Create an interactive command line tool.
 
+    Wrapper for an interactive session for manual commands to be entered.
+    """
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--device', default='/dev/ttyUSB0',
                         help='Path to PLM device')

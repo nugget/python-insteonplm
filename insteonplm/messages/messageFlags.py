@@ -11,13 +11,14 @@ from insteonplm.constants import (MESSAGE_FLAG_EXTENDED_0X10,
                                   MESSAGE_TYPE_DIRECT_MESSAGE_ACK,
                                   MESSAGE_TYPE_DIRECT_MESSAGE_NAK)
 
+_LOGGER = logging.getLogger(__name__)
 
-class MessageFlags(object):
+
+class MessageFlags():
     """Message Flags class use in Standard and Extended messages."""
 
     def __init__(self, flags=0x00):
-        """Initialize the MessageFlags class."""
-        self.log = logging.getLogger(__name__)
+        """Init the MessageFlags class."""
         self._messageType = None
         self._extended = None
         self._hopsLeft = None
@@ -31,21 +32,21 @@ class MessageFlags(object):
         return self.hex
 
     def __str__(self):
-        """String representation of message flags."""
+        """Return a string representation of message flags."""
         return self.hex
 
     def __eq__(self, other):
         """Test for equality."""
         if hasattr(other, 'messageType'):
-            return self._messageType == other.messageType and \
-                   self._extended == other.extended
+            is_eq = self._messageType == other.messageType
+            is_eq = is_eq and self._extended == other.extended
+            return is_eq
         return False
 
     def __ne__(self, other):
         """Test for not equals."""
         if hasattr(other, 'messageType'):
-            return self._messageType == other.messageType and \
-                   self._extended == other.extended
+            return not self.__eq__(other)
         return True
 
     def matches_pattern(self, other):
@@ -252,6 +253,7 @@ class MessageFlags(object):
         """Return a hexidecimal representation of the message flags."""
         return binascii.hexlify(self.bytes).decode()
 
+    # pylint: disable=no-self-use
     def _normalize(self, flags):
         """Take any format of flags and turn it into a hex string."""
         norm = None
@@ -269,8 +271,8 @@ class MessageFlags(object):
         elif flags is None:
             norm = None
         else:
-            self.log.warning('MessageFlags with unknown type %s: %r',
-                             type(flags), flags)
+            _LOGGER.warning('MessageFlags with unknown type %s: %r',
+                            type(flags), flags)
         return norm
 
     def _set_properties(self, flags):

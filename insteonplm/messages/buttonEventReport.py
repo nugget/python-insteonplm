@@ -16,7 +16,7 @@ class ButtonEventReport(Message):
     _description = 'INSTEON Standard Message Received'
 
     def __init__(self, event):
-        """Initalize the ButtonEventReport Class."""
+        """Init the ButtonEventReport Class."""
         self._event = event
 
         self._events = {0x02: 'SET button tapped',

@@ -19,7 +19,7 @@ class StartAllLinking(Message):
     _description = 'Insteon Start All Linking Message'
 
     def __init__(self, linkCode, group, acknak=None):
-        """Initalize the StartAllLinking Class."""
+        """Init the StartAllLinking Class."""
         self._linkCode = linkCode
         self._group = group
 

@@ -3,7 +3,6 @@ from insteonplm.devices import Device
 from insteonplm.states.cover import Cover
 
 
-
 class WindowCovering(Device):
     """Window Covering Controller.
 
@@ -24,7 +23,7 @@ class WindowCovering(Device):
 
     def __init__(self, plm, address, cat, subcat, product_key=None,
                  description=None, model=None):
-        """Initialize the WindowCovering Class."""
+        """Init the WindowCovering Class."""
         Device.__init__(self, plm, address, cat, subcat, product_key,
                         description, model)
 

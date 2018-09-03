@@ -16,7 +16,7 @@ from insteonplm.messages.userdata import Userdata
 from .mockCallbacks import MockCallbacks
 
 
-_LOG = logging.getLogger(__name__)
+_LOGGER = logging.getLogger(__name__)
 
 
 def test_messagecallback_basic():
@@ -59,6 +59,7 @@ def test_messagecallback_msg():
     assert callback2[0] == callbacktest
 
 
+# pylint: disable=too-many-locals
 def test_messagecallback_acknak():
     """Test messagecallback acknak."""
     callbacks = MessageCallback()
@@ -85,13 +86,13 @@ def test_messagecallback_acknak():
     msg4 = StandardSend('444444', COMMAND_LIGHT_ON_0X11_NONE, cmd2=0xff,
                         acknak=MESSAGE_ACK)
 
-    _LOG.debug('Getting callbacks for message 1')
+    _LOGGER.debug('Getting callbacks for message 1')
     callback1 = callbacks.get_callbacks_from_message(msg1)
-    _LOG.debug('Getting callbacks for message 2')
+    _LOGGER.debug('Getting callbacks for message 2')
     callback2 = callbacks.get_callbacks_from_message(msg2)
-    _LOG.debug('Getting callbacks for message 3')
+    _LOGGER.debug('Getting callbacks for message 3')
     callback3 = callbacks.get_callbacks_from_message(msg3)
-    _LOG.debug('Getting callbacks for message 4')
+    _LOGGER.debug('Getting callbacks for message 4')
     callback4 = callbacks.get_callbacks_from_message(msg4)
 
     assert len(callback1) == 4

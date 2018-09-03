@@ -19,7 +19,7 @@ class StandardReceive(Message):
     _description = 'INSTEON Standard Message Received'
 
     def __init__(self, address, target, commandtuple, cmd2=None, flags=0x00):
-        """Initialize the StandardReceive message class."""
+        """Init the StandardReceive message class."""
         if commandtuple.get('cmd1') is not None:
             cmd1 = commandtuple['cmd1']
             cmd2out = commandtuple['cmd2']
@@ -50,15 +50,19 @@ class StandardReceive(Message):
 
     # pylint: disable=protected-access
     @classmethod
-    def template(cls, address=None, target=None, commandtuple={},
+    def template(cls, address=None, target=None, commandtuple=None,
                  cmd2=-1, flags=None):
         """Create a message template used for callbacks."""
         msgraw = bytearray([0x02, cls._code])
         msgraw.extend(bytes(cls._receivedSize))
         msg = StandardReceive.from_raw_message(msgraw)
 
-        cmd1 = commandtuple.get('cmd1')
-        cmd2out = commandtuple.get('cmd2')
+        if commandtuple:
+            cmd1 = commandtuple.get('cmd1')
+            cmd2out = commandtuple.get('cmd2')
+        else:
+            cmd1 = None
+            cmd2out = None
 
         if cmd2 is not -1:
             cmd2out = cmd2

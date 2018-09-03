@@ -1,4 +1,5 @@
 """Dimmable light states."""
+import logging
 
 from insteonplm.constants import (COMMAND_LIGHT_BRIGHTEN_ONE_STEP_0X15_0X00,
                                   COMMAND_LIGHT_DIM_ONE_STEP_0X16_0X00,
@@ -24,6 +25,7 @@ from insteonplm.messages.standardReceive import StandardReceive
 from insteonplm.messages.messageFlags import MessageFlags
 from insteonplm.states import State
 
+_LOGGER = logging.getLogger(__name__)
 DIMMABLE_KEYPAD_SCENE_ON_LEVEL = "sceneOnLevel"
 
 
@@ -43,16 +45,17 @@ class DimmableSwitch(State):
 
     def __init__(self, address, statename, group, send_message_method,
                  message_callbacks, defaultvalue=None):
-        """Initalize the DimmableSwitch Class."""
+        """Init the DimmableSwitch Class."""
         super().__init__(address, statename, group, send_message_method,
                          message_callbacks, defaultvalue)
 
         self._updatemethod = self._send_status_request
         self._register_messages()
 
+    # pylint: disable=too-many-locals
     def _register_messages(self):
-        self.log.debug('Registering callbacks for DimmableSwitch device %s',
-                       self._address.human)
+        _LOGGER.debug('Registering callbacks for DimmableSwitch device %s',
+                      self._address.human)
         template_on_cleanup = StandardReceive.template(
             commandtuple=COMMAND_LIGHT_ON_0X11_NONE,
             address=self._address,
@@ -194,7 +197,7 @@ class DimmableSwitch(State):
         else:
             setlevel = 255
             if val < 1:
-                setlevel = val*100
+                setlevel = val * 100
             elif val <= 0xff:
                 setlevel = val
             set_command = StandardSend(
@@ -217,9 +220,11 @@ class DimmableSwitch(State):
         cmd2 = msg.cmd2 if msg.cmd2 else 255
         self._update_subscribers(cmd2)
 
+    # pylint: disable=unused-argument
     def _off_message_received(self, msg):
         self._update_subscribers(0x00)
 
+    # pylint: disable=unused-argument
     def _manual_change_received(self, msg):
         self._send_status_request()
 
@@ -229,7 +234,7 @@ class DimmableSwitch(State):
         self._send_method(status_command, self._status_message_received)
 
     def _status_message_received(self, msg):
-        self.log.debug("DimmableSwitch status message received called")
+        _LOGGER.debug("DimmableSwitch status message received called")
         self._update_subscribers(msg.cmd2)
 
 
@@ -247,7 +252,7 @@ class DimmableSwitch_Fan(DimmableSwitch):
 
     def __init__(self, address, statename, group, send_message_method,
                  set_message_callback_method, defaultvalue=None):
-        """Initalize the DimmableSwitch_Fan Class."""
+        """Init the DimmableSwitch_Fan Class."""
         super().__init__(address, statename, group, send_message_method,
                          set_message_callback_method, defaultvalue)
 
@@ -279,7 +284,7 @@ class DimmableSwitch_Fan(DimmableSwitch):
                                    COMMAND_LIGHT_OFF_0X13_0X00, self._udata)
         off_command.set_checksum()
         self._send_method(off_command, self._off_message_received)
-        self.log.debug('Ending DimmableSwitch_Fan.off')
+        _LOGGER.debug('Ending DimmableSwitch_Fan.off')
 
     def _status_request(self):
         status_command = StandardSend(self._address,
@@ -290,12 +295,13 @@ class DimmableSwitch_Fan(DimmableSwitch):
     def _status_message_received(self, msg):
         self._update_subscribers(msg.cmd2)
 
+    # pylint: disable=no-self-use
     def _value_to_fan_speed(self, speed):
         if speed > 0xfe:
             return FAN_SPEED_HIGH
-        elif speed > 0x7f:
+        if speed > 0x7f:
             return FAN_SPEED_MEDIUM
-        elif speed > 0:
+        if speed > 0:
             return FAN_SPEED_LOW
         return FAN_SPEED_OFF
 
@@ -311,29 +317,34 @@ class DimmableRemote(State):
 
     def __init__(self, address, statename, group, send_message_method,
                  message_callbacks, defaultvalue=None):
-        """Initalize the DimmableSwitch Class."""
+        """Init the DimmableSwitch Class."""
         super().__init__(address, statename, group, send_message_method,
                          message_callbacks, defaultvalue)
 
-        self.log.debug('Registering callbacks for DimmableSwitch device %s',
-                       self._address.human)
+        _LOGGER.debug('Registering callbacks for DimmableSwitch device %s',
+                      self._address.human)
+
+        self._is_responder = False
 
         self._register_messages()
 
     def _on_message_received(self, msg):
-        self.log.debug('Calling DimmableRemote _on_message_received '
-                       'for group %d with level %d',
-                       self._group, msg.cmd2)
+        _LOGGER.debug('Calling DimmableRemote _on_message_received '
+                      'for group %d with level %d',
+                      self._group, msg.cmd2)
         self._update_subscribers(0xff)
 
+    # pylint: disable=unused-argument
     def _off_message_received(self, msg):
-        self.log.debug('Calling DimmableRemote _off_message_received '
-                       'for group %d', self._group)
+        _LOGGER.debug('Calling DimmableRemote _off_message_received '
+                      'for group %d', self._group)
         self._update_subscribers(0x00)
 
+    # pylint: disable=no-self-use
+    # pylint: disable=unused-argument
     def _manual_change_received(self, msg):
-        self.log.debug('Message type 0x17 or 0x18 received but no way '
-                       'to properly handle them, sorry.')
+        _LOGGER.debug('Message type 0x17 or 0x18 received but no way '
+                      'to properly handle them, sorry.')
 
     def _register_messages(self):
         template_on_broadcast = StandardReceive.template(
@@ -406,6 +417,7 @@ class DimmableKeypadA(DimmableSwitch):
 
     def __init__(self, address, statename, group, send_message_method,
                  message_callbacks, defaultvalue, leds):
+        """Init the DimmableKeypadA class."""
         super().__init__(address, statename, group, send_message_method,
                          message_callbacks, defaultvalue)
 
@@ -413,12 +425,15 @@ class DimmableKeypadA(DimmableSwitch):
         self._leds = leds
 
     def led_on(self):
+        """Turn the LED on."""
         self._leds.on(self._group)
 
     def led_off(self):
+        """Turn the LED off."""
         self._leds.off(self._group)
 
     def led_is_on(self):
+        """Return if the LED is on."""
         return self._leds.is_on(self._group)
 
     def _on_message_received(self, msg):

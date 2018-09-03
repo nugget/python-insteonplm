@@ -22,7 +22,7 @@ class GetImInfo(Message):
 
     def __init__(self, address=None, cat=None, subcat=None, firmware=None,
                  acknak=None):
-        """Initialize the GetImInfo Class."""
+        """Init the GetImInfo Class."""
         self._address = Address(address)
         self._category = cat
         self._subcategory = subcat

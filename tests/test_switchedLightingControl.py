@@ -1,6 +1,8 @@
 """Test Switched Lighting Control devices."""
 
 import asyncio
+import logging
+
 from insteonplm.constants import (COMMAND_LIGHT_OFF_0X13_0X00,
                                   COMMAND_LIGHT_ON_0X11_NONE,
                                   COMMAND_LIGHT_STATUS_REQUEST_0X19_0X00,
@@ -17,10 +19,11 @@ from insteonplm.devices.switchedLightingControl import (
 from .mockPLM import MockPLM
 from .mockCallbacks import MockCallbacks
 
-import logging
 _LOGGING = logging.getLogger(__name__)
 _LOGGING.setLevel(logging.DEBUG)
 
+
+# pylint: disable=too-many-statements
 def test_switchedLightingControl():
     """Test SwitchedLightingControl."""
     def run_test(loop):
@@ -83,10 +86,9 @@ def test_switchedLightingControl():
     loop = asyncio.get_event_loop()
     loop.run_until_complete(run_test(loop))
     open_tasks = asyncio.Task.all_tasks(loop=loop)
-    #loop.stop()
+
     for task in open_tasks:
         if hasattr(task, 'name'):
-            name = task.name
             _LOGGING.error('Device: %s Task: %s', task.name, task)
         else:
             _LOGGING.error('Task: %s', task)
@@ -139,10 +141,9 @@ def test_switchedLightingControl_maual_changes():
     loop = asyncio.get_event_loop()
     loop.run_until_complete(run_test(loop))
     open_tasks = asyncio.Task.all_tasks(loop=loop)
-    #loop.stop()
+
     for task in open_tasks:
         if hasattr(task, 'name'):
-            name = task.name
             _LOGGING.error('Device: %s Task: %s', task.name, task)
         else:
             _LOGGING.error('Task: %s', task)
@@ -197,10 +198,9 @@ def test_switchedLightingControl_status():
     loop = asyncio.get_event_loop()
     loop.run_until_complete(run_test(loop))
     open_tasks = asyncio.Task.all_tasks(loop=loop)
-    #loop.stop()
+
     for task in open_tasks:
         if hasattr(task, 'name'):
-            name = task.name
             _LOGGING.error('Device: %s Task: %s', task.name, task)
         else:
             _LOGGING.error('Task: %s', task)
@@ -208,6 +208,7 @@ def test_switchedLightingControl_status():
             loop.run_until_complete(task)
 
 
+# pylint: disable=too-many-statements
 def test_switchedLightingControl_2663_222():
     """Test SwitchedLightingControl device 2663-222."""
     @asyncio.coroutine
@@ -311,10 +312,9 @@ def test_switchedLightingControl_2663_222():
     loop = asyncio.get_event_loop()
     loop.run_until_complete(run_test(loop))
     open_tasks = asyncio.Task.all_tasks(loop=loop)
-    #loop.stop()
+
     for task in open_tasks:
         if hasattr(task, 'name'):
-            name = task.name
             _LOGGING.error('Device: %s Task: %s', task.name, task)
         else:
             _LOGGING.error('Task: %s', task)
@@ -386,10 +386,9 @@ def test_switchedLightingControl_2663_222_manual_change():
     loop = asyncio.get_event_loop()
     loop.run_until_complete(run_test(loop))
     open_tasks = asyncio.Task.all_tasks(loop=loop)
-    #loop.stop()
+
     for task in open_tasks:
         if hasattr(task, 'name'):
-            name = task.name
             _LOGGING.error('Device: %s Task: %s', task.name, task)
         else:
             _LOGGING.error('Task: %s', task)
@@ -402,16 +401,18 @@ def test_switchedLightingControl_2663_222_status():
     @asyncio.coroutine
     def run_test(loop):
         """Asyncio test method."""
-        class lightStatus(object):
+        class lightStatus():
             """Callback class to capture state changes."""
 
             lightOnLevel1 = None
             lightOnLevel2 = None
 
+            # pylint: disable=unused-argument
             def device_status_callback1(self, device_id, state, value):
                 """Callback method to capture upper outlet changes."""
                 self.lightOnLevel1 = value
 
+            # pylint: disable=unused-argument
             def device_status_callback2(self, device_id, state, value):
                 """Callback method to capture lower outlet changes."""
                 self.lightOnLevel2 = value
@@ -455,10 +456,9 @@ def test_switchedLightingControl_2663_222_status():
     loop = asyncio.get_event_loop()
     loop.run_until_complete(run_test(loop))
     open_tasks = asyncio.Task.all_tasks(loop=loop)
-    #loop.stop()
+
     for task in open_tasks:
         if hasattr(task, 'name'):
-            name = task.name
             _LOGGING.error('Device: %s Task: %s', task.name, task)
         else:
             _LOGGING.error('Task: %s', task)

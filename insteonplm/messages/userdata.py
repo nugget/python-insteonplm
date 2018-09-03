@@ -2,17 +2,18 @@
 import logging
 import binascii
 
+_LOGGER = logging.getLogger(__name__)
 
-class Userdata(object):
+
+class Userdata():
     """Extended Message User Data Type."""
 
-    def __init__(self, userdata={}):
-        """Initialize the Userdata Class."""
-        self.log = logging.getLogger(__name__)
-        self._userdata = self._normalize(self._create_empty(0x00), userdata)
+    def __init__(self, userdata=None):
+        """Init the Userdata Class."""
+        self._userdata = self.normalize(self.create_empty(0x00), userdata)
 
     def __len__(self):
-        """Initalize Userdata Class."""
+        """Init Userdata Class."""
         return len(self._userdata)
 
     def __str__(self):
@@ -46,7 +47,7 @@ class Userdata(object):
 
     def __ne__(self, other):
         """Test if the current user data is not equal to another instance."""
-        return not (self == other)
+        return bool(self != other)
 
     @property
     def human(self):
@@ -58,7 +59,7 @@ class Userdata(object):
                 first = False
             else:
                 strout = strout + '.'
-            strout = strout + self.hex[i:i+2]
+            strout = strout + self.hex[i:i + 2]
         return strout
 
     @property
@@ -81,28 +82,27 @@ class Userdata(object):
     @classmethod
     def from_raw_message(cls, rawmessage):
         """Create a user data instance from a raw byte stream."""
-        empty = cls._create_empty(0x00)
-        userdata_dict = cls._normalize(empty, rawmessage)
+        empty = cls.create_empty(0x00)
+        userdata_dict = cls.normalize(empty, rawmessage)
         return Userdata(userdata_dict)
 
     @classmethod
     def create_pattern(cls, userdata):
         """Create a user data instance with all values the same."""
-        empty = cls._create_empty(None)
-        userdata_dict = cls._normalize(empty, userdata)
+        empty = cls.create_empty(None)
+        userdata_dict = cls.normalize(empty, userdata)
         return Userdata(userdata_dict)
 
     @classmethod
     def create(cls):
         """Create an empty user data instance."""
-        empty = cls._create_empty(0x00)
+        empty = cls.create_empty(0x00)
         return Userdata(empty)
 
     @classmethod
     def template(cls, userdata):
         """Create a template instance used for message callbacks."""
-        ud = Userdata()
-        ud._userdata = cls._normalize(cls._create_empty(None), userdata)
+        ud = Userdata(cls.normalize(cls.create_empty(None), userdata))
         return ud
 
     def matches_pattern(self, other):
@@ -123,6 +123,10 @@ class Userdata(object):
         """Return a single byte of the user data."""
         return self[key]
 
+    def to_dict(self):
+        """Return userdata as a dict object."""
+        return self._userdata
+
     @classmethod
     def _dict_to_dict(cls, empty, userdata):
         if isinstance(userdata, dict):
@@ -137,13 +141,17 @@ class Userdata(object):
         if len(userdata) == 14:
             for i in range(1, 15):
                 key = 'd{}'.format(i)
-                empty[key] = userdata[i-1]
+                empty[key] = userdata[i - 1]
         else:
             raise ValueError
         return empty
 
     @classmethod
-    def _create_empty(cls, val=None):
+    def create_empty(cls, val=0x00):
+        """Create an empty Userdata object.
+
+        val: value to fill the empty user data fields with (default is 0x00)
+        """
         userdata_dict = {}
         for i in range(1, 15):
             key = 'd{}'.format(i)
@@ -151,13 +159,18 @@ class Userdata(object):
         return userdata_dict
 
     @classmethod
-    def _normalize(cls, empty, userdata):
+    def normalize(cls, empty, userdata):
+        """Return normalized user data as a dictionary.
+
+        empty: an empty dictionary
+        userdata: data in the form of Userdata, dict or None
+        """
         if isinstance(userdata, Userdata):
-            return userdata._userdata
-        elif isinstance(userdata, dict):
+            return userdata.to_dict()
+        if isinstance(userdata, dict):
             return cls._dict_to_dict(empty, userdata)
-        elif isinstance(userdata, bytes) or isinstance(userdata, bytearray):
+        if isinstance(userdata, (bytes, bytearray)):
             return cls._bytes_to_dict(empty, userdata)
-        elif userdata is None:
+        if userdata is None:
             return empty
         raise ValueError

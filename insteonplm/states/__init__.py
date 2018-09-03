@@ -1,9 +1,13 @@
 """INSTEON State Entities."""
+# pylint: disable=cyclic-import
 import logging
 from insteonplm.address import Address
 
+_LOGGER = logging.getLogger(__name__)
 
-class State(object):
+
+# pylint: disable=too-many-instance-attributes
+class State():
     """INSTEON device state base class.
 
     Base class used by Insteon devices to hold a device state such as "Light On
@@ -39,13 +43,16 @@ class State(object):
     def __init__(self, address, statename, group, send_message_method,
                  message_callbacks, defaultvalue=None):
         """Initialzie tthe State Class."""
-        self.log = logging.getLogger(__name__)
-
         self._address = Address(address)
         self._observer_callbacks = []
         self._stateName = statename
         self._group = group
         self._value = defaultvalue
+        self._is_responder = True
+        self._is_controller = True
+        self._linkdata1 = 0
+        self._linkdata2 = 0
+        self._linkdata3 = 0
 
         self._updatemethod = None
         self._send_method = send_message_method
@@ -73,14 +80,40 @@ class State(object):
         """Return the link group of the state."""
         return self._group
 
+    @property
+    def is_responder(self):
+        """Return if this state responds to a controller."""
+        return self._is_responder
+
+    @property
+    def is_controller(self):
+        """Return if this state controls a responder."""
+        return self._is_controller
+
+    @property
+    def linkdata1(self):
+        """Return the default link data value as a responder."""
+        return self._linkdata1
+
+    @property
+    def linkdata2(self):
+        """Return the default link data value as a responder."""
+        return self._linkdata2
+
+    @property
+    def linkdata3(self):
+        """Return the default link data value as a responder."""
+        return self._linkdata3
+
     def async_refresh_state(self):
         """Call the update method to request current state value."""
         if self._updatemethod is not None:
+            # pylint: disable=not-callable
             self._updatemethod()
 
     def register_updates(self, callback):
         """Register a callback to notify a listener of state changes."""
-        self.log.debug("Registered callback for state: %s", self._stateName)
+        _LOGGER.debug("Registered callback for state: %s", self._stateName)
         self._observer_callbacks.append(callback)
 
     def _update_subscribers(self, val):

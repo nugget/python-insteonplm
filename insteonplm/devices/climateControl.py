@@ -11,7 +11,7 @@ from insteonplm.states.thermostat import (Temperature,
                                           FanMode,
                                           CoolSetPoint,
                                           HeatSetPoint)
-
+from insteonplm.states.statusReport import StatusReport
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -21,7 +21,7 @@ class ClimateControl_2441th(Device):
 
     def __init__(self, plm, address, cat, subcat, product_key=None,
                  description=None, model=None):
-        """Initialize the DimmableLightingControl Class."""
+        """Init the DimmableLightingControl Class."""
         Device.__init__(self, plm, address, cat, subcat, product_key,
                         description, model)
 
@@ -31,6 +31,10 @@ class ClimateControl_2441th(Device):
 
         self._stateList[0x02] = HeatSetPoint(
             self._address, "heatSetPoint", 0x02, self._send_msg,
+            self._message_callbacks, 0x00)
+
+        self._stateList[0xef] = StatusReport(
+            self._address, "statusReport", 0xef, self._send_msg,
             self._message_callbacks, 0x00)
 
         self._system_mode = SystemMode(
@@ -93,5 +97,6 @@ class ClimateControl_2441th(Device):
         _LOGGER.debug('Sending temp status request')
         self.temperature.async_refresh_state()
 
+    # pylint: disable=unused-argument
     def _mode_changed(self, addr, group, val):
         self.async_refresh_state()

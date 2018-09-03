@@ -19,6 +19,7 @@ class X10OnOff(X10Device):
     """General X10 On / Off Switch Device Class."""
 
     def __init__(self, plm, housecode, unitcode):
+        """Init the X10OnOff class."""
         super().__init__(plm, housecode, unitcode)
         self._description = 'X10 On / Off Device'
 
@@ -31,18 +32,20 @@ class X10Dimmable(X10Device):
     """General X10 Dimmable Switch Device Class."""
 
     def __init__(self, plm, housecode, unitcode, dim_steps=22):
+        """Init the X10Dimmable class."""
         super().__init__(plm, housecode, unitcode)
         self._description = 'X10 Dimmable Device'
 
         self._stateList[0x01] = X10DimmableSwitch(
             self._address, "x10DimmableSwitch", 0x01, self._send_msg,
-            self._message_callbacks, 0x00)
+            self._message_callbacks, 0x00, dim_steps)
 
 
 class X10Sensor(X10Device):
     """General X10 On / Off Sensor Device Class."""
 
-    def __init__(self, plm, housecode, unitcode, dim_steps=22):
+    def __init__(self, plm, housecode, unitcode):
+        """Init the X10Sensor class."""
         super().__init__(plm, housecode, unitcode)
         self._description = 'X10 On / Off Sensor Device'
 
@@ -55,6 +58,7 @@ class X10AllUnitsOff(X10Device):
     """X10 All Units Off Device."""
 
     def __init__(self, plm, housecode, unitcode):
+        """Init the X10AllUnitsOff class."""
         super().__init__(plm, housecode, 20)
         self._description = 'X10 All Units Off Device'
 
@@ -65,6 +69,7 @@ class X10AllUnitsOff(X10Device):
         self._stateList[0x01].register_updates(self._reset_state)
         self._register_messages()
 
+    # pylint: disable=unused-argument
     def _reset_state(self, addr, name, val):
         loop = self._plm.loop
         if val == 0x00:
@@ -86,6 +91,7 @@ class X10AllLightsOn(X10Device):
     """X10 All Lights On Device."""
 
     def __init__(self, plm, housecode, unitcode):
+        """Init the X10AllLightsOn class."""
         super().__init__(plm, housecode, 21)
         self._description = 'X10 All Lights On Device'
 
@@ -96,6 +102,7 @@ class X10AllLightsOn(X10Device):
         self._stateList[0x01].register_updates(self._reset_state)
         self._register_messages()
 
+    # pylint: disable=unused-argument
     def _reset_state(self, addr, name, val):
         loop = self._plm.loop
         if val == 0xff:
@@ -117,6 +124,7 @@ class X10AllLightsOff(X10Device):
     """X10 All Lights Off Device."""
 
     def __init__(self, plm, housecode, unitcode):
+        """Init the X10AllLightsOff class."""
         super().__init__(plm, housecode, 22)
         self._description = 'X10 All Lights Off Device'
 
@@ -127,6 +135,7 @@ class X10AllLightsOff(X10Device):
         self._stateList[0x01].register_updates(self._reset_state)
         self._register_messages()
 
+    # pylint: disable=unused-argument
     def _reset_state(self, addr, name, val):
         loop = self._plm.loop
         if val == 0x00:

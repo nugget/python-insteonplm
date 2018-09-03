@@ -6,6 +6,8 @@ from insteonplm.constants import MESSAGE_START_CODE_0X02
 from insteonplm.messages.messageFlags import MessageFlags
 from insteonplm.messages.userdata import Userdata
 
+_LOGGER = logging.getLogger(__name__)
+
 
 class ClassPropertyMetaClass(type):
     """Meta class for Message class.
@@ -31,7 +33,7 @@ class ClassPropertyMetaClass(type):
 
     @property
     def description(cls):
-        """Description of the message type."""
+        """Return a description of the message type."""
         return cls._description
 
 
@@ -42,10 +44,9 @@ class Message(metaclass=ClassPropertyMetaClass):
     _sendSize = 0
     _receivedSize = 0
     _description = "Empty message"
-    log = logging.getLogger(__name__)
 
     def __str__(self):
-        """String representation of an INSTEON message."""
+        """Return a string representation of an INSTEON message."""
         props = self._message_properties()
         msgstr = "{}'code': 0x{}".format(
             "{", binascii.hexlify(bytes([self._code])).decode())
@@ -123,7 +124,7 @@ class Message(metaclass=ClassPropertyMetaClass):
 
     @property
     def description(self):
-        """Description of the message type."""
+        """Return the description of the message type."""
         return self._description
 
     @property

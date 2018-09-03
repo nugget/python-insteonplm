@@ -1,8 +1,6 @@
 """Test the INSTEON PLM device."""
 import asyncio
-import async_timeout
 import logging
-import binascii
 
 import insteonplm
 from insteonplm.constants import (COMMAND_LIGHT_ON_0X11_NONE,
@@ -14,7 +12,6 @@ from insteonplm.constants import (COMMAND_LIGHT_ON_0X11_NONE,
                                   MESSAGE_ACK,
                                   X10_COMMAND_ON,
                                   X10_COMMAND_OFF)
-from insteonplm.plm import PLM
 from insteonplm.address import Address
 from insteonplm.messages.standardSend import StandardSend
 from insteonplm.messages.standardReceive import StandardReceive
@@ -36,6 +33,8 @@ DIRECT_ACK_WAIT_TIMEOUT = 3.1
 RECV_MSG_WAIT = .1
 
 
+# pylint: disable=too-many-branches
+# pylint: disable=too-many-statements
 @asyncio.coroutine
 def do_plm(loop):
     """Asyncio coroutine to test the PLM."""
@@ -46,9 +45,11 @@ def do_plm(loop):
 
     def async_insteonplm_light_callback(device):
         """Log that our new device callback worked."""
-        _LOGGER.warn('New Device: %s %02x %02x %s, %s', device.id, device.cat,
-                     device.subcat, device.description, device.model)
+        _LOGGER.warning('New Device: %s %02x %02x %s, %s', device.id,
+                        device.cat, device.subcat, device.description,
+                        device.model)
 
+    # pylint: disable=unused-variable
     def async_light_on_level_callback(device_id, state, value):
         """Callback to catch changes to light value."""
         _LOGGER.info('Device %s state %s value is changed to %02x',
@@ -209,13 +210,12 @@ def do_plm(loop):
     open_tasks = asyncio.Task.all_tasks(loop=loop)
     for task in open_tasks:
         if hasattr(task, 'name'):
-            name = task.name
             _LOGGER.error('Device: %s Task: %s', task.name, task)
         else:
             _LOGGER.error('Task: %s', task)
-    _LOGGER.debug('---------------------------------- do_plm complete --------------------------------------------')
 
 
+# pylint: disable=too-many-statements
 @asyncio.coroutine
 def do_plm_x10(loop):
     """Asyncio coroutine to test the PLM X10 message handling."""
@@ -223,10 +223,8 @@ def do_plm_x10(loop):
 
     # pylint: disable=not-an-iterable
     conn = yield from MockConnection.create(loop=loop)
-    
-    cb = MockCallbacks()
 
-    #conn.protocol.add_device_callback(async_insteonplm_light_callback)
+    cb = MockCallbacks()
 
     plm = conn.protocol
     plm.connection_made(conn.transport)
@@ -257,8 +255,8 @@ def do_plm_x10(loop):
     housecode = 'C'
     unitcode = 9
     plm.add_x10_device(housecode, unitcode, 'OnOff')
-    id = Address.x10(housecode, unitcode).id
-    plm.devices[id].states[0x01].register_updates(cb.callbackmethod1)
+    x10_id = Address.x10(housecode, unitcode).id
+    plm.devices[x10_id].states[0x01].register_updates(cb.callbackmethod1)
 
     msg = X10Received.unit_code_msg(housecode, unitcode)
     plm.data_received(msg.bytes)
@@ -282,11 +280,9 @@ def do_plm_x10(loop):
     open_tasks = asyncio.Task.all_tasks(loop=loop)
     for task in open_tasks:
         if hasattr(task, 'name'):
-            name = task.name
             _LOGGER.error('Device: %s Task: %s', task.name, task)
         else:
             _LOGGER.error('Task: %s', task)
-    _LOGGER.debug('---------------------------------- do_plm_x10 complete --------------------------------------------')
 
 
 def test_plm():
@@ -295,16 +291,15 @@ def test_plm():
     loop = asyncio.get_event_loop()
     loop.run_until_complete(do_plm(loop))
     open_tasks = asyncio.Task.all_tasks(loop=loop)
-    #loop.stop()
+
     for task in open_tasks:
         if hasattr(task, 'name'):
-            name = task.name
             _LOGGER.error('Device: %s Task: %s', task.name, task)
         else:
             _LOGGER.error('Task: %s', task)
         if not task.done():
             loop.run_until_complete(task)
-        
+
 
 def test_plm_x10():
     """Test X10 message handling."""
@@ -312,13 +307,11 @@ def test_plm_x10():
     loop = asyncio.get_event_loop()
     loop.run_until_complete(do_plm_x10(loop))
     open_tasks = asyncio.Task.all_tasks(loop=loop)
-    #loop.stop()
+
     for task in open_tasks:
         if hasattr(task, 'name'):
-            name = task.name
             _LOGGER.error('Device: %s Task: %s', task.name, task)
         else:
             _LOGGER.error('Task: %s', task)
         if not task.done():
             loop.run_until_complete(task)
-    

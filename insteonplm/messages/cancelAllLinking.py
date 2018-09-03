@@ -19,7 +19,7 @@ class CancelAllLinking(Message):
     _description = 'INSTEON Cancel All-Linking'
 
     def __init__(self, acknak=None):
-        """Initalize the CancelAllLinking Class."""
+        """Init the CancelAllLinking Class."""
         self._acknak = self._setacknak(acknak)
 
     @classmethod

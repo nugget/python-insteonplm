@@ -4,6 +4,9 @@ from insteonplm.constants import (MESSAGE_ALL_LINK_RECORD_RESPONSE_0X57,
                                   MESSAGE_ALL_LINK_RECORD_RESPONSE_SIZE)
 from insteonplm.address import Address
 
+CONTROL_FLAG_RECORD_IN_USE = 0x80
+CONTROL_FLAG_CONTROLLER = 0x40
+
 
 class AllLinkRecordResponse(Message):
     """INSTEON ALL-Link Record Response.
@@ -17,7 +20,7 @@ class AllLinkRecordResponse(Message):
     _description = 'INSTEON ALL-Link Record Response'
 
     def __init__(self, flags, group, address, linkdata1, linkdata2, linkdata3):
-        """Initalize the AllLinkRecordResponse Class."""
+        """Init the AllLinkRecordResponse Class."""
         self._controlFlags = flags
         self._group = group
         self._address = Address(address)
@@ -68,19 +71,19 @@ class AllLinkRecordResponse(Message):
     @property
     def isRecordinuse(self):
         """Test if the link record is in use."""
-        return ((self._controlFlags & self.CONTROL_FLAG_RECORD_IN_USE) ==
-                self.CONTROL_FLAG_RECORD_IN_USE)
+        return ((self._controlFlags & CONTROL_FLAG_RECORD_IN_USE) ==
+                CONTROL_FLAG_RECORD_IN_USE)
 
     @property
     def isController(self):
         """Test if the link group is a controller."""
-        return ((self._controlFlags & self.CONTROL_FLAG_CONTROLLER) ==
-                self.CONTROL_FLAG_CONTROLER)
+        return ((self._controlFlags & CONTROL_FLAG_CONTROLLER) ==
+                CONTROL_FLAG_CONTROLLER)
 
     @property
     def isSlave(self):
         """Test if the link group is a slave or responder."""
-        return not self.iscontroller
+        return not self.isController
 
     def _message_properties(self):
         return [{'controlFlags': self._controlFlags},

@@ -32,7 +32,7 @@ class SensorsActuators(Device):
 
     def __init__(self, plm, address, cat, subcat, product_key=0,
                  description='', model=''):
-        """Initialize the SensorsActuators Class."""
+        """Init the SensorsActuators Class."""
         super().__init__(plm, address, cat, subcat, product_key,
                          description, model)
 
@@ -69,7 +69,7 @@ class SensorsActuators_2450(SensorsActuators):
 
     def __init__(self, plm, address, cat, subcat, product_key=None,
                  description=None, model=None):
-        """Initialize the SensorsActuators_2450 Class."""
+        """Init the SensorsActuators_2450 Class."""
         super().__init__(plm, address, cat, subcat, product_key,
                          description, model)
 

@@ -19,7 +19,7 @@ class SendAllLinkCommand(Message):
     _description = 'Insteon Get Next All Link Record Message'
 
     def __init__(self, group, allLinkCommand, broadcastCommand, acknak=None):
-        """Initalize the SendAllLinkCommand Class."""
+        """Init the SendAllLinkCommand Class."""
         self._group = group
         self._allLinkCommmand = allLinkCommand
         self._broadcastCommand = broadcastCommand

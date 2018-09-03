@@ -21,14 +21,13 @@ def unitcode_to_byte(unitcode):
 
 def byte_to_housecode(bytecode):
     """Return an X10 housecode value from a byte value."""
-    rev_hc = dict([reversed(i) for i in HC_LOOKUP.items()])
-    return rev_hc.get(bytecode).upper()
+    hc = list(HC_LOOKUP.keys())[list(HC_LOOKUP.values()).index(bytecode)]
+    return hc.upper()
 
 
 def byte_to_unitcode(bytecode):
     """Return an X10 unitcode value from a byte value."""
-    rev_dc = dict([reversed(i) for i in UC_LOOKUP.items()])
-    return rev_dc.get(bytecode)
+    return list(UC_LOOKUP.keys())[list(UC_LOOKUP.values()).index(bytecode)]
 
 
 def x10_command_type(command):
@@ -59,7 +58,8 @@ def bit_is_set(bitmask, bit):
 def set_bit(bitmask, bit, is_on):
     """Set the value of a bit in a bitmask on or off.
 
-    Uses the low bit is 1 and the high bit is 8."""
+    Uses the low bit is 1 and the high bit is 8.
+    """
     bitshift = bit - 1
     if is_on:
         return bitmask | (1 << bitshift)

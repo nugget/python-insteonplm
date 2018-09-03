@@ -15,6 +15,7 @@ class UserReset(Message):
     _receivedSize = MESSAGE_USER_RESET_DETECTED_SIZE
     _description = 'INSTEON User Reset Message Received'
 
+    # pylint: disable=unused-argument
     @classmethod
     def from_raw_messsage(cls, rawmessage):
         """Create message from raw byte stream."""

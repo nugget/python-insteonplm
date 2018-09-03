@@ -1,12 +1,9 @@
 """Test insteonplm.devices.ALDB class."""
-import insteonplm.devices
-from insteonplm.devices import (ALDB, ALDBStatus, ALDBRecord,
-                                ControlFlags, ALDBVersion)
-from .mockPLM import MockPLM
+from insteonplm.devices import ControlFlags
+
 
 def test_control_flags():
     """Test ControlFlags class for input and output."""
-
     in_use = True
     not_in_use = False
     responder = 0

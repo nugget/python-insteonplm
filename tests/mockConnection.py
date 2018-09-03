@@ -1,16 +1,17 @@
 """Mock Connection for the PLM."""
 
 import asyncio
-import async_timeout
 import binascii
 import logging
 
+import async_timeout
 
 _LOGGER = logging.getLogger(__name__)
 
 
 @asyncio.coroutine
 def wait_for_plm_command(plm, cmd, loop):
+    """Wait for a command to hit the PLM."""
     try:
         with async_timeout.timeout(10, loop=loop):
             while not plm.transport.lastmessage == cmd.hex:
@@ -35,8 +36,8 @@ class MockConnection():
     @classmethod
     @asyncio.coroutine
     def create(cls, loop=None):
+        """Create the MockConnection."""
         from insteonplm.plm import PLM
-        """Create a mock connection."""
         conn = cls()
         conn.loop = loop or asyncio.get_event_loop()
         conn.protocol = PLM(
@@ -48,7 +49,7 @@ class MockConnection():
             """Mock serial class within Connection class."""
 
             def __init__(self):
-                """Initialize the mock Serial class."""
+                """Init the mock Serial class."""
                 self.write_timeout = 0
                 self.timeout = 0
 
@@ -56,7 +57,7 @@ class MockConnection():
             """Mock transport class within Connection class."""
 
             def __init__(self):
-                """Initialize the mock Transport class."""
+                """Init the mock Transport class."""
                 self.serial = Serial()
                 self.lastmessage = None
                 self._mock_buffer_size = 128
@@ -74,7 +75,9 @@ class MockConnection():
                 self.lastmessage = binascii.hexlify(data).decode()
                 _LOGGER.info('Message sent: %s', self.lastmessage)
 
-            def is_closing(self):
+            @staticmethod
+            def is_closing():
+                """Return if the Mock Connection is closing."""
                 return False
 
         conn.transport = Transport()

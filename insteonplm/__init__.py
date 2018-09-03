@@ -3,11 +3,12 @@
 This module provides a unified asyncio network handler for interacting with
 Insteon Powerline modems like the 2413U and 2412S.
 """
-import aiohttp
 import asyncio
 import binascii
 from contextlib import suppress
 import logging
+
+import aiohttp
 from serial.aio import create_serial_connection
 
 from insteonplm.plm import PLM, Hub
@@ -25,6 +26,7 @@ except AttributeError:
 @asyncio.coroutine
 def create_http_connection(loop, protocol_factory, host, port=25105,
                            auth=None, connector=None):
+    """Create an HTTP session used to connect to the Insteon Hub."""
     session = aiohttp.ClientSession(auth=auth, connector=connector)
     protocol = protocol_factory()
     transport = HttpTransport(loop, protocol, session, host, port)
@@ -32,8 +34,101 @@ def create_http_connection(loop, protocol_factory, host, port=25105,
     return (transport, protocol)
 
 
+def _parse_buffer(html, last_stop):
+    buffer = ''
+    raw_text = html.replace('<response><BS>', '')
+    raw_text = raw_text.replace('</BS></response>', '')
+    raw_text = raw_text.strip()
+    if raw_text[:200] == '0' * 200:
+        # Likely the buffer was cleared
+        return (0, None)
+    this_stop = int(raw_text[-2:], 16)
+    if this_stop > last_stop:
+        _LOGGER.debug('Buffer from %d to %d', last_stop, this_stop)
+        buffer = raw_text[last_stop:this_stop]
+    elif this_stop < last_stop:
+        _LOGGER.debug('Buffer from %d to 200 and 0 to %d',
+                      last_stop, this_stop)
+        buffer_hi = raw_text[last_stop:200]
+        if buffer_hi == '0' * len(buffer_hi):
+            # The buffer was probably reset since the last read
+            buffer_hi = ''
+        buffer_low = raw_text[0:this_stop]
+        buffer = '{:s}{:s}'.format(buffer_hi, buffer_low)
+    else:
+        buffer = None
+    return (this_stop, buffer)
+
+
+# pylint: disable=too-many-instance-attributes
 class Connection:
     """Handler to maintain the Powerline device connection."""
+
+    def __init__(self, device, host, username, password, port,
+                 loop=None, retry_interval=1, auto_reconnect=True):
+        """Init the Connecton class."""
+        self._device = device
+        self._host = host
+        self._username = username
+        self._password = password
+        self._port = port
+        self._loop = loop if loop else asyncio.get_event_loop()
+        self._retry_interval = retry_interval
+        self._closed = True
+        self._closing = False
+        self._halted = False
+        self._auto_reconnect = auto_reconnect
+        self._protocol = None
+
+    @property
+    def protocol(self):
+        """Return the connection protocol."""
+        return self._protocol
+
+    @protocol.setter
+    def protocol(self, val):
+        """Set the connection protocol."""
+        self._protocol = val
+
+    @property
+    def device(self):
+        """Return the PLM device."""
+        return self._device
+
+    @property
+    def host(self):
+        """Return the Hub host or IP address."""
+        return self._host
+
+    @property
+    def username(self):
+        """Return the Hub username."""
+        return self._username
+
+    @property
+    def password(self):
+        """Return the Hub password."""
+        return self._password
+
+    @property
+    def port(self):
+        """Return the Hub IP port."""
+        return self._port
+
+    @property
+    def auto_reconnect(self):
+        """Return the connection protocol."""
+        return self._auto_reconnect
+
+    @property
+    def closing(self):
+        """Return the connection protocol."""
+        return self._closing
+
+    @property
+    def loop(self):
+        """Return the connection loop."""
+        return self._loop
 
     @classmethod
     @asyncio.coroutine
@@ -41,7 +136,7 @@ class Connection:
                username=None, password=None, port=25010,
                auto_reconnect=True, loop=None, workdir=None,
                poll_devices=True):
-        """Initiate a connection to a specific device.
+        """Create a connection to a specific device.
 
         Here is where we supply the device and callback callables we
         expect for this PLM class object.
@@ -69,36 +164,25 @@ class Connection:
             callable
         """
         _LOGGER.debug("Starting Connection.create")
-        conn = cls()
-
-        conn.device = device
-        conn.host = host
-        conn.username = username
-        conn.password = password
-        conn.port = port
-        conn._loop = loop or asyncio.get_event_loop()
-        conn._retry_interval = 1
-        conn._closed = True
-        conn._closing = False
-        conn._halted = False
-        conn._auto_reconnect = auto_reconnect
+        conn = cls(device, host, username, password, port, loop, 1,
+                   auto_reconnect)
 
         def connection_lost():
-            """Function callback for Protocol when connection is lost."""
-            if conn._auto_reconnect and not conn._closing:
+            """Respond to Protocol connection lost."""
+            if conn.auto_reconnect and not conn.closing:
                 _LOGGER.debug("Reconnecting to transport")
-                ensure_future(conn._reconnect(), loop=conn._loop)
+                ensure_future(conn.reconnect(), loop=conn.loop)
 
         protocol_class = PLM
         if conn.host:
             protocol_class = Hub
         conn.protocol = protocol_class(
             connection_lost_callback=connection_lost,
-            loop=conn._loop,
+            loop=conn.loop,
             workdir=workdir,
             poll_devices=poll_devices)
 
-        yield from conn._reconnect()
+        yield from conn.reconnect()
 
         _LOGGER.debug("Ending Connection.create")
         return conn
@@ -119,13 +203,15 @@ class Connection:
         self._retry_interval = min(300, 1.5 * self._retry_interval)
 
     @asyncio.coroutine
-    def _reconnect(self):
-        _LOGGER.debug('starting Connection._reconnect')
+    def reconnect(self):
+        """Reconnect to the modem."""
+        _LOGGER.debug('starting Connection.reconnect')
         yield from self._connect()
         while self._closed:
             yield from self._retry_connection()
-        _LOGGER.debug('ending Connection._reconnect')
+        _LOGGER.debug('ending Connection.reconnect')
 
+    # pylint: disable=unused-argument
     @asyncio.coroutine
     def close(self, event):
         """Close the PLM device connection and don't try to reconnect."""
@@ -181,10 +267,14 @@ class Connection:
     @asyncio.coroutine
     def _connect_http(self):
         _LOGGER.info('Connecting to Insteon Hub on %s', self.host)
-        auth = aiohttp.BasicAuth(self.username, self.password)
+        if self.username:
+            auth = aiohttp.BasicAuth(self.username, self.password)
+        else:
+            auth = None
         connector = aiohttp.TCPConnector(
             limit=1, loop=self._loop, keepalive_timeout=10)
         _LOGGER.debug('Creating http connection')
+        # pylint: disable=unused-variable
         transport, protocol = yield from create_http_connection(
             self._loop, lambda: self.protocol,
             self.host, port=self.port,
@@ -199,6 +289,7 @@ class Connection:
     def _connect_serial(self):
         _LOGGER.info('Connecting to Insteon PLM on %s', self.device)
         try:
+            # pylint: disable=unused-variable
             transport, protocol = yield from create_serial_connection(
                 self._loop, lambda: self.protocol,
                 self.device, baudrate=19200)
@@ -208,6 +299,7 @@ class Connection:
         return not self._closed
 
 
+# pylint: disable=too-many-instance-attributes
 class HttpTransport(asyncio.Transport):
     """An asyncio transport model of an HTTP communication channel.
 
@@ -225,7 +317,7 @@ class HttpTransport(asyncio.Transport):
     """
 
     def __init__(self, loop, protocol, session, host, port=25105):
-        """Initialize the HttpTransport class."""
+        """Init the HttpTransport class."""
         super().__init__()
         self._loop = loop
         self._protocol = protocol
@@ -290,6 +382,7 @@ class HttpTransport(asyncio.Transport):
 
     @asyncio.coroutine
     def test_connection(self):
+        """Test the connection to the hub."""
         url = 'http://{:s}:{:d}/buffstatus.xml'.format(self._host, self._port)
         response = None
         try:
@@ -297,13 +390,11 @@ class HttpTransport(asyncio.Transport):
             if response and response.status == 200:
                 _LOGGER.debug('Test connection status is %d', response.status)
                 return True
-            else:
-                self._log_error(response.status)
+            self._log_error(response.status)
+
+        # pylint: disable=broad-except
         except Exception as e:
-            if response:
-                status = response.status
-            else:
-                status = 99
+            status = response.status if response else 999
             _LOGGER.error('An unknown error occured: %s with status %s',
                           str(e), status)
         _LOGGER.debug('Connection test failed')
@@ -315,7 +406,7 @@ class HttpTransport(asyncio.Transport):
         return_status = 500
         if self._session.closed:
             _LOGGER.warning("Session closed, cannot write to Hub")
-            return
+            return 999
         _LOGGER.debug("Writing message: %s", url)
         try:
             yield from self._read_write_lock
@@ -359,6 +450,9 @@ class HttpTransport(asyncio.Transport):
         url = 'http://{:s}:{:d}/1?XB=M=1'.format(self._host, self._port)
         yield from self._async_write(url)
 
+    # pylint: disable=too-many-branches
+    # pylint: disable=too-many-statements
+    # pylint: disable=broad-except
     @asyncio.coroutine
     def _ensure_reader(self):
         _LOGGER.info('Insteon Hub reader started')
@@ -366,7 +460,8 @@ class HttpTransport(asyncio.Transport):
         self._write_last_read(0)
         url = 'http://{:s}:{:d}/buffstatus.xml'.format(self._host, self._port)
         _LOGGER.debug('Calling connection made')
-        self._loop.call_soon(self._protocol.connection_made(self))
+        _LOGGER.debug('Protocol: %s', self._protocol)
+        self._protocol.connection_made(self)
         while self._restart_reader:
             try:
                 if self._session.closed:
@@ -381,12 +476,12 @@ class HttpTransport(asyncio.Transport):
                 # _LOGGER.debug("Reader status: %d", response.status)
                 if response.status == 200:
                     html = yield from response.text()
-                    last_stop, buffer = self._parse_buffer(html, last_stop)
+                    # pylint: disable=no-value-for-parameter
+                    last_stop, buffer = _parse_buffer(html, last_stop)
                     self._write_last_read(last_stop)
                 else:
                     self._log_error(response.status)
                     yield from self._stop_reader(False)
-                # TODO: handle other status codes
                 if self._read_write_lock.locked():
                     self._read_write_lock.release()
                 if buffer:
@@ -416,36 +511,12 @@ class HttpTransport(asyncio.Transport):
         _LOGGER.info('Insteon Hub reader stopped')
         return
 
-    def _parse_buffer(self, html, last_stop):
-        buffer = ''
-        raw_text = html.replace('<response><BS>', '')
-        raw_text = raw_text.replace('</BS></response>', '')
-        raw_text = raw_text.strip()
-        if raw_text[:200] == '0'*200:
-            # Likely the buffer was cleared
-            return (0, None)
-        this_stop = int(raw_text[-2:], 16)
-        if this_stop > last_stop:
-            _LOGGER.debug('Buffer from %d to %d', last_stop, this_stop)
-            buffer = raw_text[last_stop:this_stop]
-        elif this_stop < last_stop:
-            _LOGGER.debug('Buffer from %d to 200 and 0 to %d',
-                          last_stop, this_stop)
-            buffer_hi = raw_text[last_stop:200]
-            if buffer_hi == '0'*len(buffer_hi):
-                # The buffer was probably reset since the last read
-                buffer_hi = ''
-            buffer_low = raw_text[0:this_stop]
-            buffer = '{:s}{:s}'.format(buffer_hi, buffer_low)
-        else:
-            buffer = None
-        return (this_stop, buffer)
-
     def _write_last_read(self, val):
         while not self._last_read.empty():
             self._last_read.get_nowait()
         self._last_read.put_nowait(val)
 
+    # pylint: disable=unused-argument
     def _start_reader(self, future=None):
         if self._restart_reader:
             _LOGGER.debug("Starting the buffer reader")
@@ -472,7 +543,6 @@ class HttpTransport(asyncio.Transport):
             self._protocol.connection_lost(True)
 
     def _log_error(self, status):
-        # TODO: handle other status codes
         if status == 401:
             _LOGGER.error('Athentication error, check your configuration')
             _LOGGER.error('If configuration is correct and restart the Hub')

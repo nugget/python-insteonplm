@@ -4,11 +4,7 @@ import logging
 
 from insteonplm.constants import (X10_COMMAND_ON,
                                   X10_COMMAND_OFF,
-                                  X10_COMMAND_DIM,
-                                  X10_COMMAND_BRIGHT,
-                                  X10_COMMAND_ALL_UNITS_OFF,
-                                  X10_COMMAND_ALL_LIGHTS_ON,
-                                  X10_COMMAND_ALL_LIGHTS_OFF)
+                                  X10_COMMAND_ALL_UNITS_OFF)
 from insteonplm.devices.x10 import (X10OnOff,
                                     X10Dimmable,
                                     X10AllUnitsOff,
@@ -16,7 +12,6 @@ from insteonplm.devices.x10 import (X10OnOff,
                                     X10AllLightsOn)
 from insteonplm.messages.x10send import X10Send
 from insteonplm.messages.x10received import X10Received
-import insteonplm.utils
 from .mockCallbacks import MockCallbacks
 from .mockPLM import MockPLM
 
@@ -25,15 +20,17 @@ _LOGGER = logging.getLogger(__name__)
 
 
 def test_x10OnOff():
+    """Test X10 On/Off device."""
     @asyncio.coroutine
     def run_test(loop):
-        housecode = 'C' # byte 0x02
-        unitcode = 9    # byte 0x07
+        housecode = 'C'  # byte 0x02
+        unitcode = 9     # byte 0x07
         plm = MockPLM(loop)
         device = X10OnOff(plm, housecode, unitcode)
         plm.devices[device.address.id] = device
         _LOGGER.debug('X10 device id: %s', device.address.id)
-        assert device.address.human == 'X10.{}.{:02d}'.format(housecode, unitcode)
+        assert device.address.human == 'X10.{}.{:02d}'.format(housecode,
+                                                              unitcode)
 
         # Send On command and test both commands sent
         device.states[0x01].on()
@@ -41,12 +38,12 @@ def test_x10OnOff():
         assert plm.sentmessage == '02632700'
         msg = X10Send(0x27, 0x00, 0x06)
         device.receive_message(msg)
-        yield from  asyncio.sleep(.1, loop=loop)
+        yield from asyncio.sleep(.1, loop=loop)
         assert plm.sentmessage == '02632280'
-        yield from  asyncio.sleep(.1, loop=loop)
+        yield from asyncio.sleep(.1, loop=loop)
         msg = X10Send(0x22, 0x00, 0x06)
         device.receive_message(msg)
-        yield from  asyncio.sleep(.1, loop=loop)
+        yield from asyncio.sleep(.1, loop=loop)
 
         # Send Off command and test both commands sent
         device.states[0x01].off()
@@ -54,20 +51,19 @@ def test_x10OnOff():
         assert plm.sentmessage == '02632700'
         msg = X10Send(0x27, 0x00, 0x06)
         device.receive_message(msg)
-        yield from  asyncio.sleep(.1, loop=loop)
+        yield from asyncio.sleep(.1, loop=loop)
         assert plm.sentmessage == '02632380'
-        yield from  asyncio.sleep(.1, loop=loop)
+        yield from asyncio.sleep(.1, loop=loop)
         msg = X10Send(0x23, 0x00, 0x06)
         device.receive_message(msg)
-        yield from  asyncio.sleep(.1, loop=loop)
-    
+        yield from asyncio.sleep(.1, loop=loop)
+
     loop = asyncio.get_event_loop()
     loop.run_until_complete(run_test(loop))
     open_tasks = asyncio.Task.all_tasks(loop=loop)
-    #loop.stop()
+
     for task in open_tasks:
         if hasattr(task, 'name'):
-            name = task.name
             _LOGGER.error('Device: %s Task: %s', task.name, task)
         else:
             _LOGGER.error('Task: %s', task)
@@ -76,12 +72,13 @@ def test_x10OnOff():
 
 
 def test_dimmable():
+    """Test X10 dimmable device."""
     @asyncio.coroutine
     def run_test(loop):
-        housecode = 'C' # byte 0x02
-        unitcode = 9    # byte 0x07
+        housecode = 'C'  # byte 0x02
+        unitcode = 9     # byte 0x07
         newval = 200
-        steps = round(newval / (255/22)) + 1
+        steps = round(newval / (255 / 22)) + 1
         _LOGGER.info('Steps %d', steps)
         plm = MockPLM(loop)
         cb = MockCallbacks()
@@ -90,24 +87,24 @@ def test_dimmable():
         plm.devices[device.address.id] = device
 
         device.states[0x01].set_level(200)
+        # pylint: disable=unused-variable
         for i in range(0, steps):
             _LOGGER.info('Sending ACK messages')
             msg = X10Send(0x27, 0x00, 0x06)
             device.receive_message(msg)
-            yield from  asyncio.sleep(.1, loop=loop)
+            yield from asyncio.sleep(.1, loop=loop)
 
-            yield from  asyncio.sleep(.1, loop=loop)
+            yield from asyncio.sleep(.1, loop=loop)
             msg = X10Send(0x25, 0x80, 0x06)
         _LOGGER.info('New value: 0x%02x', cb.callbackvalue1)
-        assert cb.callbackvalue1 == round((steps -1)*(255 / 22))
-    
+        assert cb.callbackvalue1 == round((steps - 1) * (255 / 22))
+
     loop = asyncio.get_event_loop()
     loop.run_until_complete(run_test(loop))
     open_tasks = asyncio.Task.all_tasks(loop=loop)
-    #loop.stop()
+
     for task in open_tasks:
         if hasattr(task, 'name'):
-            name = task.name
             _LOGGER.error('Device: %s Task: %s', task.name, task)
         else:
             _LOGGER.error('Task: %s', task)
@@ -116,10 +113,11 @@ def test_dimmable():
 
 
 def test_on_received():
+    """Test X10 on message received."""
     @asyncio.coroutine
     def run_test(loop):
-        housecode = 'C' # byte 0x02
-        unitcode = 9    # byte 0x07
+        housecode = 'C'  # byte 0x02
+        unitcode = 9     # byte 0x07
         plm = MockPLM(loop)
         cb = MockCallbacks()
         device = X10Dimmable(plm, housecode, unitcode, 22)
@@ -139,10 +137,9 @@ def test_on_received():
     loop = asyncio.get_event_loop()
     loop.run_until_complete(run_test(loop))
     open_tasks = asyncio.Task.all_tasks(loop=loop)
-    #loop.stop()
+
     for task in open_tasks:
         if hasattr(task, 'name'):
-            name = task.name
             _LOGGER.error('Device: %s Task: %s', task.name, task)
         else:
             _LOGGER.error('Task: %s', task)
@@ -151,6 +148,7 @@ def test_on_received():
 
 
 def test_all_unit_types():
+    """Test X10 All Unit device types."""
     plm = MockPLM()
     all_units_off = X10AllUnitsOff(plm, 'A', 20)
     all_lights_off = X10AllLightsOff(plm, 'A', 22)
@@ -163,6 +161,7 @@ def test_all_unit_types():
 
 
 def test_all_units_on_off():
+    """Test X10 All Units Off command."""
     @asyncio.coroutine
     def run_test(loop):
         plm = MockPLM(loop)
@@ -187,10 +186,9 @@ def test_all_units_on_off():
     loop = asyncio.get_event_loop()
     loop.run_until_complete(run_test(loop))
     open_tasks = asyncio.Task.all_tasks(loop=loop)
-    #loop.stop()
+
     for task in open_tasks:
         if hasattr(task, 'name'):
-            name = task.name
             _LOGGER.error('Device: %s Task: %s', task.name, task)
         else:
             _LOGGER.error('Task: %s', task)

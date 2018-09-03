@@ -20,7 +20,7 @@ class X10Send(Message):
     _description = 'Insteon Get Next All Link Record Message'
 
     def __init__(self, rawX10, flag, acknak=None):
-        """Initialize the X10Send Class."""
+        """Init the X10Send Class."""
         self._rawX10 = rawX10
         self._flag = flag
         self._acknak = self._setacknak(acknak)
