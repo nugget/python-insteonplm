@@ -14,7 +14,7 @@ matrix:
     - python: 3.5.3
       env: TOXENV=pylint
     - python: 3.5.3
-      env: TOXENV=docstyle
+      env: TOXENV=pydocstyle
     - python: 3.6
       env: TOXENV=py36
 
