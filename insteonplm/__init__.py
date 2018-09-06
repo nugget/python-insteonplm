@@ -38,6 +38,7 @@ def create_http_connection(loop, protocol_factory, host, port=25105,
 class Connection:
     """Handler to maintain the Powerline device connection."""
 
+    # pylint: disable=too-many-arguments
     def __init__(self, device=None, host=None, username=None, password=None,
                  port=25105, hub_version=2, loop=None, retry_interval=1,
                  auto_reconnect=True):
