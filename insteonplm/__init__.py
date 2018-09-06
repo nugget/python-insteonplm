@@ -7,7 +7,6 @@ import asyncio
 import binascii
 from contextlib import suppress
 import logging
-import os
 
 import aiohttp
 from serial_asyncio import create_serial_connection
@@ -112,6 +111,7 @@ class Connection:
         """Return the connection loop."""
         return self._loop
 
+    # pylint: disable=too-many-arguments
     @classmethod
     @asyncio.coroutine
     def create(cls, device='/dev/ttyUSB0', host=None,
@@ -147,8 +147,8 @@ class Connection:
         """
         _LOGGER.debug("Starting Modified Connection.create")
         conn = cls(device=device, host=host, username=username,
-                   password=password, port=port,hub_version=hub_version,
-                   loop=loop, retry_interval=1, auto_reconnect=True)
+                   password=password, port=port, hub_version=hub_version,
+                   loop=loop, retry_interval=1, auto_reconnect=auto_reconnect)
 
         def connection_lost():
             """Respond to Protocol connection lost."""
@@ -276,19 +276,15 @@ class Connection:
                     self._loop, lambda: self.protocol,
                     url, baudrate=19200)
             else:
-                if os.name == 'nt':
-                    device = '\\.\{}'.format(self.device).upper()
-                else:
-                    device = self.device
-                _LOGGER.info('Connecting to Insteon PLM on %s', self.device)
                 # pylint: disable=unused-variable
                 transport, protocol = yield from create_serial_connection(
                     self._loop, lambda: self.protocol,
-                    self.device, baudrate=19200)
+                    self.device.upper(), baudrate=19200)
             self._closed = False
         except OSError:
             self._closed = True
         return not self._closed
+
 
 # Hub version 1 (2242) is untested using the HTTP Transport.
 # It is tested using the PLM socket interface on port 9761.
@@ -568,7 +564,8 @@ class HttpTransport(asyncio.Transport):
             return msg, None, False
         if pos > 0:
             raw_text = raw_text[pos:] + raw_text[0:pos]
-        while msg_len < len_raw_text and not iscomplete(binascii.unhexlify(raw_text[0:msg_len])):
+        while (msg_len < len_raw_text and
+               not iscomplete(binascii.unhexlify(raw_text[0:msg_len]))):
             msg_len = msg_len + 2
         if msg_len == len_raw_text:
             print('must not be a message')
