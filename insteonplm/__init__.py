@@ -9,7 +9,7 @@ from contextlib import suppress
 import logging
 
 import aiohttp
-from serial.aio import create_serial_connection
+from serial_asyncio import create_serial_connection
 
 from insteonplm.plm import PLM, Hub
 
@@ -34,44 +34,21 @@ def create_http_connection(loop, protocol_factory, host, port=25105,
     return (transport, protocol)
 
 
-def _parse_buffer(html, last_stop):
-    buffer = ''
-    raw_text = html.replace('<response><BS>', '')
-    raw_text = raw_text.replace('</BS></response>', '')
-    raw_text = raw_text.strip()
-    if raw_text[:200] == '0' * 200:
-        # Likely the buffer was cleared
-        return (0, None)
-    this_stop = int(raw_text[-2:], 16)
-    if this_stop > last_stop:
-        _LOGGER.debug('Buffer from %d to %d', last_stop, this_stop)
-        buffer = raw_text[last_stop:this_stop]
-    elif this_stop < last_stop:
-        _LOGGER.debug('Buffer from %d to 200 and 0 to %d',
-                      last_stop, this_stop)
-        buffer_hi = raw_text[last_stop:200]
-        if buffer_hi == '0' * len(buffer_hi):
-            # The buffer was probably reset since the last read
-            buffer_hi = ''
-        buffer_low = raw_text[0:this_stop]
-        buffer = '{:s}{:s}'.format(buffer_hi, buffer_low)
-    else:
-        buffer = None
-    return (this_stop, buffer)
-
-
 # pylint: disable=too-many-instance-attributes
 class Connection:
     """Handler to maintain the Powerline device connection."""
 
-    def __init__(self, device, host, username, password, port,
-                 loop=None, retry_interval=1, auto_reconnect=True):
+    # pylint: disable=too-many-arguments
+    def __init__(self, device=None, host=None, username=None, password=None,
+                 port=25105, hub_version=2, loop=None, retry_interval=1,
+                 auto_reconnect=True):
         """Init the Connecton class."""
         self._device = device
         self._host = host
         self._username = username
         self._password = password
         self._port = port
+        self._hub_version = hub_version
         self._loop = loop if loop else asyncio.get_event_loop()
         self._retry_interval = retry_interval
         self._closed = True
@@ -116,6 +93,11 @@ class Connection:
         return self._port
 
     @property
+    def hub_version(self):
+        """Return the version of the Insteon Hub."""
+        return self._hub_version
+
+    @property
     def auto_reconnect(self):
         """Return the connection protocol."""
         return self._auto_reconnect
@@ -130,10 +112,11 @@ class Connection:
         """Return the connection loop."""
         return self._loop
 
+    # pylint: disable=too-many-arguments
     @classmethod
     @asyncio.coroutine
     def create(cls, device='/dev/ttyUSB0', host=None,
-               username=None, password=None, port=25010,
+               username=None, password=None, port=25010, hub_version=2,
                auto_reconnect=True, loop=None, workdir=None,
                poll_devices=True, load_aldb=True):
         """Create a connection to a specific device.
@@ -165,9 +148,10 @@ class Connection:
         :type update_callback:
             callable
         """
-        _LOGGER.debug("Starting Connection.create")
-        conn = cls(device, host, username, password, port, loop, 1,
-                   auto_reconnect)
+        _LOGGER.debug("Starting Modified Connection.create")
+        conn = cls(device=device, host=host, username=username,
+                   password=password, port=port, hub_version=hub_version,
+                   loop=loop, retry_interval=1, auto_reconnect=auto_reconnect)
 
         def connection_lost():
             """Respond to Protocol connection lost."""
@@ -176,7 +160,7 @@ class Connection:
                 ensure_future(conn.reconnect(), loop=conn.loop)
 
         protocol_class = PLM
-        if conn.host:
+        if conn.host and conn.hub_version == 2:
             protocol_class = Hub
         conn.protocol = protocol_class(
             connection_lost_callback=connection_lost,
@@ -260,7 +244,7 @@ class Connection:
     @asyncio.coroutine
     def _connect(self):
         _LOGGER.debug('starting Connection._connect')
-        if self.host:
+        if self.host and self._hub_version == 2:
             connected = yield from self._connect_http()
         else:
             connected = yield from self._connect_serial()
@@ -270,10 +254,7 @@ class Connection:
     @asyncio.coroutine
     def _connect_http(self):
         _LOGGER.info('Connecting to Insteon Hub on %s', self.host)
-        if self.username:
-            auth = aiohttp.BasicAuth(self.username, self.password)
-        else:
-            auth = None
+        auth = aiohttp.BasicAuth(self.username, self.password)
         connector = aiohttp.TCPConnector(
             limit=1, loop=self._loop, keepalive_timeout=10)
         _LOGGER.debug('Creating http connection')
@@ -290,18 +271,27 @@ class Connection:
 
     @asyncio.coroutine
     def _connect_serial(self):
-        _LOGGER.info('Connecting to Insteon PLM on %s', self.device)
         try:
-            # pylint: disable=unused-variable
-            transport, protocol = yield from create_serial_connection(
-                self._loop, lambda: self.protocol,
-                self.device, baudrate=19200)
+            if self._hub_version == 1:
+                url = 'socket://{}:{}'.format(self._host, self._port)
+                _LOGGER.info('Connecting to Insteon Hub v1 on %s', url)
+                # pylint: disable=unused-variable
+                transport, protocol = yield from create_serial_connection(
+                    self._loop, lambda: self.protocol,
+                    url, baudrate=19200)
+            else:
+                # pylint: disable=unused-variable
+                transport, protocol = yield from create_serial_connection(
+                    self._loop, lambda: self.protocol,
+                    self.device.upper(), baudrate=19200)
             self._closed = False
         except OSError:
             self._closed = True
         return not self._closed
 
 
+# Hub version 1 (2242) is untested using the HTTP Transport.
+# It is tested using the PLM socket interface on port 9761.
 # pylint: disable=too-many-instance-attributes
 class HttpTransport(asyncio.Transport):
     """An asyncio transport model of an HTTP communication channel.
@@ -471,17 +461,17 @@ class HttpTransport(asyncio.Transport):
                     yield from self._stop_reader(False)
                     return
                 yield from self._read_write_lock
-                last_stop = 0
-                if not self._last_read.empty():
-                    last_stop = self._last_read.get_nowait()
                 response = yield from self._session.get(url, timeout=5)
                 buffer = None
                 # _LOGGER.debug("Reader status: %d", response.status)
                 if response.status == 200:
                     html = yield from response.text()
-                    # pylint: disable=no-value-for-parameter
-                    last_stop, buffer = _parse_buffer(html, last_stop)
-                    self._write_last_read(last_stop)
+                    _LOGGER.debug("HTML Length: %d", len(html))
+                    if len(html) == 234:
+                        # pylint: disable=no-value-for-parameter
+                        buffer = yield from self._parse_buffer(html)
+                    else:
+                        buffer = self._parse_buffer_v1(html)
                 else:
                     self._log_error(response.status)
                     yield from self._stop_reader(False)
@@ -513,6 +503,86 @@ class HttpTransport(asyncio.Transport):
                 yield from self._stop_reader(False)
         _LOGGER.info('Insteon Hub reader stopped')
         return
+
+    @asyncio.coroutine
+    def _parse_buffer(self, html):
+        last_stop = 0
+        if not self._last_read.empty():
+            last_stop = self._last_read.get_nowait()
+        buffer = ''
+        raw_text = html.replace('<response><BS>', '')
+        raw_text = raw_text.replace('</BS></response>', '')
+        raw_text = raw_text.strip()
+        if raw_text[:199] == '0' * 200:
+            # Likely the buffer was cleared
+            return None
+        this_stop = int(raw_text[-2:], 16)
+        if this_stop > last_stop:
+            _LOGGER.debug('Buffer from %d to %d', last_stop, this_stop)
+            buffer = raw_text[last_stop:this_stop]
+        elif this_stop < last_stop:
+            _LOGGER.debug('Buffer from %d to 200 and 0 to %d',
+                          last_stop, this_stop)
+            buffer_hi = raw_text[last_stop:200]
+            if buffer_hi == '0' * len(buffer_hi):
+                # The buffer was probably reset since the last read
+                buffer_hi = ''
+            buffer_low = raw_text[0:this_stop]
+            buffer = '{:s}{:s}'.format(buffer_hi, buffer_low)
+        else:
+            buffer = None
+        self._write_last_read(this_stop)
+        return buffer
+
+    def _parse_buffer_v1(self, html):
+        # I think this is a good idea but who knows.
+        # Risk is we may be loosing the next message
+        # If we do this than this method must be a coroutine
+        # yield from self._clear_buffer()
+        raw_text = html.replace('<response><BS>', '')
+        raw_text = raw_text.replace('</BS></response>', '')
+        raw_text = raw_text.strip()
+        buffer = ''
+        while raw_text:
+            msg, raw_text = self._find_message(raw_text)
+            if msg:
+                buffer = '{}{}'.format(buffer, msg)
+        return buffer
+
+    @staticmethod
+    def _find_message(raw_text):
+        from insteonplm.messages import iscomplete
+        len_raw_text = len(raw_text)
+        pos = -2
+        msg_len = 4   # set to 5 because the min msg len is 4 chars or 2 bytes
+        msg = None
+        if raw_text == '0' * len_raw_text:
+            print('Likely the buffer was cleared')
+            return msg, None, False
+        while pos < (len_raw_text - 2) and raw_text[pos: pos + 2] != '02':
+            pos = pos + 2
+        print('pos is: ', pos)
+        print('len_raw_text is: ', len_raw_text)
+        if pos == len_raw_text - 2:
+            print('02 not found')
+            return msg, None, False
+        if pos > 0:
+            raw_text = raw_text[pos:] + raw_text[0:pos]
+        while (msg_len < len_raw_text and
+               not iscomplete(binascii.unhexlify(raw_text[0:msg_len]))):
+            msg_len = msg_len + 2
+        if msg_len == len_raw_text:
+            print('must not be a message')
+            return msg, None, False
+        msg = raw_text[0:msg_len]
+        raw_text = raw_text[msg_len:]
+        if msg_len > len_raw_text - pos:
+            # We have wrapped so there cannot be another messasge
+            raw_text = None
+        else:
+            if pos > 0 and raw_text:
+                raw_text = raw_text[len(raw_text) - pos:] + raw_text[:-pos]
+        return (msg, raw_text)
 
     def _write_last_read(self, val):
         while not self._last_read.empty():
