@@ -7,6 +7,7 @@ import asyncio
 import binascii
 from contextlib import suppress
 import logging
+import os
 
 import aiohttp
 from serial_asyncio import create_serial_connection
@@ -280,10 +281,14 @@ class Connection:
                     self._loop, lambda: self.protocol,
                     url, baudrate=19200)
             else:
+                if os.name == 'nt':
+                    device = self.device.upper()
+                else:
+                    device = self.device
                 # pylint: disable=unused-variable
                 transport, protocol = yield from create_serial_connection(
                     self._loop, lambda: self.protocol,
-                    self.device.upper(), baudrate=19200)
+                    device, baudrate=19200)
             self._closed = False
         except OSError:
             self._closed = True
