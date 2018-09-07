@@ -7,6 +7,7 @@ import asyncio
 import binascii
 from contextlib import suppress
 import logging
+import os
 
 import aiohttp
 from serial_asyncio import create_serial_connection
