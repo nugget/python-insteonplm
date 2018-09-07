@@ -342,10 +342,12 @@ class IM(Device, asyncio.Protocol):
                       len(self.devices.saved_devices))
         self._get_plm_info()
         self.devices.add_known_devices(self)
-        if self._load_aldb == False:
-            self._complete_setup()
-        else:
+
+        if self._load_aldb:
             self._load_all_link_database()
+        else:
+            self._complete_setup()
+
         _LOGGER.debug('Ending _setup_devices in IM')
 
     # pylint: disable=broad-except
