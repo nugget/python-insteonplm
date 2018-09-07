@@ -135,7 +135,7 @@ class Connection:
     def create(cls, device='/dev/ttyUSB0', host=None,
                username=None, password=None, port=25010,
                auto_reconnect=True, loop=None, workdir=None,
-               poll_devices=True):
+               poll_devices=True, load_aldb=True):
         """Create a connection to a specific device.
 
         Here is where we supply the device and callback callables we
@@ -153,6 +153,8 @@ class Connection:
             Should the Connection try to automatically reconnect if needed?
         :param loop:
             asyncio.loop for async operation
+        :param load_aldb:
+            Should the ALDB be loaded on connect
 
         :type device:
             str
@@ -180,7 +182,8 @@ class Connection:
             connection_lost_callback=connection_lost,
             loop=conn.loop,
             workdir=workdir,
-            poll_devices=poll_devices)
+            poll_devices=poll_devices,
+            load_aldb=load_aldb)
 
         yield from conn.reconnect()
 
