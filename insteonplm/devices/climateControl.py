@@ -106,14 +106,16 @@ class ClimateControl_Base(Device):
 
 
 class ClimateControl_2441th(ClimateControl_Base):
-    """TH2441TH thermostat model"""
+    """TH2441TH thermostat model."""
+
     def __init__(self, plm, address, cat, subcat, product_key=None,
                  description=None, model=None):
         """Constructor, delegates most work to the base thermostat class"""
         super().__init__(self, plm, address, cat, subcat, product_key, description, model)
 
 class ClimateControl_2441v(ClimateControl_Base):
-    """TH2441V thermostat adapter model"""
+    """TH2441V thermostat adapter model."""
+
     def __init__(self, plm, address, cat, subcat, product_key=None,
                  description=None, model=None):
         """Constructor, delegates most work to the base thermostat class"""
