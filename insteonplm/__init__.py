@@ -44,10 +44,7 @@ class Connection:
                  port=25105, hub_version=2, loop=None, retry_interval=1,
                  auto_reconnect=True):
         """Init the Connecton class."""
-        if os.name == 'nt':
-            self._device = device.upper()
-        else:
-            self._device = device
+        self._device = device
         self._host = host
         self._username = username
         self._password = password
