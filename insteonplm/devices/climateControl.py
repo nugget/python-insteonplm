@@ -120,4 +120,3 @@ class ClimateControl_2441v(ClimateControl_Base):
         """Constructor, delegates most work to the base thermostat class."""
         super().__init__(self, plm, address, cat, subcat, product_key,
                          description, model)
-
