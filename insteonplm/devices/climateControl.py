@@ -90,9 +90,7 @@ class ClimateControl_Base(Device):
             address=self._address,
             commandtuple=COMMAND_EXTENDED_GET_SET_0X2E_0X00,
             cmd2=0x02,
-            userdata=Userdata([ 0x01, 0x05, 0x0a, 0x00, 0x00,
-                                0x00, 0x00, 0x00, 0x00, 0x00,
-                                0x00, 0x00, 0x00]))
+            userdata=Userdata())
         ext_status.set_crc()
         _LOGGER.debug('Sending ext status: %s', ext_status)
         self._send_msg(ext_status)
