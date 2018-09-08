@@ -90,7 +90,9 @@ class ClimateControl_Base(Device):
             address=self._address,
             commandtuple=COMMAND_EXTENDED_GET_SET_0X2E_0X00,
             cmd2=0x02,
-            userdata=Userdata())
+            userdata=Userdata([ 0x01, 0x05, 0x0a, 0x00, 0x00,
+                                0x00, 0x00, 0x00, 0x00, 0x00,
+                                0x00, 0x00, 0x00]))
         ext_status.set_crc()
         _LOGGER.debug('Sending ext status: %s', ext_status)
         self._send_msg(ext_status)
@@ -120,3 +122,4 @@ class ClimateControl_2441v(ClimateControl_Base):
         """Constructor, delegates most work to the base thermostat class."""
         super().__init__(self, plm, address, cat, subcat, product_key,
                          description, model)
+

@@ -43,7 +43,7 @@ class Temperature(State):
                                           send_message_method,
                                           message_callbacks, defaultvalue)
 
-        self._update_method = self._send_status_request
+        self._updatemethod = self._send_status_request
 
         self._register_messages()
 
@@ -90,7 +90,7 @@ class Humidity(State):
             address, statename, group, send_message_method,
             message_callbacks, defaultvalue)
 
-        self._update_method = self._send_status_request
+        self._updatemethod = self._send_status_request
 
         self._register_messages()
 
@@ -136,7 +136,7 @@ class SystemMode(State):
             address, statename, group, send_message_method, message_callbacks,
             defaultvalue)
 
-        self._update_method = self._send_status_request
+        self._updatemethod = self._send_status_request
 
         self._register_messages()
 
@@ -253,7 +253,7 @@ class FanMode(State):
             address, statename, group, send_message_method, message_callbacks,
             defaultvalue)
 
-        self._update_method = self._send_status_request
+        self._updatemethod = self._send_status_request
 
         self._register_messages()
 
@@ -356,7 +356,7 @@ class CoolSetPoint(State):
             address, statename, group, send_message_method, message_callbacks,
             defaultvalue)
 
-        self._update_method = self._send_status_request
+        self._updatemethod = self._send_status_request
 
         self._register_messages()
 
@@ -412,7 +412,7 @@ class HeatSetPoint(State):
             address, statename, group, send_message_method, message_callbacks,
             defaultvalue)
 
-        self._update_method = self._send_status_request
+        self._updatemethod = self._send_status_request
 
         self._register_messages()
 

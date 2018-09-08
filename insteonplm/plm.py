@@ -649,7 +649,7 @@ class IM(Device, asyncio.Protocol):
         self.devices.add_device_callback(self._new_device_added)
 
         for addr in self._aldb_devices:
-            _LOGGER.debug('Getting device info for %s', Address(addr).human)
+            _LOGGER.debug('Queueing send request for device info for %s', Address(addr).human)
             self._aldb_devices[addr].id_request()
 
         _LOGGER.debug('Ending _get_device_info')
