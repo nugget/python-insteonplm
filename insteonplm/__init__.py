@@ -7,6 +7,7 @@ import asyncio
 import binascii
 from contextlib import suppress
 import logging
+import os
 
 import aiohttp
 from serial_asyncio import create_serial_connection
@@ -43,7 +44,10 @@ class Connection:
                  port=25105, hub_version=2, loop=None, retry_interval=1,
                  auto_reconnect=True):
         """Init the Connecton class."""
-        self._device = device
+        if os.name == 'nt':
+            self._device = device.upper()
+        else:
+            self._device = device
         self._host = host
         self._username = username
         self._password = password
@@ -280,10 +284,11 @@ class Connection:
                     self._loop, lambda: self.protocol,
                     url, baudrate=19200)
             else:
+                _LOGGER.info('Connecting to PLM on %s', self._device)
                 # pylint: disable=unused-variable
                 transport, protocol = yield from create_serial_connection(
                     self._loop, lambda: self.protocol,
-                    self.device.upper(), baudrate=19200)
+                    self._device, baudrate=19200)
             self._closed = False
         except OSError:
             self._closed = True
