@@ -15,6 +15,7 @@ from insteonplm.states.statusReport import StatusReport
 
 _LOGGER = logging.getLogger(__name__)
 
+
 class ClimateControl_Base(Device):
     """Thermostat model."""
 
@@ -100,6 +101,7 @@ class ClimateControl_Base(Device):
     def _mode_changed(self, addr, group, val):
         self.async_refresh_state()
 
+
 class ClimateControl_2441th(ClimateControl_Base):
     """TH2441TH thermostat model."""
 
@@ -108,6 +110,7 @@ class ClimateControl_2441th(ClimateControl_Base):
         """Constructor, delegates most work to the base thermostat class."""
         super().__init__(self, plm, address, cat, subcat, product_key,
                          description, model)
+
 
 class ClimateControl_2441v(ClimateControl_Base):
     """TH2441V thermostat adapter model."""
