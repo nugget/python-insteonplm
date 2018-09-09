@@ -108,7 +108,7 @@ class ClimateControl_2441th(ClimateControl_Base):
     def __init__(self, plm, address, cat, subcat, product_key=None,
                  description=None, model=None):
         """Constructor, delegates most work to the base thermostat class."""
-        super().__init__(self, plm, address, cat, subcat, product_key,
+        super().__init__(plm, address, cat, subcat, product_key,
                          description, model)
 
 
@@ -118,5 +118,5 @@ class ClimateControl_2441v(ClimateControl_Base):
     def __init__(self, plm, address, cat, subcat, product_key=None,
                  description=None, model=None):
         """Constructor, delegates most work to the base thermostat class."""
-        super().__init__(self, plm, address, cat, subcat, product_key,
+        super().__init__(plm, address, cat, subcat, product_key,
                          description, model)
