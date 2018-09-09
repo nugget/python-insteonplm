@@ -48,6 +48,7 @@ class Temperature(State):
         self._register_messages()
 
     def _send_status_request(self):
+        _LOGGER.debug("Sending status request")
         msg = StandardSend(
             address=self._address,
             commandtuple=COMMAND_THERMOSTAT_GET_ZONE_INFORMATION_0X6A_NONE,
@@ -55,9 +56,11 @@ class Temperature(State):
         self._send_method(msg, self._status_received)
 
     def _status_received(self, msg):
+        _LOGGER.debug("Received temperature status update")
         self._update_subscribers(msg.cmd2 / 2)
 
     def _temp_received(self, msg):
+        _LOGGER.debug("Received temperature value update")
         self._update_subscribers(msg.cmd2 / 2)
 
     def _register_messages(self):
@@ -102,9 +105,11 @@ class Humidity(State):
         self._send_method(msg, self._status_received)
 
     def _status_received(self, msg):
+        _LOGGER.debug("Received humidity status")
         self._update_subscribers(msg.cmd2)
 
     def _humidity_received(self, msg):
+        _LOGGER.debug("Received humidity value")
         self._update_subscribers(msg.cmd2)
 
     def _register_messages(self):
@@ -188,9 +193,11 @@ class SystemMode(State):
         self._send_method(msg, self._status_received)
 
     def _status_received(self, msg):
+        _LOGGER.info("mode standard status received")
         self._update_subscribers(ThermostatMode(msg.cmd2))
 
     def _ext_status_received(self, msg):
+        _LOGGER.info("mode extended status received")
         sysmode = msg.userdata['d6']
         ext_mode = sysmode >> 4
         if ext_mode == 0:
@@ -300,9 +307,11 @@ class FanMode(State):
         self._send_method(msg, self._status_received)
 
     def _status_received(self, msg):
+        _LOGGER.debug("Fan standard status message received")
         self._update_subscribers(ThermostatMode(msg.cmd2))
 
     def _ext_status_received(self, msg):
+        _LOGGER.debug("Fan extended status message received")
         sysmode = msg.userdata['d6']
         ext_mode = sysmode & 0x0f
         if ext_mode == 0:
@@ -371,6 +380,7 @@ class CoolSetPoint(State):
         self._send_method(msg, self._set_cool_point_ack)
 
     def _set_cool_point_ack(self, msg):
+        _LOGGER.debug("Cooling setpoint standard received")
         self._update_subscribers(msg.cmd2 / 2)
 
     def _send_status_request(self):
@@ -381,6 +391,7 @@ class CoolSetPoint(State):
         self._send_method(msg, self._status_message_received)
 
     def _status_message_received(self, msg):
+        _LOGGER.debug("Cooling standard status received")
         self._update_subscribers(msg.cmd2 / 2)
 
     def _register_messages(self):
@@ -398,6 +409,7 @@ class CoolSetPoint(State):
                                     self._ext_status_received)
 
     def _ext_status_received(self, msg):
+        _LOGGER.debug("Cooling extended status received")
         cool_sp = msg.userdata['d7'] / 2
         self._update_subscribers(cool_sp)
 
@@ -437,6 +449,7 @@ class HeatSetPoint(State):
         self._send_method(msg, self._status_message_received)
 
     def _status_message_received(self, msg):
+        _LOGGER.debug("Heating standard status received")
         self._update_subscribers(msg.cmd2 / 2)
 
     def _register_messages(self):
@@ -457,5 +470,6 @@ class HeatSetPoint(State):
                                     self._ext_status_received)
 
     def _ext_status_received(self, msg):
+        _LOGGER.debug("Heating extended status received")
         heat_sp = msg.userdata['d12'] / 2
         self._update_subscribers(heat_sp)

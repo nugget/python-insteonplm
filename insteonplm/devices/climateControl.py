@@ -25,6 +25,8 @@ class ClimateControl_Base(Device):
         Device.__init__(self, plm, address, cat, subcat, product_key,
                         description, model)
 
+        _LOGGER.debug("Created instance of Insteon Climate Controller")
+
         self._stateList[0x01] = CoolSetPoint(
             self._address, "coolSetPoint", 0x01, self._send_msg,
             self._message_callbacks, 0x00)
@@ -108,9 +110,9 @@ class ClimateControl_2441th(ClimateControl_Base):
     def __init__(self, plm, address, cat, subcat, product_key=None,
                  description=None, model=None):
         """Constructor, delegates most work to the base thermostat class."""
-        super().__init__(plm, address, cat, subcat, product_key,
-                         description, model)
-
+        _LOGGER.debug("Created instance of 2441TH controller")
+        ClimateControl_Base.__init__(self, plm, address, cat, subcat,
+                                     product_key, description, model)
 
 class ClimateControl_2441v(ClimateControl_Base):
     """TH2441V thermostat adapter model."""
@@ -118,5 +120,6 @@ class ClimateControl_2441v(ClimateControl_Base):
     def __init__(self, plm, address, cat, subcat, product_key=None,
                  description=None, model=None):
         """Constructor, delegates most work to the base thermostat class."""
-        super().__init__(plm, address, cat, subcat, product_key,
-                         description, model)
+        _LOGGER.debug("Created instance of 2441V controller")
+        ClimateControl_Base.__init__(self, plm, address, cat, subcat,
+                                     product_key, description, model)
