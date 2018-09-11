@@ -114,6 +114,7 @@ class ClimateControl_2441th(ClimateControl_Base):
         ClimateControl_Base.__init__(self, plm, address, cat, subcat,
                                      product_key, description, model)
 
+
 class ClimateControl_2441v(ClimateControl_Base):
     """TH2441V thermostat adapter model."""
 
