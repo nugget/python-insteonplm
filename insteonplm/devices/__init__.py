@@ -163,8 +163,8 @@ class Device():
         """Return if the PLM use the ALDB data to setup the device.
 
         True if Product data (cat, subcat) is stored in the PLM ALDB.
-        False if product data must be aquired via a Device ID message or from a
-        Product Data Request command.
+        False if product data must be acquired via a Device ID message or from
+        a Product Data Request command.
 
         The method of linking determines if product data in the ALDB,
         therefore False is the default. The common reason to store product data
@@ -442,7 +442,7 @@ class Device():
                    data1=0x00, data2=0x00, data3=0x00):
         """Write to the device All-Link Database.
 
-        Paramters:
+        Parameters:
             Required:
             mode:   r - device is a responder of target
                     c - device is a controller of target
@@ -754,7 +754,7 @@ class Device():
                       self._address.human)
         yield from self._send_msg_lock
         if self._send_msg_lock.locked():
-            _LOGGER.debug("Lock is locked from yeild from")
+            _LOGGER.debug("Lock is locked from yield from")
         msg_info = yield from self._send_msg_queue.get()
         msg = msg_info.get('msg')
         callback = msg_info.get('callback')
@@ -882,7 +882,7 @@ class X10Device():
         _LOGGER.debug('Starting Device._process_send_queue')
         yield from self._send_msg_lock
         if self._send_msg_lock.locked():
-            _LOGGER.debug("Lock is locked from yeild from")
+            _LOGGER.debug("Lock is locked from yield from")
 
         self._plm.send_msg(msg, wait_timeout=2)
         if not wait_ack:
@@ -1077,7 +1077,7 @@ class ControlFlags():
 
     @property
     def is_available(self):
-        """Return True if the recored is availabe for use."""
+        """Return True if the record is available for use."""
         return not self._in_use
 
     @property
@@ -1273,7 +1273,7 @@ class ALDB():
                      data1=0x00, data2=0x00, data3=0x00):
         """Write an All-Link database record."""
         if not (self._have_first_record() and self._have_last_record()):
-            _LOGGER.error('Must load the Insteon All-Link Datbase before '
+            _LOGGER.error('Must load the Insteon All-Link Database before '
                           'writing to it')
         else:
             self._prior_status = self._status
@@ -1312,7 +1312,7 @@ class ALDB():
         """Write an All-Link database record."""
         record = self._records.get(mem_addr)
         if not record:
-            _LOGGER.error('Must load the Insteon All-Link Datbase record '
+            _LOGGER.error('Must load the Insteon All-Link Database record '
                           'before deleting it')
         else:
             self._prior_status = self._status

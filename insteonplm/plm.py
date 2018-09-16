@@ -163,7 +163,7 @@ class IM(Device, asyncio.Protocol):
         self._cb_load_all_link_db_done.append(callback)
 
     def add_device_not_active_callback(self, callback):
-        """Register callback to be invoked when a device is not repsonding."""
+        """Register callback to be invoked when a device is not responding."""
         _LOGGER.debug('Added new callback %s ', callback)
         self._cb_device_not_active.append(callback)
 

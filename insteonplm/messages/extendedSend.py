@@ -15,8 +15,8 @@ class ExtendedSend(Message):
     """Send an INSTEON Extended message.
 
     address: A device hex address in any form.
-    cmd1: Requred command in the cmd1 field
-    cmd2: Requred command in the cmd2 field
+    cmd1: Required command in the cmd1 field
+    cmd2: Required command in the cmd2 field
     **kwarg: otional userdata dictionary with the following keys:
         'd1' - User data byte 0 as byte or int
         'd2' - user data byte 1 as byte or int

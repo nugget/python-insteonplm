@@ -104,7 +104,7 @@ def iscomplete(rawmessage):
     if hasattr(msg, 'receivedSize') and msg.receivedSize:
         expectedSize = msg.receivedSize
     else:
-        _LOGGER.error('Unable to find an receivedSize for code 0x%x',
+        _LOGGER.error('Unable to find a receivedSize for code 0x%x',
                       rawmessage[1])
         return ValueError
 

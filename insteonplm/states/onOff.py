@@ -253,7 +253,7 @@ class OnOffSwitch_OutletTop(OnOffStateBase):
     def _status_message_0x01_received(self, msg):
         """Handle status received messages.
 
-        The following status values can be recieve:
+        The following status values can be received:
             0x00 = Both Outlets Off
             0x01 = Only Top Outlet On
             0x02 = Only Bottom Outlet On
@@ -318,7 +318,7 @@ class OnOffSwitch_OutletBottom(OnOffStateBase):
     def _status_message_received(self, msg):
         """Receive a status message.
 
-        The following status values can be recieve:
+        The following status values can be received:
             0x00 = Both Outlets Off
             0x01 = Only Top Outlet On
             0x02 = Only Bottom Outlet On
@@ -575,7 +575,7 @@ class OnOffKeypad(OnOffStateBase):
                            COMMAND_EXTENDED_TRIGGER_ALL_LINK_0X30_0X00,
                            user_data)
         cmd.set_checksum()
-        _LOGGER.debug('Calling scene_on and sending reponse to '
+        _LOGGER.debug('Calling scene_on and sending response to '
                       '_received_scene_triggered')
         self._send_method(cmd, self._received_scene_triggered)
 

@@ -202,7 +202,7 @@ class Address():
             if isinstance(unitcode, int):
                 _LOGGER.error('X10 unit code error: %d', unitcode)
             else:
-                _LOGGER.error('X10 unit code is not a integer 1 - 16')
+                _LOGGER.error('X10 unit code is not an integer 1 - 16')
             raise ValueError
 
         addr = Address(bytearray([0x00, byte_housecode, byte_unitcode]))
