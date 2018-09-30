@@ -453,6 +453,7 @@ class Device():
             data1:  Device dependant
             data2:  Device dependant
             data3:  Device dependant
+
         """
         if isinstance(mode, str) and mode.lower() in ['c', 'r']:
             pass
