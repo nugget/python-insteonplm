@@ -1,4 +1,4 @@
-"""Test Security Health and Saftey devices."""
+"""Test Security Health and Safety devices."""
 import asyncio
 import logging
 

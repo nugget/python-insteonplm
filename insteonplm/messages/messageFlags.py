@@ -250,7 +250,7 @@ class MessageFlags():
 
     @property
     def hex(self):
-        """Return a hexidecimal representation of the message flags."""
+        """Return a hexadecimal representation of the message flags."""
         return binascii.hexlify(self.bytes).decode()
 
     # pylint: disable=no-self-use

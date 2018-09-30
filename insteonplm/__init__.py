@@ -393,7 +393,7 @@ class HttpTransport(asyncio.Transport):
         # pylint: disable=broad-except
         except Exception as e:
             status = response.status if response else 999
-            _LOGGER.error('An unknown error occured: %s with status %s',
+            _LOGGER.error('An unknown error occurred: %s with status %s',
                           str(e), status)
         _LOGGER.debug('Connection test failed')
         self.close()

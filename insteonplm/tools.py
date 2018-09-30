@@ -1157,7 +1157,7 @@ class Commander():
     def do_poll_devices(self, args):
         """Poll all devices for current status.
 
-        Useage:
+        Usage:
             poll_devices
         """
         self.tools.plm.poll_devices()
