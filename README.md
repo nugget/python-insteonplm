@@ -7,16 +7,12 @@
 
 This is a Python package to interface with an Insteon Modem. It has been tested
 to work with most USB or RS-232 serial based devices such as the [2413U],
-[2412S], and [2448A7].  Other models have not been tested but the underlying
-protocol has not changed much over time so it would not be surprising if it
-worked with a number of other models. If you find success with something,
-please let us know.
+[2412S], [2448A7] and Hub models [2242] and [2245].  Other models have not been
+tested but the underlying protocol has not changed much over time so it would
+not be surprising if it worked with a number of other models. If you find
+success with something, please let us know.
 
-Work on the Hub is underway but if you are looking for a library to work with
-the emulated PLM offered by an INSTEON [Hub] like the 2245 you might be able to
-use the [insteonlocal] package.
-
-This **insteonplm** package was created primarily to support an INSTEON PLM
+This **insteonplm** package was created primarily to support an INSTEON
 platform for the [Home Assistant] automation platform but it is structured
 to be general-purpose and should be usable for other applications as well.
 
@@ -24,7 +20,8 @@ to be general-purpose and should be usable for other applications as well.
 [2413U]: https://www.insteon.com/powerlinc-modem-usb
 [2412S]: https://www.insteon.com/powerlinc-modem-serial
 [2448A7]: http://www.insteon.com/usb-wireless-adapter
-[Hub]: https://www.insteon.com/which-hub-are-you
+[2242]: https://www.insteon.com/support-knowledgebase/2014/9/26/insteon-hub-owners-manual
+[2245]: https://www.insteon.com/insteon-hub/
 [insteonlocal]: https://github.com/phareous/insteonlocal
 
 ## Contents
@@ -61,8 +58,8 @@ to be general-purpose and should be usable for other applications as well.
 ## Requirements
 
 - Python 3.4, 3.5 or 3.6 with asyncio
-- Posix based system (currently does not work on Windows due to a serial port issue)
-- Some form of Insteon PLM or INSTEON USB Stick
+- Posix or Windows based system
+- Some form of Insteon PLM or Hub
 - At least one Insteon device
 
 ## Installation
@@ -107,26 +104,21 @@ change to take effect on existing sessions.
 When the module starts it reads the IM's All-Link Database to find linked
 devices. In order for this module to communicate with a device, it must be
 linked to the IM. For help with linking please see the section on the
-[Command Line Tool] below.
+[Command Line Interface] below.
 
 After the module loads the All-Link database it queries each device to identify
 what type of device it is. This can take quite a while (5-15 sec per
 device). Once it identifies the devices it saves them in the `WORKDIR` so that
 future startups are faster.
 
-
 Currently there is an issue with the command line [Tools] not finding battery
 operated devices since they don't respond to device information requests.
 This is being addressed in future releases. This is not an issue if used with
-
 [Home Assistant] through the use of device overrides.
 
 ## Tools
 
 The package installs a message monitor and a command line interface.
-
-
-
 
 #### Message Monitoring
 
@@ -149,7 +141,7 @@ The command line tool creates an interactive session to allow certain functions
 to be performed on the INSTEON devices. To invoke the command line tool use the
 command:
 
-    insteonplm_interactive --device /dev/ttyUSB0 --workdir /home/username_
+    `insteonplm_interactive --device /dev/ttyUSB0 --workdir /home/username`
 
 Command line options for the interactive tool are:
 
