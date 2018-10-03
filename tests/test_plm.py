@@ -76,8 +76,7 @@ async def do_plm(loop):
 
     _LOGGER.info('Replying with an All-Link Record')
     _LOGGER.info('________________________________')
-    cmd_sent = await wait_for_plm_command(plm, GetFirstAllLinkRecord(),
-                                               loop)
+    cmd_sent = await wait_for_plm_command(plm, GetFirstAllLinkRecord(), loop)
     if not cmd_sent:
         assert False
     msg = GetFirstAllLinkRecord(MESSAGE_ACK)
@@ -92,8 +91,7 @@ async def do_plm(loop):
 
     _LOGGER.info('Replying with Last All-Link Record')
     _LOGGER.info('__________________________________')
-    cmd_sent = await wait_for_plm_command(plm, GetNextAllLinkRecord(),
-                                               loop)
+    cmd_sent = await wait_for_plm_command(plm, GetNextAllLinkRecord(), loop)
     if not cmd_sent:
         assert False
     msg = GetNextAllLinkRecord(MESSAGE_NAK)
@@ -240,8 +238,7 @@ async def do_plm_x10(loop):
 
     _LOGGER.info('Replying with an All-Link Record NAK')
     _LOGGER.info('____________________________________')
-    cmd_sent = await wait_for_plm_command(plm, GetFirstAllLinkRecord(),
-                                               loop)
+    cmd_sent = await wait_for_plm_command(plm, GetFirstAllLinkRecord(), loop)
     if not cmd_sent:
         assert False
     msg = GetFirstAllLinkRecord(MESSAGE_NAK)

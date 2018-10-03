@@ -90,8 +90,7 @@ def test_send_msg():
             address, COMMAND_LIGHT_ON_0X11_NONE, cmd2=0xff, flags=0x00).hex
 
         # Sleep until the Direct ACK time out should expire
-        await asyncio.sleep(DIRECT_ACK_WAIT_TIMEOUT + .2,
-                                 loop=loop)
+        await asyncio.sleep(DIRECT_ACK_WAIT_TIMEOUT + .2, loop=loop)
 
         # Confirm that the OFF command made it to the PLM
         assert mockPLM.sentmessage == StandardSend(
