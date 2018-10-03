@@ -112,9 +112,9 @@ class Connection:
     # pylint: disable=too-many-arguments
     @classmethod
     async def create(cls, device='/dev/ttyUSB0', host=None,
-               username=None, password=None, port=25010, hub_version=2,
-               auto_reconnect=True, loop=None, workdir=None,
-               poll_devices=True, load_aldb=True):
+                     username=None, password=None, port=25010, hub_version=2,
+                     auto_reconnect=True, loop=None, workdir=None,
+                     poll_devices=True, load_aldb=True):
         """Create a connection to a specific device.
 
         Here is where we supply the device and callback callables we

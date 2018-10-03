@@ -101,7 +101,8 @@ class Tools():
         if self.aldb_load_lock.locked():
             self.aldb_load_lock.release()
 
-    async def monitor_mode(self, poll_devices=False, device=None, workdir=None):
+    async def monitor_mode(self, poll_devices=False, device=None,
+                           workdir=None):
         """Place the IM in monitoring mode."""
         print("Running monitor mode")
         await self.connect(poll_devices, device, workdir)
@@ -280,8 +281,8 @@ class Tools():
         for addr in self.plm.devices:
             await self.load_device_aldb(addr, clear)
 
-    async def write_aldb(self, addr, mem_addr: int, mode: str, group: int, target,
-                   data1=0x00, data2=0x00, data3=0x00):
+    async def write_aldb(self, addr, mem_addr: int, mode: str, group: int,
+                         target, data1=0x00, data2=0x00, data3=0x00):
         """Write a device All-Link record."""
         dev_addr = Address(addr)
         target_addr = Address(target)
@@ -367,8 +368,7 @@ class Commander():
 
     async def _read_line(self):
         while True:
-            cmd = await self.loop.run_in_executor(None,
-                                                       sys.stdin.readline)
+            cmd = await self.loop.run_in_executor(None, sys.stdin.readline)
             await self._exec_cmd(cmd)
             self.stdout.write(PROMPT)
             sys.stdout.flush()
@@ -444,8 +444,7 @@ class Commander():
                 workdir = self.tools.workdir
 
         if device:
-            await self.tools.connect(False, device=device,
-                                          workdir=workdir)
+            await self.tools.connect(False, device=device, workdir=workdir)
         _LOGGING.info('Connection complete.')
 
     # pylint: disable=unused-argument
@@ -788,7 +787,7 @@ class Commander():
 
         if addr and memory and mode and isinstance(group, int) and target:
             await self.tools.write_aldb(addr, memory, mode, group, target,
-                                             data1, data2, data3)
+                                        data1, data2, data3)
 
     async def do_del_aldb(self, args):
         """Delete device All-Link record.

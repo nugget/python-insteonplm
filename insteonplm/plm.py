@@ -361,8 +361,7 @@ class IM(Device, asyncio.Protocol):
                 message_sent = False
                 while not message_sent:
                     message_sent = await self._write_message(msg_info)
-                await asyncio.sleep(msg_info.wait_timeout,
-                                         loop=self._loop)
+                await asyncio.sleep(msg_info.wait_timeout, loop=self._loop)
             except asyncio.CancelledError:
                 _LOGGER.info('Stopping Insteon Modem writer due to '
                              'CancelledError')
