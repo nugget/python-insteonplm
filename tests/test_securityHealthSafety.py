@@ -19,8 +19,7 @@ _LOGGING = logging.getLogger(__name__)
 _LOGGING.setLevel(logging.DEBUG)
 
 
-@asyncio.coroutine
-def _onOffSenorTest(onOffClass, loop):
+async def _onOffSenorTest(onOffClass, loop):
     """Test on/off sensor."""
     plm = MockPLM(loop=loop)
     address = '1a2b3c'
@@ -42,7 +41,7 @@ def _onOffSenorTest(onOffClass, loop):
         address, target, COMMAND_LIGHT_ON_0X11_NONE, cmd2=0x01,
         flags=MessageFlags.create(MESSAGE_TYPE_ALL_LINK_BROADCAST, 0, 3, 3))
     plm.message_received(msg)
-    yield from asyncio.sleep(.1, loop=loop)
+    await asyncio.sleep(.1, loop=loop)
     assert callbacks.callbackvalue1 == 1
 
     device = onOffClass(plm, address, cat, subcat, product_key,
@@ -52,14 +51,13 @@ def _onOffSenorTest(onOffClass, loop):
         address, target, COMMAND_LIGHT_OFF_0X13_0X00,
         flags=MessageFlags.create(MESSAGE_TYPE_ALL_LINK_BROADCAST, 0, 3, 3))
     plm.message_received(msg)
-    yield from asyncio.sleep(.1, loop=loop)
+    await asyncio.sleep(.1, loop=loop)
     assert callbacks.callbackvalue1 == 0
 
 
 def test_securityhealthsafety():
     """Test generic Securityhealthsafety devices."""
-    @asyncio.coroutine
-    def run_test(loop):
+    async def run_test(loop):
         """Asyncio coroutine to actually run the test."""
         plm = MockPLM(loop)
         address = '1a2b3c'
@@ -83,7 +81,7 @@ def test_securityhealthsafety():
             flags=MessageFlags.create(MESSAGE_TYPE_ALL_LINK_BROADCAST,
                                       0, 3, 3))
         plm.message_received(msg)
-        yield from asyncio.sleep(.1, loop=loop)
+        await asyncio.sleep(.1, loop=loop)
         assert callbacks.callbackvalue1 == cmd2
 
         device = SecurityHealthSafety(plm, address, cat, subcat,
@@ -94,7 +92,7 @@ def test_securityhealthsafety():
             flags=MessageFlags.create(MESSAGE_TYPE_ALL_LINK_BROADCAST,
                                       0, 3, 3))
         plm.message_received(msg)
-        yield from asyncio.sleep(.1, loop=loop)
+        await asyncio.sleep(.1, loop=loop)
         assert callbacks.callbackvalue1 == 0x00
 
     loop = asyncio.get_event_loop()
@@ -112,8 +110,7 @@ def test_securityhealthsafety():
 
 def test_securityhealthsafety_2982_222():
     """Test device 2982-222."""
-    @asyncio.coroutine
-    def run_test(loop):
+    async def run_test(loop):
         plm = MockPLM(loop)
         address = '1a2b3c'
         target = '4d5e6f'
@@ -135,7 +132,7 @@ def test_securityhealthsafety_2982_222():
             address, target, COMMAND_LIGHT_ON_0X11_NONE, cmd2=cmd2,
             flags=MessageFlags.create(MESSAGE_FLAG_BROADCAST_0X80, 0, 0, 0))
         plm.message_received(msg)
-        yield from asyncio.sleep(.1, loop=loop)
+        await asyncio.sleep(.1, loop=loop)
         assert callbacks.callbackvalue1 == 0x6f
 
     loop = asyncio.get_event_loop()
@@ -185,7 +182,7 @@ def test_securityHealthSafety_2845_2222():
 
 def test_securityHealthSafety_2852_222():
     """Test device 2852-222."""
-    def _run_test(loop):
+    async def _run_test(loop):
         """Test on/off sensor."""
         plm = MockPLM(loop)
 
@@ -213,7 +210,7 @@ def test_securityHealthSafety_2852_222():
             flags=MessageFlags.create(MESSAGE_TYPE_ALL_LINK_BROADCAST,
                                       0, 3, 3))
         plm.message_received(msg)
-        yield from asyncio.sleep(.1, loop=loop)
+        await asyncio.sleep(.1, loop=loop)
         assert callbacks.callbackvalue1 == 1
         assert callbacks.callbackvalue2 == 0
         assert callbacks.callbackvalue4 == 0x11
@@ -226,7 +223,7 @@ def test_securityHealthSafety_2852_222():
             flags=MessageFlags.create(MESSAGE_TYPE_ALL_LINK_BROADCAST,
                                       0, 3, 3))
         plm.message_received(msg)
-        yield from asyncio.sleep(.1, loop=loop)
+        await asyncio.sleep(.1, loop=loop)
         assert callbacks.callbackvalue1 == 0
         assert callbacks.callbackvalue2 == 1
         assert callbacks.callbackvalue4 == 0x13
@@ -239,7 +236,7 @@ def test_securityHealthSafety_2852_222():
             flags=MessageFlags.create(MESSAGE_TYPE_ALL_LINK_BROADCAST,
                                       0, 3, 3))
         plm.message_received(msg)
-        yield from asyncio.sleep(.1, loop=loop)
+        await asyncio.sleep(.1, loop=loop)
         assert callbacks.callbackvalue1 == 1
         assert callbacks.callbackvalue2 == 0
 
@@ -251,7 +248,7 @@ def test_securityHealthSafety_2852_222():
             flags=MessageFlags.create(MESSAGE_TYPE_ALL_LINK_BROADCAST,
                                       0, 3, 3))
         plm.message_received(msg)
-        yield from asyncio.sleep(.1, loop=loop)
+        await asyncio.sleep(.1, loop=loop)
         assert callbacks.callbackvalue1 == 0
         assert callbacks.callbackvalue2 == 1
         assert callbacks.callbackvalue4 == 0x13

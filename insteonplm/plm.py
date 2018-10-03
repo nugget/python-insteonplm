@@ -311,15 +311,14 @@ class IM(Device, asyncio.Protocol):
                                   data1, data2, data3)
         self.send_msg(msg)
 
-    @asyncio.coroutine
-    def pause_writing(self):
+    async def pause_writing(self):
         """Pause writing."""
         self._restart_writer = False
         if self._writer_task:
             self._writer_task.remove_done_callback(self.restart_writing)
             self._writer_task.cancel()
-            yield from self._writer_task
-            yield from asyncio.sleep(0, loop=self._loop)
+            await self._writer_task
+            await asyncio.sleep(0, loop=self._loop)
 
     # pylint: disable=unused-argument
     def restart_writing(self, task=None):
@@ -329,15 +328,13 @@ class IM(Device, asyncio.Protocol):
                 self._get_message_from_send_queue(), loop=self._loop)
             self._writer_task.add_done_callback(self.restart_writing)
 
-    @asyncio.coroutine
-    def close(self):
+    async def close(self):
         """Close all writers for all devices for a clean shutdown."""
-        yield from self.pause_writing()
-        yield from asyncio.sleep(0, loop=self._loop)
+        await self.pause_writing()
+        await asyncio.sleep(0, loop=self._loop)
 
-    @asyncio.coroutine
-    def _setup_devices(self):
-        yield from self.devices.load_saved_device_info()
+    async def _setup_devices(self):
+        await self.devices.load_saved_device_info()
         _LOGGER.debug('Found %d saved devices',
                       len(self.devices.saved_devices))
         self._get_plm_info()
@@ -351,21 +348,20 @@ class IM(Device, asyncio.Protocol):
         _LOGGER.debug('Ending _setup_devices in IM')
 
     # pylint: disable=broad-except
-    @asyncio.coroutine
-    def _get_message_from_send_queue(self):
+    async def _get_message_from_send_queue(self):
         _LOGGER.debug('Starting Insteon Modem write message from send queue')
         if self._write_transport_lock.locked():
             return
         _LOGGER.debug('Aquiring write lock')
-        yield from self._write_transport_lock.acquire()
+        await self._write_transport_lock.acquire()
         while self._restart_writer:
             # wait for an item from the queue
             try:
-                msg_info = yield from self._send_queue.get()
+                msg_info = await self._send_queue.get()
                 message_sent = False
                 while not message_sent:
-                    message_sent = yield from self._write_message(msg_info)
-                yield from asyncio.sleep(msg_info.wait_timeout,
+                    message_sent = await self._write_message(msg_info)
+                await asyncio.sleep(msg_info.wait_timeout,
                                          loop=self._loop)
             except asyncio.CancelledError:
                 _LOGGER.info('Stopping Insteon Modem writer due to '
@@ -389,31 +385,29 @@ class IM(Device, asyncio.Protocol):
         msg = GetImInfo()
         self.send_msg(msg, wait_nak=True, wait_timeout=.5)
 
-    @asyncio.coroutine
-    def _write_message(self, msg_info: MessageInfo):
+    async def _write_message(self, msg_info: MessageInfo):
         _LOGGER.debug('TX: %s', msg_info.msg)
         is_sent = False
         if not self.transport.is_closing():
             self.transport.write(msg_info.msg.bytes)
             if msg_info.wait_nak:
                 _LOGGER.debug('Waiting for ACK or NAK message')
-                is_sent = yield from self._wait_ack_nak(msg_info.msg)
+                is_sent = await self._wait_ack_nak(msg_info.msg)
             else:
                 is_sent = True
         else:
             _LOGGER.debug("Transport is not open, waiting 5 seconds")
             is_sent = False
-            yield from asyncio.sleep(5, loop=self._loop)
+            await asyncio.sleep(5, loop=self._loop)
         return is_sent
 
-    @asyncio.coroutine
-    def _wait_ack_nak(self, msg):
+    async def _wait_ack_nak(self, msg):
         is_sent = False
         is_ack_nak = False
         try:
             with async_timeout.timeout(ACKNAK_TIMEOUT):
                 while not is_ack_nak:
-                    acknak = yield from self._acknak_queue.get()
+                    acknak = await self._acknak_queue.get()
                     is_ack_nak = self._msg_is_ack_nak(msg, acknak)
                     is_sent = self._msg_is_sent(acknak)
         except asyncio.TimeoutError:
@@ -509,8 +503,7 @@ class IM(Device, asyncio.Protocol):
             template_x10_received,
             self._handle_x10_send_receive)
 
-    @asyncio.coroutine
-    def _peel_messages_from_buffer(self):
+    async def _peel_messages_from_buffer(self):
         lastlooplen = 0
         worktodo = True
         buffer = bytearray()

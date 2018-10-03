@@ -21,8 +21,7 @@ _LOGGING.setLevel(logging.DEBUG)
 
 def test_create_device():
     """Test create device."""
-    @asyncio.coroutine
-    def run_test(loop):
+    async def run_test(loop):
         mockPLM = MockPLM(loop)
         linkcode = 0x01
         group = 0x00
@@ -38,7 +37,7 @@ def test_create_device():
         # the IM as a controller of Group 0x00
         msg = AllLinkComplete(linkcode, group, address, cat, subcat, firmware)
         device.receive_message(msg)
-        yield from asyncio.sleep(.1, loop=loop)
+        await asyncio.sleep(.1, loop=loop)
 
         # The device should start linking based on the groups in
         # self.states
@@ -49,21 +48,21 @@ def test_create_device():
                            COMMAND_ENTER_LINKING_MODE_0X09_NONE,
                            cmd2=0x01, acknak=MESSAGE_ACK)
         device.receive_message(msg)
-        yield from asyncio.sleep(.1, loop=loop)
+        await asyncio.sleep(.1, loop=loop)
         # Confirm that the link attempt to group 0x01 completed
         msg = AllLinkComplete(0x00, 0x01, address, cat, subcat, firmware)
         device.receive_message(msg)
-        yield from asyncio.sleep(.1, loop=loop)
+        await asyncio.sleep(.1, loop=loop)
 
         # The device should then start linking to group 0x02
         assert mockPLM.sentmessage == StandardSend(
             device.address, COMMAND_ENTER_LINKING_MODE_0X09_NONE,
             cmd2=0x02).hex
-        yield from asyncio.sleep(1, loop=loop)
+        await asyncio.sleep(1, loop=loop)
         # Confirm that the link attempt to group 0x02 completed
         msg = AllLinkComplete(0x00, 0x01, address, cat, subcat, firmware)
         device.receive_message(msg)
-        yield from asyncio.sleep(.1, loop=loop)
+        await asyncio.sleep(.1, loop=loop)
 
         # The device will now attempt to read the ALDB
         msg = ExtendedSend(address,
@@ -90,7 +89,7 @@ def test_create_device():
                                'd13': 0,
                                'd14': 0x3b}))
         device.receive_message(msg)
-        yield from asyncio.sleep(1, loop=loop)
+        await asyncio.sleep(1, loop=loop)
 
     loop = asyncio.get_event_loop()
     loop.run_until_complete(run_test(loop))

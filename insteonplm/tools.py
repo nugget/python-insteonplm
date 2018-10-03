@@ -76,15 +76,14 @@ class Tools():
             _LOGGING.setLevel(self.loglevel)
             _INSTEONPLM_LOGGING.setLevel(self.loglevel)
 
-    @asyncio.coroutine
-    def connect(self, poll_devices=False, device=None, workdir=None):
+    async def connect(self, poll_devices=False, device=None, workdir=None):
         """Connect to the IM."""
-        yield from self.aldb_load_lock.acquire()
+        await self.aldb_load_lock.acquire()
         device = self.host if self.host else self.device
         _LOGGING.info('Connecting to Insteon Modem at %s', device)
         self.device = device if device else self.device
         self.workdir = workdir if workdir else self.workdir
-        conn = yield from insteonplm.Connection.create(
+        conn = await insteonplm.Connection.create(
             device=self.device,
             host=self.host,
             port=self.port,
@@ -98,15 +97,14 @@ class Tools():
         conn.protocol.add_all_link_done_callback(
             self.async_aldb_loaded_callback)
         self.plm = conn.protocol
-        yield from self.aldb_load_lock
+        await self.aldb_load_lock
         if self.aldb_load_lock.locked():
             self.aldb_load_lock.release()
 
-    @asyncio.coroutine
-    def monitor_mode(self, poll_devices=False, device=None, workdir=None):
+    async def monitor_mode(self, poll_devices=False, device=None, workdir=None):
         """Place the IM in monitoring mode."""
         print("Running monitor mode")
-        yield from self.connect(poll_devices, device, workdir)
+        await self.connect(poll_devices, device, workdir)
         self.plm.monitor_mode()
 
     def async_new_device_callback(self, device):
@@ -131,8 +129,7 @@ class Tools():
             self.aldb_load_lock.release()
         _LOGGING.info('ALDB Loaded')
 
-    @asyncio.coroutine
-    def start_all_linking(self, linkcode, group, address=None):
+    async def start_all_linking(self, linkcode, group, address=None):
         """Start the All-Linking process with the IM and device."""
         _LOGGING.info('Starting the All-Linking process')
         if address:
@@ -148,11 +145,11 @@ class Tools():
             _LOGGING.info('Starting All-Linking on PLM. '
                           'Waiting for button press')
             self.plm.start_all_linking(linkcode, group)
-            yield from asyncio.sleep(self.wait_time, loop=self.loop)
+            await asyncio.sleep(self.wait_time, loop=self.loop)
 
         _LOGGING.info('%d devices added to the All-Link Database',
                       len(self.plm.devices))
-        yield from asyncio.sleep(.1, loop=self.loop)
+        await asyncio.sleep(.1, loop=self.loop)
 
     def list_devices(self):
         """List devices in the ALDB."""
@@ -174,8 +171,7 @@ class Tools():
                 _LOGGING.info('IM connection has not been made.')
                 _LOGGING.info('Use `connect [device]` to open the connection')
 
-    @asyncio.coroutine
-    def on_off_test(self, addr, group):
+    async def on_off_test(self, addr, group):
         """Test the on/off method of a device.
 
         Usage:
@@ -198,22 +194,22 @@ class Tools():
                 _LOGGING.info('Send on request')
                 _LOGGING.info('----------------------')
                 device.states[group].on()
-                yield from asyncio.sleep(2, loop=self.loop)
+                await asyncio.sleep(2, loop=self.loop)
 
                 _LOGGING.info('Send off request')
                 _LOGGING.info('----------------------')
                 device.states[group].off()
-                yield from asyncio.sleep(2, loop=self.loop)
+                await asyncio.sleep(2, loop=self.loop)
 
                 _LOGGING.info('Send on request')
                 _LOGGING.info('----------------------')
                 device.states[group].on()
-                yield from asyncio.sleep(2, loop=self.loop)
+                await asyncio.sleep(2, loop=self.loop)
 
                 _LOGGING.info('Send off request')
                 _LOGGING.info('----------------------')
                 device.states[group].off()
-                yield from asyncio.sleep(2, loop=self.loop)
+                await asyncio.sleep(2, loop=self.loop)
             else:
                 _LOGGING.warning('Device %s with state %d is not an on/off'
                                  'device.', device.id, state.name)
@@ -258,8 +254,7 @@ class Tools():
                 _LOGGING.info('IM connection has not been made.')
                 _LOGGING.info('Use `connect [device]` to open the connection')
 
-    @asyncio.coroutine
-    def load_device_aldb(self, addr, clear=True):
+    async def load_device_aldb(self, addr, clear=True):
         """Read the device ALDB."""
         dev_addr = Address(addr)
         device = None
@@ -271,23 +266,21 @@ class Tools():
             if clear:
                 device.aldb.clear()
             device.read_aldb()
-            yield from asyncio.sleep(1, loop=self.loop)
+            await asyncio.sleep(1, loop=self.loop)
             while device.aldb.status == ALDBStatus.LOADING:
-                yield from asyncio.sleep(1, loop=self.loop)
+                await asyncio.sleep(1, loop=self.loop)
             if device.aldb.status == ALDBStatus.LOADED:
                 _LOGGING.info('ALDB loaded for device %s', addr)
             self.print_device_aldb(addr)
         else:
             _LOGGING.error('Could not find device %s', addr)
 
-    @asyncio.coroutine
-    def load_all_aldb(self, clear=True):
+    async def load_all_aldb(self, clear=True):
         """Read all devices ALDB."""
         for addr in self.plm.devices:
-            yield from self.load_device_aldb(addr, clear)
+            await self.load_device_aldb(addr, clear)
 
-    @asyncio.coroutine
-    def write_aldb(self, addr, mem_addr: int, mode: str, group: int, target,
+    async def write_aldb(self, addr, mem_addr: int, mode: str, group: int, target,
                    data1=0x00, data2=0x00, data3=0x00):
         """Write a device All-Link record."""
         dev_addr = Address(addr)
@@ -297,22 +290,21 @@ class Tools():
             _LOGGING.debug('calling device write_aldb')
             device.write_aldb(mem_addr, mode, group, target_addr,
                               data1, data2, data3)
-            yield from asyncio.sleep(1, loop=self.loop)
+            await asyncio.sleep(1, loop=self.loop)
             while device.aldb.status == ALDBStatus.LOADING:
-                yield from asyncio.sleep(1, loop=self.loop)
+                await asyncio.sleep(1, loop=self.loop)
             self.print_device_aldb(addr)
 
-    @asyncio.coroutine
-    def del_aldb(self, addr, mem_addr: int):
+    async def del_aldb(self, addr, mem_addr: int):
         """Write a device All-Link record."""
         dev_addr = Address(addr)
         device = self.plm.devices[dev_addr.id]
         if device:
             _LOGGING.debug('calling device del_aldb')
             device.del_aldb(mem_addr)
-            yield from asyncio.sleep(1, loop=self.loop)
+            await asyncio.sleep(1, loop=self.loop)
             while device.aldb.status == ALDBStatus.LOADING:
-                yield from asyncio.sleep(1, loop=self.loop)
+                await asyncio.sleep(1, loop=self.loop)
             self.print_device_aldb(addr)
 
     def add_device_override(self, addr, cat, subcat, firmware=None):
@@ -373,17 +365,15 @@ class Commander():
         self.loop.create_task(self._read_line())
         self.loop.create_task(self._greeting())
 
-    @asyncio.coroutine
-    def _read_line(self):
+    async def _read_line(self):
         while True:
-            cmd = yield from self.loop.run_in_executor(None,
+            cmd = await self.loop.run_in_executor(None,
                                                        sys.stdin.readline)
-            yield from self._exec_cmd(cmd)
+            await self._exec_cmd(cmd)
             self.stdout.write(PROMPT)
             sys.stdout.flush()
 
-    @asyncio.coroutine
-    def _exec_cmd(self, cmd):
+    async def _exec_cmd(self, cmd):
         return_val = None
         func = None
         if cmd.strip():
@@ -402,7 +392,7 @@ class Commander():
                 func = None  # func(arg)
             if func:
                 if asyncio.iscoroutinefunction(func):
-                    return_val = yield from func(arg)
+                    return_val = await func(arg)
                 else:
                     return_val = func(arg)
         return return_val
@@ -429,8 +419,7 @@ class Commander():
         self.stdout.write(PROMPT)
         self.stdout.flush()
 
-    @asyncio.coroutine
-    def do_connect(self, args):
+    async def do_connect(self, args):
         """Connect to the PLM device.
 
         Usage:
@@ -455,7 +444,7 @@ class Commander():
                 workdir = self.tools.workdir
 
         if device:
-            yield from self.tools.connect(False, device=device,
+            await self.tools.connect(False, device=device,
                                           workdir=workdir)
         _LOGGING.info('Connection complete.')
 
@@ -470,8 +459,7 @@ class Commander():
         for task in asyncio.Task.all_tasks(loop=self.loop):
             _LOGGING.info(task)
 
-    @asyncio.coroutine
-    def do_on_off_test(self, args):
+    async def do_on_off_test(self, args):
         """Test the on/off method of a device.
 
         Usage:
@@ -498,7 +486,7 @@ class Commander():
             group = 1
 
         if addr and group:
-            yield from self.tools.on_off_test(addr, group)
+            await self.tools.on_off_test(addr, group)
         else:
             _LOGGING.error('Invalid address or group')
             self.do_help('on_off_test')
@@ -678,8 +666,7 @@ class Commander():
         except IndexError:
             self.do_help('set_log_file')
 
-    @asyncio.coroutine
-    def do_load_aldb(self, args):
+    async def do_load_aldb(self, args):
         """Load the All-Link database for a device.
 
         Usage:
@@ -719,14 +706,13 @@ class Commander():
 
         if addr:
             if addr.lower() == 'all':
-                yield from self.tools.load_all_aldb(clear)
+                await self.tools.load_all_aldb(clear)
             else:
-                yield from self.tools.load_device_aldb(addr, clear)
+                await self.tools.load_device_aldb(addr, clear)
         else:
             self.do_help('load_aldb')
 
-    @asyncio.coroutine
-    def do_write_aldb(self, args):
+    async def do_write_aldb(self, args):
         """Write device All-Link record.
 
         WARNING THIS METHOD CAN DAMAGE YOUR DEVICE IF USED INCORRECTLY.
@@ -801,11 +787,10 @@ class Commander():
             return
 
         if addr and memory and mode and isinstance(group, int) and target:
-            yield from self.tools.write_aldb(addr, memory, mode, group, target,
+            await self.tools.write_aldb(addr, memory, mode, group, target,
                                              data1, data2, data3)
 
-    @asyncio.coroutine
-    def do_del_aldb(self, args):
+    async def do_del_aldb(self, args):
         """Delete device All-Link record.
 
         WARNING THIS METHOD CAN DAMAGE YOUR DEVICE IF USED INCORRECTLY.
@@ -845,7 +830,7 @@ class Commander():
             self.do_help('write_aldb')
 
         if addr and memory:
-            yield from self.tools.del_aldb(addr, memory)
+            await self.tools.del_aldb(addr, memory)
 
     def do_set_log_level(self, arg):
         """Set the log level.

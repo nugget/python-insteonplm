@@ -17,16 +17,9 @@ from insteonplm.plm import PLM, Hub
 __all__ = ('Connection')
 _LOGGER = logging.getLogger(__name__)
 
-# pylint: disable=invalid-name,no-member
-try:
-    ensure_future = asyncio.ensure_future
-except AttributeError:
-    ensure_future = asyncio.async
 
-
-@asyncio.coroutine
-def create_http_connection(loop, protocol_factory, host, port=25105,
-                           auth=None, connector=None):
+async def create_http_connection(loop, protocol_factory, host, port=25105,
+                                 auth=None, connector=None):
     """Create an HTTP session used to connect to the Insteon Hub."""
     session = aiohttp.ClientSession(auth=auth, connector=connector)
     protocol = protocol_factory()
@@ -118,8 +111,7 @@ class Connection:
 
     # pylint: disable=too-many-arguments
     @classmethod
-    @asyncio.coroutine
-    def create(cls, device='/dev/ttyUSB0', host=None,
+    async def create(cls, device='/dev/ttyUSB0', host=None,
                username=None, password=None, port=25010, hub_version=2,
                auto_reconnect=True, loop=None, workdir=None,
                poll_devices=True, load_aldb=True):
@@ -161,7 +153,7 @@ class Connection:
             """Respond to Protocol connection lost."""
             if conn.auto_reconnect and not conn.closing:
                 _LOGGER.debug("Reconnecting to transport")
-                ensure_future(conn.reconnect(), loop=conn.loop)
+                asyncio.ensure_future(conn.reconnect(), loop=conn.loop)
 
         protocol_class = PLM
         if conn.host and conn.hub_version == 2:
@@ -173,7 +165,7 @@ class Connection:
             poll_devices=poll_devices,
             load_aldb=load_aldb)
 
-        yield from conn.reconnect()
+        await conn.reconnect()
 
         _LOGGER.debug("Ending Connection.create")
         return conn
@@ -193,26 +185,24 @@ class Connection:
     def _increase_retry_interval(self):
         self._retry_interval = min(300, 1.5 * self._retry_interval)
 
-    @asyncio.coroutine
-    def reconnect(self):
+    async def reconnect(self):
         """Reconnect to the modem."""
         _LOGGER.debug('starting Connection.reconnect')
-        yield from self._connect()
+        await self._connect()
         while self._closed:
-            yield from self._retry_connection()
+            await self._retry_connection()
         _LOGGER.debug('ending Connection.reconnect')
 
     # pylint: disable=unused-argument
-    @asyncio.coroutine
-    def close(self, event):
+    async def close(self, event):
         """Close the PLM device connection and don't try to reconnect."""
         _LOGGER.info('Closing connection to Insteon Modem')
         self._closing = True
         self._auto_reconnect = False
-        yield from self.protocol.close()
+        await self.protocol.close()
         if self.protocol.transport:
             self.protocol.transport.close()
-        yield from asyncio.sleep(0, loop=self._loop)
+        await asyncio.sleep(0, loop=self._loop)
         _LOGGER.info('Insteon Modem connection closed')
 
     def halt(self):
@@ -233,60 +223,56 @@ class Connection:
         attrs = vars(self)
         return ', '.join("%s: %s" % item for item in attrs.items())
 
-    @asyncio.coroutine
-    def _retry_connection(self):
+    async def _retry_connection(self):
         _LOGGER.debug('starting Connection._retry_connection')
         device = self.host if self.host else self.device
         self._increase_retry_interval()
         _LOGGER.warning('Connection failed, retry in %i seconds: %s',
                         self._retry_interval, device)
-        yield from asyncio.sleep(self._retry_interval, loop=self._loop)
+        await asyncio.sleep(self._retry_interval, loop=self._loop)
         _LOGGER.debug('Starting _connect')
-        yield from self._connect()
+        await self._connect()
         _LOGGER.debug('ending Connection._retry_connection')
 
-    @asyncio.coroutine
-    def _connect(self):
+    async def _connect(self):
         _LOGGER.debug('starting Connection._connect')
         if self.host and self._hub_version == 2:
-            connected = yield from self._connect_http()
+            connected = await self._connect_http()
         else:
-            connected = yield from self._connect_serial()
+            connected = await self._connect_serial()
         _LOGGER.debug('ending Connection._connect')
         return connected
 
-    @asyncio.coroutine
-    def _connect_http(self):
+    async def _connect_http(self):
         _LOGGER.info('Connecting to Insteon Hub on %s', self.host)
         auth = aiohttp.BasicAuth(self.username, self.password)
         connector = aiohttp.TCPConnector(
             limit=1, loop=self._loop, keepalive_timeout=10)
         _LOGGER.debug('Creating http connection')
         # pylint: disable=unused-variable
-        transport, protocol = yield from create_http_connection(
+        transport, protocol = await create_http_connection(
             self._loop, lambda: self.protocol,
             self.host, port=self.port,
             auth=auth, connector=connector)
-        connected = yield from transport.test_connection()
+        connected = await transport.test_connection()
         if connected:
             transport.resume_reading()
         self._closed = not connected
         return connected
 
-    @asyncio.coroutine
-    def _connect_serial(self):
+    async def _connect_serial(self):
         try:
             if self._hub_version == 1:
                 url = 'socket://{}:{}'.format(self._host, self._port)
                 _LOGGER.info('Connecting to Insteon Hub v1 on %s', url)
                 # pylint: disable=unused-variable
-                transport, protocol = yield from create_serial_connection(
+                transport, protocol = await create_serial_connection(
                     self._loop, lambda: self.protocol,
                     url, baudrate=19200)
             else:
                 _LOGGER.info('Connecting to PLM on %s', self._device)
                 # pylint: disable=unused-variable
-                transport, protocol = yield from create_serial_connection(
+                transport, protocol = await create_serial_connection(
                     self._loop, lambda: self.protocol,
                     self._device, baudrate=19200)
             self._closed = False
@@ -349,11 +335,10 @@ class HttpTransport(asyncio.Transport):
         _LOGGER.debug("Closing Hub session")
         asyncio.ensure_future(self._close(), loop=self._loop)
 
-    @asyncio.coroutine
-    def _close(self):
+    async def _close(self):
         self._closing = True
-        yield from self._session.close()
-        yield from asyncio.sleep(0, loop=self._loop)
+        await self._session.close()
+        await asyncio.sleep(0, loop=self._loop)
         _LOGGER.info("Insteon Hub session closed")
 
     def get_write_buffer_size(self):
@@ -378,13 +363,12 @@ class HttpTransport(asyncio.Transport):
         coro_write = self._async_write(url)
         asyncio.ensure_future(coro_write, loop=self._loop)
 
-    @asyncio.coroutine
-    def test_connection(self):
+    async def test_connection(self):
         """Test the connection to the hub."""
         url = 'http://{:s}:{:d}/buffstatus.xml'.format(self._host, self._port)
         response = None
         try:
-            response = yield from self._session.get(url, timeout=30)
+            response = await self._session.get(url, timeout=30)
             if response and response.status == 200:
                 _LOGGER.debug('Test connection status is %d', response.status)
                 return True
@@ -399,32 +383,31 @@ class HttpTransport(asyncio.Transport):
         self.close()
         return False
 
-    @asyncio.coroutine
-    def _async_write(self, url):
+    async def _async_write(self, url):
         return_status = 500
         if self._session.closed:
             _LOGGER.warning("Session closed, cannot write to Hub")
             return 999
         _LOGGER.debug("Writing message: %s", url)
         try:
-            yield from self._read_write_lock
-            response = yield from self._session.post(url, timeout=5)
+            await self._read_write_lock
+            response = await self._session.post(url, timeout=5)
             return_status = response.status
             _LOGGER.debug("Post status: %s", response.status)
             if response.status == 200:
                 self._write_last_read(0)
             else:
                 self._log_error(response.status)
-                yield from self._stop_reader(False)
+                await self._stop_reader(False)
         except aiohttp.client_exceptions.ServerDisconnectedError:
             _LOGGER.error('Reconnect to Hub (ServerDisconnectedError)')
-            yield from self._stop_reader(True)
+            await self._stop_reader(True)
         except aiohttp.client_exceptions.ClientConnectorError:
             _LOGGER.error('Reconnect to Hub (ClientConnectorError)')
-            yield from self._stop_reader(True)
+            await self._stop_reader(True)
         except asyncio.TimeoutError:
             _LOGGER.error('Reconnect to Hub (TimeoutError)')
-            yield from self._stop_reader(True)
+            await self._stop_reader(True)
 
         if self._read_write_lock.locked():
             self._read_write_lock.release()
@@ -442,19 +425,17 @@ class HttpTransport(asyncio.Transport):
         """Clear the Hub read buffer."""
         asyncio.wait(self._clear_buffer())
 
-    @asyncio.coroutine
-    def _clear_buffer(self):
+    async def _clear_buffer(self):
         _LOGGER.debug("..................Clearing the buffer..............")
         url = 'http://{:s}:{:d}/1?XB=M=1'.format(self._host, self._port)
-        yield from self._async_write(url)
+        await self._async_write(url)
 
     # pylint: disable=too-many-branches
     # pylint: disable=too-many-statements
     # pylint: disable=broad-except
-    @asyncio.coroutine
-    def _ensure_reader(self):
+    async def _ensure_reader(self):
         _LOGGER.info('Insteon Hub reader started')
-        yield from self._clear_buffer()
+        await self._clear_buffer()
         self._write_last_read(0)
         url = 'http://{:s}:{:d}/buffstatus.xml'.format(self._host, self._port)
         _LOGGER.debug('Calling connection made')
@@ -463,54 +444,52 @@ class HttpTransport(asyncio.Transport):
         while self._restart_reader:
             try:
                 if self._session.closed:
-                    yield from self._stop_reader(False)
+                    await self._stop_reader(False)
                     return
-                yield from self._read_write_lock
-                response = yield from self._session.get(url, timeout=5)
+                await self._read_write_lock
+                response = await self._session.get(url, timeout=5)
                 buffer = None
                 # _LOGGER.debug("Reader status: %d", response.status)
                 if response.status == 200:
-                    html = yield from response.text()
-                    _LOGGER.debug("HTML Length: %d", len(html))
+                    html = await response.text()
                     if len(html) == 234:
                         # pylint: disable=no-value-for-parameter
-                        buffer = yield from self._parse_buffer(html)
+                        buffer = await self._parse_buffer(html)
                     else:
                         buffer = self._parse_buffer_v1(html)
                 else:
                     self._log_error(response.status)
-                    yield from self._stop_reader(False)
+                    await self._stop_reader(False)
                 if self._read_write_lock.locked():
                     self._read_write_lock.release()
                 if buffer:
                     _LOGGER.debug('New buffer: %s', buffer)
                     bin_buffer = binascii.unhexlify(buffer)
                     self._protocol.data_received(bin_buffer)
-                yield from asyncio.sleep(1, loop=self._loop)
+                await asyncio.sleep(1, loop=self._loop)
 
             except asyncio.CancelledError:
                 _LOGGER.debug('Stop connection to Hub (loop stopped)')
-                yield from self._stop_reader(False)
+                await self._stop_reader(False)
             except GeneratorExit:
                 _LOGGER.debug('Stop connection to Hub (GeneratorExit)')
-                yield from self._stop_reader(False)
+                await self._stop_reader(False)
             except aiohttp.client_exceptions.ServerDisconnectedError:
                 _LOGGER.debug('Reconnect to Hub (ServerDisconnectedError)')
-                yield from self._stop_reader(True)
+                await self._stop_reader(True)
             except aiohttp.client_exceptions.ClientConnectorError:
                 _LOGGER.debug('Reconnect to Hub (ClientConnectorError)')
-                yield from self._stop_reader(True)
+                await self._stop_reader(True)
             except asyncio.TimeoutError:
                 _LOGGER.error('Reconnect to Hub (TimeoutError)')
-                yield from self._stop_reader(True)
+                await self._stop_reader(True)
             except Exception as e:
                 _LOGGER.debug('Stop reading due to %s', str(e))
-                yield from self._stop_reader(False)
+                await self._stop_reader(False)
         _LOGGER.info('Insteon Hub reader stopped')
         return
 
-    @asyncio.coroutine
-    def _parse_buffer(self, html):
+    async def _parse_buffer(self, html):
         last_stop = 0
         if not self._last_read.empty():
             last_stop = self._last_read.get_nowait()
@@ -543,7 +522,7 @@ class HttpTransport(asyncio.Transport):
         # I think this is a good idea but who knows.
         # Risk is we may be loosing the next message
         # If we do this than this method must be a coroutine
-        # yield from self._clear_buffer()
+        # await self._clear_buffer()
         raw_text = html.replace('<response><BS>', '')
         raw_text = raw_text.replace('</BS></response>', '')
         raw_text = raw_text.strip()
@@ -602,20 +581,19 @@ class HttpTransport(asyncio.Transport):
                                                       loop=self._loop)
             self._reader_task.add_done_callback(self._start_reader)
 
-    @asyncio.coroutine
-    def _stop_reader(self, reconnect=False):
+    async def _stop_reader(self, reconnect=False):
         _LOGGER.debug('Stopping the reader and reconnect is %s', reconnect)
         self._restart_reader = False
         if self._reader_task:
             self._reader_task.remove_done_callback(self._start_reader)
             self._reader_task.cancel()
             with suppress(asyncio.CancelledError):
-                yield from self._reader_task
-                yield from asyncio.sleep(0, loop=self._loop)
-        yield from self._protocol.pause_writing()
+                await self._reader_task
+                await asyncio.sleep(0, loop=self._loop)
+        await self._protocol.pause_writing()
         if not self._session.closed:
             _LOGGER.debug('Session is open so we close it')
-            yield from self._close()
+            await self._close()
         if reconnect:
             _LOGGER.debug("We want to reconnect so we do...")
             self._protocol.connection_lost(True)

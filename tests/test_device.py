@@ -18,8 +18,7 @@ _INSTEON_LOGGER.setLevel(logging.DEBUG)
 
 def test_create_device():
     """Test create device."""
-    @asyncio.coroutine
-    def run_test(loop):
+    async def run_test(loop):
         plm = MockPLM(loop)
         device = create(plm, '112233', 0x01, 0x0d, None)
         assert device.id == '112233'
@@ -40,8 +39,7 @@ def test_create_device():
 
 def test_create_device_from_bytearray():
     """Test create device from byte array."""
-    @asyncio.coroutine
-    def run_test(loop):
+    async def run_test(loop):
         plm = MockPLM(loop)
         target = bytearray()
         target.append(0x01)
@@ -66,8 +64,7 @@ def test_create_device_from_bytearray():
 
 def test_send_msg():
     """Test sending a message."""
-    @asyncio.coroutine
-    def run_test(loop):
+    async def run_test(loop):
         mockPLM = MockPLM(loop)
         address = '1a2b3c'
         device = create(mockPLM, address, 0x01, 0x0d, 0x44)
@@ -75,12 +72,12 @@ def test_send_msg():
 
         # Send the ON command. This should be sent directly to the PLM
         device.states[0x01].on()
-        yield from asyncio.sleep(.1, loop=loop)
+        await asyncio.sleep(.1, loop=loop)
 
         # Send the OFF command. This should wait in queue until the
         # Direct ACK timeout
         device.states[0x01].off()
-        yield from asyncio.sleep(.1, loop=loop)
+        await asyncio.sleep(.1, loop=loop)
 
         # ACK the ON command
         msgreceived = StandardSend(address, COMMAND_LIGHT_ON_0X11_NONE,
@@ -93,7 +90,7 @@ def test_send_msg():
             address, COMMAND_LIGHT_ON_0X11_NONE, cmd2=0xff, flags=0x00).hex
 
         # Sleep until the Direct ACK time out should expire
-        yield from asyncio.sleep(DIRECT_ACK_WAIT_TIMEOUT + .2,
+        await asyncio.sleep(DIRECT_ACK_WAIT_TIMEOUT + .2,
                                  loop=loop)
 
         # Confirm that the OFF command made it to the PLM
