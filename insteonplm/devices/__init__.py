@@ -670,8 +670,8 @@ class Device():
             _LOGGER.debug('Got Message ACK')
             if self._sent_msg_wait_for_directACK.get('callback') is not None:
                 _LOGGER.debug('Look for direct ACK')
-                coro = self._wait_for_direct_ACK()
-                asyncio.ensure_future(coro, loop=self._plm.loop)
+                asyncio.ensure_future(self._wait_for_direct_ACK(),
+                                      loop=self._plm.loop)
             else:
                 _LOGGER.debug('DA queue: %s',
                               self._sent_msg_wait_for_directACK)
@@ -869,8 +869,7 @@ class X10Device():
 
     def _send_msg(self, msg, wait_ack=True):
         _LOGGER.debug('Starting Device._send_msg')
-        write_message_coroutine = self._process_send_queue(msg, wait_ack)
-        asyncio.ensure_future(write_message_coroutine,
+        asyncio.ensure_future(self._process_send_queue(msg, wait_ack),
                               loop=self._plm.loop)
         _LOGGER.debug('Ending Device._send_msg')
 

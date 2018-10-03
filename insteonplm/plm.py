@@ -766,8 +766,7 @@ class PLM(IM):
         self.transport.set_write_buffer_limits(128)
         # limit = self.transport.get_write_buffer_size()
         # _LOGGER.debug('Write buffer size is %d', limit)
-        coro = self._setup_devices()
-        asyncio.ensure_future(coro, loop=self._loop)
+        asyncio.ensure_future(self._setup_devices(), loop=self._loop)
 
 
 class Hub(IM):
@@ -804,5 +803,4 @@ class Hub(IM):
         self._restart_writer = True
         self.restart_writing()
 
-        coro = self._setup_devices()
-        asyncio.ensure_future(coro, loop=self._loop)
+        asyncio.ensure_future(self._setup_devices(), loop=self._loop)
