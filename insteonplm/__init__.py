@@ -259,9 +259,8 @@ class Connection:
     def _connect_http(self):
         _LOGGER.info('Connecting to Insteon Hub on %s', self.host)
         auth = aiohttp.BasicAuth(self.username, self.password)
-        connector = aiohttp.TCPConnector(
-            limit=1, loop=self._loop, # keepalive_timeout=10,
-            force_close=True)
+        connector = aiohttp.TCPConnector(limit=1, loop=self._loop,
+                                         force_close=True)
         _LOGGER.debug('Creating http connection')
         # pylint: disable=unused-variable
         transport, protocol = yield from create_http_connection(
