@@ -21,9 +21,9 @@ _LOGGER = logging.getLogger(__name__)
 async def create_http_connection(loop, protocol_factory, host, port=25105,
                                  auth=None, connector=None):
     """Create an HTTP session used to connect to the Insteon Hub."""
-    session = aiohttp.ClientSession(auth=auth, connector=connector)
+    # session = aiohttp.ClientSession(auth=auth, connector=connector)
     protocol = protocol_factory()
-    transport = HttpTransport(loop, protocol, session, host, port)
+    transport = HttpTransport(loop, protocol, host, port, auth, connector)
     _LOGGER.debug("create_http_connection Finished creating connection")
     return (transport, protocol)
 
@@ -247,7 +247,7 @@ class Connection:
         _LOGGER.info('Connecting to Insteon Hub on %s', self.host)
         auth = aiohttp.BasicAuth(self.username, self.password)
         connector = aiohttp.TCPConnector(
-            limit=1, loop=self._loop, keepalive_timeout=10)
+            limit=1, loop=self._loop, force_close=True)  # keepalive_timeout=10)
         _LOGGER.debug('Creating http connection')
         # pylint: disable=unused-variable
         transport, protocol = await create_http_connection(
@@ -300,14 +300,16 @@ class HttpTransport(asyncio.Transport):
     calling you back when it succeeds.
     """
 
-    def __init__(self, loop, protocol, session, host, port=25105):
+    def __init__(self, loop, protocol, host, port=25105, auth=None,
+                 connector=None):
         """Init the HttpTransport class."""
         super().__init__()
         self._loop = loop
         self._protocol = protocol
-        self._session = session
         self._host = host
         self._port = port
+        self._auth = auth
+        self._connector = connector
 
         self._closing = False
         self._protocol_paused = False
@@ -323,7 +325,8 @@ class HttpTransport(asyncio.Transport):
         self._reader_task = None
 
     def abort(self):
-        self._session.close()
+        pass
+        # self._session.close()
 
     def can_write_eof(self):
         return False
@@ -337,8 +340,8 @@ class HttpTransport(asyncio.Transport):
 
     async def _close(self):
         self._closing = True
-        await self._session.close()
-        await asyncio.sleep(0, loop=self._loop)
+        # await self._session.close()
+        # await asyncio.sleep(0, loop=self._loop)
         _LOGGER.info("Insteon Hub session closed")
 
     def get_write_buffer_size(self):
@@ -360,45 +363,54 @@ class HttpTransport(asyncio.Transport):
         hex_data = binascii.hexlify(data).decode()
         url = 'http://{:s}:{:d}/3?{:s}=I=3'.format(self._host, self._port,
                                                    hex_data)
-        coro_write = self._async_write(url)
-        asyncio.ensure_future(coro_write, loop=self._loop)
+        asyncio.ensure_future(self._async_write(url), loop=self._loop)
 
     async def test_connection(self):
         """Test the connection to the hub."""
         url = 'http://{:s}:{:d}/buffstatus.xml'.format(self._host, self._port)
-        response = None
+        response_status = 999
         try:
-            response = await self._session.get(url, timeout=30)
-            if response and response.status == 200:
-                _LOGGER.debug('Test connection status is %d', response.status)
-                return True
-            self._log_error(response.status)
+            async with aiohttp.ClientSession(# connector=self._connector,
+                                             loop=self._loop,
+                                             auth=self._auth) as session:
+                async with session.get(url, timeout=10) as response:
+                    if response:
+                        response_status = response.status
+                        if response.status == 200:
+                            _LOGGER.debug('Test connection status is %d',
+                                          response.status)
+                            return True
+                        self._log_error(response.status)
+                        _LOGGER.debug('Connection test failed')
+                        return False
 
         # pylint: disable=broad-except
         except Exception as e:
-            status = response.status if response else 999
-            _LOGGER.error('An unknown error occurred: %s with status %s',
-                          str(e), status)
+            _LOGGER.error('An aiohttp error occurred: %s with status %s',
+                          str(e), response_status)
         _LOGGER.debug('Connection test failed')
         self.close()
         return False
 
     async def _async_write(self, url):
         return_status = 500
-        if self._session.closed:
-            _LOGGER.warning("Session closed, cannot write to Hub")
-            return 999
+        # if self._session.closed:
+        #     _LOGGER.warning("Session closed, cannot write to Hub")
+        #     return 999
         _LOGGER.debug("Writing message: %s", url)
         try:
-            await self._read_write_lock
-            response = await self._session.post(url, timeout=5)
-            return_status = response.status
-            _LOGGER.debug("Post status: %s", response.status)
-            if response.status == 200:
-                self._write_last_read(0)
-            else:
-                self._log_error(response.status)
-                await self._stop_reader(False)
+            await self._read_write_lock 
+            async with aiohttp.ClientSession(# connector=self._connector,
+                                             loop=self._loop,
+                                             auth=self._auth) as session:
+                async with session.post(url, timeout=10) as response:
+                    return_status = response.status
+                    _LOGGER.debug("Post status: %s", response.status)
+                    if response.status == 200:
+                        self._write_last_read(0)
+                    else:
+                        self._log_error(response.status)
+                        await self._stop_reader(False)
         except aiohttp.client_exceptions.ServerDisconnectedError:
             _LOGGER.error('Reconnect to Hub (ServerDisconnectedError)')
             await self._stop_reader(True)
@@ -443,23 +455,26 @@ class HttpTransport(asyncio.Transport):
         self._protocol.connection_made(self)
         while self._restart_reader:
             try:
-                if self._session.closed:
-                    await self._stop_reader(False)
-                    return
+                # if self._session.closed:
+                #     await self._stop_reader(False)
+                #     return
                 await self._read_write_lock
-                response = await self._session.get(url, timeout=5)
-                buffer = None
-                # _LOGGER.debug("Reader status: %d", response.status)
-                if response.status == 200:
-                    html = await response.text()
-                    if len(html) == 234:
-                        # pylint: disable=no-value-for-parameter
-                        buffer = await self._parse_buffer(html)
-                    else:
-                        buffer = self._parse_buffer_v1(html)
-                else:
-                    self._log_error(response.status)
-                    await self._stop_reader(False)
+                async with aiohttp.ClientSession(# connector=self._connector,
+                                                 loop=self._loop,
+                                                 auth=self._auth) as session:
+                    async with session.get(url, timeout=10) as response:
+                        buffer = None
+                        _LOGGER.debug("Reader status: %d", response.status)
+                        if response.status == 200:
+                            html = await response.text()
+                            if len(html) == 234:
+                                # pylint: disable=no-value-for-parameter
+                                buffer = await self._parse_buffer(html)
+                            else:
+                                buffer = self._parse_buffer_v1(html)
+                        else:
+                            self._log_error(response.status)
+                            await self._stop_reader(False)
                 if self._read_write_lock.locked():
                     self._read_write_lock.release()
                 if buffer:
@@ -591,9 +606,9 @@ class HttpTransport(asyncio.Transport):
                 await self._reader_task
                 await asyncio.sleep(0, loop=self._loop)
         await self._protocol.pause_writing()
-        if not self._session.closed:
-            _LOGGER.debug('Session is open so we close it')
-            await self._close()
+        # if not self._session.closed:
+        #     _LOGGER.debug('Session is open so we close it')
+        #     await self._close()
         if reconnect:
             _LOGGER.debug("We want to reconnect so we do...")
             self._protocol.connection_lost(True)
