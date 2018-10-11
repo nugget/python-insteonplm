@@ -83,7 +83,7 @@ class SwichedLightingControlKeypad(Device):
             self._message_callbacks, 0x00, self._plm.loop)
 
         self._stateList[0x01] = OnOffKeypadA(
-            self._address, "keypadButtonA", 0x01, self._send_msg,
+            self._address, "keypadButtonMain", 0x01, self._send_msg,
             self._message_callbacks, 0x00, self._leds)
 
     def _add_buttons(self, button_list):
@@ -119,5 +119,5 @@ class SwitchedLightingControl_2334_222_6(SwichedLightingControlKeypad):
         super().__init__(plm, address, cat, subcat, product_key,
                          description, model)
 
-        button_list = {3: 'C', 4: 'D', 5: 'E', 6: 'F', 7: 'G'}
+        button_list = {3: 'A', 4: 'B', 5: 'C', 6: 'D'}
         self._add_buttons(button_list)
