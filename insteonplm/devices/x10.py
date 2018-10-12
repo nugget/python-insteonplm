@@ -75,9 +75,8 @@ class X10AllUnitsOff(X10Device):
         if val == 0x00:
             asyncio.ensure_future(self._reset_state_value(loop), loop=loop)
 
-    @asyncio.coroutine
-    def _reset_state_value(self, loop):
-        yield from asyncio.sleep(1, loop=loop)
+    async def _reset_state_value(self, loop):
+        await asyncio.sleep(1, loop=loop)
         self._stateList[0x01].reset()
 
     def _register_messages(self):
@@ -108,9 +107,8 @@ class X10AllLightsOn(X10Device):
         if val == 0xff:
             asyncio.ensure_future(self._reset_state_value(loop), loop=loop)
 
-    @asyncio.coroutine
-    def _reset_state_value(self, loop):
-        yield from asyncio.sleep(1, loop=loop)
+    async def _reset_state_value(self, loop):
+        await asyncio.sleep(1, loop=loop)
         self._stateList[0x01].reset()
 
     def _register_messages(self):
@@ -141,9 +139,8 @@ class X10AllLightsOff(X10Device):
         if val == 0x00:
             asyncio.ensure_future(self._reset_state_value(loop), loop=loop)
 
-    @asyncio.coroutine
-    def _reset_state_value(self, loop):
-        yield from asyncio.sleep(1, loop=loop)
+    async def _reset_state_value(self, loop):
+        await asyncio.sleep(1, loop=loop)
         self._stateList[0x01].reset()
 
     def _register_messages(self):

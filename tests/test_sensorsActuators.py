@@ -23,7 +23,7 @@ _LOGGING.setLevel(logging.DEBUG)
 
 def test_SensorsActuators_2450_status():
     """Test SensorActuator device model 2450."""
-    def run_test(loop):
+    async def run_test(loop):
         """Asyncio test run."""
         plm = MockPLM(loop)
         address = '1a2b3c'
@@ -47,7 +47,7 @@ def test_SensorsActuators_2450_status():
         device.states[0x02].register_updates(callbacks.callbackmethod2)
 
         device.async_refresh_state()
-        yield from asyncio.sleep(.1, loop=loop)
+        await asyncio.sleep(.1, loop=loop)
 
         # First state
         sentmsg = StandardSend(address, COMMAND_LIGHT_STATUS_REQUEST_0X19_0X00)
@@ -57,12 +57,12 @@ def test_SensorsActuators_2450_status():
                                    COMMAND_LIGHT_STATUS_REQUEST_0X19_0X00,
                                    acknak=MESSAGE_ACK)
         plm.message_received(receivedmsg)
-        yield from asyncio.sleep(.1, loop=loop)
+        await asyncio.sleep(.1, loop=loop)
         receivedmsg = StandardReceive(
             address, target, COMMAND_LIGHT_ON_0X11_NONE, cmd2=0x55,
             flags=MessageFlags.create(MESSAGE_TYPE_DIRECT_MESSAGE_ACK, 0))
         plm.message_received(receivedmsg)
-        yield from asyncio.sleep(.3, loop=loop)
+        await asyncio.sleep(.3, loop=loop)
         assert callbacks.callbackvalue1 == 0xff
 
         # Second state
@@ -70,12 +70,12 @@ def test_SensorsActuators_2450_status():
                                    COMMAND_LIGHT_STATUS_REQUEST_0X19_0X01,
                                    acknak=MESSAGE_ACK)
         plm.message_received(receivedmsg)
-        yield from asyncio.sleep(.1, loop=loop)
+        await asyncio.sleep(.1, loop=loop)
         receivedmsg = StandardReceive(
             address, target, COMMAND_LIGHT_ON_0X11_NONE, cmd2=0x33,
             flags=MessageFlags.create(MESSAGE_TYPE_BROADCAST_MESSAGE, 0))
         plm.message_received(receivedmsg)
-        yield from asyncio.sleep(.1, loop=loop)
+        await asyncio.sleep(.1, loop=loop)
 
         sentmsg = StandardSend(address, COMMAND_LIGHT_STATUS_REQUEST_0X19_0X01)
         assert plm.sentmessage == sentmsg.hex

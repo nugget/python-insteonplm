@@ -203,8 +203,7 @@ class LinkedDevices():
         _LOGGER.debug('Found saved device with address %s', addr)
         self._saved_devices[addr] = kwarg
 
-    @asyncio.coroutine
-    def load_saved_device_info(self):
+    async def load_saved_device_info(self):
         """Load device information from the device info file."""
         _LOGGER.debug("Loading saved device info.")
         deviceinfo = []
@@ -223,8 +222,7 @@ class LinkedDevices():
         for device in deviceinfo:
             self._add_saved_device_info(**device)
 
-    @asyncio.coroutine
-    def _write_saved_device_info(self, devices):
+    async def _write_saved_device_info(self, devices):
         if self._workdir:
             _LOGGER.debug('Writing %d devices to save file', len(devices))
             device_file = '{}/{}'.format(self._workdir, DEVICE_INFO_FILE)

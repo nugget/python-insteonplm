@@ -21,8 +21,7 @@ _LOGGER = logging.getLogger(__name__)
 
 def test_x10OnOff():
     """Test X10 On/Off device."""
-    @asyncio.coroutine
-    def run_test(loop):
+    async def run_test(loop):
         housecode = 'C'  # byte 0x02
         unitcode = 9     # byte 0x07
         plm = MockPLM(loop)
@@ -34,29 +33,29 @@ def test_x10OnOff():
 
         # Send On command and test both commands sent
         device.states[0x01].on()
-        yield from asyncio.sleep(.1, loop=loop)
+        await asyncio.sleep(.1, loop=loop)
         assert plm.sentmessage == '02632700'
         msg = X10Send(0x27, 0x00, 0x06)
         device.receive_message(msg)
-        yield from asyncio.sleep(.1, loop=loop)
+        await asyncio.sleep(.1, loop=loop)
         assert plm.sentmessage == '02632280'
-        yield from asyncio.sleep(.1, loop=loop)
+        await asyncio.sleep(.1, loop=loop)
         msg = X10Send(0x22, 0x00, 0x06)
         device.receive_message(msg)
-        yield from asyncio.sleep(.1, loop=loop)
+        await asyncio.sleep(.1, loop=loop)
 
         # Send Off command and test both commands sent
         device.states[0x01].off()
-        yield from asyncio.sleep(.1, loop=loop)
+        await asyncio.sleep(.1, loop=loop)
         assert plm.sentmessage == '02632700'
         msg = X10Send(0x27, 0x00, 0x06)
         device.receive_message(msg)
-        yield from asyncio.sleep(.1, loop=loop)
+        await asyncio.sleep(.1, loop=loop)
         assert plm.sentmessage == '02632380'
-        yield from asyncio.sleep(.1, loop=loop)
+        await asyncio.sleep(.1, loop=loop)
         msg = X10Send(0x23, 0x00, 0x06)
         device.receive_message(msg)
-        yield from asyncio.sleep(.1, loop=loop)
+        await asyncio.sleep(.1, loop=loop)
 
     loop = asyncio.get_event_loop()
     loop.run_until_complete(run_test(loop))
@@ -73,8 +72,7 @@ def test_x10OnOff():
 
 def test_dimmable():
     """Test X10 dimmable device."""
-    @asyncio.coroutine
-    def run_test(loop):
+    async def run_test(loop):
         housecode = 'C'  # byte 0x02
         unitcode = 9     # byte 0x07
         newval = 200
@@ -92,9 +90,9 @@ def test_dimmable():
             _LOGGER.info('Sending ACK messages')
             msg = X10Send(0x27, 0x00, 0x06)
             device.receive_message(msg)
-            yield from asyncio.sleep(.1, loop=loop)
+            await asyncio.sleep(.1, loop=loop)
 
-            yield from asyncio.sleep(.1, loop=loop)
+            await asyncio.sleep(.1, loop=loop)
             msg = X10Send(0x25, 0x80, 0x06)
         _LOGGER.info('New value: 0x%02x', cb.callbackvalue1)
         assert cb.callbackvalue1 == round((steps - 1) * (255 / 22))
@@ -114,8 +112,7 @@ def test_dimmable():
 
 def test_on_received():
     """Test X10 on message received."""
-    @asyncio.coroutine
-    def run_test(loop):
+    async def run_test(loop):
         housecode = 'C'  # byte 0x02
         unitcode = 9     # byte 0x07
         plm = MockPLM(loop)
@@ -126,12 +123,12 @@ def test_on_received():
 
         msg = X10Received.command_msg(housecode, X10_COMMAND_ON)
         device.receive_message(msg)
-        yield from asyncio.sleep(.1, loop=loop)
+        await asyncio.sleep(.1, loop=loop)
         assert cb.callbackvalue1 == 0xff
 
         msg = X10Received.command_msg(housecode, X10_COMMAND_OFF)
         device.receive_message(msg)
-        yield from asyncio.sleep(.1, loop=loop)
+        await asyncio.sleep(.1, loop=loop)
         assert cb.callbackvalue1 == 0x00
 
     loop = asyncio.get_event_loop()
@@ -162,8 +159,7 @@ def test_all_unit_types():
 
 def test_all_units_on_off():
     """Test X10 All Units Off command."""
-    @asyncio.coroutine
-    def run_test(loop):
+    async def run_test(loop):
         plm = MockPLM(loop)
         callbacks = MockCallbacks()
         all_units_off = X10AllUnitsOff(plm, 'A', 20)
@@ -177,10 +173,10 @@ def test_all_units_on_off():
         msg = X10Received.command_msg('A', X10_COMMAND_ALL_UNITS_OFF)
         plm.message_received(msg)
         _LOGGER.debug('Should have 1st callback')
-        yield from asyncio.sleep(.1, loop=loop)
+        await asyncio.sleep(.1, loop=loop)
         assert callbacks.callbackvalue1 == 0x00
         _LOGGER.debug('Should have 2nd callback')
-        yield from asyncio.sleep(2, loop=loop)
+        await asyncio.sleep(2, loop=loop)
         assert callbacks.callbackvalue1 == 0xff
 
     loop = asyncio.get_event_loop()

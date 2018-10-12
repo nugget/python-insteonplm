@@ -9,13 +9,12 @@ import async_timeout
 _LOGGER = logging.getLogger(__name__)
 
 
-@asyncio.coroutine
-def wait_for_plm_command(plm, cmd, loop):
+async def wait_for_plm_command(plm, cmd, loop):
     """Wait for a command to hit the PLM."""
     try:
         with async_timeout.timeout(10, loop=loop):
             while not plm.transport.lastmessage == cmd.hex:
-                yield from asyncio.sleep(.1, loop=loop)
+                await asyncio.sleep(.1, loop=loop)
             _LOGGER.info('Expected message sent %s', cmd)
             return True
     except asyncio.TimeoutError:
@@ -34,8 +33,7 @@ class MockConnection():
         self.transport = None
 
     @classmethod
-    @asyncio.coroutine
-    def create(cls, loop=None):
+    async def create(cls, loop=None):
         """Create the MockConnection."""
         from insteonplm.plm import PLM
         conn = cls()
