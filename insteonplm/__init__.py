@@ -450,7 +450,7 @@ class HttpTransport(asyncio.Transport):
                                                  auth=self._auth) as session:
                     async with session.get(url, timeout=10) as response:
                         buffer = None
-                        _LOGGER.debug("Reader status: %d", response.status)
+                        # _LOGGER.debug("Reader status: %d", response.status)
                         if response.status == 200:
                             html = await response.text()
                             if len(html) == 234:
