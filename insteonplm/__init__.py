@@ -19,11 +19,10 @@ _LOGGER = logging.getLogger(__name__)
 
 
 async def create_http_connection(loop, protocol_factory, host, port=25105,
-                                 auth=None, connector=None):
+                                 auth=None):
     """Create an HTTP session used to connect to the Insteon Hub."""
-    # session = aiohttp.ClientSession(auth=auth, connector=connector)
     protocol = protocol_factory()
-    transport = HttpTransport(loop, protocol, host, port, auth, connector)
+    transport = HttpTransport(loop, protocol, host, port, auth)
     _LOGGER.debug("create_http_connection Finished creating connection")
     return (transport, protocol)
 
@@ -246,14 +245,11 @@ class Connection:
     async def _connect_http(self):
         _LOGGER.info('Connecting to Insteon Hub on %s', self.host)
         auth = aiohttp.BasicAuth(self.username, self.password)
-        connector = aiohttp.TCPConnector(
-            limit=1, loop=self._loop, force_close=True)  # keepalive_timeout=10)
         _LOGGER.debug('Creating http connection')
         # pylint: disable=unused-variable
         transport, protocol = await create_http_connection(
             self._loop, lambda: self.protocol,
-            self.host, port=self.port,
-            auth=auth, connector=connector)
+            self.host, port=self.port, auth=auth)
         connected = await transport.test_connection()
         if connected:
             transport.resume_reading()
@@ -300,8 +296,7 @@ class HttpTransport(asyncio.Transport):
     calling you back when it succeeds.
     """
 
-    def __init__(self, loop, protocol, host, port=25105, auth=None,
-                 connector=None):
+    def __init__(self, loop, protocol, host, port=25105, auth=None):
         """Init the HttpTransport class."""
         super().__init__()
         self._loop = loop
@@ -309,7 +304,6 @@ class HttpTransport(asyncio.Transport):
         self._host = host
         self._port = port
         self._auth = auth
-        self._connector = connector
 
         self._closing = False
         self._protocol_paused = False
@@ -325,8 +319,7 @@ class HttpTransport(asyncio.Transport):
         self._reader_task = None
 
     def abort(self):
-        pass
-        # self._session.close()
+        self.close()
 
     def can_write_eof(self):
         return False
@@ -340,8 +333,7 @@ class HttpTransport(asyncio.Transport):
 
     async def _close(self):
         self._closing = True
-        # await self._session.close()
-        # await asyncio.sleep(0, loop=self._loop)
+        self._restart_reader = False
         _LOGGER.info("Insteon Hub session closed")
 
     def get_write_buffer_size(self):
@@ -370,8 +362,7 @@ class HttpTransport(asyncio.Transport):
         url = 'http://{:s}:{:d}/buffstatus.xml'.format(self._host, self._port)
         response_status = 999
         try:
-            async with aiohttp.ClientSession(# connector=self._connector,
-                                             loop=self._loop,
+            async with aiohttp.ClientSession(loop=self._loop,
                                              auth=self._auth) as session:
                 async with session.get(url, timeout=10) as response:
                     if response:
@@ -399,9 +390,8 @@ class HttpTransport(asyncio.Transport):
         #     return 999
         _LOGGER.debug("Writing message: %s", url)
         try:
-            await self._read_write_lock 
-            async with aiohttp.ClientSession(# connector=self._connector,
-                                             loop=self._loop,
+            await self._read_write_lock
+            async with aiohttp.ClientSession(loop=self._loop,
                                              auth=self._auth) as session:
                 async with session.post(url, timeout=10) as response:
                     return_status = response.status
@@ -453,14 +443,10 @@ class HttpTransport(asyncio.Transport):
         _LOGGER.debug('Calling connection made')
         _LOGGER.debug('Protocol: %s', self._protocol)
         self._protocol.connection_made(self)
-        while self._restart_reader:
+        while self._restart_reader and not self._closing:
             try:
-                # if self._session.closed:
-                #     await self._stop_reader(False)
-                #     return
                 await self._read_write_lock
-                async with aiohttp.ClientSession(# connector=self._connector,
-                                                 loop=self._loop,
+                async with aiohttp.ClientSession(loop=self._loop,
                                                  auth=self._auth) as session:
                     async with session.get(url, timeout=10) as response:
                         buffer = None

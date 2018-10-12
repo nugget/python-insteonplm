@@ -766,7 +766,8 @@ class PLM(IM):
         self.transport.set_write_buffer_limits(128)
         # limit = self.transport.get_write_buffer_size()
         # _LOGGER.debug('Write buffer size is %d', limit)
-        asyncio.ensure_future(self._setup_devices(), loop=self._loop)
+        if not self._aldb.status == ALDBStatus.LOADED:
+            asyncio.ensure_future(self._setup_devices(), loop=self._loop)
 
 
 class Hub(IM):
@@ -803,4 +804,5 @@ class Hub(IM):
         self._restart_writer = True
         self.restart_writing()
 
-        asyncio.ensure_future(self._setup_devices(), loop=self._loop)
+        if not self._aldb.status == ALDBStatus.LOADED:
+            asyncio.ensure_future(self._setup_devices(), loop=self._loop)
