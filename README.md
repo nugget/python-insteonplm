@@ -57,7 +57,7 @@ to be general-purpose and should be usable for other applications as well.
 
 ## Requirements
 
-- Python 3.4, 3.5 or 3.6 with asyncio
+- Python 3.5.3 or higher, 3.6 or 3.7
 - Posix or Windows based system
 - Some form of Insteon PLM or Hub
 - At least one Insteon device
