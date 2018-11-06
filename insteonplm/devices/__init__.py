@@ -776,6 +776,7 @@ class Device():
             try:
                 with async_timeout.timeout(DIRECT_ACK_WAIT_TIMEOUT):
                     msg = await self._directACK_received_queue.get()
+                    _LOGGER.debug('Direct ACK: %s', msg)
                     break
             except asyncio.TimeoutError:
                 _LOGGER.debug('No direct ACK messages received.')

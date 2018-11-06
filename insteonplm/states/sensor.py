@@ -200,43 +200,33 @@ class IoLincSensor(SensorBase):
 
         self._updatemethod = self._send_status_request
 
-        template_open_broadcast = StandardReceive.template(
-            commandtuple=COMMAND_LIGHT_ON_0X11_NONE,
-            address=self._address,
-            flags=MessageFlags.template(MESSAGE_TYPE_BROADCAST_MESSAGE, None))
-        template_close_broadcast = StandardReceive.template(
-            commandtuple=COMMAND_LIGHT_OFF_0X13_0X00,
-            address=self._address,
-            flags=MessageFlags.template(MESSAGE_TYPE_BROADCAST_MESSAGE, None),
-            cmd2=None)
+        self._register_messages()
 
-        template_open_cleanup = StandardReceive.template(
+    def _register_messages(self):
+        # The actual group number is 0x01 for the IOLinc sensor so this
+        # is hard coded in these template messages
+        template_close_cleanup = StandardReceive.template(
             commandtuple=COMMAND_LIGHT_ON_0X11_NONE,
             address=self._address,
-            flags=MessageFlags.template(MESSAGE_TYPE_ALL_LINK_CLEANUP, None))
-        template_close_cleanup = StandardReceive.template(
+            flags=MessageFlags.template(MESSAGE_TYPE_ALL_LINK_CLEANUP, None),
+            cmd2=0x01)
+        template_open_cleanup = StandardReceive.template(
             commandtuple=COMMAND_LIGHT_OFF_0X13_0X00,
             address=self._address,
             flags=MessageFlags.template(MESSAGE_TYPE_ALL_LINK_CLEANUP, None),
-            cmd2=None)
+            cmd2=0x01)
 
-        template_open_group = StandardReceive.template(
+        template_close_group = StandardReceive.template(
             commandtuple=COMMAND_LIGHT_ON_0X11_NONE,
             address=self._address,
-            target=bytearray([0x00, 0x00, self._group]),
-            flags=MessageFlags.template(MESSAGE_TYPE_ALL_LINK_BROADCAST, None),
-            cmd2=self._group)
-        template_close_group = StandardReceive.template(
+            target=bytearray([0x00, 0x00, 0x01]),
+            flags=MessageFlags.template(MESSAGE_TYPE_ALL_LINK_BROADCAST, None))
+        template_open_group = StandardReceive.template(
             commandtuple=COMMAND_LIGHT_OFF_0X13_0X00,
             address=self._address,
-            target=bytearray([0x00, 0x00, self._group]),
+            target=bytearray([0x00, 0x00, 0x01]),
             flags=MessageFlags.template(MESSAGE_TYPE_ALL_LINK_BROADCAST, None),
-            cmd2=self._group)
-
-        self._message_callbacks.add(template_open_broadcast,
-                                    self._open_message_received)
-        self._message_callbacks.add(template_close_broadcast,
-                                    self._close_message_received)
+            cmd2=None)
 
         self._message_callbacks.add(template_open_cleanup,
                                     self._open_message_received)
@@ -255,14 +245,15 @@ class IoLincSensor(SensorBase):
 
     # pylint: disable=unused-argument
     def _open_message_received(self, msg):
-        self._update_subscribers(0x01)
+        self._update_subscribers(0x00)
 
     # pylint: disable=unused-argument
     def _close_message_received(self, msg):
-        self._update_subscribers(0x00)
+        self._update_subscribers(0x01)
 
     def _status_message_received(self, msg):
         if msg.cmd2 == 0x00:
+            # 0x00 is open
             self._update_subscribers(0x00)
         else:
             self._update_subscribers(0x01)

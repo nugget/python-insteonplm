@@ -332,7 +332,7 @@ class OnOffSwitch_OutletBottom(OnOffStateBase):
             raise ValueError
 
 
-class OpenClosedRelay(OnOffStateBase):
+class OpenClosedRelay(State):
     """Device state representing an Open/Close switch that is controllable.
 
     Available properties are:
@@ -347,6 +347,14 @@ class OpenClosedRelay(OnOffStateBase):
       register_updates()
       async_refresh_state()
     """
+
+    def __init__(self, address, statename, group, send_message_method,
+                 message_callbacks, defaultvalue=None):
+        """Init the OpenClosedRelay."""
+        super().__init__(address, statename, group, send_message_method,
+                         message_callbacks, defaultvalue)
+
+        self._updatemethod = self._send_status_request
 
     def open(self):
         """Send OPEN command to device."""
@@ -369,6 +377,20 @@ class OpenClosedRelay(OnOffStateBase):
     def _close_message_received(self, msg):
         """Receive a CLOSE message."""
         self._update_subscribers(0x00)
+
+    def _send_status_request(self):
+        """Send a status request message to the device."""
+        status_command = StandardSend(self._address,
+                                      COMMAND_LIGHT_STATUS_REQUEST_0X19_0X00)
+        self._send_method(status_command,
+                          self._status_message_received)
+
+    def _status_message_received(self, msg):
+        """Receive a status message."""
+        if msg.cmd2 == 0x00:
+            self._update_subscribers(0x00)
+        else:
+            self._update_subscribers(0xff)
 
 
 class OnOffKeypadA(OnOffSwitch):

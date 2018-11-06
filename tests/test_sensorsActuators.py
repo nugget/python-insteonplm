@@ -7,7 +7,6 @@ from insteonplm.constants import (COMMAND_LIGHT_ON_0X11_NONE,
                                   COMMAND_LIGHT_STATUS_REQUEST_0X19_0X00,
                                   COMMAND_LIGHT_STATUS_REQUEST_0X19_0X01,
                                   MESSAGE_ACK,
-                                  MESSAGE_TYPE_BROADCAST_MESSAGE,
                                   MESSAGE_TYPE_DIRECT_MESSAGE_ACK)
 # SensorsActuators class not tested ?
 from insteonplm.devices.sensorsActuators import SensorsActuators_2450
@@ -72,15 +71,15 @@ def test_SensorsActuators_2450_status():
         plm.message_received(receivedmsg)
         await asyncio.sleep(.1, loop=loop)
         receivedmsg = StandardReceive(
-            address, target, COMMAND_LIGHT_ON_0X11_NONE, cmd2=0x33,
-            flags=MessageFlags.create(MESSAGE_TYPE_BROADCAST_MESSAGE, 0))
+            address, target, {'cmd1': 0x01, 'cmd2': 0x00},
+            flags=MessageFlags.create(MESSAGE_TYPE_DIRECT_MESSAGE_ACK, 0))
         plm.message_received(receivedmsg)
         await asyncio.sleep(.1, loop=loop)
 
         sentmsg = StandardSend(address, COMMAND_LIGHT_STATUS_REQUEST_0X19_0X01)
         assert plm.sentmessage == sentmsg.hex
         assert callbacks.callbackvalue1 == 0xff
-        assert callbacks.callbackvalue2 == 1
+        assert callbacks.callbackvalue2 == 0
 
     loop = asyncio.get_event_loop()
     loop.run_until_complete(run_test(loop))
