@@ -76,6 +76,10 @@ class SensorsActuators_2450(SensorsActuators):
         self._stateList[0x01] = OpenClosedRelay(
             self._address, "openClosedRelay", 0x01, self._send_msg,
             self._message_callbacks, 0x00)
+
+        # Both the Relay and the Sensor are linked via group 1.
+        # The sensor status updates are sent as group 1 updates.
+        # The relay status is not relevent.
         self._stateList[0x02] = IoLincSensor(
             self._address, "openClosedSensor", 0x02, self._send_msg,
             self._message_callbacks, 0x00)
