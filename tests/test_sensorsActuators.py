@@ -40,7 +40,7 @@ def test_SensorsActuators_2450_status():
                                        product_key, description, model)
         plm.devices[address] = device
         assert device.states[0x01].name == 'openClosedRelay'
-        assert device.states[0x02].name == 'openClosedSensor'
+        assert device.states[0x02].name == 'ioLincSensor'
 
         device.states[0x01].register_updates(callbacks.callbackmethod1)
         device.states[0x02].register_updates(callbacks.callbackmethod2)
