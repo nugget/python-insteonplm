@@ -81,5 +81,5 @@ class SensorsActuators_2450(SensorsActuators):
         # The sensor status updates are sent as group 1 updates.
         # The relay status is not relevent.
         self._stateList[0x02] = IoLincSensor(
-            self._address, "openClosedSensor", 0x02, self._send_msg,
+            self._address, "ioLincSensor", 0x02, self._send_msg,
             self._message_callbacks, 0x00)
