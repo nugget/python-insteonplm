@@ -1,4 +1,0 @@
-include README.rst
-include LICENSE
-graft insteonplm
-recursive-exclude * *.py[co]
