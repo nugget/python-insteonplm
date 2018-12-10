@@ -2,35 +2,16 @@
 """Setup for insteonplm module."""
 from setuptools import setup, find_packages
 
-try:
-    import pypandoc
-    long_description = pypandoc.convert('README.md', 'rst')
-except ImportError:
-    print('Skipping md->rst conversion for long_description')
-    long_description = 'Error converting Markdown from git repo'
-
-if len(long_description) < 100:
-    print("\n***\n***\nWARNING: %s\n***\n***\n" % long_description)
-
 setup(
     name='insteonplm',
     version='0.15.2',
     author='David McNett',
     author_email='nugget@macnugget.org',
     url='https://github.com/nugget/python-insteonplm',
-    license="LICENSE",
+    license="MIT License",
     packages=find_packages(),
     scripts=[],
     description='Python API for controlling Insteon PowerLinc Modems',
-    long_description=long_description,
-    classifiers=[
-        'Development Status :: 4 - Beta',
-        'Intended Audience :: Developers',
-        'License :: OSI Approved :: MIT License',
-        'Operating System :: OS Independent',
-        'Programming Language :: Python',
-        'Topic :: Software Development :: Libraries :: Python Modules',
-    ],
     include_package_data=True,
     zip_safe=True,
     install_requires=[
