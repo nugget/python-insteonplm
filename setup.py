@@ -2,6 +2,10 @@
 """Setup for insteonplm module."""
 from setuptools import setup, find_packages
 
+def readme():
+    with open('README.rst') as f:
+        return f.read()
+
 setup(
     name='insteonplm',
     version='0.15.2',
@@ -12,6 +16,7 @@ setup(
     packages=find_packages(),
     scripts=[],
     description='Python API for controlling Insteon PowerLinc Modems',
+    long_description=readme(),
     include_package_data=True,
     zip_safe=True,
     install_requires=[
