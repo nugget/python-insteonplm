@@ -19,7 +19,7 @@ platform for the `Home Assistant <https://home-assistant.io/>`__
 automation platform but it is structured to be general-purpose and
 should be usable for other applications as well.
 
-Contents
+Contents confirm changes work
 --------
 
 -  `Requirements <#requirements>`__
