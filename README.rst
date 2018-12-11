@@ -19,6 +19,30 @@ platform for the `Home Assistant <https://home-assistant.io/>`__
 automation platform but it is structured to be general-purpose and
 should be usable for other applications as well.
 
+Contents
+--------
+
+-  `Requirements`
+-  `Installation`
+
+   -  `Device permissions`
+   -  `First Start`
+
+-  `Tools`
+
+   -  `Message Monitoring`
+   -  `Command Line Interface`
+
+-  `Known Issues`
+-  `How You Can Help`
+
+   -  `Development`
+   -  `Testing, Feature Requests and Issue Identification`
+   -  `Documentation`
+
+-  `Credits`
+-  `Interesting Links`
+
 Requirements
 ------------
 
@@ -81,15 +105,14 @@ First Start
 When the module starts it reads the IM's All-Link Database to find
 linked devices. In order for this module to communicate with a device,
 it must be linked to the IM. For help with linking please see the
-section on the `Command Line Interface <#command-line-interface>`__
-below.
+section on the `Command Line Interface` below.
 
 After the module loads the All-Link database it queries each device to
 identify what type of device it is. This can take quite a while (5-15
 sec per device). Once it identifies the devices it saves them in the
 ``WORKDIR`` so that future startups are faster.
 
-Currently there is an issue with the command line `Tools <#tools>`__ not
+Currently there is an issue with the command line `Tools` not
 finding battery operated devices since they don't respond to device
 information requests. This is being addressed in future releases. This
 is not an issue if used with `Home
