@@ -19,30 +19,6 @@ platform for the `Home Assistant <https://home-assistant.io/>`__
 automation platform but it is structured to be general-purpose and
 should be usable for other applications as well.
 
-Contents
---------
-
--  `Requirements`
--  `Installation`
-
-   -  `Device permissions`
-   -  `First Start`
-
--  `Tools`
-
-   -  `Message Monitoring`
-   -  `Command Line Interface`
-
--  `Known Issues`
--  `How You Can Help`
-
-   -  `Development`
-   -  `Testing, Feature Requests and Issue Identification`
-   -  `Documentation`
-
--  `Credits`
--  `Interesting Links`
-
 Requirements
 ------------
 
