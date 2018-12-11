@@ -2,9 +2,12 @@
 """Setup for insteonplm module."""
 from setuptools import setup, find_packages
 
+
 def readme():
+    """Return README file as a string."""
     with open('README.rst', 'r') as f:
         return f.read()
+
 
 setup(
     name='insteonplm',
