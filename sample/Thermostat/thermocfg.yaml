@@ -1,0 +1,26 @@
+cycletime: 30
+cyclesperrefresh: 2
+device: /dev/ttyUSB0
+zones:
+  thehouse:
+    daystart: "05:30"
+    nightstart: "22:00"
+    awaymode: false
+    controllmodelismode: true
+    thermos:
+      - name: downstairs
+        ismain: true
+        address: 1a2b3c
+        dayheat: 72
+        daycool: 72
+        nightheat: 70
+        nightcool: 70
+        tempbuffer: 2
+      - name: upstairs
+        ismain: false
+        address: 4d5e6f
+        dayheat: 72
+        daycool: 74
+        nightheat: 70
+        nightcool: 74
+        tempbuffer: 2
