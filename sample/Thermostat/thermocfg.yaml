@@ -6,7 +6,6 @@ zones:
     daystart: "05:30"
     nightstart: "22:00"
     awaymode: false
-    controllmodelismode: true
     thermos:
       - name: downstairs
         ismain: true

@@ -25,7 +25,6 @@ Simple rule of thumb, if you have multiple thermostats, but only 1 heater/cooler
 * daystart: "05:30" *Time of day to start the day cycle*
 * nightstart: "22:00" *Time of day to start the night cycle*
 * awaymode: false *Not used yet, would let us do vacation/away where temps can go lower/higher*
-* controllmodelismode: true *Debating which mode is better, this will let you decide on if the temperature or the current mode is the basis of operation.*
 * thermos: *List of dictionaries that represent thermostat devices to control*
 * name: downstairs *Friendly name of the thermostat*
 * ismain: true *Indicates which thermostat is the master thermostat in the zone others will follow*
