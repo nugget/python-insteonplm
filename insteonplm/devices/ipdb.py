@@ -66,8 +66,8 @@ class IPDB():
         Product(0x00, 0x17, None, 'Mini Remote - 4 Scene', '2342-532', GeneralController_2342_4),
         Product(0x00, 0x18, None, 'Mini Remote - 8 Scene', '2342-522', GeneralController_2342_8),
         Product(0x00, 0x19, None, 'Mini Remote - Switch', '2342-542', GeneralController_2342),
-        Product(0x00, 0x1A, None, 'Mini Remote - 4 Scene', '2342-222', GeneralController_2342_4),
-        Product(0x00, 0x1B, None, 'Mini Remote - 8 Scene', '2342-232', GeneralController_2342_8),
+        Product(0x00, 0x1A, None, 'Mini Remote - 8 Scene', '2342-222', GeneralController_2342_8),
+        Product(0x00, 0x1B, None, 'Mini Remote - 4 Scene', '2342-232', GeneralController_2342_4),
         Product(0x00, 0x1C, None, 'Mini Remote - Switch', '2342-242', GeneralController_2342),
         Product(0x00, 0x1D, 0x000022, 'Range Extender', '2992-222', GeneralController),
 
