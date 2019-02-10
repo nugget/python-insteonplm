@@ -1,5 +1,6 @@
 cycletime: 30
 cyclesperrefresh: 2
+overridetime: 3600
 device: /dev/ttyUSB0
 zones:
   thehouse:
@@ -8,7 +9,6 @@ zones:
     awaymode: false
     thermos:
       - name: downstairs
-        ismain: true
         address: 1a2b3c
         dayheat: 72
         daycool: 72
@@ -16,7 +16,6 @@ zones:
         nightcool: 70
         tempbuffer: 2
       - name: upstairs
-        ismain: false
         address: 4d5e6f
         dayheat: 72
         daycool: 74

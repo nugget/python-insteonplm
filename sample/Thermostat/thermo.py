@@ -3,9 +3,9 @@ import logging
 import asyncio
 import argparse
 import datetime
+from decimal import Decimal
 import yaml
 import insteonplm
-from decimal import Decimal
 from insteonplm.constants import ThermostatMode
 
 _LOGGING = logging.getLogger(__name__)
@@ -46,16 +46,23 @@ class thermo:
             cfgsettings = yaml.load(cfgfile)
         _LOGGING.debug(cfgsettings)
 
-        if cfgsettings['device'] is None:
+        if 'device' not in cfgsettings:
             self.device = '/dev/ttyUSB0'
         else:
             self.device = cfgsettings['device']
-        if cfgsettings['cycletime'] is None:
+
+        if 'overridetime' not in cfgsettings:
+            self.overridetime = 3600
+        else:
+            self.overridetime = cfgsettings['overridetime']
+
+        if 'cycletime' not in cfgsettings:
             self.cycletime = 30
         else:
             self.cycletime = cfgsettings['cycletime']
+
         # cycletime * theshold = how long to wait for forced refresh
-        if cfgsettings['cyclesperrefresh'] is None:
+        if 'cyclesperrefresh' not in cfgsettings:
             self.refreshcyclethreshold = 2
         else:
             self.refreshcyclethreshold = cfgsettings['cyclesperrefresh']
@@ -75,9 +82,12 @@ class thermo:
                 thermo["discovered"] = False
                 thermo["reporting"] = False
                 thermo["lasttimeset"] = None
-                thermo["lastreporttime"] = None
+                thermo["overridetime"] = None
                 thermo["desiredpoint"] = 0
                 thermo["desiredmode"] = None
+                thermo["modeoverride"] = False
+                thermo["tempoverride"] = False
+                thermo["configrunning"] = False
 
     def start(self):
         """Starts the tool running.
@@ -125,19 +135,53 @@ class thermo:
                                    .format(zone, thermo["name"]))
                     if state == 0x01:
                         _LOGGING.debug("Setting Cool Set Point")
+                        oldsetpoint = thermo["setpointcool"]
                         if value > 100:
-                            thermo["setpointcool"] = value / 2
+                            newsetpoint = value / 2
                         else:
-                            thermo["setpointcool"] = value * 2
+                            newsetpoint = value * 2
+                        if newsetpoint != oldsetpoint:
+                            thermo["setpointcool"] = newsetpoint
+                            if (thermo["mode"] == ThermostatMode.COOL and
+                                    thermo["desiredpoint"] != 0 and
+                                    thermo["setpointcool"] !=
+                                    thermo["desiredpoint"]):
+                                thermo["tempoverride"] = True
+                                if thermo["overridetime"] is None:
+                                    thermo["overridetime"] = datetime.datetime.now()
+                            else:
+                                thermo["tempoverride"] = False
                     if state == 0x02:
                         _LOGGING.debug("Setting Heat Set Point")
+                        oldsetpoint = thermo["setpointheat"]
                         if value > 100:
-                            thermo["setpointheat"] = value / 2
+                            newsetpoint = value / 2
                         else:
-                            thermo["setpointheat"] = value * 2
+                            newsetpoint = value * 2
+                        if newsetpoint != oldsetpoint:
+                            thermo["setpointheat"] = newsetpoint
+                            if (thermo["mode"] == ThermostatMode.HEAT and
+                                    thermo["desiredpoint"] != 0 and
+                                    thermo["setpointheat"] !=
+                                    thermo["desiredpoint"]):
+                                thermo["tempoverride"] = True
+                                if thermo["overridetime"] is None:
+                                    thermo["overridetime"] = datetime.datetime.now()
+                            else:
+                                thermo["tempoverride"] = False
                     if state == 0x10:
                         _LOGGING.debug("Setting Mode")
-                        thermo["mode"] = value
+                        oldmode = thermo["mode"]
+                        newmode = value
+                        if oldmode != newmode:
+                            thermo["mode"] = newmode
+                            if (thermo["desiredmode"] is not None and
+                                    thermo["mode"] != thermo["desiredmode"]):
+                                thermo["modeoverride"] = True
+                                if thermo["overridetime"] is None:
+                                    thermo["overridetime"] = datetime.datetime.now()
+                            else:
+                                thermo["modeoverride"] = False
                     if state == 0x11:
                         _LOGGING.debug("Setting Fan")
                         thermo["fan"] = value
@@ -149,7 +193,6 @@ class thermo:
                         thermo["humidity"] = value
 
                     thermo["reporting"] = True
-                    thermo["lastreporttime"] = datetime.datetime.now().time()
 
     def async_aldb_loaded_callback(self):
         """Unlock the ALDB load lock when loading is complete."""
@@ -161,17 +204,16 @@ class thermo:
     def _determinethermo(self, zone, coolpoint, heatpoint):
         masterdesiredmode = None
         ismain = True
-        _LOGGING.info("Using mode based decision tree")
         for thermo in self.zones[zone]["thermos"]:
             _LOGGING.info("Now setting desired state for Thermo {0}/{1}"
                           " (is main: {2})"
-                            .format(zone, thermo["name"], ismain))
+                          .format(zone, thermo["name"], ismain))
             coolhighlow = (thermo[coolpoint] + thermo["tempbuffer"],
                            thermo[coolpoint] - thermo["tempbuffer"])
             heathighlow = (thermo[heatpoint] + thermo["tempbuffer"],
                            thermo[heatpoint] - thermo["tempbuffer"])
             if thermo["mode"] == ThermostatMode.COOL:
-                if thermo["temp"] < coolhighlow[1]:
+                if thermo["temp"] > coolhighlow[1]:
                     _LOGGING.info("      Cool should still be good. ({0}/{1})"
                                   .format(thermo["temp"], coolhighlow[1]))
                     thermo["desiredmode"] = ThermostatMode.COOL
@@ -181,7 +223,7 @@ class thermo:
                                   .format(thermo["temp"], coolhighlow[1]))
                     thermo["desiredmode"] = ThermostatMode.OFF
             elif thermo["mode"] == ThermostatMode.HEAT:
-                if thermo["temp"] > heathighlow[1]:
+                if thermo["temp"] < heathighlow[0]:
                     _LOGGING.info("      Heat should still be good. ({0}/{1})"
                                   .format(thermo["temp"], heathighlow[0]))
                     thermo["desiredmode"] = ThermostatMode.HEAT
@@ -203,26 +245,22 @@ class thermo:
                     thermo["desiredpoint"] = thermo[heatpoint]
                 else:
                     _LOGGING.info("      Current Mode should"
-                                    " still be good.")
+                                  " still be good.")
                     thermo["desiredmode"] = thermo["mode"]
                     if thermo["mode"] == ThermostatMode.COOL:
                         thermo["desiredpoint"] = thermo[coolpoint]
                         _LOGGING.info("      ({0}/{1}/{2})".format(
-                                       coolhighlow[0],
-                                       thermo["temp"],
-                                       coolhighlow[1] ))
+                            coolhighlow[0], thermo["temp"], coolhighlow[1]))
                     else:
                         thermo["desiredpoint"] = thermo[heatpoint]
                         _LOGGING.info("      ({0}/{1}/{2})".format(
-                                       heathighlow[0],
-                                       thermo["temp"],
-                                       heathighlow[1] ))
+                            heathighlow[0], thermo["temp"], heathighlow[1]))
             if ismain is True:
                 masterdesiredmode = thermo["desiredmode"]
                 ismain = False
             else:
                 if (masterdesiredmode == ThermostatMode.COOL and
-                            thermo["desiredmode"] == ThermostatMode.HEAT):
+                        thermo["desiredmode"] == ThermostatMode.HEAT):
                     _LOGGING.info("      Overriding to Off since Master is"
                                   " Cool and sub is Heat.")
                     thermo["desiredmode"] = ThermostatMode.OFF
@@ -233,7 +271,7 @@ class thermo:
                     thermo["desiredmode"] = ThermostatMode.OFF
             _LOGGING.info("Will set to {0} with a set point of: {1}"
                           .format(thermo["desiredmode"],
-                          thermo["desiredpoint"]))
+                                  thermo["desiredpoint"]))
 
     async def connect(self):
         """Connect to the IM."""
@@ -267,6 +305,14 @@ class thermo:
                           .format(thermo["desiredmode"]))
             _LOGGING.info("      Desired Set Point is: {0}"
                           .format(thermo["desiredpoint"]))
+            _LOGGING.info("      Mode Override: {0}"
+                          .format(thermo["modeoverride"]))
+            _LOGGING.info("      Temp Override: {0}"
+                          .format(thermo["tempoverride"]))
+            _LOGGING.info("      Last Set Time: {0}"
+                          .format(thermo["lasttimeset"]))
+            _LOGGING.info("      Over Ride Start Time: {0}"
+                          .format(thermo["overridetime"]))
         else:
             _LOGGING.info("The following isn't reporting yet: {0}/{1}"
                           .format(zonename, thermo["name"]))
@@ -308,20 +354,68 @@ class thermo:
             heatpoint = "nightheat"
         self._determinethermo(zone, coolpoint, heatpoint)
         for thermo in self.zones[zone]["thermos"]:
-            _LOGGING.info("Now Checking Thermo config {0}/{1}"
-                          .format(zone, thermo["name"]))
+            if thermo["configrunning"] is False:
+                self.loop.create_task(self._configthermo(thermo))
+            else:
+                _LOGGING.info("Skipping config loop as its running for:"
+                              " {0}/{1}".format(zone, thermo['name']))
+
+    async def _configthermo(self, thermo):
+        _LOGGING.info("Setting up Config loop for {0}".format(thermo["name"]))
+        thermo["configrunning"] = True
+        modeoverride = False
+        tempoverride = False
+        if thermo["overridetime"] is not None:
+            timesinceoverride = datetime.datetime.now() - thermo["overridetime"]
+            if timesinceoverride.seconds > self.overridetime:
+                _LOGGING.info("Time to reset override {0}/{1}."
+                              .format(timesinceoverride.seconds,
+                              self.overridetime))
+            else:
+                _LOGGING.info("Will use overrides {0}/{1}."
+                              .format(timesinceoverride.seconds,
+                              self.overridetime))
+                modeoverride = thermo["modeoverride"]
+                tempoverride = thermo["tempoverride"]
+        else:
+            _LOGGING.info("No Overrides to use.")
+        thermocorrect = False
+        while thermocorrect is False:
+            _LOGGING.info("Now Checking Thermo config for {0}"
+                          .format(thermo["name"]))
             thermodevice = self.plm.devices[thermo["address"]]
-            if thermo["mode"] != thermo["desiredmode"]:
-                _LOGGING.info("      Need to update mode.")
-                thermodevice.system_mode.set(thermo["desiredmode"])
-            if (thermo["desiredmode"] == ThermostatMode.COOL and
-                    thermo["setpointcool"] != thermo["desiredpoint"]):
-                _LOGGING.info("      Need to update cool set point.")
-                thermodevice.cool_set_point.set(thermo["desiredpoint"])
-            if (thermo["desiredmode"] == ThermostatMode.HEAT and
-                    thermo["setpointheat"] != thermo["desiredpoint"]):
-                _LOGGING.info("      Need to update heat set point.")
-                thermodevice.heat_set_point.set(thermo["desiredpoint"])
+            thermocorrect = True
+            if (modeoverride is False or
+                    thermo["desiredmode"] != ThermostatMode.OFF):
+                if thermo["mode"] != thermo["desiredmode"]:
+                    _LOGGING.info("      Need to update mode.")
+                    thermodevice.system_mode.set(thermo["desiredmode"])
+                    await asyncio.sleep(2, loop=self.loop)
+                    thermocorrect = False
+            else:
+                _LOGGING.info("Mode override in effect.")
+            if tempoverride is False:
+                if (thermo["desiredmode"] == ThermostatMode.COOL and
+                        thermo["setpointcool"] != thermo["desiredpoint"]):
+                    _LOGGING.info("      Need to update cool set point.")
+                    thermodevice.cool_set_point.set(thermo["desiredpoint"])
+                    await asyncio.sleep(2, loop=self.loop)
+                    thermocorrect = False
+                if (thermo["desiredmode"] == ThermostatMode.HEAT and
+                        thermo["setpointheat"] != thermo["desiredpoint"]):
+                    _LOGGING.info("      Need to update heat set point.")
+                    thermodevice.heat_set_point.set(thermo["desiredpoint"])
+                    await asyncio.sleep(2, loop=self.loop)
+                    thermocorrect = False
+            else:
+                _LOGGING.info("Temp override in effect.")
+            if thermocorrect is False:
+                await asyncio.sleep(5, loop=self.loop)
+        if modeoverride is False and tempoverride is False:
+            thermo["overridetime"] = None
+        thermo["configrunning"] = False
+        thermo["lasttimeset"] = datetime.datetime.now()
+        _LOGGING.info("Finished config loop for {0}".format(thermo["name"]))
 
     async def _myschedular(self):
         while self.loop.is_running():
@@ -346,8 +440,8 @@ class thermo:
                         await self._thermorefresh(zone, thermo)
             await asyncio.sleep(
                 (self.cycletime * self.refreshcyclethreshold),
-                loop=self.loop
-                )
+                loop=self.loop)
+
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description=__doc__)
