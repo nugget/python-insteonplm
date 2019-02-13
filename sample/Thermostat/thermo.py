@@ -148,7 +148,8 @@ class thermo:
                                     thermo["desiredpoint"]):
                                 thermo["tempoverride"] = True
                                 if thermo["overridetime"] is None:
-                                    thermo["overridetime"] = datetime.datetime.now()
+                                    thermo["overridetime"] \
+                                        = datetime.datetime.now()
                             else:
                                 thermo["tempoverride"] = False
                     if state == 0x02:
@@ -166,7 +167,8 @@ class thermo:
                                     thermo["desiredpoint"]):
                                 thermo["tempoverride"] = True
                                 if thermo["overridetime"] is None:
-                                    thermo["overridetime"] = datetime.datetime.now()
+                                    thermo["overridetime"] \
+                                        = datetime.datetime.now()
                             else:
                                 thermo["tempoverride"] = False
                     if state == 0x10:
@@ -179,7 +181,8 @@ class thermo:
                                     thermo["mode"] != thermo["desiredmode"]):
                                 thermo["modeoverride"] = True
                                 if thermo["overridetime"] is None:
-                                    thermo["overridetime"] = datetime.datetime.now()
+                                    thermo["overridetime"] \
+                                        = datetime.datetime.now()
                             else:
                                 thermo["modeoverride"] = False
                     if state == 0x11:
@@ -366,15 +369,16 @@ class thermo:
         modeoverride = False
         tempoverride = False
         if thermo["overridetime"] is not None:
-            timesinceoverride = datetime.datetime.now() - thermo["overridetime"]
+            timesinceoverride = (datetime.datetime.now()
+                                 - thermo["overridetime"])
             if timesinceoverride.seconds > self.overridetime:
                 _LOGGING.info("Time to reset override {0}/{1}."
                               .format(timesinceoverride.seconds,
-                              self.overridetime))
+                                      self.overridetime))
             else:
                 _LOGGING.info("Will use overrides {0}/{1}."
                               .format(timesinceoverride.seconds,
-                              self.overridetime))
+                                      self.overridetime))
                 modeoverride = thermo["modeoverride"]
                 tempoverride = thermo["tempoverride"]
         else:
