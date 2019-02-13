@@ -369,8 +369,8 @@ class thermo:
         modeoverride = False
         tempoverride = False
         if thermo["overridetime"] is not None:
-            timesinceoverride = (datetime.datetime.now()
-                                 - thermo["overridetime"])
+            timesinceoverride = (datetime.datetime.now() -
+                                 thermo["overridetime"])
             if timesinceoverride.seconds > self.overridetime:
                 _LOGGING.info("Time to reset override {0}/{1}."
                               .format(timesinceoverride.seconds,
