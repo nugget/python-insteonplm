@@ -23,7 +23,7 @@ setup(
     include_package_data=True,
     zip_safe=True,
     install_requires=[
-        'pyserial==3.2.0',
+        'pyserial==3.4',
         'pyserial-asyncio',
         'async_timeout',
         'aiohttp'
