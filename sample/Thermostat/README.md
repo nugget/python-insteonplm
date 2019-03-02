@@ -42,6 +42,9 @@ Simple rule of thumb, if you have multiple thermostats, but only 1 heater/cooler
 * nightcool: 70 *Target night time Cooling*
 * tempbuffer: 2 *How many degrees to buffer so it doesn't flop between modes to quickly.*
 
+## Running as a Service:
+Please see [How to install as a Service](ThermoInstall.md)
+
 ## Future Areas of Enhancement:
 * Add more granular scheduling
   * Schedule per device with multiple entries?

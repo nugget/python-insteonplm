@@ -1,5 +1,5 @@
-cycletime: 30
-cyclesperrefresh: 2
+cycletime: 60
+cyclesperrefresh: 5
 overridetime: 3600
 device: /dev/ttyUSB0
 zones:
@@ -13,7 +13,7 @@ zones:
         dayheat: 72
         daycool: 72
         nightheat: 70
-        nightcool: 70
+        nightcool: 74
         tempbuffer: 2
       - name: upstairs
         address: 4d5e6f
