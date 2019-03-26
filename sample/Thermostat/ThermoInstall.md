@@ -85,6 +85,7 @@ I wanted the thermo script to run all of the time, and start automatically even 
          [Install]
          WantedBy=multi-user.target
          ```
+      1. Note, if you don't want a log file (it slowed down my pi1), remove the "-l thermolog.log" section in the ExecStart.
    1. Register the Service.
       ```
       sudo systemctl --system daemon-reload
