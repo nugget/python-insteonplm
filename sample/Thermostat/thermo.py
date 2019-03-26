@@ -452,7 +452,7 @@ class thermo:
                         if thermo["configrunning"] is False:
                             await self._thermorefresh(zone, thermo)
                         else:
-                            _LOGGING.info("Skipping refresh as cfg is running.")
+                            _LOGGING.info("Skip refresh as cfg is running.")
             await asyncio.sleep(
                 (self.cycletime * self.refreshcyclethreshold),
                 loop=self.loop)
