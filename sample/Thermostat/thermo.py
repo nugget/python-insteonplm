@@ -1,8 +1,10 @@
 """Just a Sample of how to use Thermostats in insteaonplm."""
 import logging
+import logging.handlers
 import asyncio
 import argparse
 import datetime
+from random import randint
 from decimal import Decimal
 import yaml
 import insteonplm
@@ -35,7 +37,13 @@ class thermo:
         if hasattr(args, "logfile"):
             self.logfile = args.logfile
 
-        logging.basicConfig(level=self.loglevel, filename=self.logfile)
+        # logging.basicConfig(level=self.loglevel, filename=self.logfile)
+        _LOGGING.setLevel(self.loglevel)
+        if self.logfile is not None:
+            loghandler = logging.handlers.RotatingFileHandler(self.logfile,
+                                                              maxBytes=1000000,
+                                                              backupCount=5)
+            _LOGGING.addHandler(loghandler)
         _LOGGING.info(
             "Starting Up with logging set to: {0}.".format(self.loglevel))
         self.loadconfig()
@@ -414,7 +422,7 @@ class thermo:
             else:
                 _LOGGING.info("Temp override in effect.")
             if thermocorrect is False:
-                await asyncio.sleep(5, loop=self.loop)
+                await asyncio.sleep(randint(1, 10), loop=self.loop)
         if modeoverride is False and tempoverride is False:
             thermo["overridetime"] = None
         thermo["configrunning"] = False
@@ -441,7 +449,10 @@ class thermo:
                 _LOGGING.info("Refresh Loop started")
                 for zone in self.zones:
                     for thermo in self.zones[zone]["thermos"]:
-                        await self._thermorefresh(zone, thermo)
+                        if thermo["configrunning"] is False:
+                            await self._thermorefresh(zone, thermo)
+                        else:
+                            _LOGGING.info("Skipping refresh as cfg is running.")
             await asyncio.sleep(
                 (self.cycletime * self.refreshcyclethreshold),
                 loop=self.loop)
