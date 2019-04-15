@@ -866,7 +866,6 @@ class X10Device():
     async def close(self):
         """Close the writer for a clean shutdown."""
         # Nothing actually needed here.
-        pass
 
     def _send_msg(self, msg, wait_ack=True):
         _LOGGER.debug('Starting Device._send_msg')
@@ -1275,7 +1274,7 @@ class ALDB():
             self._status = ALDBStatus.LOADING
             mem_hi = mem_addr >> 8
             mem_lo = mem_addr & 0xff
-            controller = True if mode == 'c' else False
+            controller = mode == 'c'
             control_flag = ControlFlags(True, controller, True, False, False)
             addr = Address(target)
             addr_lo = addr.bytes[0]

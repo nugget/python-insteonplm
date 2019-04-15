@@ -21,13 +21,13 @@ matrix:
       env: TOXENV=py37
       dist: xenial
       sudo: required
-    - python: "3.8-dev"
-      env: TOXENV=py38
-      dist: xenial
-      sudo: required
-  allow_failures:
-    - python: "3.8-dev"
-      env: TOXENV=py38
+#    - python: "3.8-dev"
+#      env: TOXENV=py38
+#      dist: xenial
+#      sudo: required
+#  allow_failures:
+#    - python: "3.8-dev"
+#      env: TOXENV=py38
 
 cache:
   directories:

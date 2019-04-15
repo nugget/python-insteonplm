@@ -63,8 +63,7 @@ class MessageFlags():
             else:
                 extendedIsEqual = (self.extended == other.extended)
             return messageTypeIsEqual and extendedIsEqual
-        else:
-            return False
+        return False
 
     @classmethod
     def get_properties(cls):
