@@ -571,7 +571,7 @@ class Commander():
             except IndexError:
                 addr = None
 
-        if group and group >= 0 and group <= 255:
+        if group and 0 <= group <= 255:
             self.loop.create_task(
                 self.tools.start_all_linking(linkcode, group, addr))
         else:
