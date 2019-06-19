@@ -333,6 +333,24 @@ class IM(Device, asyncio.Protocol):
         await self.pause_writing()
         await asyncio.sleep(0, loop=self._loop)
 
+    def trigger_group_on(self, group):
+        """Trigger an All-Link Group on."""
+        from insteonplm.messages.standardSend import StandardSend
+        from insteonplm.constants import COMMAND_LIGHT_ON_0X11_NONE
+        target = Address(bytearray([0x00, 0x00, group]))
+        flags = 0xc0
+        msg = StandardSend(target, COMMAND_LIGHT_ON_0X11_NONE, cmd2=0xff, flags=flags)
+        self.send_msg(msg)
+
+    def trigger_group_off(self, group):
+        """Trigger an All-Link Group off."""
+        from insteonplm.messages.standardSend import StandardSend
+        from insteonplm.constants import COMMAND_LIGHT_OFF_0X13_00
+        target = Address(bytearray([0x00, 0x00, group]))
+        flags = 0xc0
+        msg = StandardSend(target, COMMAND_LIGHT_OFF_0X13_00, flags=flags)
+        self.send_msg(msg)
+
     async def _setup_devices(self):
         await self.devices.load_saved_device_info()
         _LOGGER.debug('Found %d saved devices',
