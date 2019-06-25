@@ -193,6 +193,7 @@ class SystemMode(State):
     def _ext_status_received(self, msg):
         sysmode = msg.userdata['d6']
         ext_mode = sysmode >> 4
+        mode = None
         if ext_mode == 0:
             mode = ThermostatMode.OFF
         elif ext_mode == 1:
@@ -201,7 +202,8 @@ class SystemMode(State):
             mode = ThermostatMode.HEAT
         elif ext_mode == 3:
             mode = ThermostatMode.COOL
-        self._update_subscribers(mode)
+        if mode is not None:
+            self._update_subscribers(mode)
 
     def _register_messages(self):
         mode_status_msg = StandardReceive.template(

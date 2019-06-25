@@ -335,21 +335,57 @@ class IM(Device, asyncio.Protocol):
 
     def trigger_group_on(self, group):
         """Trigger an All-Link Group on."""
-        from insteonplm.messages.standardSend import StandardSend
-        from insteonplm.constants import COMMAND_LIGHT_ON_0X11_NONE
+        from .messages.standardSend import StandardSend
+        from .constants import COMMAND_LIGHT_ON_0X11_NONE
         target = Address(bytearray([0x00, 0x00, group]))
         flags = 0xc0
         msg = StandardSend(target, COMMAND_LIGHT_ON_0X11_NONE, cmd2=0xff, flags=flags)
         self.send_msg(msg)
+        dev_list = self._find_scene(group)
+        _LOGGER.debug('Scene %d turned on', group)
+        for addr in dev_list:
+            device = self._devices[addr.id]
+            if hasattr(device, 'async_refresh_state'):
+                _LOGGER.debug('Checking status of device %s', addr.human)
+                device.async_refresh_state()
 
     def trigger_group_off(self, group):
         """Trigger an All-Link Group off."""
-        from insteonplm.messages.standardSend import StandardSend
-        from insteonplm.constants import COMMAND_LIGHT_OFF_0X13_00
+        from .messages.standardSend import StandardSend
+        from .constants import COMMAND_LIGHT_OFF_0X13_0X00
         target = Address(bytearray([0x00, 0x00, group]))
         flags = 0xc0
-        msg = StandardSend(target, COMMAND_LIGHT_OFF_0X13_00, flags=flags)
+        msg = StandardSend(target, COMMAND_LIGHT_OFF_0X13_0X00, flags=flags)
         self.send_msg(msg)
+        dev_list = self._find_scene(group)
+        _LOGGER.debug('Scene %d turned off', group)
+        for addr in dev_list:
+            device = self._devices[addr.id]
+            if hasattr(device, 'async_refresh_state'):
+                _LOGGER.debug('Checking status of device %s', addr.human)
+                device.async_refresh_state()
+
+    def _find_scene(self, group):
+        """Identify all devices that are part of a scene."""
+        device_list = []
+        for rec_num in self._aldb:
+            rec = self._aldb[rec_num]
+            _LOGGER.debug('Checking record for scene: %s', rec)
+            if (rec.control_flags.is_controller and rec.group == group):
+                if rec.address not in device_list:
+                    device_list.append(rec.address)
+        for addr in self._devices:
+            device = self._devices[addr]
+            aldb = device.aldb
+            for mem_addr in aldb:
+                rec = aldb[mem_addr]
+                _LOGGER.debug('Checking record for scene: %s', rec)
+                if (rec.control_flags.is_in_use and
+                        rec.group == group and
+                        rec.address == self._address):
+                    if rec.address not in device_list:
+                        device_list.append(device.address)
+        return device_list
 
     async def _setup_devices(self):
         await self.devices.load_saved_device_info()
@@ -358,6 +394,7 @@ class IM(Device, asyncio.Protocol):
         self._get_plm_info()
         self.devices.add_known_devices(self)
 
+        # Comment out the following lines for testing
         if self._load_aldb:
             self._load_all_link_database()
         else:
