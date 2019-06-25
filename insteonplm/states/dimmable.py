@@ -145,13 +145,13 @@ class DimmableSwitch(State):
             cmd2=None)
 
         self._message_callbacks.add(template_on_cleanup,
-                                    self._on_message_received)
+                                    self._manual_change_received)
         self._message_callbacks.add(template_on_fast_cleanup,
-                                    self._on_message_received)
+                                    self._manual_change_received)
         self._message_callbacks.add(template_off_cleanup,
-                                    self._off_message_received)
+                                    self._manual_change_received)
         self._message_callbacks.add(template_off_fast_cleanup,
-                                    self._off_message_received)
+                                    self._manual_change_received)
         self._message_callbacks.add(template_manual_cleanup,
                                     self._manual_change_received)
         self._message_callbacks.add(template_instant_cleanup,
