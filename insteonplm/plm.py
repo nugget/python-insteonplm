@@ -339,7 +339,8 @@ class IM(Device, asyncio.Protocol):
         from .constants import COMMAND_LIGHT_ON_0X11_NONE
         target = Address(bytearray([0x00, 0x00, group]))
         flags = 0xc0
-        msg = StandardSend(target, COMMAND_LIGHT_ON_0X11_NONE, cmd2=0xff, flags=flags)
+        msg = StandardSend(target, COMMAND_LIGHT_ON_0X11_NONE,
+                           cmd2=0xff, flags=flags)
         self.send_msg(msg)
         dev_list = self._find_scene(group)
         _LOGGER.debug('Scene %d turned on', group)
