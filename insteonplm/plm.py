@@ -371,9 +371,9 @@ class IM(Device, asyncio.Protocol):
                               'GeneratorExit')
                 self._restart_writer = False
             except Exception as e:
-                _LOGGER.error('Stopping Insteon Modem writer due to %s',
+                _LOGGER.error('Restarting Insteon Modem writer due to %s',
                               str(e))
-                self._restart_writer = False
+                self._restart_writer = True
         if self._write_transport_lock.locked():
             self._write_transport_lock.release()
         _LOGGER.debug('Ending Insteon Modem write message from send queue')
