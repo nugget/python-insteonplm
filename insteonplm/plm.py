@@ -412,9 +412,9 @@ class IM(Device, asyncio.Protocol):
         await self._write_transport_lock.acquire()
         while self._restart_writer:
             # wait for an item from the queue
+            msg_info = await self._send_queue.get()
+            message_sent = False
             try:
-                msg_info = await self._send_queue.get()
-                message_sent = False
                 while not message_sent:
                     message_sent = await self._write_message(msg_info)
                 await asyncio.sleep(msg_info.wait_timeout, loop=self._loop)
@@ -429,6 +429,7 @@ class IM(Device, asyncio.Protocol):
             except Exception as e:
                 _LOGGER.error('Restarting Insteon Modem writer due to %s',
                               str(e))
+                _LOGGER.error('MSG: %s', str(msg_info.msg))
                 self._restart_writer = True
         if self._write_transport_lock.locked():
             self._write_transport_lock.release()

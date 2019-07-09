@@ -485,8 +485,8 @@ class HttpTransport(asyncio.Transport):
                 _LOGGER.error('Reconnect to Hub (TimeoutError)')
                 await self._stop_reader(True)
             except Exception as e:
-                _LOGGER.debug('Stop reading due to %s', str(e))
-                await self._stop_reader(False)
+                _LOGGER.debug('Restarting reading due to %s', str(e))
+                await self._stop_reader(True)
         _LOGGER.info('Insteon Hub reader stopped')
         return
 
