@@ -592,18 +592,13 @@ class Device():
         self._device_info_queue.put_nowait(msg)
 
     def _handle_all_link_complete(self, msg):
-        if msg and msg.group == 0 and msg.linkcode == 0x01:
-            # IM is controller of group 1
-            # Set up other needed links
-            self.aldb.add_loaded_callback(self.create_default_links)
+        # Not ready for prime time
+        # if msg and msg.group == 0 and msg.linkcode == 0x01:
+        #    # IM is controller of group 1
+        #    # Set up other needed links
+        #    self.aldb.add_loaded_callback(self.create_default_links)
 
-        last_record = None
-        for mem_addr in self.aldb:
-            aldb_rec = self.aldb[mem_addr]
-            if aldb_rec.control_flags.is_high_water_mark:
-                last_record = mem_addr
-        if last_record:
-            self.aldb.pop(last_record)
+        self._aldb.remove_unused()
         self.read_aldb()
 
     def _register_messages(self):
@@ -1261,6 +1256,16 @@ class ALDB():
     def clear(self):
         """Remove all records."""
         self._records.clear()
+
+    def remove_unused(self):
+        """Remove All-Link records marked as not in use."""
+        unused = []
+        for mem_addr in self._records:
+            rec = self._records[mem_addr]
+            if rec.control_flags.is_available:
+                unused.append(mem_addr)
+        for mem_addr in unused:
+            self._records.pop(mem_addr)
 
     # pylint: disable=too-many-locals
     def write_record(self, mem_addr: int, mode: str, group: int, target,
