@@ -72,7 +72,9 @@ class Tools():
         if self.logfile:
             logging.basicConfig(level=self.loglevel, filename=self.logfile)
         else:
-            _LOGGING.info('Settig log level to %s', self.loglevel)
+            handler = logging.StreamHandler(sys.stdout)
+            _LOGGING.addHandler(handler)
+            _LOGGING.info('Setting log level to %s', self.loglevel)
             _LOGGING.setLevel(self.loglevel)
             _INSTEONPLM_LOGGING.setLevel(self.loglevel)
 
