@@ -315,10 +315,8 @@ class IM(Device, asyncio.Protocol):
         """Pause writing."""
         self._restart_writer = False
         if self._writer_task:
-            self._writer_task.remove_done_callback(self.restart_writing)
-            self._writer_task.cancel()
-            await self._writer_task
-            await asyncio.sleep(0, loop=self._loop)
+            self._send_queue.put_nowait(None)
+        await asyncio.sleep(.1)
 
     # pylint: disable=unused-argument
     def restart_writing(self, task=None):
@@ -413,6 +411,9 @@ class IM(Device, asyncio.Protocol):
         while self._restart_writer:
             # wait for an item from the queue
             msg_info = await self._send_queue.get()
+            if msg_info is None:
+                self._restart_writer = False
+                return
             message_sent = False
             try:
                 while not message_sent:
