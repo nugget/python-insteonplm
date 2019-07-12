@@ -321,7 +321,7 @@ class IM(Device, asyncio.Protocol):
     # pylint: disable=unused-argument
     def restart_writing(self, task=None):
         """Resume writing."""
-        if self._restart_writer:
+        if self._restart_writer and not self._write_transport_lock.locked():
             self._writer_task = asyncio.ensure_future(
                 self._get_message_from_send_queue(), loop=self._loop)
             self._writer_task.add_done_callback(self.restart_writing)
@@ -404,8 +404,6 @@ class IM(Device, asyncio.Protocol):
     # pylint: disable=broad-except
     async def _get_message_from_send_queue(self):
         _LOGGER.debug('Starting Insteon Modem write message from send queue')
-        if self._write_transport_lock.locked():
-            return
         _LOGGER.debug('Aquiring write lock')
         await self._write_transport_lock.acquire()
         while self._restart_writer:
