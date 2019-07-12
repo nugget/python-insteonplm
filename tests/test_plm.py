@@ -6,6 +6,7 @@ import insteonplm
 from insteonplm.constants import (COMMAND_LIGHT_ON_0X11_NONE,
                                   COMMAND_LIGHT_OFF_0X13_0X00,
                                   MESSAGE_FLAG_BROADCAST_0X80,
+                                  MESSAGE_FLAG_DIRECT_MESSAGE_ACK_0X20,
                                   COMMAND_ID_REQUEST_0X10_0X00,
                                   COMMAND_LIGHT_STATUS_REQUEST_0X19_0X00,
                                   MESSAGE_NAK,
@@ -195,15 +196,34 @@ async def do_plm(loop):
                        acknak=MESSAGE_ACK)
     plm.data_received(msg.bytes)
 
+    # Direct ACK of off message
+    msg = StandardReceive(
+        address='4d5e6f', target='010b00',
+        commandtuple=COMMAND_LIGHT_OFF_0X13_0X00,
+        flags=MESSAGE_FLAG_DIRECT_MESSAGE_ACK_0X20)
+    plm.data_received(msg.bytes)
+
     # Test that the second SET_LEVEL command is sent
     msg = StandardSend('4d5e6f', COMMAND_LIGHT_ON_0X11_NONE, cmd2=0xbb)
     cmd_sent = await wait_for_plm_command(plm, msg, loop)
     if not cmd_sent:
         assert False
 
+    # ACK the SET_LEVEL command and let the Direct ACK message expire
+    msg = StandardSend('4d5e6f', COMMAND_LIGHT_ON_0X11_NONE, cmd2=0xbb,
+                       acknak=MESSAGE_ACK)
+    plm.data_received(msg.bytes)
+    
+    msg = StandardReceive(
+        address='4d5e6f', target='010b00',
+        commandtuple=COMMAND_LIGHT_ON_0X11_NONE,
+        cmd2=0xbb,
+        flags=MESSAGE_FLAG_DIRECT_MESSAGE_ACK_0X20)
+    plm.data_received(msg.bytes)
+
     await plm.close()
     _LOGGER.error('PLM closed in test_plm')
-    await asyncio.sleep(0, loop=loop)
+    await asyncio.sleep(.1, loop=loop)
     open_tasks = asyncio.Task.all_tasks(loop=loop)
     for task in open_tasks:
         if hasattr(task, 'name'):
@@ -215,6 +235,7 @@ async def do_plm(loop):
 # pylint: disable=too-many-statements
 async def do_plm_x10(loop):
     """Asyncio coroutine to test the PLM X10 message handling."""
+    _LOGGER.setLevel(logging.DEBUG)
     _LOGGER.info('Connecting to Insteon PLM')
 
     # pylint: disable=not-an-iterable
@@ -269,9 +290,12 @@ async def do_plm_x10(loop):
     await asyncio.sleep(.1, loop=loop)
     assert cb.callbackvalue1 == 0x00
 
+    _LOGGER.info('Close PLM')
+    _LOGGER.info('_________')
+
     await plm.close()
     _LOGGER.error('PLM closed in test_x10')
-    await asyncio.sleep(0, loop=loop)
+    await asyncio.sleep(.1, loop=loop)
     open_tasks = asyncio.Task.all_tasks(loop=loop)
     for task in open_tasks:
         if hasattr(task, 'name'):
@@ -310,3 +334,7 @@ def test_plm_x10():
             _LOGGER.error('Task: %s', task)
         if not task.done():
             loop.run_until_complete(task)
+
+
+if __name__ == '__main__':
+    test_plm()
