@@ -336,7 +336,7 @@ class IM(Device, asyncio.Protocol):
         from .messages.standardSend import StandardSend
         from .constants import COMMAND_LIGHT_ON_0X11_NONE
         target = Address(bytearray([0x00, 0x00, group]))
-        flags = 0xc0
+        flags = 0xcf
         msg = StandardSend(target, COMMAND_LIGHT_ON_0X11_NONE,
                            cmd2=0xff, flags=flags)
         self.send_msg(msg)
@@ -344,6 +344,10 @@ class IM(Device, asyncio.Protocol):
         _LOGGER.debug('Scene %d turned on', group)
         for addr in dev_list:
             device = self._devices[addr.id]
+            flags = 0x4f
+            msg = StandardSend(device.address, COMMAND_LIGHT_ON_0X11_NONE,
+                               cmd2=0xff, flags=flags)
+            self.send_msg(msg)
             if hasattr(device, 'async_refresh_state'):
                 _LOGGER.debug('Checking status of device %s', addr.human)
                 device.async_refresh_state()
@@ -353,13 +357,16 @@ class IM(Device, asyncio.Protocol):
         from .messages.standardSend import StandardSend
         from .constants import COMMAND_LIGHT_OFF_0X13_0X00
         target = Address(bytearray([0x00, 0x00, group]))
-        flags = 0xc0
+        flags = 0xcf
         msg = StandardSend(target, COMMAND_LIGHT_OFF_0X13_0X00, flags=flags)
         self.send_msg(msg)
         dev_list = self._find_scene(group)
         _LOGGER.debug('Scene %d turned off', group)
         for addr in dev_list:
             device = self._devices[addr.id]
+            flags = 0x4f
+            msg = StandardSend(device.address, COMMAND_LIGHT_OFF_0X13_0X00, flags=flags)
+            self.send_msg(msg)
             if hasattr(device, 'async_refresh_state'):
                 _LOGGER.debug('Checking status of device %s', addr.human)
                 device.async_refresh_state()
