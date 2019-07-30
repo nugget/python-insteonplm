@@ -346,7 +346,7 @@ class IM(Device, asyncio.Protocol):
             device = self._devices[addr.id]
             flags = 0x4f
             msg = StandardSend(device.address, COMMAND_LIGHT_ON_0X11_NONE,
-                               cmd2=0xff, flags=flags)
+                               cmd2=group, flags=flags)
             self.send_msg(msg)
             if hasattr(device, 'async_refresh_state'):
                 _LOGGER.debug('Checking status of device %s', addr.human)
@@ -365,7 +365,8 @@ class IM(Device, asyncio.Protocol):
         for addr in dev_list:
             device = self._devices[addr.id]
             flags = 0x4f
-            msg = StandardSend(device.address, COMMAND_LIGHT_OFF_0X13_0X00, flags=flags)
+            msg = StandardSend(device.address, COMMAND_LIGHT_OFF_0X13_0X00,
+                               cmd2=group, flags=flags)
             self.send_msg(msg)
             if hasattr(device, 'async_refresh_state'):
                 _LOGGER.debug('Checking status of device %s', addr.human)
