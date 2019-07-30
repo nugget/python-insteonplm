@@ -11,7 +11,7 @@ def readme():
 
 setup(
     name='insteonplm',
-    version='0.16.4',
+    version='0.16.5',
     author='David McNett',
     author_email='nugget@macnugget.org',
     url='https://github.com/nugget/python-insteonplm',
