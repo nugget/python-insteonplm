@@ -120,17 +120,25 @@ class Connection:
         expect for this PLM class object.
 
         :param device:
-            Unix device where the PLM is attached
-        :param address:
+            Unix device where the PLM is attached for direct connections
+        :param host:
             IP Address of the Hub
         :param username:
             User name for connecting to the Hub
         :param password:
             Password for connecting to the Hub
+        :param port:
+            TCP port for connecting to the Hub
+        :param hub_version:
+            Supports version 1 (2242 serial socket) and 2 (http)
         :param auto_reconnect:
             Should the Connection try to automatically reconnect if needed?
         :param loop:
             asyncio.loop for async operation
+        :param workdir:
+            The directory where insteonplm should cache device discovery info
+        :param poll_devices:
+            Should insteonplm poll all discovered devices at startup
         :param load_aldb:
             Should the ALDB be loaded on connect
 
@@ -140,8 +148,7 @@ class Connection:
             boolean
         :type loop:
             asyncio.loop
-        :type update_callback:
-            callable
+
         """
         _LOGGER.debug("Starting Modified Connection.create")
         conn = cls(device=device, host=host, username=username,

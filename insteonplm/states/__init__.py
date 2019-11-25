@@ -14,7 +14,7 @@ class State():
     Level", "Temperature" or "Fan Mode".
 
     The class is defined with the following options:
-        stateName: Required text name of the state, such as "LightOnLevel".
+        statename: Required text name of the state, such as "LightOnLevel".
                    This value is returned when an async request is made to
                    update the state value.
         updatemethod: Required callback method where callback is defined as:
@@ -23,7 +23,7 @@ class State():
 
     The following public properties are available:
 
-    stateName - Text name for the device state.
+    name - Text name for the device state.
     value - Cached value of the state value. If this value is None, referencing
             this property forces an udpate by calling async_refresh_state
 
