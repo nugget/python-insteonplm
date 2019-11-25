@@ -472,8 +472,8 @@ class IM(Device, asyncio.Protocol):
             with async_timeout.timeout(ACKNAK_TIMEOUT):
                 while not is_ack_nak:
                     acknak = await self._acknak_queue.get()
-                    _LOGGER.debug('Processing _acknak_queue acknak: %s:%s msg'
-                                  ': %s:%s', id(acknak), acknak, id(msg), msg)
+                    _LOGGER.debug('Processing _acknak_queue acknak: %s msg: %s',
+                                  id(acknak), id(msg))
                     is_ack_nak = self._msg_is_ack_nak(msg, acknak)
                     is_sent = self._msg_is_sent(acknak)
         except asyncio.TimeoutError:

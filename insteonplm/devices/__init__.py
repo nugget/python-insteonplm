@@ -672,24 +672,26 @@ class Device():
                 _LOGGER.debug('DA queue: %s',
                               self._sent_msg_wait_for_directACK)
                 _LOGGER.debug('Message ACK with no callback')
-        if (hasattr(msg, 'flags') and
-                hasattr(msg.flags, 'isDirectACK') and
-                msg.flags.isDirectACK):
-            _LOGGER.debug('Got Direct ACK message. Already in queue: %d, '
-                          'Queueing %s:%s',
-                          self._directACK_received_queue.qsize(), id(msg), msg)
-            if self._send_msg_lock.locked():
-                self._directACK_received_queue.put_nowait(msg)
-            else:
-                _LOGGER.debug('But Direct ACK not expected')
+
+
         if not self._is_duplicate(msg):
+            if (hasattr(msg, 'flags') and
+                    hasattr(msg.flags, 'isDirectACK') and
+                    msg.flags.isDirectACK):
+                _LOGGER.debug('Got Direct ACK message. Already in queue: %d, '
+                    'Queueing %s:%s', self._directACK_received_queue.qsize(),
+                    id(msg), msg)
+                if self._send_msg_lock.locked():
+                    self._directACK_received_queue.put_nowait(msg)
+                else:
+                    _LOGGER.debug('But Direct ACK not expected')
+
             callbacks = self._message_callbacks.get_callbacks_from_message(msg)
             for callback in callbacks:
                 _LOGGER.debug('Scheduling msg callback: %s', callback)
                 self._plm.loop.call_soon(callback, msg)
         else:
-            _LOGGER.debug('msg is duplicate')
-            _LOGGER.debug(msg)
+            _LOGGER.debug('msg is duplicate: %s', id(msg))
         self._last_communication_received = datetime.datetime.now()
         _LOGGER.debug('Ending Device.receive_message')
 
@@ -706,36 +708,19 @@ class Device():
                 if msg_received >= (datetime.datetime.now() -
                                     datetime.timedelta(0, 0, 500000)):
                     recent_messages.append(recent_message)
-        if not recent_messages:
-            self._save_recent_message(msg)
-            return False
 
+        ret_val = False
         for recent_message in recent_messages:
             prev_msg = recent_message.get('msg')
             self._recent_messages.put_nowait(recent_message)
-            prev_cmd1 = prev_msg.cmd1
-            if prev_msg.flags.isAllLinkBroadcast:
-                prev_group = prev_msg.target.bytes[2]
-            elif prev_msg.flags.isAllLinkCleanup:
-                prev_group = prev_msg.cmd2
+            if msg.matches_pattern(prev_msg):
+                ret_val = True
 
-            if msg.flags.isAllLinkCleanup or msg.flags.isAllLinkBroadcast:
-                cmd1 = msg.cmd1
-                if msg.flags.isAllLinkBroadcast:
-                    group = msg.target.bytes[2]
-                else:
-                    group = msg.cmd2
-                if prev_cmd1 == cmd1 and prev_group == group:
-                    return True
-                self._save_recent_message(msg)
-            else:
-                self._save_recent_message(msg)
-                return False
-
-    def _save_recent_message(self, msg):
-        recent_message = {"msg": msg,
-                          "received": datetime.datetime.now()}
-        self._recent_messages.put_nowait(recent_message)
+        self._recent_messages.put_nowait(
+            {"msg": msg,
+             "received": datetime.datetime.now()
+            })
+        return ret_val
 
     def _send_msg(self, msg, callback=None, on_timeout=False):
         _LOGGER.debug('Starting %s Device._send_msg: Queuing message',
