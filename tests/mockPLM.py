@@ -4,6 +4,7 @@ from insteonplm.messagecallback import MessageCallback
 from insteonplm.linkedDevices import LinkedDevices
 
 _LOGGER = logging.getLogger(__name__)
+_LOGGER.setLevel(logging.DEBUG)
 
 
 class MockPLM():
@@ -24,10 +25,12 @@ class MockPLM():
     # pylint: disable=unused-argument
     def send_msg(self, msg, wait_nak=True, wait_timeout=2):
         """Send a message mock routine."""
+        _LOGGER.debug('TX: %s:%s', id(msg), msg)
         self.sentmessage = msg.hex
 
     def message_received(self, msg):
         """Fake a message being received by the PLM."""
+        _LOGGER.debug('RX: %s:%s', id(msg), msg)
         if hasattr(msg, 'address'):
             device = self.devices[msg.address.id]
             if device:

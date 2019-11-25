@@ -673,14 +673,14 @@ class Device():
                               self._sent_msg_wait_for_directACK)
                 _LOGGER.debug('Message ACK with no callback')
 
-
         if not self._is_duplicate(msg):
             if (hasattr(msg, 'flags') and
                     hasattr(msg.flags, 'isDirectACK') and
                     msg.flags.isDirectACK):
                 _LOGGER.debug('Got Direct ACK message. Already in queue: %d, '
-                    'Queueing %s:%s', self._directACK_received_queue.qsize(),
-                    id(msg), msg)
+                              'Queueing %s:%s',
+                              self._directACK_received_queue.qsize(),
+                              id(msg), msg)
                 if self._send_msg_lock.locked():
                     self._directACK_received_queue.put_nowait(msg)
                 else:
@@ -717,9 +717,7 @@ class Device():
                 ret_val = True
 
         self._recent_messages.put_nowait(
-            {"msg": msg,
-             "received": datetime.datetime.now()
-            })
+            {"msg": msg, "received": datetime.datetime.now()})
         return ret_val
 
     def _send_msg(self, msg, callback=None, on_timeout=False):
