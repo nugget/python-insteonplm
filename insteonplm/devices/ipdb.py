@@ -15,7 +15,7 @@ from insteonplm.devices.switchedLightingControl import (SwitchedLightingControl,
                                                         SwitchedLightingControl_2334_222_6,
                                                         SwitchedLightingControl_2334_222_8,
                                                         SwitchedLightingControl_2663_222)
-from insteonplm.devices.climateControl import ClimateControl_2441th
+from insteonplm.devices.climateControl import (ClimateControl_2441th, ClimateControl_2441v)
 from insteonplm.devices.securityHealthSafety import (SecurityHealthSafety,
                                                      SecurityHealthSafety_2421,
                                                      SecurityHealthSafety_2842_222,
@@ -248,7 +248,7 @@ class IPDB():
         Product(0x05, 0x00, None, 'Broan SMSC080 Exhaust Fan', '', None),
         Product(0x05, 0x01, 0x000002, 'EZTherm', '', None),
         Product(0x05, 0x02, None, 'Broan SMSC110 Exhaust Fan', '', None),
-        Product(0x05, 0x03, 0x00001F, 'Thermostat Adapter', '2441V', None),
+        Product(0x05, 0x03, None, 'Thermostat Adapter', '2441V', ClimateControl_2441v),
         Product(0x05, 0x04, 0x000024, 'EZTherm', '', None),
         Product(0x05, 0x05, 0x000038, 'Broan, Venmar, BEST Rangehoods', '', None),
         Product(0x05, 0x07, None, 'Wireless Thermostat', '2441ZTH', ClimateControl_2441th),

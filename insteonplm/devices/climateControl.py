@@ -16,14 +16,16 @@ from insteonplm.states.statusReport import StatusReport
 _LOGGER = logging.getLogger(__name__)
 
 
-class ClimateControl_2441th(Device):
-    """Thermostat model 2441TH."""
+class ClimateControl_Base(Device):
+    """Thermostat model."""
 
     def __init__(self, plm, address, cat, subcat, product_key=None,
                  description=None, model=None):
         """Init the DimmableLightingControl Class."""
         Device.__init__(self, plm, address, cat, subcat, product_key,
                         description, model)
+
+        _LOGGER.debug("Created instance of Insteon Climate Controller")
 
         self._stateList[0x01] = CoolSetPoint(
             self._address, "coolSetPoint", 0x01, self._send_msg,
@@ -100,3 +102,25 @@ class ClimateControl_2441th(Device):
     # pylint: disable=unused-argument
     def _mode_changed(self, addr, group, val):
         self.async_refresh_state()
+
+
+class ClimateControl_2441th(ClimateControl_Base):
+    """TH2441TH thermostat model."""
+
+    def __init__(self, plm, address, cat, subcat, product_key=None,
+                 description=None, model=None):
+        """Constructor, delegates most work to the base thermostat class."""
+        _LOGGER.debug("Created instance of 2441TH controller")
+        ClimateControl_Base.__init__(self, plm, address, cat, subcat,
+                                     product_key, description, model)
+
+
+class ClimateControl_2441v(ClimateControl_Base):
+    """TH2441V thermostat adapter model."""
+
+    def __init__(self, plm, address, cat, subcat, product_key=None,
+                 description=None, model=None):
+        """Constructor, delegates most work to the base thermostat class."""
+        _LOGGER.debug("Created instance of 2441V controller")
+        ClimateControl_Base.__init__(self, plm, address, cat, subcat,
+                                     product_key, description, model)
