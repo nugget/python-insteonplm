@@ -221,7 +221,7 @@ class LinkedDevices:
 
     async def load_saved_device_info(self):
         """Load device information from the device info file."""
-        _LOGGER.debug("Loading saved device info.")
+        _LOGGER.info("Loading saved device info.")
         deviceinfo = []
         if self._workdir:
             _LOGGER.debug("Really Loading saved device info.")

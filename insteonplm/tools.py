@@ -122,12 +122,15 @@ class Tools:
             device.model,
         )
         for state in device.states:
-            device.states[state].register_updates(self.async_state_change_callback)
+            device.states[state].register_updates(
+                self.async_state_change_callback)
+            _LOGGING.info("Device: %s:%x New state registered: %s",
+                          device.id, state, device.states[state].name)
 
     # pylint: disable=no-self-use
     def async_state_change_callback(self, addr, state, value):
         """Log the state change."""
-        _LOGGING.info("Device %s state %s value is changed to %s", addr, state, value)
+        _LOGGING.info("Device %s state %s value is changed to %s", addr.human, state, value)
 
     def async_aldb_loaded_callback(self):
         """Unlock the ALDB load lock when loading is complete."""
@@ -179,6 +182,50 @@ class Tools:
             if not self.plm.transport:
                 _LOGGING.info("IM connection has not been made.")
                 _LOGGING.info("Use `connect [device]` to open the connection")
+
+    async def device_test(self, addr, command, group):
+        """Test the control methods of a device.
+
+        Usage:
+            device_test address command [group]
+        Arguments:
+            address: Required - INSTEON address of the device
+            command: Required - on, off, brighten, dim, level50, open, close
+            group: Optional - All-Link group number. Defaults to 1
+        """
+        device = None
+        state = None
+
+        if addr:
+            dev_addr = Address(addr)
+            device = self.plm.devices[dev_addr.id]
+
+        if device:
+            state = device.states[group]
+            if state:
+                _LOGGING.info('----------------------')
+                if command == 'level50':
+                    _LOGGING.info('Send set_level(50) to device %s:0x%x',
+                                  dev_addr.human, group)
+                    device.set_level(50)
+                else:
+                    try:
+                        _LOGGING.info('Send %s to device %s:0x%x',
+                                      command, dev_addr.human, group)
+                        func = getattr(state, command)
+                        func()
+                    except AttributeError:
+                        _LOGGING.warning(
+                            'device %s:%s-%s state %s: does not '
+                            'support command %s', state.address.human,
+                            device.model, device.description, state.name,
+                            command)
+            else:
+                _LOGGING.warning('device %s:%s-%s does not have group %s',
+                                 device.address.human, device.model,
+                                 device.description, group)
+        else:
+            _LOGGING.warning('device %s does not exist', addr)
 
     async def on_off_test(self, addr, group):
         """Test the on/off method of a device.
@@ -237,12 +284,13 @@ class Tools:
             dev_addr = Address(addr)
             device = self.plm.devices[dev_addr.id]
         if device:
+            _LOGGING.info('----------------------')
+            _LOGGING.info('Printing ALDB for %s', device.address.human)
             if device.aldb.status in [ALDBStatus.LOADED, ALDBStatus.PARTIAL]:
                 if device.aldb.status == ALDBStatus.PARTIAL:
                     _LOGGING.info("ALDB partially loaded for device %s", addr)
                 for mem_addr in device.aldb:
                     record = device.aldb[mem_addr]
-                    _LOGGING.debug("mem_addr: %s", mem_addr)
                     _LOGGING.info("ALDB record: %s", record)
             else:
                 _LOGGING.info(
@@ -432,7 +480,7 @@ class Commander:
 
     @staticmethod
     def _invalid(cmd):
-        _LOGGING.error("Invalid command: %s", cmd[:-1])
+        print("Invalid command: ", cmd[:-1])
 
     async def _greeting(self):
         _LOGGING.info(INTRO)
@@ -478,8 +526,46 @@ class Commander:
         for task in asyncio.Task.all_tasks(loop=self.loop):
             _LOGGING.info(task)
 
+    async def do_device_test(self, args):
+        """Test the control methods of a device.
+
+        Usage:
+            device_test address command [group]
+        Arguments:
+            address: Required - INSTEON address of the device
+            command: Required - on, off, brighten, dim, level50, open, close
+            group: Optional - All-Link group number. Defaults to 1
+        """
+        params = args.split()
+        addr = None
+        cmd = None
+        group = None
+
+        try:
+            addr = params[0]
+        except IndexError:
+            addr = None
+
+        try:
+            cmd = params[1]
+        except IndexError:
+            cmd = None
+
+        try:
+            group = int(params[2])
+        except ValueError:
+            group = None
+        except IndexError:
+            group = 1
+
+        if addr and cmd and group:
+            await self.tools.device_test(addr, cmd, group)
+        else:
+            _LOGGING.error('Invalid address, command, or group')
+            self.do_help('device_test')
+
     async def do_on_off_test(self, args):
-        """Test the on/off method of a device.
+        """Test the on/off method of a device in sequence.
 
         Usage:
             on_off_test address [group]
@@ -935,15 +1021,15 @@ class Commander:
         if cmds:
             func = getattr(self, "do_{}".format(cmds[0]))
             if func:
-                _LOGGING.info(func.__doc__)
+                print(func.__doc__)
             else:
                 _LOGGING.error("Command %s not found", cmds[0])
         else:
-            _LOGGING.info("Available command list: ")
+            print("Available command list: ")
             for curr_cmd in dir(self.__class__):
                 if curr_cmd.startswith("do_") and not curr_cmd == "do_test":
                     print(" - ", curr_cmd[3:])
-            _LOGGING.info("For help with a command type `help command`")
+            print("For help with a command type `help command`")
 
     # pylint: disable=no-self-use
     # pylint: disable=unused-argument

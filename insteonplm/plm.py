@@ -249,7 +249,9 @@ class IM(Device, asyncio.Protocol):
             _LOGGER.debug("Removed ALDB device %s", remove_addr)
         except KeyError:
             _LOGGER.debug("Device %s not in ALDB device list", remove_addr)
-        _LOGGER.debug("ALDB device count: %d", len(self._aldb_devices))
+
+        _LOGGER.debug("Entries remaining in ALDB device discovery list: %d",
+                      len(self._aldb_devices))
 
     def manage_aldb_record(
         self, control_code, control_flags, group, address, data1, data2, data3
@@ -412,6 +414,7 @@ class IM(Device, asyncio.Protocol):
 
     async def _setup_devices(self):
         await self.devices.load_saved_device_info()
+
         _LOGGER.debug("Found %d saved devices", len(self.devices.saved_devices))
         self._get_plm_info()
         self.devices.add_known_devices(self)
@@ -461,7 +464,7 @@ class IM(Device, asyncio.Protocol):
         self.send_msg(msg, wait_nak=True, wait_timeout=0.5)
 
     async def _write_message(self, msg_info: MessageInfo):
-        _LOGGER.debug("TX: %s", msg_info.msg)
+        _LOGGER.debug("TX: %s:%s", id(msg_info.msg), msg_info.msg)
         is_sent = False
         if not self.transport.is_closing():
             self.transport.write(msg_info.msg.bytes)
@@ -483,6 +486,8 @@ class IM(Device, asyncio.Protocol):
             with async_timeout.timeout(ACKNAK_TIMEOUT):
                 while not is_ack_nak:
                     acknak = await self._acknak_queue.get()
+                    _LOGGER.debug('Processing _acknak_queue acknak: %s '
+                                  'msg: %s', id(acknak), id(msg))
                     is_ack_nak = self._msg_is_ack_nak(msg, acknak)
                     is_sent = self._msg_is_sent(acknak)
         except asyncio.TimeoutError:
@@ -619,7 +624,8 @@ class IM(Device, asyncio.Protocol):
 
     def _process_recv_queue(self):
         msg = self._recv_queue.pop()
-        _LOGGER.debug("RX: %s", msg)
+
+        _LOGGER.debug("RX: %s:%s", id(msg), msg)
         callbacks = self._message_callbacks.get_callbacks_from_message(msg)
         if hasattr(msg, "isack") or hasattr(msg, "isnak"):
             self._acknak_queue.put_nowait(msg)
@@ -648,7 +654,10 @@ class IM(Device, asyncio.Protocol):
         self._load_all_link_database()
 
     def _handle_all_link_record_response(self, msg):
-        _LOGGER.debug("Found all link record for device %s", msg.address.hex)
+
+        _LOGGER.debug("Found all link %s record for group 0x%02x, device %s",
+                      "control" if msg.isController else "respond",
+                      msg.group, msg.address.human)
         cat = msg.linkdata1
         subcat = msg.linkdata2
         product_key = msg.linkdata3
@@ -670,9 +679,9 @@ class IM(Device, asyncio.Protocol):
                 self, msg.address, cat, subcat, product_key
             )
 
-            # If a device is returned and that device is of a type tha stores
-            # the product data in the ALDB record we can use that as the device
-            # type for this record. Otherwise we need to request the device ID.
+            # If a device is returned and that device is of a type that
+            # can not be queried for the product data, then save the device
+            # with the data from the IPDB
             if device is not None:
                 if (
                     device.prod_data_in_aldb
@@ -682,18 +691,25 @@ class IM(Device, asyncio.Protocol):
                     if self.devices[device.id] is None:
                         self.devices[device.id] = device
                         _LOGGER.debug(
-                            "Device with id %s added to device list " "from ALDB data.",
+                            "Device with id %s added to device list from ALDB data.",
                             device.id,
                         )
 
         # Check again that the device is not already added, otherwise queue it
         # up for Get ID request
         if not self.devices[msg.address.id]:
-            _LOGGER.debug("Found new device %s", msg.address.id)
-            unknowndevice = self.devices.create_device_from_category(
-                self, msg.address.hex, None, None, None
-            )
-            self._aldb_devices[msg.address.id] = unknowndevice
+            if msg.address.id in self._aldb_devices:
+                _LOGGER.debug("Device %s already queued for Get ID request",
+                              msg.address.hex)
+            else:
+                _LOGGER.info("Found new device %s. Queueing device for "
+                             "Get ID request", msg.address.id)
+                unknowndevice = self.devices.create_device_from_category(
+                    self, msg.address.hex, None, None, None)
+                self._aldb_devices[msg.address.id] = unknowndevice
+        else:
+            _LOGGER.debug("Device %s already loaded from saved data or "
+                          "overrides", msg.address.hex)
 
         self._next_all_link_rec_nak_retries = 0
         self._get_next_all_link_record()
