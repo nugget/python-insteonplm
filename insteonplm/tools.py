@@ -142,7 +142,7 @@ class Tools():
             _LOGGING.info('Attempting to link the PLM to device %s. ',
                           address)
             self.plm.start_all_linking(linkcode, group)
-            asyncio.sleep(.5, loop=self.loop)
+            await asyncio.sleep(.5, loop=self.loop)
             linkdevice.enter_linking_mode(group=group)
         else:
             _LOGGING.info('Starting All-Linking on PLM. '
