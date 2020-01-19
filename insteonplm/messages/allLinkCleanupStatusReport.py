@@ -1,9 +1,11 @@
 """INSTEON Message All-Link Cleanup Status Report."""
 from insteonplm.messages.message import Message
-from insteonplm.constants import (MESSAGE_ALL_LINK_CLEANUP_STATUS_REPORT_0X58,
-                                  MESSAGE_ALL_LINK_CLEANUP_STATUS_REPORT_SIZE,
-                                  MESSAGE_ACK,
-                                  MESSAGE_NAK)
+from insteonplm.constants import (
+    MESSAGE_ALL_LINK_CLEANUP_STATUS_REPORT_0X58,
+    MESSAGE_ALL_LINK_CLEANUP_STATUS_REPORT_SIZE,
+    MESSAGE_ACK,
+    MESSAGE_NAK,
+)
 
 
 class AllLinkCleanupStatusReport(Message):
@@ -15,7 +17,7 @@ class AllLinkCleanupStatusReport(Message):
     _code = MESSAGE_ALL_LINK_CLEANUP_STATUS_REPORT_0X58
     _sendSize = MESSAGE_ALL_LINK_CLEANUP_STATUS_REPORT_SIZE
     _receivedSize = MESSAGE_ALL_LINK_CLEANUP_STATUS_REPORT_SIZE
-    _description = 'INSTEON All-Link Cleanup Status Report Message Received'
+    _description = "INSTEON All-Link Cleanup Status Report Message Received"
 
     def __init__(self, acknak):
         """Init the AllLinkCleanupStatusReport Class."""
@@ -42,4 +44,4 @@ class AllLinkCleanupStatusReport(Message):
         return self._acknak & MESSAGE_NAK == MESSAGE_NAK
 
     def _message_properties(self):
-        return [{'acknak': self._acknak}]
+        return [{"acknak": self._acknak}]

@@ -1,7 +1,9 @@
 """INSTEON Standard Receive Message Type 0x50."""
 
-from insteonplm.constants import (MESSAGE_STANDARD_MESSAGE_RECEIVED_0X50,
-                                  MESSAGE_STANDARD_MESSAGE_RECIEVED_SIZE)
+from insteonplm.constants import (
+    MESSAGE_STANDARD_MESSAGE_RECEIVED_0X50,
+    MESSAGE_STANDARD_MESSAGE_RECIEVED_SIZE,
+)
 from insteonplm.address import Address
 from insteonplm.messages.message import Message
 from insteonplm.messages.messageFlags import MessageFlags
@@ -16,13 +18,13 @@ class StandardReceive(Message):
     _code = MESSAGE_STANDARD_MESSAGE_RECEIVED_0X50
     _sendSize = MESSAGE_STANDARD_MESSAGE_RECIEVED_SIZE
     _receivedSize = MESSAGE_STANDARD_MESSAGE_RECIEVED_SIZE
-    _description = 'INSTEON Standard Message Received'
+    _description = "INSTEON Standard Message Received"
 
     def __init__(self, address, target, commandtuple, cmd2=None, flags=0x00):
         """Init the StandardReceive message class."""
-        if commandtuple.get('cmd1') is not None:
-            cmd1 = commandtuple['cmd1']
-            cmd2out = commandtuple['cmd2']
+        if commandtuple.get("cmd1") is not None:
+            cmd1 = commandtuple["cmd1"]
+            cmd2out = commandtuple["cmd2"]
         else:
             raise ValueError
 
@@ -42,24 +44,26 @@ class StandardReceive(Message):
     @classmethod
     def from_raw_message(cls, rawmessage):
         """Create message from a raw byte stream."""
-        return StandardReceive(rawmessage[2:5],
-                               rawmessage[5:8],
-                               {'cmd1': rawmessage[9],
-                                'cmd2': rawmessage[10]},
-                               flags=rawmessage[8])
+        return StandardReceive(
+            rawmessage[2:5],
+            rawmessage[5:8],
+            {"cmd1": rawmessage[9], "cmd2": rawmessage[10]},
+            flags=rawmessage[8],
+        )
 
     # pylint: disable=protected-access
     @classmethod
-    def template(cls, address=None, target=None, commandtuple=None,
-                 cmd2=-1, flags=None):
+    def template(
+        cls, address=None, target=None, commandtuple=None, cmd2=-1, flags=None
+    ):
         """Create a message template used for callbacks."""
         msgraw = bytearray([0x02, cls._code])
         msgraw.extend(bytes(cls._receivedSize))
         msg = StandardReceive.from_raw_message(msgraw)
 
         if commandtuple:
-            cmd1 = commandtuple.get('cmd1')
-            cmd2out = commandtuple.get('cmd2')
+            cmd1 = commandtuple.get("cmd1")
+            cmd2out = commandtuple.get("cmd2")
         else:
             cmd1 = None
             cmd2out = None
@@ -133,8 +137,10 @@ class StandardReceive(Message):
         return hi_byte
 
     def _message_properties(self):
-        return [{'address': self._address},
-                {'target': self._target},
-                {'flags': self._messageFlags},
-                {'cmd1': self._cmd1},
-                {'cmd2': self._cmd2}]
+        return [
+            {"address": self._address},
+            {"target": self._target},
+            {"flags": self._messageFlags},
+            {"cmd1": self._cmd1},
+            {"cmd2": self._cmd2},
+        ]

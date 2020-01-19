@@ -1,7 +1,9 @@
 """INSTEON Extended Receive Message Type 0x51."""
 
-from insteonplm.constants import (MESSAGE_EXTENDED_MESSAGE_RECEIVED_0X51,
-                                  MESSAGE_EXTENDED_MESSAGE_RECEIVED_SIZE)
+from insteonplm.constants import (
+    MESSAGE_EXTENDED_MESSAGE_RECEIVED_0X51,
+    MESSAGE_EXTENDED_MESSAGE_RECEIVED_SIZE,
+)
 from insteonplm.address import Address
 from insteonplm.messages.message import Message
 from insteonplm.messages.messageFlags import MessageFlags
@@ -17,14 +19,13 @@ class ExtendedReceive(Message):
     _code = MESSAGE_EXTENDED_MESSAGE_RECEIVED_0X51
     _sendSize = MESSAGE_EXTENDED_MESSAGE_RECEIVED_SIZE
     _receivedSize = MESSAGE_EXTENDED_MESSAGE_RECEIVED_SIZE
-    _description = 'INSTEON Extended Message Received'
+    _description = "INSTEON Extended Message Received"
 
-    def __init__(self, address, target, commandtuple, userdata, cmd2=None,
-                 flags=0x10):
+    def __init__(self, address, target, commandtuple, userdata, cmd2=None, flags=0x10):
         """Init the ExtendedRecieve message class."""
-        if commandtuple.get('cmd1', None) is not None:
-            cmd1 = commandtuple['cmd1']
-            cmd2out = commandtuple['cmd2']
+        if commandtuple.get("cmd1", None) is not None:
+            cmd1 = commandtuple["cmd1"]
+            cmd2out = commandtuple["cmd2"]
         else:
             raise ValueError
 
@@ -46,25 +47,33 @@ class ExtendedReceive(Message):
     def from_raw_message(cls, rawmessage):
         """Create message from raw byte stream."""
         userdata = Userdata.from_raw_message(rawmessage[11:25])
-        return ExtendedReceive(rawmessage[2:5],
-                               rawmessage[5:8],
-                               {'cmd1': rawmessage[9],
-                                'cmd2': rawmessage[10]},
-                               userdata,
-                               flags=rawmessage[8])
+        return ExtendedReceive(
+            rawmessage[2:5],
+            rawmessage[5:8],
+            {"cmd1": rawmessage[9], "cmd2": rawmessage[10]},
+            userdata,
+            flags=rawmessage[8],
+        )
 
     # pylint: disable=protected-access
     @classmethod
-    def template(cls, address=None, target=None, commandtuple=None,
-                 userdata=None, cmd2=-1, flags=None):
+    def template(
+        cls,
+        address=None,
+        target=None,
+        commandtuple=None,
+        userdata=None,
+        cmd2=-1,
+        flags=None,
+    ):
         """Create message template for callbacks."""
         msgraw = bytearray([0x02, cls._code])
         msgraw.extend(bytes(cls._receivedSize))
         msg = ExtendedReceive.from_raw_message(msgraw)
 
         if commandtuple:
-            cmd1 = commandtuple.get('cmd1')
-            cmd2out = commandtuple.get('cmd2')
+            cmd1 = commandtuple.get("cmd1")
+            cmd2out = commandtuple.get("cmd2")
         else:
             cmd1 = None
             cmd2out = None
@@ -144,9 +153,11 @@ class ExtendedReceive(Message):
         return hi_byte
 
     def _message_properties(self):
-        return [{'address': self._address},
-                {'target': self._target},
-                {'flags': self._messageFlags},
-                {'cmd1': self._cmd1},
-                {'cmd2': self._cmd2},
-                {'userdata': self._userdata}]
+        return [
+            {"address": self._address},
+            {"target": self._target},
+            {"flags": self._messageFlags},
+            {"cmd1": self._cmd1},
+            {"cmd2": self._cmd2},
+            {"userdata": self._userdata},
+        ]

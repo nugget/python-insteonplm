@@ -1,9 +1,11 @@
 """INSTEON Message Get IM Configuration."""
-from insteonplm.constants import (MESSAGE_GET_IM_CONFIGURATION_0X73,
-                                  MESSAGE_GET_IM_CONFIGURATION_SIZE,
-                                  MESSAGE_GET_IM_CONFIGURATION_RECEIVED_SIZE,
-                                  MESSAGE_ACK,
-                                  MESSAGE_NAK)
+from insteonplm.constants import (
+    MESSAGE_GET_IM_CONFIGURATION_0X73,
+    MESSAGE_GET_IM_CONFIGURATION_SIZE,
+    MESSAGE_GET_IM_CONFIGURATION_RECEIVED_SIZE,
+    MESSAGE_ACK,
+    MESSAGE_NAK,
+)
 from insteonplm.messages.message import Message
 
 
@@ -16,7 +18,7 @@ class GetImConfiguration(Message):
     _code = MESSAGE_GET_IM_CONFIGURATION_0X73
     _sendSize = MESSAGE_GET_IM_CONFIGURATION_SIZE
     _receivedSize = MESSAGE_GET_IM_CONFIGURATION_RECEIVED_SIZE
-    _description = 'Insteon Get IM Configuration Message'
+    _description = "Insteon Get IM Configuration Message"
 
     def __init__(self, flags=None, acknak=None):
         """Init the GetImConfiguration Class."""
@@ -28,8 +30,7 @@ class GetImConfiguration(Message):
     @classmethod
     def from_raw_message(cls, rawmesssage):
         """Create message from a raw byte stream."""
-        return GetImConfiguration(rawmesssage[2],
-                                  rawmesssage[5])
+        return GetImConfiguration(rawmesssage[2], rawmesssage[5])
 
     @property
     def imConfigurationFlags(self):
@@ -58,7 +59,9 @@ class GetImConfiguration(Message):
         else:
             self._spare1 = None
             self._spare2 = None
-        return [{'imConfigurationFlags': self._imConfigurationFlags},
-                {'spare1': self._spare1},
-                {'spare2': self._spare2},
-                {'acknak': self.acknak}]
+        return [
+            {"imConfigurationFlags": self._imConfigurationFlags},
+            {"spare1": self._spare1},
+            {"spare2": self._spare2},
+            {"acknak": self.acknak},
+        ]

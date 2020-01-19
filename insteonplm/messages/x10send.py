@@ -1,9 +1,11 @@
 """INSTEON Message X10 Send."""
-from insteonplm.constants import (MESSAGE_X10_MESSAGE_SEND_0X63,
-                                  MESSAGE_X10_MESSAGE_SEND_SIZE,
-                                  MESSAGE_X10_MESSAGE_SEND_RECEIVED_SIZE,
-                                  MESSAGE_ACK,
-                                  MESSAGE_NAK)
+from insteonplm.constants import (
+    MESSAGE_X10_MESSAGE_SEND_0X63,
+    MESSAGE_X10_MESSAGE_SEND_SIZE,
+    MESSAGE_X10_MESSAGE_SEND_RECEIVED_SIZE,
+    MESSAGE_ACK,
+    MESSAGE_NAK,
+)
 from insteonplm.messages.message import Message
 import insteonplm.utils
 
@@ -17,7 +19,7 @@ class X10Send(Message):
     _code = MESSAGE_X10_MESSAGE_SEND_0X63
     _sendSize = MESSAGE_X10_MESSAGE_SEND_SIZE
     _receivedSize = MESSAGE_X10_MESSAGE_SEND_RECEIVED_SIZE
-    _description = 'Insteon Get Next All Link Record Message'
+    _description = "Insteon Get Next All Link Record Message"
 
     def __init__(self, rawX10, flag, acknak=None):
         """Init the X10Send Class."""
@@ -84,6 +86,8 @@ class X10Send(Message):
         return self._acknak is not None and self._acknak == MESSAGE_NAK
 
     def _message_properties(self):
-        return [{'rawX10': self._rawX10},
-                {'flag': self._flag},
-                {'acknak': self._acknak}]
+        return [
+            {"rawX10": self._rawX10},
+            {"flag": self._flag},
+            {"acknak": self._acknak},
+        ]

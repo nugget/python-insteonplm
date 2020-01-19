@@ -1,8 +1,10 @@
 """INSTEON Message All-Link Complete."""
 
 from insteonplm.address import Address
-from insteonplm.constants import (MESSAGE_ALL_LINKING_COMPLETED_0X53,
-                                  MESSAGE_ALL_LINKING_COMPLETED_SIZE)
+from insteonplm.constants import (
+    MESSAGE_ALL_LINKING_COMPLETED_0X53,
+    MESSAGE_ALL_LINKING_COMPLETED_SIZE,
+)
 from insteonplm.messages.message import Message
 
 
@@ -15,7 +17,7 @@ class AllLinkComplete(Message):
     _code = MESSAGE_ALL_LINKING_COMPLETED_0X53
     _sendSize = MESSAGE_ALL_LINKING_COMPLETED_SIZE
     _receivedSize = MESSAGE_ALL_LINKING_COMPLETED_SIZE
-    _description = 'INSTEON ALL-Linking Completed Message Received'
+    _description = "INSTEON ALL-Linking Completed Message Received"
 
     def __init__(self, linkcode, group, address, cat, subcat, firmware):
         """Init the AllLinkComplete Class."""
@@ -29,12 +31,14 @@ class AllLinkComplete(Message):
     @classmethod
     def from_raw_message(cls, rawmessage):
         """Create a message from a raw byte stream."""
-        return AllLinkComplete(rawmessage[2],
-                               rawmessage[3],
-                               rawmessage[4:7],
-                               rawmessage[7],
-                               rawmessage[8],
-                               rawmessage[9])
+        return AllLinkComplete(
+            rawmessage[2],
+            rawmessage[3],
+            rawmessage[4:7],
+            rawmessage[7],
+            rawmessage[8],
+            rawmessage[9],
+        )
 
     @property
     def linkcode(self):
@@ -82,9 +86,11 @@ class AllLinkComplete(Message):
         return bool(self.linkcode == 0xFF)
 
     def _message_properties(self):
-        return [{'linkcode': self._linkcode},
-                {'group': self._group},
-                {'address': self._address},
-                {'category': self._category},
-                {'subcategory': self._subcategory},
-                {'firmware': self._firmware}]
+        return [
+            {"linkcode": self._linkcode},
+            {"group": self._group},
+            {"address": self._address},
+            {"category": self._category},
+            {"subcategory": self._subcategory},
+            {"firmware": self._firmware},
+        ]

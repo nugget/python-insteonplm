@@ -5,7 +5,7 @@ import binascii
 _LOGGER = logging.getLogger(__name__)
 
 
-class Userdata():
+class Userdata:
     """Extended Message User Data Type."""
 
     def __init__(self, userdata=None):
@@ -52,14 +52,14 @@ class Userdata():
     @property
     def human(self):
         """Emit the address in human-readible format (AA.BB.CC)."""
-        strout = ''
+        strout = ""
         first = True
         for i in range(0, 28, 2):
             if first:
                 first = False
             else:
-                strout = strout + '.'
-            strout = strout + self.hex[i:i + 2]
+                strout = strout + "."
+            strout = strout + self.hex[i : i + 2]
         return strout
 
     @property
@@ -72,7 +72,7 @@ class Userdata():
         """Emit the address in bytes format."""
         byteout = bytearray()
         for i in range(1, 15):
-            key = 'd' + str(i)
+            key = "d" + str(i)
             if self._userdata[key] is not None:
                 byteout.append(self._userdata[key])
             else:
@@ -131,8 +131,22 @@ class Userdata():
     def _dict_to_dict(cls, empty, userdata):
         if isinstance(userdata, dict):
             for key in userdata:
-                if key in ['d1', 'd2', 'd3', 'd4', 'd5', 'd6', 'd7',
-                           'd8', 'd9', 'd10', 'd11', 'd12', 'd13', 'd14']:
+                if key in [
+                    "d1",
+                    "d2",
+                    "d3",
+                    "d4",
+                    "d5",
+                    "d6",
+                    "d7",
+                    "d8",
+                    "d9",
+                    "d10",
+                    "d11",
+                    "d12",
+                    "d13",
+                    "d14",
+                ]:
                     empty[key] = userdata[key]
         return empty
 
@@ -140,7 +154,7 @@ class Userdata():
     def _bytes_to_dict(cls, empty, userdata):
         if len(userdata) == 14:
             for i in range(1, 15):
-                key = 'd{}'.format(i)
+                key = "d{}".format(i)
                 empty[key] = userdata[i - 1]
         else:
             raise ValueError
@@ -154,7 +168,7 @@ class Userdata():
         """
         userdata_dict = {}
         for i in range(1, 15):
-            key = 'd{}'.format(i)
+            key = "d{}".format(i)
             userdata_dict.update({key: val})
         return userdata_dict
 

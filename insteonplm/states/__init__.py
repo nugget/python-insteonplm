@@ -7,7 +7,7 @@ _LOGGER = logging.getLogger(__name__)
 
 
 # pylint: disable=too-many-instance-attributes
-class State():
+class State:
     """INSTEON device state base class.
 
     Base class used by Insteon devices to hold a device state such as "Light On
@@ -40,8 +40,15 @@ class State():
         update to the state value
     """
 
-    def __init__(self, address, statename, group, send_message_method,
-                 message_callbacks, defaultvalue=None):
+    def __init__(
+        self,
+        address,
+        statename,
+        group,
+        send_message_method,
+        message_callbacks,
+        defaultvalue=None,
+    ):
         """Initialzie tthe State Class."""
         self._address = Address(address)
         self._observer_callbacks = []

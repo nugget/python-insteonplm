@@ -49,26 +49,30 @@ class Message(metaclass=ClassPropertyMetaClass):
         """Return a string representation of an INSTEON message."""
         props = self._message_properties()
         msgstr = "{}'code': 0x{}".format(
-            "{", binascii.hexlify(bytes([self._code])).decode())
+            "{", binascii.hexlify(bytes([self._code])).decode()
+        )
         for prop in props:
             for key, val in prop.items():
-                msgstr = msgstr + ', '
+                msgstr = msgstr + ", "
                 if isinstance(val, Address):
                     msgstr = "{}'{}': {}".format(msgstr, key, val.human)
                 elif isinstance(val, MessageFlags):
                     msgstr = "{}'{}': 0x{}".format(msgstr, key, val.hex)
                 elif isinstance(val, int):
                     msgstr = "{}'{}': 0x{}".format(
-                        msgstr, key, binascii.hexlify(bytes([val])).decode())
+                        msgstr, key, binascii.hexlify(bytes([val])).decode()
+                    )
                 elif isinstance(val, bytearray):
                     msgstr = "{}'{}': 0x{}".format(
-                        msgstr, key, binascii.hexlify(val).decode())
+                        msgstr, key, binascii.hexlify(val).decode()
+                    )
                 elif isinstance(val, bytes):
                     msgstr = "{}'{}': 0x{}".format(
-                        msgstr, key, binascii.hexlify(val).decode())
+                        msgstr, key, binascii.hexlify(val).decode()
+                    )
                 else:
                     msgstr = "{}'{}': 0x{}".format(msgstr, key, str(val))
-        msgstr = "{}{}".format(msgstr, '}')
+        msgstr = "{}{}".format(msgstr, "}")
         return msgstr
 
     def __eq__(self, other):

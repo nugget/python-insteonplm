@@ -1,10 +1,12 @@
 """INSTEON Message Cancel All-Linking."""
 from insteonplm.messages.message import Message
-from insteonplm.constants import (MESSAGE_CANCEL_ALL_LINKING_0X65,
-                                  MESSAGE_CANCEL_ALL_LINKING_SIZE,
-                                  MESSAGE_CANCEL_ALL_LINKING_RECEIVED_SIZE,
-                                  MESSAGE_ACK,
-                                  MESSAGE_NAK)
+from insteonplm.constants import (
+    MESSAGE_CANCEL_ALL_LINKING_0X65,
+    MESSAGE_CANCEL_ALL_LINKING_SIZE,
+    MESSAGE_CANCEL_ALL_LINKING_RECEIVED_SIZE,
+    MESSAGE_ACK,
+    MESSAGE_NAK,
+)
 
 
 class CancelAllLinking(Message):
@@ -16,7 +18,7 @@ class CancelAllLinking(Message):
     _code = MESSAGE_CANCEL_ALL_LINKING_0X65
     _sendSize = MESSAGE_CANCEL_ALL_LINKING_SIZE
     _receivedSize = MESSAGE_CANCEL_ALL_LINKING_RECEIVED_SIZE
-    _description = 'INSTEON Cancel All-Linking'
+    _description = "INSTEON Cancel All-Linking"
 
     def __init__(self, acknak=None):
         """Init the CancelAllLinking Class."""
@@ -43,4 +45,4 @@ class CancelAllLinking(Message):
         return self._acknak is not None and self._acknak == MESSAGE_NAK
 
     def _message_properties(self):
-        return [{'acknak': self._acknak}]
+        return [{"acknak": self._acknak}]
