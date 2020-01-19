@@ -5,7 +5,8 @@ from insteonplm.constants import (
     MESSAGE_GET_NEXT_ALL_LINK_RECORD_SIZE,
     MESSAGE_GET_NEXT_ALL_LINK_RECORD_RECEIVED_SIZE,
     MESSAGE_ACK,
-    MESSAGE_NAK)
+    MESSAGE_NAK,
+)
 
 
 class GetNextAllLinkRecord(Message):
@@ -17,7 +18,7 @@ class GetNextAllLinkRecord(Message):
     _code = MESSAGE_GET_NEXT_ALL_LINK_RECORD_0X6A
     _sendSize = MESSAGE_GET_NEXT_ALL_LINK_RECORD_SIZE
     _receivedSize = MESSAGE_GET_NEXT_ALL_LINK_RECORD_RECEIVED_SIZE
-    _description = 'Insteon Get Next All Link Record Message'
+    _description = "Insteon Get Next All Link Record Message"
 
     def __init__(self, acknak=None):
         """Init the GetNextAllLinkRecord Class."""
@@ -44,4 +45,4 @@ class GetNextAllLinkRecord(Message):
         return self._acknak is not None and self._acknak == MESSAGE_NAK
 
     def _message_properties(self):
-        return [{'acknak': self._acknak}]
+        return [{"acknak": self._acknak}]

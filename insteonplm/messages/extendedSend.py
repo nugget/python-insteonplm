@@ -1,10 +1,12 @@
 """INSTEON Extended Send Message Type 0x62."""
 
-from insteonplm.constants import (MESSAGE_ACK,
-                                  MESSAGE_NAK,
-                                  MESSAGE_SEND_EXTENDED_MESSAGE_0X62,
-                                  MESSAGE_SEND_EXTENDED_MESSAGE_RECEIVED_SIZE,
-                                  MESSAGE_SEND_EXTENDED_MESSAGE_SIZE)
+from insteonplm.constants import (
+    MESSAGE_ACK,
+    MESSAGE_NAK,
+    MESSAGE_SEND_EXTENDED_MESSAGE_0X62,
+    MESSAGE_SEND_EXTENDED_MESSAGE_RECEIVED_SIZE,
+    MESSAGE_SEND_EXTENDED_MESSAGE_SIZE,
+)
 from insteonplm.address import Address
 from insteonplm.messages.message import Message
 from insteonplm.messages.messageFlags import MessageFlags
@@ -28,14 +30,15 @@ class ExtendedSend(Message):
     _code = MESSAGE_SEND_EXTENDED_MESSAGE_0X62
     _sendSize = MESSAGE_SEND_EXTENDED_MESSAGE_SIZE
     _receivedSize = MESSAGE_SEND_EXTENDED_MESSAGE_RECEIVED_SIZE
-    _description = 'INSTEON Standard Message Send'
+    _description = "INSTEON Standard Message Send"
 
-    def __init__(self, address, commandtuple, userdata, cmd2=None,
-                 flags=0x10, acknak=None):
+    def __init__(
+        self, address, commandtuple, userdata, cmd2=None, flags=0x10, acknak=None
+    ):
         """Init the ExtendedSend message class."""
-        if commandtuple.get('cmd1', None) is not None:
-            cmd1 = commandtuple['cmd1']
-            cmd2out = commandtuple['cmd2']
+        if commandtuple.get("cmd1", None) is not None:
+            cmd1 = commandtuple["cmd1"]
+            cmd2out = commandtuple["cmd2"]
         else:
             raise ValueError
 
@@ -57,25 +60,33 @@ class ExtendedSend(Message):
     def from_raw_message(cls, rawmessage):
         """Create a message from a raw byte stream."""
         userdata_dict = Userdata(rawmessage[8:22])
-        return ExtendedSend(rawmessage[2:5],
-                            {'cmd1': rawmessage[6],
-                             'cmd2': rawmessage[7]},
-                            userdata_dict,
-                            flags=rawmessage[5],
-                            acknak=rawmessage[22:23])
+        return ExtendedSend(
+            rawmessage[2:5],
+            {"cmd1": rawmessage[6], "cmd2": rawmessage[7]},
+            userdata_dict,
+            flags=rawmessage[5],
+            acknak=rawmessage[22:23],
+        )
 
     # pylint: disable=protected-access
     @classmethod
-    def template(cls, address=None, commandtuple=None,
-                 userdata=None, cmd2=-1, flags=None, acknak=None):
+    def template(
+        cls,
+        address=None,
+        commandtuple=None,
+        userdata=None,
+        cmd2=-1,
+        flags=None,
+        acknak=None,
+    ):
         """Create a message template used for callbacks."""
         msgraw = bytearray([0x02, cls._code])
         msgraw.extend(bytes(cls._receivedSize))
         msg = ExtendedSend.from_raw_message(msgraw)
 
         if commandtuple:
-            cmd1 = commandtuple.get('cmd1')
-            cmd2out = commandtuple.get('cmd2')
+            cmd1 = commandtuple.get("cmd1")
+            cmd2out = commandtuple.get("cmd2")
         else:
             cmd1 = None
             cmd2out = None
@@ -144,9 +155,9 @@ class ExtendedSend(Message):
         """Set byte 14 of the userdata to a checksum value."""
         data_sum = self.cmd1 + self.cmd2
         for i in range(1, 14):
-            data_sum += self._userdata['d{:d}'.format(i)]
-        chksum = 0xff - (data_sum & 0xff) + 1
-        self._userdata['d14'] = chksum
+            data_sum += self._userdata["d{:d}".format(i)]
+        chksum = 0xFF - (data_sum & 0xFF) + 1
+        self._userdata["d14"] = chksum
 
     def set_crc(self):
         """Set Userdata[13] and Userdata[14] to the CRC value."""
@@ -160,15 +171,17 @@ class ExtendedSend(Message):
                 fb = fb ^ 0x01 if (crc & 0x4000) else fb
                 fb = fb ^ 0x01 if (crc & 0x1000) else fb
                 fb = fb ^ 0x01 if (crc & 0x0008) else fb
-                crc = ((crc << 1) | fb) & 0xffff
+                crc = ((crc << 1) | fb) & 0xFFFF
                 b = b >> 1
-        self._userdata['d13'] = (crc >> 8) & 0xff
-        self._userdata['d14'] = crc & 0xff
+        self._userdata["d13"] = (crc >> 8) & 0xFF
+        self._userdata["d14"] = crc & 0xFF
 
     def _message_properties(self):
-        return [{'address': self._address},
-                {'flags': self._messageFlags},
-                {'cmd1': self._cmd1},
-                {'cmd2': self._cmd2},
-                {'userdata': self._userdata},
-                {'acknak': self._acknak}]
+        return [
+            {"address": self._address},
+            {"flags": self._messageFlags},
+            {"cmd1": self._cmd1},
+            {"cmd2": self._cmd2},
+            {"userdata": self._userdata},
+            {"acknak": self._acknak},
+        ]

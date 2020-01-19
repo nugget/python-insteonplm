@@ -1,11 +1,13 @@
 """INSTEON Message type 0x62 Standard Send."""
 
-from insteonplm.constants import (MESSAGE_ACK,
-                                  MESSAGE_FLAG_EXTENDED_0X10,
-                                  MESSAGE_NAK,
-                                  MESSAGE_SEND_STANDARD_MESSAGE_0X62,
-                                  MESSAGE_SEND_STANDARD_MESSAGE_RECEIVED_SIZE,
-                                  MESSAGE_SEND_STANDARD_MESSAGE_SIZE)
+from insteonplm.constants import (
+    MESSAGE_ACK,
+    MESSAGE_FLAG_EXTENDED_0X10,
+    MESSAGE_NAK,
+    MESSAGE_SEND_STANDARD_MESSAGE_0X62,
+    MESSAGE_SEND_STANDARD_MESSAGE_RECEIVED_SIZE,
+    MESSAGE_SEND_STANDARD_MESSAGE_SIZE,
+)
 from insteonplm.address import Address
 from insteonplm.messages.message import Message
 from insteonplm.messages.extendedSend import ExtendedSend
@@ -18,14 +20,13 @@ class StandardSend(Message):
     _code = MESSAGE_SEND_STANDARD_MESSAGE_0X62
     _sendSize = MESSAGE_SEND_STANDARD_MESSAGE_SIZE
     _receivedSize = MESSAGE_SEND_STANDARD_MESSAGE_RECEIVED_SIZE
-    _description = 'INSTEON Standard Message Send'
+    _description = "INSTEON Standard Message Send"
 
-    def __init__(self, address, commandtuple, cmd2=None,
-                 flags=0x00, acknak=None):
+    def __init__(self, address, commandtuple, cmd2=None, flags=0x00, acknak=None):
         """Init the StandardSend message class."""
-        if commandtuple.get('cmd1', None) is not None:
-            cmd1 = commandtuple['cmd1']
-            cmd2out = commandtuple['cmd2']
+        if commandtuple.get("cmd1", None) is not None:
+            cmd1 = commandtuple["cmd1"]
+            cmd2out = commandtuple["cmd2"]
         else:
             raise ValueError
 
@@ -46,32 +47,33 @@ class StandardSend(Message):
     @classmethod
     def from_raw_message(cls, rawmessage):
         """Create a message from a raw byte stream."""
-        if (rawmessage[5] &
-                MESSAGE_FLAG_EXTENDED_0X10) == MESSAGE_FLAG_EXTENDED_0X10:
+        if (rawmessage[5] & MESSAGE_FLAG_EXTENDED_0X10) == MESSAGE_FLAG_EXTENDED_0X10:
             if len(rawmessage) >= ExtendedSend.receivedSize:
                 msg = ExtendedSend.from_raw_message(rawmessage)
             else:
                 msg = None
         else:
-            msg = StandardSend(rawmessage[2:5],
-                               {'cmd1': rawmessage[6],
-                                'cmd2': rawmessage[7]},
-                               flags=rawmessage[5],
-                               acknak=rawmessage[8:9])
+            msg = StandardSend(
+                rawmessage[2:5],
+                {"cmd1": rawmessage[6], "cmd2": rawmessage[7]},
+                flags=rawmessage[5],
+                acknak=rawmessage[8:9],
+            )
         return msg
 
     # pylint: disable=protected-access
     @classmethod
-    def template(cls, address=None, commandtuple=None,
-                 cmd2=-1, flags=None, acknak=None):
+    def template(
+        cls, address=None, commandtuple=None, cmd2=-1, flags=None, acknak=None
+    ):
         """Create a message template for use in callbacks."""
         msgraw = bytearray([0x02, cls._code])
         msgraw.extend(bytes(cls._receivedSize))
         msg = StandardSend.from_raw_message(msgraw)
 
         if commandtuple:
-            cmd1 = commandtuple.get('cmd1')
-            cmd2out = commandtuple.get('cmd2')
+            cmd1 = commandtuple.get("cmd1")
+            cmd2out = commandtuple.get("cmd2")
         else:
             cmd1 = None
             cmd2out = None
@@ -130,8 +132,10 @@ class StandardSend(Message):
         return self._acknak is not None and self._acknak == MESSAGE_NAK
 
     def _message_properties(self):
-        return [{'address': self._address},
-                {'flags': self._messageFlags},
-                {'cmd1': self._cmd1},
-                {'cmd2': self._cmd2},
-                {'acknak': self._acknak}]
+        return [
+            {"address": self._address},
+            {"flags": self._messageFlags},
+            {"cmd1": self._cmd1},
+            {"cmd2": self._cmd2},
+            {"acknak": self._acknak},
+        ]

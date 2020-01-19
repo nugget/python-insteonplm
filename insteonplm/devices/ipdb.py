@@ -3,31 +3,43 @@ import logging
 import collections
 
 from insteonplm.devices.unknowndevice import UnknownDevice
-from insteonplm.devices.generalController import (GeneralController,
-                                                  GeneralController_2342,
-                                                  GeneralController_2342_4,
-                                                  GeneralController_2342_8)
-from insteonplm.devices.dimmableLightingControl import (DimmableLightingControl,
-                                                        DimmableLightingControl_2475F,
-                                                        DimmableLightingControl_2334_222_6,
-                                                        DimmableLightingControl_2334_222_8)
-from insteonplm.devices.switchedLightingControl import (SwitchedLightingControl,
-                                                        SwitchedLightingControl_2334_222_6,
-                                                        SwitchedLightingControl_2334_222_8,
-                                                        SwitchedLightingControl_2663_222)
+from insteonplm.devices.generalController import (
+    GeneralController,
+    GeneralController_2342,
+    GeneralController_2342_4,
+    GeneralController_2342_8,
+)
+from insteonplm.devices.dimmableLightingControl import (
+    DimmableLightingControl,
+    DimmableLightingControl_2475F,
+    DimmableLightingControl_2334_222_6,
+    DimmableLightingControl_2334_222_8,
+)
+from insteonplm.devices.switchedLightingControl import (
+    SwitchedLightingControl,
+    SwitchedLightingControl_2334_222_6,
+    SwitchedLightingControl_2334_222_8,
+    SwitchedLightingControl_2663_222,
+)
 from insteonplm.devices.climateControl import ClimateControl_2441th
-from insteonplm.devices.securityHealthSafety import (SecurityHealthSafety,
-                                                     SecurityHealthSafety_2421,
-                                                     SecurityHealthSafety_2842_222,
-                                                     SecurityHealthSafety_2852_222,
-                                                     SecurityHealthSafety_2845_222,
-                                                     SecurityHealthSafety_2982_222)
-from insteonplm.devices.sensorsActuators import (SensorsActuators,
-                                                 SensorsActuators_2450)
+from insteonplm.devices.securityHealthSafety import (
+    SecurityHealthSafety,
+    SecurityHealthSafety_2421,
+    SecurityHealthSafety_2842_222,
+    SecurityHealthSafety_2852_222,
+    SecurityHealthSafety_2845_222,
+    SecurityHealthSafety_2982_222,
+)
+from insteonplm.devices.sensorsActuators import SensorsActuators, SensorsActuators_2450
 from insteonplm.devices.windowCoverings import WindowCovering
-from insteonplm.devices.x10 import (X10OnOff, X10Dimmable, X10Sensor,
-                                    X10AllUnitsOff, X10AllLightsOn,
-                                    X10AllLightsOff)
+from insteonplm.devices.x10 import (
+    X10OnOff,
+    X10Dimmable,
+    X10Sensor,
+    X10AllUnitsOff,
+    X10AllLightsOn,
+    X10AllLightsOff,
+)
 
 # pylint: disable=line-too-long
 # pylint: disable=too-few-public-methods
@@ -35,13 +47,15 @@ from insteonplm.devices.x10 import (X10OnOff, X10Dimmable, X10Sensor,
 _LOGGER = logging.getLogger(__name__)
 
 
-Product = collections.namedtuple('Product', 'cat subcat product_key description model deviceclass')
+Product = collections.namedtuple(
+    "Product", "cat subcat product_key description model deviceclass"
+)
 
 
-X10Product = collections.namedtuple('X10Product', 'feature deviceclass')
+X10Product = collections.namedtuple("X10Product", "feature deviceclass")
 
 # flake8: noqa
-class IPDB():
+class IPDB:
     """Embodies the INSTEON Product Database static data and access methods."""
 
     # pylint disable=line-too-long
@@ -305,7 +319,7 @@ class IPDB():
         Product(0x0E, 0x02, 0x0000000, 'Micro Open/Close', '2444-422', WindowCovering),
         Product(0x0E, 0x03, 0x0000000, 'Micro Open/Close', '2444-522', WindowCovering),
 
-        Product(0x0F, None, None, 'Generic Plumbing Controller', '', None),
+        Product(0x0F, None, None, 'Generic Access Controller', '', None),
         Product(0x0F, 0x00, 0x000000E, 'Weiland Doors Central Drive and Controller', '', None),
         Product(0x0F, 0x01, 0x000000F, 'Weiland Doors Secondary Central Drive', '', None),
         Product(0x0F, 0x02, 0x0000010, 'Weiland Doors Assist Drive', '', None),
@@ -346,12 +360,12 @@ class IPDB():
         X10Product("sensor", X10Sensor),
         X10Product("allunitsoff", X10AllUnitsOff),
         X10Product("alllightson", X10AllLightsOn),
-        X10Product("alllightsoff", X10AllLightsOff)
-        ]
+        X10Product("alllightsoff", X10AllLightsOff),
+    ]
 
     def __len__(self):
         """Return the length of the product database."""
-        return len(self._products)  + len(self._x10_products)
+        return len(self._products) + len(self._x10_products)
 
     def __iter__(self):
         """Iterate through the product database."""
@@ -379,7 +393,7 @@ class IPDB():
 
         # We did not find the device or even a generic device of that category
         if not device_product:
-            device_product = Product(cat, subcat, None, '', '', None)
+            device_product = Product(cat, subcat, None, "", "", None)
 
         return device_product
 

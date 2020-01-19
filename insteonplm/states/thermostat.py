@@ -21,7 +21,8 @@ from insteonplm.constants import (
     COMMAND_THERMOSTAT_HEAT_SET_POINT_STATUS_0X72_NONE,
     MESSAGE_TYPE_DIRECT_MESSAGE,
     MESSAGE_TYPE_DIRECT_MESSAGE_ACK,
-    ThermostatMode)
+    ThermostatMode,
+)
 from insteonplm.messages.standardSend import StandardSend
 from insteonplm.messages.standardReceive import StandardReceive
 from insteonplm.messages.extendedSend import ExtendedSend
@@ -36,12 +37,24 @@ _LOGGER = logging.getLogger(__name__)
 class Temperature(State):
     """A state representing a temperature sensor."""
 
-    def __init__(self, address, statename, group, send_message_method,
-                 message_callbacks, defaultvalue=None):
+    def __init__(
+        self,
+        address,
+        statename,
+        group,
+        send_message_method,
+        message_callbacks,
+        defaultvalue=None,
+    ):
         """Init the Temperature state."""
-        super(Temperature, self).__init__(address, statename, group,
-                                          send_message_method,
-                                          message_callbacks, defaultvalue)
+        super(Temperature, self).__init__(
+            address,
+            statename,
+            group,
+            send_message_method,
+            message_callbacks,
+            defaultvalue,
+        )
 
         self._update_method = self._send_status_request
 
@@ -51,7 +64,8 @@ class Temperature(State):
         msg = StandardSend(
             address=self._address,
             commandtuple=COMMAND_THERMOSTAT_GET_ZONE_INFORMATION_0X6A_NONE,
-            cmd2=0x00)
+            cmd2=0x00,
+        )
         self._send_method(msg, self._status_received)
 
     def _status_received(self, msg):
@@ -64,31 +78,44 @@ class Temperature(State):
         temp_msg = StandardReceive.template(
             commandtuple=COMMAND_THERMOSTAT_TEMPERATURE_STATUS_0X6E_NONE,
             address=self._address,
-            flags=MessageFlags.template(MESSAGE_TYPE_DIRECT_MESSAGE, None))
+            flags=MessageFlags.template(MESSAGE_TYPE_DIRECT_MESSAGE, None),
+        )
 
         self._message_callbacks.add(temp_msg, self._temp_received)
         ext_status_recd = ExtendedReceive.template(
             commandtuple=COMMAND_EXTENDED_GET_SET_0X2E_0X00,
             cmd2=0x02,
-            userdata=Userdata.template({"d1": 0x01}))
-        self._message_callbacks.add(ext_status_recd,
-                                    self._ext_status_received)
+            userdata=Userdata.template({"d1": 0x01}),
+        )
+        self._message_callbacks.add(ext_status_recd, self._ext_status_received)
 
     def _ext_status_received(self, msg):
-        c_temp = msg.userdata['d10'] | (msg.userdata['d9'] << 8)
-        f_temp = c_temp * .1 * 9 / 5 + 32
+        c_temp = msg.userdata["d10"] | (msg.userdata["d9"] << 8)
+        f_temp = c_temp * 0.1 * 9 / 5 + 32
         self._update_subscribers(f_temp)
 
 
 class Humidity(State):
     """A state representing a humidity sensor."""
 
-    def __init__(self, address, statename, group, send_message_method,
-                 message_callbacks, defaultvalue=None):
+    def __init__(
+        self,
+        address,
+        statename,
+        group,
+        send_message_method,
+        message_callbacks,
+        defaultvalue=None,
+    ):
         """Init the Humidity state."""
         super(Humidity, self).__init__(
-            address, statename, group, send_message_method,
-            message_callbacks, defaultvalue)
+            address,
+            statename,
+            group,
+            send_message_method,
+            message_callbacks,
+            defaultvalue,
+        )
 
         self._update_method = self._send_status_request
 
@@ -98,7 +125,8 @@ class Humidity(State):
         msg = StandardSend(
             address=self._address,
             commandtuple=COMMAND_THERMOSTAT_GET_ZONE_INFORMATION_0X6A_NONE,
-            cmd2=0x20)
+            cmd2=0x20,
+        )
         self._send_method(msg, self._status_received)
 
     def _status_received(self, msg):
@@ -111,30 +139,43 @@ class Humidity(State):
         humidity_msg = StandardReceive.template(
             commandtuple=COMMAND_THERMOSTAT_HUMIDITY_STATUS_0X6F_NONE,
             address=self._address,
-            flags=MessageFlags.template(MESSAGE_TYPE_DIRECT_MESSAGE, None))
+            flags=MessageFlags.template(MESSAGE_TYPE_DIRECT_MESSAGE, None),
+        )
 
         self._message_callbacks.add(humidity_msg, self._humidity_received)
         ext_status_recd = ExtendedReceive.template(
             commandtuple=COMMAND_EXTENDED_GET_SET_0X2E_0X00,
             cmd2=0x02,
-            userdata=Userdata.template({"d1": 0x01}))
-        self._message_callbacks.add(ext_status_recd,
-                                    self._ext_status_received)
+            userdata=Userdata.template({"d1": 0x01}),
+        )
+        self._message_callbacks.add(ext_status_recd, self._ext_status_received)
 
     def _ext_status_received(self, msg):
-        humid = msg.userdata['d8']
+        humid = msg.userdata["d8"]
         self._update_subscribers(humid)
 
 
 class SystemMode(State):
     """A state representing the thermostat mode."""
 
-    def __init__(self, address, statename, group, send_message_method,
-                 message_callbacks, defaultvalue=None):
+    def __init__(
+        self,
+        address,
+        statename,
+        group,
+        send_message_method,
+        message_callbacks,
+        defaultvalue=None,
+    ):
         """Init the Humidity state."""
         super(SystemMode, self).__init__(
-            address, statename, group, send_message_method, message_callbacks,
-            defaultvalue)
+            address,
+            statename,
+            group,
+            send_message_method,
+            message_callbacks,
+            defaultvalue,
+        )
 
         self._update_method = self._send_status_request
 
@@ -161,9 +202,9 @@ class SystemMode(State):
         elif mode == ThermostatMode.AUTO:
             new_mode = COMMAND_THERMOSTAT_CONTROL_ON_AUTO_0X6B_0X06
         if new_mode:
-            msg = ExtendedSend(address=self._address,
-                               commandtuple=new_mode,
-                               userdata=Userdata())
+            msg = ExtendedSend(
+                address=self._address, commandtuple=new_mode, userdata=Userdata()
+            )
             msg.set_checksum()
             self._send_method(msg, self._mode_change_ack)
 
@@ -174,7 +215,7 @@ class SystemMode(State):
             mode = ThermostatMode.HEAT
         elif set_mode == 0x05:
             mode = ThermostatMode.COOL
-        elif set_mode in [0x06, 0x0a]:
+        elif set_mode in [0x06, 0x0A]:
             mode = ThermostatMode.AUTO
         elif set_mode == 0x09:
             mode = ThermostatMode.OFF
@@ -184,14 +225,15 @@ class SystemMode(State):
     def _send_status_request(self):
         msg = StandardSend(
             address=self._address,
-            commandtuple=COMMAND_THERMOSTAT_CONTROL_GET_MODE_0X6B_0X02)
+            commandtuple=COMMAND_THERMOSTAT_CONTROL_GET_MODE_0X6B_0X02,
+        )
         self._send_method(msg, self._status_received)
 
     def _status_received(self, msg):
         self._update_subscribers(ThermostatMode(msg.cmd2))
 
     def _ext_status_received(self, msg):
-        sysmode = msg.userdata['d6']
+        sysmode = msg.userdata["d6"]
         ext_mode = sysmode >> 4
         mode = None
         if ext_mode == 0:
@@ -209,51 +251,63 @@ class SystemMode(State):
         mode_status_msg = StandardReceive.template(
             commandtuple=COMMAND_THERMOSTAT_MODE_STATUS_0X70_NONE,
             address=self._address,
-            flags=MessageFlags.template(MESSAGE_TYPE_DIRECT_MESSAGE, None))
+            flags=MessageFlags.template(MESSAGE_TYPE_DIRECT_MESSAGE, None),
+        )
         mode_change_heat_ack = StandardReceive.template(
             commandtuple=COMMAND_THERMOSTAT_CONTROL_ON_HEAT_0X6B_0X04,
             address=self._address,
-            flags=MessageFlags.template(MESSAGE_TYPE_DIRECT_MESSAGE_ACK))
+            flags=MessageFlags.template(MESSAGE_TYPE_DIRECT_MESSAGE_ACK),
+        )
         mode_change_cool_ack = StandardReceive.template(
             commandtuple=COMMAND_THERMOSTAT_CONTROL_ON_COOL_0X6B_0X05,
             address=self._address,
-            flags=MessageFlags.template(MESSAGE_TYPE_DIRECT_MESSAGE_ACK))
+            flags=MessageFlags.template(MESSAGE_TYPE_DIRECT_MESSAGE_ACK),
+        )
         mode_change_auto_ack = StandardReceive.template(
             commandtuple=COMMAND_THERMOSTAT_CONTROL_ON_AUTO_0X6B_0X06,
             address=self._address,
-            flags=MessageFlags.template(MESSAGE_TYPE_DIRECT_MESSAGE_ACK))
+            flags=MessageFlags.template(MESSAGE_TYPE_DIRECT_MESSAGE_ACK),
+        )
         mode_change_off_ack = StandardReceive.template(
             commandtuple=COMMAND_THERMOSTAT_CONTROL_OFF_ALL_0X6B_0X09,
             address=self._address,
-            flags=MessageFlags.template(MESSAGE_TYPE_DIRECT_MESSAGE_ACK))
+            flags=MessageFlags.template(MESSAGE_TYPE_DIRECT_MESSAGE_ACK),
+        )
         ext_status_recd = ExtendedReceive.template(
             commandtuple=COMMAND_EXTENDED_GET_SET_0X2E_0X00,
             cmd2=0x02,
-            userdata=Userdata.template({"d1": 0x01}))
+            userdata=Userdata.template({"d1": 0x01}),
+        )
 
-        self._message_callbacks.add(mode_status_msg,
-                                    self._status_received)
-        self._message_callbacks.add(mode_change_heat_ack,
-                                    self._mode_change_ack)
-        self._message_callbacks.add(mode_change_cool_ack,
-                                    self._mode_change_ack)
-        self._message_callbacks.add(mode_change_auto_ack,
-                                    self._mode_change_ack)
-        self._message_callbacks.add(mode_change_off_ack,
-                                    self._mode_change_ack)
-        self._message_callbacks.add(ext_status_recd,
-                                    self._ext_status_received)
+        self._message_callbacks.add(mode_status_msg, self._status_received)
+        self._message_callbacks.add(mode_change_heat_ack, self._mode_change_ack)
+        self._message_callbacks.add(mode_change_cool_ack, self._mode_change_ack)
+        self._message_callbacks.add(mode_change_auto_ack, self._mode_change_ack)
+        self._message_callbacks.add(mode_change_off_ack, self._mode_change_ack)
+        self._message_callbacks.add(ext_status_recd, self._ext_status_received)
 
 
 class FanMode(State):
     """A state representing the thermostat fan mode."""
 
-    def __init__(self, address, statename, group, send_message_method,
-                 message_callbacks, defaultvalue=None):
+    def __init__(
+        self,
+        address,
+        statename,
+        group,
+        send_message_method,
+        message_callbacks,
+        defaultvalue=None,
+    ):
         """Init the Humidity state."""
         super(FanMode, self).__init__(
-            address, statename, group, send_message_method, message_callbacks,
-            defaultvalue)
+            address,
+            statename,
+            group,
+            send_message_method,
+            message_callbacks,
+            defaultvalue,
+        )
 
         self._update_method = self._send_status_request
 
@@ -275,9 +329,9 @@ class FanMode(State):
         elif mode == ThermostatMode.FAN_ALWAYS_ON:
             new_mode = COMMAND_THERMOSTAT_CONTROL_ON_FAN_0X6B_0X07
         if new_mode:
-            msg = ExtendedSend(address=self._address,
-                               commandtuple=new_mode,
-                               userdata=Userdata())
+            msg = ExtendedSend(
+                address=self._address, commandtuple=new_mode, userdata=Userdata()
+            )
             msg.set_checksum()
             self._send_method(msg, self._mode_change_ack)
 
@@ -298,15 +352,16 @@ class FanMode(State):
     def _send_status_request(self):
         msg = StandardSend(
             address=self._address,
-            commandtuple=COMMAND_THERMOSTAT_CONTROL_GET_MODE_0X6B_0X02)
+            commandtuple=COMMAND_THERMOSTAT_CONTROL_GET_MODE_0X6B_0X02,
+        )
         self._send_method(msg, self._status_received)
 
     def _status_received(self, msg):
         self._update_subscribers(ThermostatMode(msg.cmd2))
 
     def _ext_status_received(self, msg):
-        sysmode = msg.userdata['d6']
-        ext_mode = sysmode & 0x0f
+        sysmode = msg.userdata["d6"]
+        ext_mode = sysmode & 0x0F
         if ext_mode == 0:
             mode = ThermostatMode.FAN_AUTO
         elif ext_mode == 1:
@@ -318,45 +373,57 @@ class FanMode(State):
         mode_status_msg = StandardReceive.template(
             commandtuple=COMMAND_THERMOSTAT_MODE_STATUS_0X70_NONE,
             address=self._address,
-            flags=MessageFlags.template(MESSAGE_TYPE_DIRECT_MESSAGE, None))
+            flags=MessageFlags.template(MESSAGE_TYPE_DIRECT_MESSAGE, None),
+        )
         mode_change_fan_on_ack = StandardReceive.template(
             commandtuple=COMMAND_THERMOSTAT_CONTROL_ON_FAN_0X6B_0X07,
             address=self._address,
-            flags=MessageFlags.template(MESSAGE_TYPE_DIRECT_MESSAGE_ACK))
+            flags=MessageFlags.template(MESSAGE_TYPE_DIRECT_MESSAGE_ACK),
+        )
         mode_change_fan_auto_ack = StandardReceive.template(
             commandtuple=COMMAND_THERMOSTAT_CONTROL_OFF_FAN_0X6B_0X08,
             address=self._address,
-            flags=MessageFlags.template(MESSAGE_TYPE_DIRECT_MESSAGE_ACK))
+            flags=MessageFlags.template(MESSAGE_TYPE_DIRECT_MESSAGE_ACK),
+        )
         mode_change_off_ack = StandardReceive.template(
             commandtuple=COMMAND_THERMOSTAT_CONTROL_OFF_ALL_0X6B_0X09,
             address=self._address,
-            flags=MessageFlags.template(MESSAGE_TYPE_DIRECT_MESSAGE_ACK))
+            flags=MessageFlags.template(MESSAGE_TYPE_DIRECT_MESSAGE_ACK),
+        )
         ext_status_recd = ExtendedReceive.template(
             commandtuple=COMMAND_EXTENDED_GET_SET_0X2E_0X00,
             cmd2=0x02,
-            userdata=Userdata.template({"d1": 0x01}))
+            userdata=Userdata.template({"d1": 0x01}),
+        )
 
-        self._message_callbacks.add(mode_status_msg,
-                                    self._status_received)
-        self._message_callbacks.add(mode_change_fan_on_ack,
-                                    self._mode_change_ack)
-        self._message_callbacks.add(mode_change_fan_auto_ack,
-                                    self._mode_change_ack)
-        self._message_callbacks.add(mode_change_off_ack,
-                                    self._mode_change_ack)
-        self._message_callbacks.add(ext_status_recd,
-                                    self._ext_status_received)
+        self._message_callbacks.add(mode_status_msg, self._status_received)
+        self._message_callbacks.add(mode_change_fan_on_ack, self._mode_change_ack)
+        self._message_callbacks.add(mode_change_fan_auto_ack, self._mode_change_ack)
+        self._message_callbacks.add(mode_change_off_ack, self._mode_change_ack)
+        self._message_callbacks.add(ext_status_recd, self._ext_status_received)
 
 
 class CoolSetPoint(State):
     """A state to manage the cool set point."""
 
-    def __init__(self, address, statename, group, send_message_method,
-                 message_callbacks, defaultvalue=None):
+    def __init__(
+        self,
+        address,
+        statename,
+        group,
+        send_message_method,
+        message_callbacks,
+        defaultvalue=None,
+    ):
         """Init the Humidity state."""
         super(CoolSetPoint, self).__init__(
-            address, statename, group, send_message_method, message_callbacks,
-            defaultvalue)
+            address,
+            statename,
+            group,
+            send_message_method,
+            message_callbacks,
+            defaultvalue,
+        )
 
         self._update_method = self._send_status_request
 
@@ -368,7 +435,8 @@ class CoolSetPoint(State):
             address=self._address,
             commandtuple=COMMAND_THERMOSTAT_SET_COOL_SETPOINT_0X6C_NONE,
             cmd2=int(val * 2),
-            userdata=Userdata())
+            userdata=Userdata(),
+        )
         msg.set_checksum()
         self._send_method(msg, self._set_cool_point_ack)
 
@@ -379,7 +447,8 @@ class CoolSetPoint(State):
         msg = StandardSend(
             address=self._address,
             commandtuple=COMMAND_THERMOSTAT_GET_ZONE_INFORMATION_0X6A_NONE,
-            cmd2=0x20)
+            cmd2=0x20,
+        )
         self._send_method(msg, self._status_message_received)
 
     def _status_message_received(self, msg):
@@ -389,30 +458,44 @@ class CoolSetPoint(State):
         cool_set_point_status = StandardReceive.template(
             address=self._address,
             commandtuple=COMMAND_THERMOSTAT_COOL_SET_POINT_STATUS_0X71_NONE,
-            flags=MessageFlags.template(MESSAGE_TYPE_DIRECT_MESSAGE, False))
-        self._message_callbacks.add(cool_set_point_status,
-                                    self._status_message_received)
+            flags=MessageFlags.template(MESSAGE_TYPE_DIRECT_MESSAGE, False),
+        )
+        self._message_callbacks.add(
+            cool_set_point_status, self._status_message_received
+        )
         ext_status_recd = ExtendedReceive.template(
             commandtuple=COMMAND_EXTENDED_GET_SET_0X2E_0X00,
             cmd2=0x02,
-            userdata=Userdata.template({"d1": 0x01}))
-        self._message_callbacks.add(ext_status_recd,
-                                    self._ext_status_received)
+            userdata=Userdata.template({"d1": 0x01}),
+        )
+        self._message_callbacks.add(ext_status_recd, self._ext_status_received)
 
     def _ext_status_received(self, msg):
-        cool_sp = msg.userdata['d7'] / 2
+        cool_sp = msg.userdata["d7"] / 2
         self._update_subscribers(cool_sp)
 
 
 class HeatSetPoint(State):
     """A state to manage the cool set point."""
 
-    def __init__(self, address, statename, group, send_message_method,
-                 message_callbacks, defaultvalue=None):
+    def __init__(
+        self,
+        address,
+        statename,
+        group,
+        send_message_method,
+        message_callbacks,
+        defaultvalue=None,
+    ):
         """Init the HeatSetPoint state."""
         super(HeatSetPoint, self).__init__(
-            address, statename, group, send_message_method, message_callbacks,
-            defaultvalue)
+            address,
+            statename,
+            group,
+            send_message_method,
+            message_callbacks,
+            defaultvalue,
+        )
 
         self._update_method = self._send_status_request
 
@@ -424,7 +507,8 @@ class HeatSetPoint(State):
             address=self._address,
             commandtuple=COMMAND_THERMOSTAT_SET_HEAT_SETPOINT_0X6D_NONE,
             cmd2=int(val * 2),
-            userdata=Userdata())
+            userdata=Userdata(),
+        )
         msg.set_checksum()
         self._send_method(msg, self._set_heat_point_ack)
 
@@ -435,29 +519,32 @@ class HeatSetPoint(State):
         msg = StandardSend(
             address=self._address,
             commandtuple=COMMAND_THERMOSTAT_GET_ZONE_INFORMATION_0X6A_NONE,
-            cmd2=0x20)
+            cmd2=0x20,
+        )
         self._send_method(msg, self._status_message_received)
 
     def _status_message_received(self, msg):
         self._update_subscribers(msg.cmd2 / 2)
 
     def _register_messages(self):
-        _LOGGER.debug('Starting HeatSetPoint register_messages')
+        _LOGGER.debug("Starting HeatSetPoint register_messages")
         heat_set_point_status = StandardReceive.template(
             address=self._address,
             commandtuple=COMMAND_THERMOSTAT_HEAT_SET_POINT_STATUS_0X72_NONE,
-            flags=MessageFlags.template(MESSAGE_TYPE_DIRECT_MESSAGE, False))
-        self._message_callbacks.add(heat_set_point_status,
-                                    self._status_message_received)
+            flags=MessageFlags.template(MESSAGE_TYPE_DIRECT_MESSAGE, False),
+        )
+        self._message_callbacks.add(
+            heat_set_point_status, self._status_message_received
+        )
         ext_status_recd = ExtendedReceive.template(
             commandtuple=COMMAND_EXTENDED_GET_SET_0X2E_0X00,
             cmd2=0x02,
             flags=MessageFlags.template(MESSAGE_TYPE_DIRECT_MESSAGE, True),
-            userdata=Userdata.template({"d1": 0x01}))
-        _LOGGER.debug('Reg Ext Status: %s', ext_status_recd)
-        self._message_callbacks.add(ext_status_recd,
-                                    self._ext_status_received)
+            userdata=Userdata.template({"d1": 0x01}),
+        )
+        _LOGGER.debug("Reg Ext Status: %s", ext_status_recd)
+        self._message_callbacks.add(ext_status_recd, self._ext_status_received)
 
     def _ext_status_received(self, msg):
-        heat_sp = msg.userdata['d12'] / 2
+        heat_sp = msg.userdata["d12"] / 2
         self._update_subscribers(heat_sp)

@@ -7,14 +7,14 @@ _LOGGER = logging.getLogger(__name__)
 
 
 # pylint: disable=too-many-instance-attributes
-class State():
+class State:
     """INSTEON device state base class.
 
     Base class used by Insteon devices to hold a device state such as "Light On
     Level", "Temperature" or "Fan Mode".
 
     The class is defined with the following options:
-        stateName: Required text name of the state, such as "LightOnLevel".
+        statename: Required text name of the state, such as "LightOnLevel".
                    This value is returned when an async request is made to
                    update the state value.
         updatemethod: Required callback method where callback is defined as:
@@ -23,7 +23,7 @@ class State():
 
     The following public properties are available:
 
-    stateName - Text name for the device state.
+    name - Text name for the device state.
     value - Cached value of the state value. If this value is None, referencing
             this property forces an udpate by calling async_refresh_state
 
@@ -40,8 +40,15 @@ class State():
         update to the state value
     """
 
-    def __init__(self, address, statename, group, send_message_method,
-                 message_callbacks, defaultvalue=None):
+    def __init__(
+        self,
+        address,
+        statename,
+        group,
+        send_message_method,
+        message_callbacks,
+        defaultvalue=None,
+    ):
         """Initialzie tthe State Class."""
         self._address = Address(address)
         self._observer_callbacks = []

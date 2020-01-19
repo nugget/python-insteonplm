@@ -26,7 +26,7 @@ from insteonplm.constants import (
     MESSAGE_TYPE_DIRECT_MESSAGE,
     MESSAGE_FLAG_DIRECT_MESSAGE_NAK_0XA0,
     MESSAGE_STANDARD_MESSAGE_RECEIVED_0X50,
-    MESSAGE_EXTENDED_MESSAGE_RECEIVED_0X51
+    MESSAGE_EXTENDED_MESSAGE_RECEIVED_0X51,
 )
 from insteonplm.messagecallback import MessageCallback
 from insteonplm.messages.allLinkComplete import AllLinkComplete
@@ -46,8 +46,8 @@ ALDB_ALL_RECORD_TIMEOUT = 30
 ALDB_ALL_RECORD_RETRIES = 5
 
 
-LoadAction = namedtuple('LoadAction', 'mem_addr rec_count retries')
-DeviceInfo = namedtuple('DeviceInfo', 'address cat subcat firmware')
+LoadAction = namedtuple("LoadAction", "mem_addr rec_count retries")
+DeviceInfo = namedtuple("DeviceInfo", "address cat subcat firmware")
 
 
 # pylint: disable=unused-argument
@@ -55,21 +55,28 @@ DeviceInfo = namedtuple('DeviceInfo', 'address cat subcat firmware')
 def create(plm, address, cat, subcat, firmware=None):
     """Create a device from device info data."""
     from insteonplm.devices.ipdb import IPDB
+
     ipdb = IPDB()
     product = ipdb[[cat, subcat]]
     deviceclass = product.deviceclass
     device = None
     if deviceclass is not None:
-        device = deviceclass(plm, address, cat, subcat,
-                             product.product_key,
-                             product.description,
-                             product.model)
+        device = deviceclass(
+            plm,
+            address,
+            cat,
+            subcat,
+            product.product_key,
+            product.description,
+            product.model,
+        )
     return device
 
 
 def create_x10(plm, housecode, unitcode, feature):
     """Create an X10 device from a feature definition."""
     from insteonplm.devices.ipdb import IPDB
+
     ipdb = IPDB()
     product = ipdb.x10(feature)
     deviceclass = product.deviceclass
@@ -81,11 +88,12 @@ def create_x10(plm, housecode, unitcode, feature):
 
 # pylint: disable=too-many-instance-attributes
 # pylint: disable=too-many-public-methods
-class Device():
+class Device:
     """INSTEON Device Class."""
 
-    def __init__(self, plm, address, cat, subcat, product_key=0x00,
-                 description='', model=''):
+    def __init__(
+        self, plm, address, cat, subcat, product_key=0x00, description="", model=""
+    ):
         """Init the Device class."""
         self._plm = plm
         self._address = Address(address)
@@ -187,9 +195,10 @@ class Device():
     def id_request(self):
         """Request a device ID from a device."""
         import inspect
+
         curframe = inspect.currentframe()
         calframe = inspect.getouterframes(curframe, 2)
-        _LOGGER.debug('caller name: %s', calframe[1][3])
+        _LOGGER.debug("caller name: %s", calframe[1][3])
         msg = StandardSend(self.address, COMMAND_ID_REQUEST_0X10_0X00)
         self._plm.send_msg(msg)
 
@@ -199,8 +208,7 @@ class Device():
         Not supported by all devices.
         Required after 01-Feb-2007.
         """
-        msg = StandardSend(self._address,
-                           COMMAND_PRODUCT_DATA_REQUEST_0X03_0X00)
+        msg = StandardSend(self._address, COMMAND_PRODUCT_DATA_REQUEST_0X03_0X00)
         self._send_msg(msg)
 
     def assign_to_all_link_group(self, group=0x01):
@@ -208,16 +216,16 @@ class Device():
 
         The default is group 0x01.
         """
-        msg = StandardSend(self._address,
-                           COMMAND_ASSIGN_TO_ALL_LINK_GROUP_0X01_NONE,
-                           cmd2=group)
+        msg = StandardSend(
+            self._address, COMMAND_ASSIGN_TO_ALL_LINK_GROUP_0X01_NONE, cmd2=group
+        )
         self._send_msg(msg)
 
     def delete_from_all_link_group(self, group):
         """Delete a device to an All-Link Group."""
-        msg = StandardSend(self._address,
-                           COMMAND_DELETE_FROM_ALL_LINK_GROUP_0X02_NONE,
-                           cmd2=group)
+        msg = StandardSend(
+            self._address, COMMAND_DELETE_FROM_ALL_LINK_GROUP_0X02_NONE, cmd2=group
+        )
         self._send_msg(msg)
 
     def fx_username(self):
@@ -246,10 +254,12 @@ class Device():
 
         Not supported by i1 devices.
         """
-        msg = ExtendedSend(self._address,
-                           COMMAND_ENTER_LINKING_MODE_0X09_NONE,
-                           cmd2=group,
-                           userdata=Userdata())
+        msg = ExtendedSend(
+            self._address,
+            COMMAND_ENTER_LINKING_MODE_0X09_NONE,
+            cmd2=group,
+            userdata=Userdata(),
+        )
         msg.set_checksum()
         self._send_msg(msg)
 
@@ -258,15 +268,14 @@ class Device():
 
         Not supported by i1 devices.
         """
-        msg = StandardSend(self._address,
-                           COMMAND_ENTER_UNLINKING_MODE_0X0A_NONE,
-                           cmd2=group)
+        msg = StandardSend(
+            self._address, COMMAND_ENTER_UNLINKING_MODE_0X0A_NONE, cmd2=group
+        )
         self._send_msg(msg)
 
     def get_engine_version(self):
         """Get the device engine version."""
-        msg = StandardSend(self._address,
-                           COMMAND_GET_INSTEON_ENGINE_VERSION_0X0D_0X00)
+        msg = StandardSend(self._address, COMMAND_GET_INSTEON_ENGINE_VERSION_0X0D_0X00)
         self._send_msg(msg)
 
     def ping(self):
@@ -276,47 +285,65 @@ class Device():
 
     def create_default_links(self):
         """Create the default links between the IM and the device."""
-        self._plm.manage_aldb_record(0x40, 0xe2, 0x00, self.address,
-                                     self.cat, self.subcat, self.product_key)
-        self.manage_aldb_record(0x41, 0xa2, 0x00, self._plm.address,
-                                self._plm.cat, self._plm.subcat,
-                                self._plm.product_key)
+        self._plm.manage_aldb_record(
+            0x40, 0xE2, 0x00, self.address, self.cat, self.subcat, self.product_key
+        )
+        self.manage_aldb_record(
+            0x41,
+            0xA2,
+            0x00,
+            self._plm.address,
+            self._plm.cat,
+            self._plm.subcat,
+            self._plm.product_key,
+        )
         for link in self._stateList:
             state = self._stateList[link]
             if state.is_responder:
                 # IM is controller
-                self._plm.manage_aldb_record(0x40, 0xe2, link, self._address,
-                                             0x00, 0x00, 0x00)
+                self._plm.manage_aldb_record(
+                    0x40, 0xE2, link, self._address, 0x00, 0x00, 0x00
+                )
                 # Device is responder
-                self.manage_aldb_record(0x41, 0xa2, link, self._plm.address,
-                                        state.linkdata1, state.linkdata2,
-                                        state.linkdata3)
+                self.manage_aldb_record(
+                    0x41,
+                    0xA2,
+                    link,
+                    self._plm.address,
+                    state.linkdata1,
+                    state.linkdata2,
+                    state.linkdata3,
+                )
             if state.is_controller:
                 # IM is responder
-                self._plm.manage_aldb_record(0x41, 0xa2, link, self._address,
-                                             0x00, 0x00, 0x00)
+                self._plm.manage_aldb_record(
+                    0x41, 0xA2, link, self._address, 0x00, 0x00, 0x00
+                )
                 # Device is controller
-                self.manage_aldb_record(0x40, 0xe2, link, self._plm.address,
-                                        0x00, 0x00, 0x00)
+                self.manage_aldb_record(
+                    0x40, 0xE2, link, self._plm.address, 0x00, 0x00, 0x00
+                )
         self.read_aldb()
 
     def read_aldb(self, mem_addr=0x0000, num_recs=0):
         """Read the device All-Link Database."""
         if self._aldb.version == ALDBVersion.Null:
-            _LOGGER.info('Device %s does not contain an All-Link Database',
-                         self._address.human)
+            _LOGGER.info(
+                "Device %s does not contain an All-Link Database", self._address.human
+            )
         else:
-            _LOGGER.info('Reading All-Link Database for device %s',
-                         self._address.human)
-            asyncio.ensure_future(self._aldb.load(mem_addr, num_recs),
-                                  loop=self._plm.loop)
+            _LOGGER.info("Reading All-Link Database for device %s", self._address.human)
+            asyncio.ensure_future(
+                self._aldb.load(mem_addr, num_recs), loop=self._plm.loop
+            )
             self._aldb.add_loaded_callback(self._aldb_loaded_callback)
 
     # pylint: disable=too-many-locals
     # pylint: disable=too-many-return-statements
     # pylint: disable=too-many-branches
-    def manage_aldb_record(self, control_code, control_flags, group, address,
-                           data1, data2, data3):
+    def manage_aldb_record(
+        self, control_code, control_flags, group, address, data1, data2, data3
+    ):
         """Update an IM All-Link record.
 
         Control Code values:
@@ -400,46 +427,73 @@ class Device():
             elif control_code == 0x20:
                 if found or rec.control_flags.is_high_water_mark:
                     new_rec = self._write_new_aldb_rec(
-                        rec.mem_addr, control_flags, group, address,
-                        data1, data2, data3)
+                        rec.mem_addr, control_flags, group, address, data1, data2, data3
+                    )
                     return (found, new_rec)
             elif control_code == 0x40:
                 found = found & rec.control_flags.is_controller
                 if found or rec.control_flags.is_high_water_mark:
                     new_rec = self._write_new_aldb_rec(
-                        rec.mem_addr, control_flags, group, address,
-                        data1, data2, data3)
+                        rec.mem_addr, control_flags, group, address, data1, data2, data3
+                    )
                     return (found, new_rec)
             elif control_code == 0x41:
                 found = found & rec.control_flags.is_responder
                 if found or rec.control_flags.is_high_water_mark:
                     new_rec = self._write_new_aldb_rec(
-                        rec.mem_addr, control_flags, group, address,
-                        data1, data2, data3)
+                        rec.mem_addr, control_flags, group, address, data1, data2, data3
+                    )
                     return (found, new_rec)
             elif control_code == 0x80:
                 if found:
                     cf = rec.control_flags
-                    new_control_flags = ControlFlags(False, cf.is_controller,
-                                                     cf.is_high_water_mark,
-                                                     False, False)
+                    new_control_flags = ControlFlags(
+                        False, cf.is_controller, cf.is_high_water_mark, False, False
+                    )
                     new_rec = self._write_new_aldb_rec(
-                        rec.mem_addr, new_control_flags, rec.group,
-                        rec.address, rec.data1, rec.data2, rec.data3)
+                        rec.mem_addr,
+                        new_control_flags,
+                        rec.group,
+                        rec.address,
+                        rec.data1,
+                        rec.data2,
+                        rec.data3,
+                    )
                     return (found, new_rec)
             return (False, rec)
 
-    def _write_new_aldb_rec(self, mem_addr: int, mode: str, group: int, target,
-                            data1=0x00, data2=0x00, data3=0x00):
-        new_rec = ALDBRecord(mem_addr, mode, group, target,
-                             data1, data2, data3)
-        self.write_aldb(new_rec.mem_addr, new_rec.control_flags, new_rec.group,
-                        new_rec.address, new_rec.data1, new_rec.data2,
-                        new_rec.data3)
+    def _write_new_aldb_rec(
+        self,
+        mem_addr: int,
+        mode: str,
+        group: int,
+        target,
+        data1=0x00,
+        data2=0x00,
+        data3=0x00,
+    ):
+        new_rec = ALDBRecord(mem_addr, mode, group, target, data1, data2, data3)
+        self.write_aldb(
+            new_rec.mem_addr,
+            new_rec.control_flags,
+            new_rec.group,
+            new_rec.address,
+            new_rec.data1,
+            new_rec.data2,
+            new_rec.data3,
+        )
         return new_rec
 
-    def write_aldb(self, mem_addr: int, mode: str, group: int, target,
-                   data1=0x00, data2=0x00, data3=0x00):
+    def write_aldb(
+        self,
+        mem_addr: int,
+        mode: str,
+        group: int,
+        target,
+        data1=0x00,
+        data2=0x00,
+        data3=0x00,
+    ):
         """Write to the device All-Link Database.
 
         Parameters:
@@ -455,10 +509,10 @@ class Device():
             data3:  Device dependant
 
         """
-        if isinstance(mode, str) and mode.lower() in ['c', 'r']:
+        if isinstance(mode, str) and mode.lower() in ["c", "r"]:
             pass
         else:
-            _LOGGER.error('Insteon link mode: %s', mode)
+            _LOGGER.error("Insteon link mode: %s", mode)
             raise ValueError("Mode must be 'c' or 'r'")
         if isinstance(group, int):
             pass
@@ -467,9 +521,8 @@ class Device():
 
         target_addr = Address(target)
 
-        _LOGGER.debug('calling aldb write_record')
-        self._aldb.write_record(mem_addr, mode, group, target_addr,
-                                data1, data2, data3)
+        _LOGGER.debug("calling aldb write_record")
+        self._aldb.write_record(mem_addr, mode, group, target_addr, data1, data2, data3)
         self._aldb.add_loaded_callback(self._aldb_loaded_callback)
 
     def del_aldb(self, mem_addr: int):
@@ -482,56 +535,58 @@ class Device():
 
     # pylint: disable=unused-argument
     def _handle_pre_nak(self, msg):
-        _LOGGER.warning('Device %s returned a pre-NAK message',
-                        self._address.human)
-        _LOGGER.warning('Checking status to confirm if message was processed')
+        _LOGGER.warning("Device %s returned a pre-NAK message", self._address.human)
+        _LOGGER.warning("Checking status to confirm if message was processed")
         self.async_refresh_state()
 
     def _handle_get_device_info_ack(self, msg):
-        _LOGGER.debug('Starting _handle_get_device_info_ack with message:')
+        _LOGGER.debug("Starting _handle_get_device_info_ack with message:")
         _LOGGER.debug(msg)
         asyncio.ensure_future(self._wait_device_info(msg), loop=self._plm.loop)
 
     def _handle_assign_to_all_link_group(self, msg):
-        cat = 0xff
+        cat = 0xFF
         subcat = 0
         product_key = 0
         if msg.code == StandardReceive.code and msg.flags.isBroadcast:
-            _LOGGER.debug('Received broadcast ALDB group assigment request.')
+            _LOGGER.debug("Received broadcast ALDB group assigment request.")
             cat = msg.targetLow
             subcat = msg.targetMed
             product_key = msg.targetHi
-            self._add_device_from_prod_data(msg.address, cat,
-                                            subcat, product_key)
+            self._add_device_from_prod_data(msg.address, cat, subcat, product_key)
         elif msg.code == AllLinkComplete.code:
             if msg.linkcode in [0, 1, 3]:
-                _LOGGER.debug('Received ALDB complete response.')
+                _LOGGER.debug("Received ALDB complete response.")
                 cat = msg.category
                 subcat = msg.subcategory
                 product_key = msg.firmware
-                self._add_device_from_prod_data(msg.address, cat,
-                                                subcat, product_key)
+                self._add_device_from_prod_data(msg.address, cat, subcat, product_key)
             else:
-                _LOGGER.debug('Received ALDB delete response.')
+                _LOGGER.debug("Received ALDB delete response.")
             self._refresh_aldb_records(msg.linkcode, msg.address, msg.group)
 
     def _add_device_from_prod_data(self, address, cat, subcat, product_key):
-        _LOGGER.debug('Received Device ID with address: %s  '
-                      'cat: 0x%x  subcat: 0x%x', address, cat, subcat)
+        _LOGGER.debug(
+            "Received Device ID with address: %s  " "cat: 0x%x  subcat: 0x%x",
+            address,
+            cat,
+            subcat,
+        )
         device = self._plm.devices.create_device_from_category(
-            self._plm, address, cat, subcat, product_key)
+            self._plm, address, cat, subcat, product_key
+        )
         if device:
             if not self._plm.devices[device.id]:
                 self._plm.devices[device.id] = device
-                _LOGGER.debug('Device with id %s added to device list.',
-                              device.id)
-            _LOGGER.info('Total Insteon devices found: %d',
-                         len(self._plm.devices))
+                _LOGGER.debug("Device with id %s added to device list.", device.id)
+
+            _LOGGER.info("Total Insteon devices found: %d", len(self._plm.devices))
             self._plm.aldb_device_handled(self._address)
             self._plm.devices.save_device_info()
         else:
-            _LOGGER.warning('Device %s not in the Insteon Product Database',
-                            Address(address).human)
+            _LOGGER.warning(
+                "Device %s not in the Insteon Product Database", Address(address).human
+            )
             self._plm.device_not_active(self.address)
 
     def _refresh_aldb_records(self, linkcode, address, group):
@@ -541,42 +596,54 @@ class Device():
                 rec = self.aldb[mem_addr]
                 if linkcode in [0, 1, 3]:
                     if rec.control_flags.is_high_water_mark:
-                        _LOGGER.debug('Removing HWM record %04x', mem_addr)
+                        _LOGGER.debug("Removing HWM record %04x", mem_addr)
                         self.aldb.pop(mem_addr)
                     elif not rec.control_flags.is_in_use:
-                        _LOGGER.debug('Removing not in use record %04x',
-                                      mem_addr)
+                        _LOGGER.debug("Removing not in use record %04x", mem_addr)
                         self.aldb.pop(mem_addr)
                 else:
                     if rec.address == self.address and rec.group == group:
-                        _LOGGER.debug('Removing record %04x with addr %s and '
-                                      'group %d', mem_addr, rec.address,
-                                      rec.group)
+                        _LOGGER.debug(
+                            "Removing record %04x with addr %s and " "group %d",
+                            mem_addr,
+                            rec.address,
+                            rec.group,
+                        )
                         self.aldb.pop(mem_addr)
             self.read_aldb()
             # self.aldb.add_loaded_callback(self._refresh_aldb)
 
     async def _wait_device_info(self, msg):
-        _LOGGER.debug('Starting _wait_device_info for device %s in %s',
-                      msg.address.human, self._address.human)
+        _LOGGER.debug(
+            "Starting _wait_device_info for device %s in %s",
+            msg.address.human,
+            self._address.human,
+        )
         try:
             with async_timeout.timeout(6):
                 device_info_msg = await self._device_info_queue.get()
-                _LOGGER.debug('_wait_device_info got device_id message %s',
-                              device_info_msg)
+                _LOGGER.debug(
+                    "_wait_device_info got device_id message %s", device_info_msg
+                )
         except asyncio.TimeoutError:
-            _LOGGER.debug('_wait_device_info timed out for message %s in %s',
-                          msg.address.human, self._address.human)
+            _LOGGER.debug(
+                "_wait_device_info timed out for message %s in %s",
+                msg.address.human,
+                self._address.human,
+            )
             if self._device_info_retries < 5:
                 self._device_info_retries += 1
-                _LOGGER.debug('Device %s id_request retry %d',
-                              self.address.human, self._device_info_retries)
+                _LOGGER.debug(
+                    "Device %s id_request retry %d",
+                    self.address.human,
+                    self._device_info_retries,
+                )
                 self.id_request()
             else:
-                _LOGGER.warning('Device %s did not respond to an ID request',
-                                self.address.human)
-                _LOGGER.warning('Use a device override to define the device '
-                                'type')
+                _LOGGER.warning(
+                    "Device %s did not respond to an ID request", self.address.human
+                )
+                _LOGGER.warning("Use a device override to define the device " "type")
                 self._plm.device_not_active(self.address)
             return
         self._device_info_retries = 0
@@ -587,8 +654,9 @@ class Device():
         self._add_device_from_prod_data(address, cat, subcat, product_key)
 
     def _handle_device_info_response(self, msg):
-        _LOGGER.debug('Got device_id for %s in %s', msg.address.human,
-                      self._address.human)
+        _LOGGER.debug(
+            "Got device_id for %s in %s", msg.address.human, self._address.human
+        )
         self._device_info_queue.put_nowait(msg)
 
     def _handle_all_link_complete(self, msg):
@@ -602,67 +670,79 @@ class Device():
         self.read_aldb()
 
     def _register_messages(self):
-        _LOGGER.debug('Registering messages for %s', self._address.human)
+        _LOGGER.debug("Registering messages for %s", self._address.human)
         std_device_info_request_ack = StandardSend.template(
             address=self._address,
             commandtuple=COMMAND_ID_REQUEST_0X10_0X00,
-            acknak=MESSAGE_ACK)
-        _LOGGER.debug('ID ACK: %s', std_device_info_request_ack)
-        self._message_callbacks.add(std_device_info_request_ack,
-                                    self._handle_get_device_info_ack)
+            acknak=MESSAGE_ACK,
+        )
+        _LOGGER.debug("ID ACK: %s", std_device_info_request_ack)
+        self._message_callbacks.add(
+            std_device_info_request_ack, self._handle_get_device_info_ack
+        )
 
         std_device_info_response = StandardReceive.template(
             address=self._address,
             commandtuple=COMMAND_ASSIGN_TO_ALL_LINK_GROUP_0X01_NONE,
-            flags=MessageFlags.template(
-                messageType=MESSAGE_TYPE_BROADCAST_MESSAGE))
-        self._message_callbacks.add(std_device_info_response,
-                                    self._handle_device_info_response)
+            flags=MessageFlags.template(messageType=MESSAGE_TYPE_BROADCAST_MESSAGE),
+        )
+        self._message_callbacks.add(
+            std_device_info_response, self._handle_device_info_response
+        )
 
         std_assign_all_link = StandardReceive.template(
             address=self._address,
             commandtuple=COMMAND_ASSIGN_TO_ALL_LINK_GROUP_0X01_NONE,
-            flags=MessageFlags.template(MESSAGE_TYPE_DIRECT_MESSAGE))
-        self._message_callbacks.add(std_assign_all_link,
-                                    self._handle_assign_to_all_link_group)
+            flags=MessageFlags.template(MESSAGE_TYPE_DIRECT_MESSAGE),
+        )
+        self._message_callbacks.add(
+            std_assign_all_link, self._handle_assign_to_all_link_group
+        )
 
         ext_msg_aldb_record = ExtendedReceive.template(
             address=self._address,
             commandtuple=COMMAND_EXTENDED_READ_WRITE_ALDB_0X2F_0X00,
-            userdata=Userdata.template({'d2': 1}),
+            userdata=Userdata.template({"d2": 1}),
             flags=MessageFlags.template(
-                messageType=MESSAGE_TYPE_DIRECT_MESSAGE,
-                extended=1))
-        self._message_callbacks.add(ext_msg_aldb_record,
-                                    self._handle_aldb_record_received)
+                messageType=MESSAGE_TYPE_DIRECT_MESSAGE, extended=1
+            ),
+        )
+        self._message_callbacks.add(
+            ext_msg_aldb_record, self._handle_aldb_record_received
+        )
 
         std_msg_pre_nak = StandardReceive.template(
             address=self._address,
             flags=MessageFlags.template(
-                messageType=MESSAGE_FLAG_DIRECT_MESSAGE_NAK_0XA0),
-            cmd2=0xfc)
-        self._message_callbacks.add(std_msg_pre_nak,
-                                    self._handle_pre_nak)
+                messageType=MESSAGE_FLAG_DIRECT_MESSAGE_NAK_0XA0
+            ),
+            cmd2=0xFC,
+        )
+        self._message_callbacks.add(std_msg_pre_nak, self._handle_pre_nak)
 
         ext_msg_pre_nak = ExtendedReceive.template(
             address=self._address,
             flags=MessageFlags.template(
-                messageType=MESSAGE_FLAG_DIRECT_MESSAGE_NAK_0XA0),
-            cmd2=0xfc)
-        self._message_callbacks.add(ext_msg_pre_nak,
-                                    self._handle_pre_nak)
+                messageType=MESSAGE_FLAG_DIRECT_MESSAGE_NAK_0XA0
+            ),
+            cmd2=0xFC,
+        )
+        self._message_callbacks.add(ext_msg_pre_nak, self._handle_pre_nak)
 
-        template_all_link_complete = AllLinkComplete(None, None, self._address,
-                                                     None, None, None)
-        self._message_callbacks.add(template_all_link_complete,
-                                    self._handle_all_link_complete)
+        template_all_link_complete = AllLinkComplete(
+            None, None, self._address, None, None, None
+        )
+        self._message_callbacks.add(
+            template_all_link_complete, self._handle_all_link_complete
+        )
 
     # Send / Receive message processing
     def receive_message(self, msg):
         """Receive a messages sent to this device."""
-        _LOGGER.debug('Starting Device.receive_message')
+        _LOGGER.debug('Starting Device.receive_message for %s',
+                      msg.address.human)
         if hasattr(msg, 'isack') and msg.isack:
-            _LOGGER.debug('Got Message ACK')
+            _LOGGER.debug('Got Message ACK %s', id(msg))
             if self._sent_msg_wait_for_directACK.get('callback') is not None:
                 _LOGGER.debug('Look for direct ACK')
                 asyncio.ensure_future(self._wait_for_direct_ACK(),
@@ -671,28 +751,34 @@ class Device():
                 _LOGGER.debug('DA queue: %s',
                               self._sent_msg_wait_for_directACK)
                 _LOGGER.debug('Message ACK with no callback')
-        if (hasattr(msg, 'flags') and
-                hasattr(msg.flags, 'isDirectACK') and
-                msg.flags.isDirectACK):
-            _LOGGER.debug('Got Direct ACK message')
-            if self._send_msg_lock.locked():
-                self._directACK_received_queue.put_nowait(msg)
-            else:
-                _LOGGER.debug('But Direct ACK not expected')
+
         if not self._is_duplicate(msg):
+            if (hasattr(msg, 'flags') and
+                    hasattr(msg.flags, 'isDirectACK') and
+                    msg.flags.isDirectACK):
+                _LOGGER.debug('Got Direct ACK message. Already in queue: %d, '
+                              'Queueing %s:%s',
+                              self._directACK_received_queue.qsize(),
+                              id(msg), msg)
+                if self._send_msg_lock.locked():
+                    self._directACK_received_queue.put_nowait(msg)
+                else:
+                    _LOGGER.debug('But Direct ACK not expected')
+
             callbacks = self._message_callbacks.get_callbacks_from_message(msg)
             for callback in callbacks:
-                _LOGGER.debug('Scheduling msg callback: %s', callback)
+                _LOGGER.debug("Scheduling msg callback: %s", callback)
                 self._plm.loop.call_soon(callback, msg)
         else:
-            _LOGGER.debug('msg is duplicate')
-            _LOGGER.debug(msg)
+            _LOGGER.debug('msg is duplicate: %s', id(msg))
         self._last_communication_received = datetime.datetime.now()
-        _LOGGER.debug('Ending Device.receive_message')
+        _LOGGER.debug("Ending Device.receive_message")
 
     def _is_duplicate(self, msg):
-        if msg.code not in [MESSAGE_STANDARD_MESSAGE_RECEIVED_0X50,
-                            MESSAGE_EXTENDED_MESSAGE_RECEIVED_0X51]:
+        if msg.code not in [
+            MESSAGE_STANDARD_MESSAGE_RECEIVED_0X50,
+            MESSAGE_EXTENDED_MESSAGE_RECEIVED_0X51,
+        ]:
             return False
 
         recent_messages = []
@@ -700,104 +786,88 @@ class Device():
             recent_message = self._recent_messages.get_nowait()
             if recent_message:
                 msg_received = recent_message.get("received")
-                if msg_received >= (datetime.datetime.now() -
-                                    datetime.timedelta(0, 0, 500000)):
+                if msg_received >= (
+                    datetime.datetime.now() - datetime.timedelta(0, 0, 500000)
+                ):
                     recent_messages.append(recent_message)
-        if not recent_messages:
-            self._save_recent_message(msg)
-            return False
 
+        ret_val = False
         for recent_message in recent_messages:
-            prev_msg = recent_message.get('msg')
+            prev_msg = recent_message.get("msg")
             self._recent_messages.put_nowait(recent_message)
-            prev_cmd1 = prev_msg.cmd1
-            if prev_msg.flags.isAllLinkBroadcast:
-                prev_group = prev_msg.target.bytes[2]
-            elif prev_msg.flags.isAllLinkCleanup:
-                prev_group = prev_msg.cmd2
+            if msg.matches_pattern(prev_msg):
+                ret_val = True
 
-            if msg.flags.isAllLinkCleanup or msg.flags.isAllLinkBroadcast:
-                cmd1 = msg.cmd1
-                if msg.flags.isAllLinkBroadcast:
-                    group = msg.target.bytes[2]
-                else:
-                    group = msg.cmd2
-                if prev_cmd1 == cmd1 and prev_group == group:
-                    return True
-                self._save_recent_message(msg)
-            else:
-                self._save_recent_message(msg)
-                return False
-
-    def _save_recent_message(self, msg):
-        recent_message = {"msg": msg,
-                          "received": datetime.datetime.now()}
-        self._recent_messages.put_nowait(recent_message)
+        self._recent_messages.put_nowait(
+            {"msg": msg, "received": datetime.datetime.now()})
+        return ret_val
 
     def _send_msg(self, msg, callback=None, on_timeout=False):
-        _LOGGER.debug('Starting Device._send_msg')
+        _LOGGER.debug('Starting %s Device._send_msg: Queuing message',
+                      self.address.human)
         msg_info = {'msg': msg,
                     'callback': callback,
                     'on_timeout': on_timeout}
         self._send_msg_queue.put_nowait(msg_info)
         asyncio.ensure_future(self._process_send_queue(), loop=self._plm.loop)
-        _LOGGER.debug('Ending Device._send_msg')
+        # _LOGGER.debug('Ending Device._send_msg')
 
     async def _process_send_queue(self):
-        _LOGGER.debug('Starting %s Device._process_send_queue',
-                      self._address.human)
+        _LOGGER.debug("Starting %s Device._process_send_queue", self._address.human)
         await self._send_msg_lock
         if self._send_msg_lock.locked():
-            _LOGGER.debug("Lock is locked from yield from")
+            _LOGGER.debug("Device %s msg_lock locked", self._address.human)
         msg_info = await self._send_msg_queue.get()
-        msg = msg_info.get('msg')
-        callback = msg_info.get('callback')
+        msg = msg_info.get("msg")
+        callback = msg_info.get("callback")
         self._plm.send_msg(msg)
         if callback:
             self._sent_msg_wait_for_directACK = msg_info
         else:
             if self._send_msg_lock.locked():
                 self._send_msg_lock.release()
-                _LOGGER.debug('Device %s msg_lock unlocked',
-                              self._address.human)
-        _LOGGER.debug('Ending %s Device._process_send_queue',
-                      self._address.human)
+                _LOGGER.debug("Device %s msg_lock unlocked", self._address.human)
+        _LOGGER.debug("Ending %s Device._process_send_queue", self._address.human)
 
     async def _wait_for_direct_ACK(self):
-        _LOGGER.debug('Starting Device._wait_for_direct_ACK')
+        _LOGGER.debug("Starting Device._wait_for_direct_ACK")
         msg = None
         while True:
             # wait for an item from the queue
             try:
                 with async_timeout.timeout(DIRECT_ACK_WAIT_TIMEOUT):
                     msg = await self._directACK_received_queue.get()
-                    _LOGGER.debug('Direct ACK: %s', msg)
+                    _LOGGER.debug('Remaining queue %d, Direct ACK: %s:%s',
+                                  self._directACK_received_queue.qsize(),
+                                  id(msg), msg)
                     break
             except asyncio.TimeoutError:
-                _LOGGER.debug('No direct ACK messages received.')
+                _LOGGER.debug("No direct ACK messages received.")
                 break
             except CancelledError:
                 break
 
         # _LOGGER.debug('Holding lock for 10 seconds')
         # await asyncio.sleep(10, loop=self._plm.loop)
-        _LOGGER.debug('Releasing lock after processing direct ACK')
+        _LOGGER.debug("Releasing lock after processing direct ACK")
         if self._send_msg_lock.locked():
             self._send_msg_lock.release()
-            _LOGGER.debug('Device %s msg_lock unlocked', self._address.human)
-        if msg or self._sent_msg_wait_for_directACK.get('on_timeout'):
-            callback = self._sent_msg_wait_for_directACK.get('callback', None)
+            _LOGGER.debug("Device %s msg_lock unlocked", self._address.human)
+        if msg or self._sent_msg_wait_for_directACK.get("on_timeout"):
+            callback = self._sent_msg_wait_for_directACK.get("callback", None)
             if callback is not None:
+                _LOGGER.debug('Scheduling msg directACK callback: %s',
+                              callback)
                 callback(msg)
         self._sent_msg_wait_for_directACK = {}
-        _LOGGER.debug('Ending Device._wait_for_direct_ACK')
+        _LOGGER.debug("Ending Device._wait_for_direct_ACK")
 
     def _aldb_loaded_callback(self):
         self._plm.devices.save_device_info()
 
 
 # pylint: disable=too-many-instance-attributes
-class X10Device():
+class X10Device:
     """X10 device class."""
 
     def __init__(self, plm, housecode, unitcode):
@@ -805,7 +875,7 @@ class X10Device():
         self._address = Address.x10(housecode, unitcode)
         self._plm = plm
         self._description = "Generic X10 device"
-        self._model = ''
+        self._model = ""
         self._aldb = ALDB(None, None, self._address, version=ALDBVersion.Null)
         self._message_callbacks = MessageCallback()
         self._stateList = StateList()
@@ -845,31 +915,31 @@ class X10Device():
     # Send / Receive message processing
     def receive_message(self, msg):
         """Receive a message sent to this device."""
-        _LOGGER.debug('Starting X10Device.receive_message')
-        if hasattr(msg, 'isack') and msg.isack:
-            _LOGGER.debug('Got Message ACK')
+        _LOGGER.debug("Starting X10Device.receive_message")
+        if hasattr(msg, "isack") and msg.isack:
+            _LOGGER.debug("Got Message ACK")
             if self._send_msg_lock.locked():
                 self._send_msg_lock.release()
         callbacks = self._message_callbacks.get_callbacks_from_message(msg)
-        _LOGGER.debug('Found %d callbacks for msg %s', len(callbacks), msg)
+        _LOGGER.debug("Found %d callbacks for msg %s", len(callbacks), msg)
         for callback in callbacks:
-            _LOGGER.debug('Scheduling msg callback: %s', callback)
+            _LOGGER.debug("Scheduling msg callback: %s", callback)
             self._plm.loop.call_soon(callback, msg)
         self._last_communication_received = datetime.datetime.now()
-        _LOGGER.debug('Ending Device.receive_message')
+        _LOGGER.debug('Ending x10Device.receive_message')
 
     async def close(self):
         """Close the writer for a clean shutdown."""
         # Nothing actually needed here.
 
     def _send_msg(self, msg, wait_ack=True):
-        _LOGGER.debug('Starting Device._send_msg')
+        _LOGGER.debug('Starting X10Device._send_msg')
         asyncio.ensure_future(self._process_send_queue(msg, wait_ack),
                               loop=self._plm.loop)
-        _LOGGER.debug('Ending Device._send_msg')
+        _LOGGER.debug('Ending x10Device._send_msg')
 
     async def _process_send_queue(self, msg, wait_ack):
-        _LOGGER.debug('Starting Device._process_send_queue')
+        _LOGGER.debug('Starting x10Device._process_send_queue')
         await self._send_msg_lock
         if self._send_msg_lock.locked():
             _LOGGER.debug("Lock is locked from yield from")
@@ -879,10 +949,10 @@ class X10Device():
             _LOGGER.debug("No directACK wait")
             _LOGGER.debug("Releasing lock")
             self._send_msg_lock.release()
-        _LOGGER.debug('Ending Device._process_send_queue')
+        _LOGGER.debug('Ending x10Device._process_send_queue')
 
 
-class StateList():
+class StateList:
     """Internal class used to hold a list of device states."""
 
     def __init__(self):
@@ -912,19 +982,19 @@ class StateList():
     def __repr__(self):
         """Juman representation of a state in the StateList."""
         attrs = vars(self)
-        return ', '.join("%s: %r" % item for item in attrs.items())
+        return ", ".join("%s: %r" % item for item in attrs.items())
 
     def add(self, plm, device, stateType, stateName, group, defaultValue=None):
         """Add a state to the StateList."""
-        self._stateList[group] = stateType(plm, device, stateName, group,
-                                           defaultValue=defaultValue)
+        self._stateList[group] = stateType(
+            plm, device, stateName, group, defaultValue=defaultValue
+        )
 
 
-class ALDBRecord():
+class ALDBRecord:
     """Represents an ALDB record."""
 
-    def __init__(self, memory, control_flags, group, address,
-                 data1, data2, data3):
+    def __init__(self, memory, control_flags, group, address, data1, data2, data3):
         """Initialze the ALDBRecord class."""
         self._memoryLocation = memory
         self._address = Address(address)
@@ -941,18 +1011,18 @@ class ALDBRecord():
         first = True
         for prop in props:
             if not first:
-                msgstr = '{}, '.format(msgstr)
+                msgstr = "{}, ".format(msgstr)
             for key, val in prop.items():
                 if isinstance(val, Address):
                     msgstr = "{}'{}': {}".format(msgstr, key, val.human)
-                elif key == 'memory':
+                elif key == "memory":
                     msgstr = "{}'{}': 0x{:04x}".format(msgstr, key, val)
                 elif isinstance(val, int):
                     msgstr = "{}'{}': 0x{:02x}".format(msgstr, key, val)
                 else:
                     msgstr = "{}'{}': {}".format(msgstr, key, val)
             first = False
-        msgstr = "{}{}".format(msgstr, '}')
+        msgstr = "{}{}".format(msgstr, "}")
         return msgstr
 
     @property
@@ -968,7 +1038,7 @@ class ALDBRecord():
     @property
     def memlo(self):
         """Return the memory address LSB."""
-        return self._memoryLocation & 0xff
+        return self._memoryLocation & 0xFF
 
     @property
     def address(self):
@@ -1003,53 +1073,58 @@ class ALDBRecord():
     @staticmethod
     def create_from_userdata(userdata):
         """Create ALDB Record from the userdata dictionary."""
-        memhi = userdata.get('d3')
-        memlo = userdata.get('d4')
+        memhi = userdata.get("d3")
+        memlo = userdata.get("d4")
         memory = memhi << 8 | memlo
-        control_flags = userdata.get('d6')
-        group = userdata.get('d7')
-        addrhi = userdata.get('d8')
-        addrmed = userdata.get('d9')
-        addrlo = userdata.get('d10')
+        control_flags = userdata.get("d6")
+        group = userdata.get("d7")
+        addrhi = userdata.get("d8")
+        addrmed = userdata.get("d9")
+        addrlo = userdata.get("d10")
         addr = Address(bytearray([addrhi, addrmed, addrlo]))
-        data1 = userdata.get('d11')
-        data2 = userdata.get('d12')
-        data3 = userdata.get('d13')
-        return ALDBRecord(memory, control_flags, group, addr,
-                          data1, data2, data3)
+        data1 = userdata.get("d11")
+        data2 = userdata.get("d12")
+        data3 = userdata.get("d13")
+        return ALDBRecord(memory, control_flags, group, addr, data1, data2, data3)
 
     def to_userdata(self):
         """Return a Userdata dictionary."""
-        userdata = Userdata({'d3': self.memhi,
-                             'd4': self.memlo,
-                             'd6': self.control_flags,
-                             'd7': self.group,
-                             'd8': self.address.bytes[2],
-                             'd9': self.address.bytes[1],
-                             'd10': self.address.bytes[0],
-                             'd11': self.data1,
-                             'd12': self.data2,
-                             'd13': self.data3})
+        userdata = Userdata(
+            {
+                "d3": self.memhi,
+                "d4": self.memlo,
+                "d6": self.control_flags,
+                "d7": self.group,
+                "d8": self.address.bytes[2],
+                "d9": self.address.bytes[1],
+                "d10": self.address.bytes[0],
+                "d11": self.data1,
+                "d12": self.data2,
+                "d13": self.data3,
+            }
+        )
         return userdata
 
     def _record_properties(self):
         if self._control_flags.is_controller:
-            mode = 'C'
+            mode = "C"
         else:
-            mode = 'R'
-        rec = [{'memory': self._memoryLocation},
-               {'inuse': self._control_flags.is_in_use},
-               {'mode': mode},
-               {'highwater': self._control_flags.is_high_water_mark},
-               {'group': self.group},
-               {'address': self.address},
-               {'data1': self.data1},
-               {'data2': self.data2},
-               {'data3': self.data3}]
+            mode = "R"
+        rec = [
+            {"memory": self._memoryLocation},
+            {"inuse": self._control_flags.is_in_use},
+            {"mode": mode},
+            {"highwater": self._control_flags.is_high_water_mark},
+            {"group": self.group},
+            {"address": self.address},
+            {"data1": self.data1},
+            {"data2": self.data2},
+            {"data3": self.data3},
+        ]
         return rec
 
 
-class ControlFlags():
+class ControlFlags:
     """Represents a ControlFlag byte of an ALDB record."""
 
     def __init__(self, in_use, controller, used_before, bit5=0, bit4=0):
@@ -1093,11 +1168,13 @@ class ControlFlags():
     @property
     def byte(self):
         """Return a byte representation of ControlFlags."""
-        flags = int(self._in_use) << 7 \
-            | int(self._controller) << 6 \
-            | int(self._bit5) << 5 \
-            | int(self._bit4) << 4 \
+        flags = (
+            int(self._in_use) << 7
+            | int(self._controller) << 6
+            | int(self._bit5) << 5
+            | int(self._bit4) << 4
             | int(self._used_before) << 1
+        )
         return flags
 
     @staticmethod
@@ -1108,8 +1185,7 @@ class ControlFlags():
         bit5 = bool(control_flags & 1 << 5)
         bit4 = bool(control_flags & 1 << 4)
         used_before = bool(control_flags & 1 << 1)
-        flags = ControlFlags(in_use, controller, used_before,
-                             bit5=bit5, bit4=bit4)
+        flags = ControlFlags(in_use, controller, used_before, bit5=bit5, bit4=bit4)
         return flags
 
 
@@ -1133,11 +1209,12 @@ class ALDBVersion(Enum):
 
 
 # pylint: disable=too-many-instance-attributes
-class ALDB():
+class ALDB:
     """Represents a device All-Link database."""
 
-    def __init__(self, send_method, loop, address,
-                 version=ALDBVersion.v2, mem_addr=0x0000):
+    def __init__(
+        self, send_method, loop, address, version=ALDBVersion.v2, mem_addr=0x0000
+    ):
         """Instantiate the ALL-Link Database object."""
         self._records = {}
         self._status = ALDBStatus.EMPTY
@@ -1178,7 +1255,7 @@ class ALDB():
     def __repr__(self):
         """Human representation of a device from the ALDB."""
         attrs = vars(self)
-        return ', '.join("%s: %r" % item for item in attrs.items())
+        return ", ".join("%s: %r" % item for item in attrs.items())
 
     @property
     def status(self):
@@ -1208,41 +1285,40 @@ class ALDB():
         """Read the device database and load."""
         if self._version == ALDBVersion.Null:
             self._status = ALDBStatus.LOADED
-            _LOGGER.debug('Device has no ALDB')
+            _LOGGER.debug("Device has no ALDB")
         else:
             self._status = ALDBStatus.LOADING
-            _LOGGER.debug('Tring to lock from load')
+            _LOGGER.debug("Tring to lock from load")
             await self._rec_mgr_lock
-            _LOGGER.debug('load yielded lock')
+            _LOGGER.debug("load yielded lock")
 
             mem_hi = mem_addr >> 8
-            mem_lo = mem_addr & 0xff
-            log_output = 'ALDB read'
+            mem_lo = mem_addr & 0xFF
+            log_output = "ALDB read"
             max_retries = 0
             if rec_count:
                 max_retries = ALDB_RECORD_RETRIES
                 if mem_addr == 0x0000:
-                    log_output = '{:s} first record'.format(log_output)
+                    log_output = "{:s} first record".format(log_output)
                 else:
-                    log_output = '{:s} record {:04x}'.format(log_output,
-                                                             mem_addr)
+                    log_output = "{:s} record {:04x}".format(log_output, mem_addr)
             else:
                 max_retries = ALDB_ALL_RECORD_RETRIES
-                log_output = '{:s} all records'.format(log_output)
+                log_output = "{:s} all records".format(log_output)
 
             if retry:
-                log_output = '{:s} retry {:d} of {:d}'.format(log_output,
-                                                              retry,
-                                                              max_retries)
+                log_output = "{:s} retry {:d} of {:d}".format(
+                    log_output, retry, max_retries
+                )
             _LOGGER.info(log_output)
-            userdata = Userdata({'d1': 0,
-                                 'd2': 0,
-                                 'd3': mem_hi,
-                                 'd4': mem_lo,
-                                 'd5': rec_count})
-            msg = ExtendedSend(self._address,
-                               COMMAND_EXTENDED_READ_WRITE_ALDB_0X2F_0X00,
-                               userdata=userdata)
+            userdata = Userdata(
+                {"d1": 0, "d2": 0, "d3": mem_hi, "d4": mem_lo, "d5": rec_count}
+            )
+            msg = ExtendedSend(
+                self._address,
+                COMMAND_EXTENDED_READ_WRITE_ALDB_0X2F_0X00,
+                userdata=userdata,
+            )
             msg.set_checksum()
             self._send_method(msg, self._handle_read_aldb_ack, True)
 
@@ -1268,41 +1344,56 @@ class ALDB():
             self._records.pop(mem_addr)
 
     # pylint: disable=too-many-locals
-    def write_record(self, mem_addr: int, mode: str, group: int, target,
-                     data1=0x00, data2=0x00, data3=0x00):
+    def write_record(
+        self,
+        mem_addr: int,
+        mode: str,
+        group: int,
+        target,
+        data1=0x00,
+        data2=0x00,
+        data3=0x00,
+    ):
         """Write an All-Link database record."""
         if not (self._have_first_record() and self._have_last_record()):
-            _LOGGER.error('Must load the Insteon All-Link Database before '
-                          'writing to it')
+            _LOGGER.error(
+                "Must load the Insteon All-Link Database before " "writing to it"
+            )
         else:
             self._prior_status = self._status
             self._status = ALDBStatus.LOADING
             mem_hi = mem_addr >> 8
-            mem_lo = mem_addr & 0xff
-            controller = mode == 'c'
+            mem_lo = mem_addr & 0xFF
+            controller = mode == "c"
             control_flag = ControlFlags(True, controller, True, False, False)
             addr = Address(target)
             addr_lo = addr.bytes[0]
             addr_mid = addr.bytes[1]
             addr_hi = addr.bytes[2]
-            userdata = Userdata({'d1': 0,
-                                 'd2': 0x02,
-                                 'd3': mem_hi,
-                                 'd4': mem_lo,
-                                 'd5': 0x08,
-                                 'd6': control_flag.byte,
-                                 'd7': group,
-                                 'd8': addr_lo,
-                                 'd9': addr_mid,
-                                 'd10': addr_hi,
-                                 'd11': data1,
-                                 'd12': data2,
-                                 'd13': data3})
-            msg = ExtendedSend(self._address,
-                               COMMAND_EXTENDED_READ_WRITE_ALDB_0X2F_0X00,
-                               userdata=userdata)
+            userdata = Userdata(
+                {
+                    "d1": 0,
+                    "d2": 0x02,
+                    "d3": mem_hi,
+                    "d4": mem_lo,
+                    "d5": 0x08,
+                    "d6": control_flag.byte,
+                    "d7": group,
+                    "d8": addr_lo,
+                    "d9": addr_mid,
+                    "d10": addr_hi,
+                    "d11": data1,
+                    "d12": data2,
+                    "d13": data3,
+                }
+            )
+            msg = ExtendedSend(
+                self._address,
+                COMMAND_EXTENDED_READ_WRITE_ALDB_0X2F_0X00,
+                userdata=userdata,
+            )
             msg.set_checksum()
-            _LOGGER.debug('writing message %s', msg)
+            _LOGGER.debug("writing message %s", msg)
             self._send_method(msg, self._handle_write_aldb_ack, True)
             self._load_action = LoadAction(mem_addr, 1, 0)
 
@@ -1311,13 +1402,14 @@ class ALDB():
         """Write an All-Link database record."""
         record = self._records.get(mem_addr)
         if not record:
-            _LOGGER.error('Must load the Insteon All-Link Database record '
-                          'before deleting it')
+            _LOGGER.error(
+                "Must load the Insteon All-Link Database record " "before deleting it"
+            )
         else:
             self._prior_status = self._status
             self._status = ALDBStatus.LOADING
             mem_hi = mem_addr >> 8
-            mem_lo = mem_addr & 0xff
+            mem_lo = mem_addr & 0xFF
             controller = record.control_flags.is_controller
             control_flag = ControlFlags(False, controller, True, False, False)
             addr = record.address
@@ -1328,24 +1420,30 @@ class ALDB():
             data1 = record.data1
             data2 = record.data2
             data3 = record.data3
-            userdata = Userdata({'d1': 0,
-                                 'd2': 0x02,
-                                 'd3': mem_hi,
-                                 'd4': mem_lo,
-                                 'd5': 0x08,
-                                 'd6': control_flag.byte,
-                                 'd7': group,
-                                 'd8': addr_lo,
-                                 'd9': addr_mid,
-                                 'd10': addr_hi,
-                                 'd11': data1,
-                                 'd12': data2,
-                                 'd13': data3})
-            msg = ExtendedSend(self._address,
-                               COMMAND_EXTENDED_READ_WRITE_ALDB_0X2F_0X00,
-                               userdata=userdata)
+            userdata = Userdata(
+                {
+                    "d1": 0,
+                    "d2": 0x02,
+                    "d3": mem_hi,
+                    "d4": mem_lo,
+                    "d5": 0x08,
+                    "d6": control_flag.byte,
+                    "d7": group,
+                    "d8": addr_lo,
+                    "d9": addr_mid,
+                    "d10": addr_hi,
+                    "d11": data1,
+                    "d12": data2,
+                    "d13": data3,
+                }
+            )
+            msg = ExtendedSend(
+                self._address,
+                COMMAND_EXTENDED_READ_WRITE_ALDB_0X2F_0X00,
+                userdata=userdata,
+            )
             msg.set_checksum()
-            _LOGGER.debug('writing message %s', msg)
+            _LOGGER.debug("writing message %s", msg)
             self._send_method(msg, self._handle_write_aldb_ack, True)
             self._load_action = LoadAction(mem_addr, 1, 0)
 
@@ -1360,18 +1458,16 @@ class ALDB():
         """
         found_rec = None
         mode_test = None
-        if mode.lower() in ['c', 'r']:
+        if mode.lower() in ["c", "r"]:
             link_group = int(group)
             link_addr = Address(addr)
             for mem_addr in self:
                 rec = self[mem_addr]
-                if mode.lower() == 'r':
+                if mode.lower() == "r":
                     mode_test = rec.control_flags.is_controller
                 else:
                     mode_test = rec.control_flags.is_responder
-                if (mode_test and
-                        rec.group == link_group and
-                        rec.address == link_addr):
+                if mode_test and rec.group == link_group and rec.address == link_addr:
                     found_rec = rec
         return found_rec
 
@@ -1382,7 +1478,7 @@ class ALDB():
         rec = ALDBRecord.create_from_userdata(userdata)
         self._records[rec.mem_addr] = rec
 
-        _LOGGER.debug('ALDB Record: %s', rec)
+        _LOGGER.debug("ALDB Record: %s", rec)
 
         rec_count = self._load_action.rec_count
         if rec_count == 1 or self._have_all_records():
@@ -1392,7 +1488,7 @@ class ALDB():
             self._mem_addr = rec.mem_addr
 
         if release_lock and self._rec_mgr_lock.locked():
-            _LOGGER.debug('Releasing lock because record received')
+            _LOGGER.debug("Releasing lock because record received")
             self._rec_mgr_lock.release()
 
     def load_saved_records(self, status, records):
@@ -1403,15 +1499,15 @@ class ALDB():
             self._status = ALDBStatus(status)
         for mem_addr in records:
             rec = records[mem_addr]
-            control_flags = int(rec.get('control_flags', 0))
-            group = int(rec.get('group', 0))
-            rec_addr = rec.get('address', '000000')
-            data1 = int(rec.get('data1', 0))
-            data2 = int(rec.get('data2', 0))
-            data3 = int(rec.get('data3', 0))
-            self[int(mem_addr)] = ALDBRecord(int(mem_addr), control_flags,
-                                             group, rec_addr,
-                                             data1, data2, data3)
+            control_flags = int(rec.get("control_flags", 0))
+            group = int(rec.get("group", 0))
+            rec_addr = rec.get("address", "000000")
+            data1 = int(rec.get("data1", 0))
+            data2 = int(rec.get("data2", 0))
+            data3 = int(rec.get("data3", 0))
+            self[int(mem_addr)] = ALDBRecord(
+                int(mem_addr), control_flags, group, rec_addr, data1, data2, data3
+            )
         if self._status == ALDBStatus.LOADED:
             keys = list(self._records.keys())
             keys.sort(reverse=True)
@@ -1420,51 +1516,59 @@ class ALDB():
 
     # pylint: disable=unused-argument
     def _handle_read_aldb_ack(self, msg):
-        _LOGGER.debug('Read ALDB directACK received or timeout reached')
+        _LOGGER.debug("Read ALDB directACK received or timeout reached")
         asyncio.ensure_future(self._read_timeout_manager(), loop=self._loop)
 
     def _handle_write_aldb_ack(self, msg):
         if msg:
-            _LOGGER.info('Device %s confirmed All-Link record was written',
-                         self._address.human)
+            _LOGGER.info(
+                "Device %s confirmed All-Link record was written", self._address.human
+            )
             try:
                 self._records.pop(self._load_action.mem_addr)
             except KeyError:
                 pass
-            asyncio.ensure_future(self.load(self._load_action.mem_addr, 1, 0),
-                                  loop=self._loop)
+            asyncio.ensure_future(
+                self.load(self._load_action.mem_addr, 1, 0), loop=self._loop
+            )
         else:
-            _LOGGER.info('Device %s did not confirm All-Link record was '
-                         'written', self._address.human)
+            _LOGGER.info(
+                "Device %s did not confirm All-Link record was " "written",
+                self._address.human,
+            )
             self._status = self._prior_status
 
     async def _read_timeout_manager(self):
-        _LOGGER.debug('_read_timeout_manager started.')
+        _LOGGER.debug("_read_timeout_manager started.")
         read_complete = False
         rec_count = self._load_action.rec_count
         timeout = ALDB_RECORD_TIMEOUT if rec_count else ALDB_ALL_RECORD_TIMEOUT
 
         try:
             with async_timeout.timeout(timeout + self._load_action.retries):
-                _LOGGER.debug('Tring to get lock in _read_timeout_manager.')
+                _LOGGER.debug("Tring to get lock in _read_timeout_manager.")
                 await self._rec_mgr_lock
-                _LOGGER.debug('_read_timeout_manager lock yielded.')
+                _LOGGER.debug("_read_timeout_manager lock yielded.")
                 read_complete = True
         except asyncio.TimeoutError:
-            if (self._load_action.rec_count and
-                    self._load_action.mem_addr == 0x0000 and
-                    self._have_first_record()):
+            if (
+                self._load_action.rec_count
+                and self._load_action.mem_addr == 0x0000
+                and self._have_first_record()
+            ):
                 read_complete = False
             elif self.get(self._load_action.mem_addr):
                 read_complete = True
             else:
-                _LOGGER.debug('ALDB record response timeout.')
+                _LOGGER.debug("ALDB record response timeout.")
                 read_complete = False
 
-        self._set_load_action(self._load_action.mem_addr,
-                              self._load_action.rec_count,
-                              self._load_action.retries,
-                              read_complete)
+        self._set_load_action(
+            self._load_action.mem_addr,
+            self._load_action.rec_count,
+            self._load_action.retries,
+            read_complete,
+        )
 
         mem_addr = self._load_action.mem_addr
         rec_count = self._load_action.rec_count
@@ -1474,33 +1578,36 @@ class ALDB():
             self._rec_mgr_lock.release()
 
         if mem_addr is not None:
-            asyncio.ensure_future(self.load(mem_addr, rec_count, retries),
-                                  loop=self._loop)
+            asyncio.ensure_future(
+                self.load(mem_addr, rec_count, retries), loop=self._loop
+            )
         elif read_complete or self._have_all_records():
-            _LOGGER.info('All-Link Database load complete for device %s',
-                         self._address)
+            _LOGGER.info("All-Link Database load complete for device %s", self._address)
             self._load_finished(ALDBStatus.LOADED)
         else:
             if self._records:
-                _LOGGER.warning('Insteon All-Link Database partially loaded '
-                                'for device %s', self._address)
+                _LOGGER.warning(
+                    "Insteon All-Link Database partially loaded " "for device %s",
+                    self._address,
+                )
                 self._load_finished(ALDBStatus.PARTIAL)
             else:
-                _LOGGER.warning('Insteon All-Link Database  failed to load '
-                                'for device %s', self._address)
+                _LOGGER.warning(
+                    "Insteon All-Link Database  failed to load " "for device %s",
+                    self._address,
+                )
                 self._load_finished(ALDBStatus.FAILED)
 
     def _load_finished(self, status):
         self._status = status
         while self._cb_aldb_loaded:
-            _LOGGER.debug('Calling aldb loaded callback')
+            _LOGGER.debug("Calling aldb loaded callback")
             callback = self._cb_aldb_loaded.pop()
             if callback:
                 callback()
         self._load_action = LoadAction(0, 0, 0)
 
-    def _set_load_action(self, mem_addr, rec_count, retries,
-                         read_complete=False):
+    def _set_load_action(self, mem_addr, rec_count, retries, read_complete=False):
         """Calculate the next record to read.
 
         If the last record was successful and one record was being read then
@@ -1542,10 +1649,12 @@ class ALDB():
 
         self._load_action = LoadAction(mem_addr, rec_count, retries)
         if mem_addr is not None:
-            _LOGGER.debug('Load action: addr: %04x rec_count: %d retries: %d',
-                          self._load_action.mem_addr,
-                          self._load_action.rec_count,
-                          self._load_action.retries)
+            _LOGGER.debug(
+                "Load action: addr: %04x rec_count: %d retries: %d",
+                self._load_action.mem_addr,
+                self._load_action.rec_count,
+                self._load_action.retries,
+            )
 
     def _next_address(self, mem_addr):
         if self._have_first_record() and mem_addr == 0x0000:
@@ -1565,7 +1674,7 @@ class ALDB():
             first_key = int(keys[0])
             if first_key == self._mem_addr:
                 have_first_record = True
-            elif first_key == 0x0fff:
+            elif first_key == 0x0FFF:
                 self._mem_addr = first_key
                 have_first_record = True
         return have_first_record
@@ -1588,8 +1697,7 @@ class ALDB():
             is_first_record = True
         elif self._mem_addr == rec.mem_addr:
             is_first_record = True
-        elif (self._mem_addr == 0x0000 and
-              rec.mem_addr == 0x0fff):
+        elif self._mem_addr == 0x0000 and rec.mem_addr == 0x0FFF:
             is_first_record = True
         return is_first_record
 

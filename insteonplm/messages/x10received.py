@@ -1,7 +1,9 @@
 """INSTEON Message X10 Received."""
 from insteonplm.messages.message import Message
-from insteonplm.constants import (MESSAGE_X10_MESSAGE_RECEIVED_0X52,
-                                  MESSAGE_X10_MESSAGE_RECEIVED_SIZE)
+from insteonplm.constants import (
+    MESSAGE_X10_MESSAGE_RECEIVED_0X52,
+    MESSAGE_X10_MESSAGE_RECEIVED_SIZE,
+)
 import insteonplm.utils
 
 
@@ -14,7 +16,7 @@ class X10Received(Message):
     _code = MESSAGE_X10_MESSAGE_RECEIVED_0X52
     _sendSize = MESSAGE_X10_MESSAGE_RECEIVED_SIZE
     _receivedSize = MESSAGE_X10_MESSAGE_RECEIVED_SIZE
-    _description = 'Insteon Get Next All Link Record Message'
+    _description = "Insteon Get Next All Link Record Message"
 
     def __init__(self, rawX10, flag):
         """Init X10Received Class."""
@@ -65,5 +67,4 @@ class X10Received(Message):
         return X10Received(house_byte + command, 0x80)
 
     def _message_properties(self):
-        return [{'rawX10': self._rawX10},
-                {'flag': self._flag}]
+        return [{"rawX10": self._rawX10}, {"flag": self._flag}]

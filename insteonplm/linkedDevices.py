@@ -8,13 +8,13 @@ from insteonplm.address import Address
 import insteonplm.devices
 from insteonplm.devices import Device, X10Device
 
-__all__ = ('ALDB')
+__all__ = "ALDB"
 _LOGGER = logging.getLogger(__name__)
-DEVICE_INFO_FILE = 'insteon_plm_device_info.dat'
+DEVICE_INFO_FILE = "insteon_plm_device_info.dat"
 
 
 # pylint: disable=too-many-instance-attributes
-class LinkedDevices():
+class LinkedDevices:
     """Class holds and maintains the ALL-Link Database from the PLM device."""
 
     def __init__(self, loop=None, workdir=None):
@@ -22,7 +22,7 @@ class LinkedDevices():
         self._loop = loop
         self._workdir = workdir
 
-        self._state = 'empty'
+        self._state = "empty"
         self._devices = {}
         self._cb_new_device = []
         self._overrides = {}
@@ -43,18 +43,21 @@ class LinkedDevices():
 
     def __setitem__(self, key, device):
         """Add or Update a device in the ALDB."""
-        if (not isinstance(device, Device) and
-                not isinstance(device, X10Device)):
+        if not isinstance(device, Device) and not isinstance(device, X10Device):
             raise ValueError
 
         self._devices[key] = device
 
         if device.address.is_x10:
-            _LOGGER.debug('New X10 Device %r: %s', key, device.description)
+            _LOGGER.debug("New X10 Device %r: %s", key, device.description)
         else:
-            _LOGGER.debug('New INSTEON Device %r: %s (%02x:%02x)',
-                          key, device.description, device.cat,
-                          device.subcat)
+            _LOGGER.debug(
+                "New INSTEON Device %r: %s (%02x:%02x)",
+                key,
+                device.description,
+                device.cat,
+                device.subcat,
+            )
 
         for callback in self._cb_new_device:
             callback(device)
@@ -62,7 +65,7 @@ class LinkedDevices():
     def __repr__(self):
         """Human representation of a device from the ALDB."""
         attrs = vars(self)
-        return ', '.join("%s: %r" % item for item in attrs.items())
+        return ", ".join("%s: %r" % item for item in attrs.items())
 
     @property
     def saved_devices(self):
@@ -92,30 +95,29 @@ class LinkedDevices():
 
     def add_device_callback(self, callback):
         """Register a callback to be invoked when a new device appears."""
-        _LOGGER.debug('Added new callback %s ', callback)
+        _LOGGER.debug("Added new callback %s ", callback)
         self._cb_new_device.append(callback)
 
     def add_override(self, addr, key, value):
         """Register an attribute override for a device."""
         address = Address(str(addr)).id
-        _LOGGER.debug('New override for %s %s is %s', address, key, value)
+        _LOGGER.debug("New override for %s %s is %s", address, key, value)
         device_override = self._overrides.get(address, {})
         device_override[key] = value
         self._overrides[address] = device_override
 
-    def create_device_from_category(self, plm, addr, cat, subcat,
-                                    product_key=0x00):
+    def create_device_from_category(self, plm, addr, cat, subcat, product_key=0x00):
         """Create a new device from the cat, subcat and product_key data."""
         saved_device = self._saved_devices.get(Address(addr).id, {})
-        cat = saved_device.get('cat', cat)
-        subcat = saved_device.get('subcat', subcat)
-        product_key = saved_device.get('product_key', product_key)
+        cat = saved_device.get("cat", cat)
+        subcat = saved_device.get("subcat", subcat)
+        product_key = saved_device.get("product_key", product_key)
 
         device_override = self._overrides.get(Address(addr).id, {})
-        cat = device_override.get('cat', cat)
-        subcat = device_override.get('subcat', subcat)
-        product_key = device_override.get('firmware', product_key)
-        product_key = device_override.get('product_key', product_key)
+        cat = device_override.get("cat", cat)
+        subcat = device_override.get("subcat", subcat)
+        product_key = device_override.get("firmware", product_key)
+        product_key = device_override.get("product_key", product_key)
 
         return insteonplm.devices.create(plm, addr, cat, subcat, product_key)
 
@@ -136,35 +138,44 @@ class LinkedDevices():
     def add_known_devices(self, plm):
         """Add devices from the saved devices or from the device overrides."""
         from insteonplm.devices import ALDBStatus
+
         for addr in self._saved_devices:
             if not self._devices.get(addr):
                 saved_device = self._saved_devices.get(Address(addr).id, {})
-                cat = saved_device.get('cat')
-                subcat = saved_device.get('subcat')
-                product_key = saved_device.get('firmware')
-                product_key = saved_device.get('product_key', product_key)
+                cat = saved_device.get("cat")
+                subcat = saved_device.get("subcat")
+                product_key = saved_device.get("firmware")
+                product_key = saved_device.get("product_key", product_key)
                 device = self.create_device_from_category(
-                    plm, addr, cat, subcat, product_key)
+                    plm, addr, cat, subcat, product_key
+                )
                 if device:
-                    _LOGGER.debug('Device with id %s added to device list '
-                                  'from saved device data.', addr)
-                    aldb_status = saved_device.get('aldb_status', 0)
+                    _LOGGER.debug(
+                        "Device with id %s added to device list "
+                        "from saved device data.",
+                        addr,
+                    )
+                    aldb_status = saved_device.get("aldb_status", 0)
                     device.aldb.status = ALDBStatus(aldb_status)
-                    aldb = saved_device.get('aldb', {})
+                    aldb = saved_device.get("aldb", {})
                     device.aldb.load_saved_records(aldb_status, aldb)
                     self[addr] = device
         for addr in self._overrides:
             if not self._devices.get(addr):
                 device_override = self._overrides.get(Address(addr).id, {})
-                cat = device_override.get('cat')
-                subcat = device_override.get('subcat')
-                product_key = device_override.get('firmware')
-                product_key = device_override.get('product_key', product_key)
+                cat = device_override.get("cat")
+                subcat = device_override.get("subcat")
+                product_key = device_override.get("firmware")
+                product_key = device_override.get("product_key", product_key)
                 device = self.create_device_from_category(
-                    plm, addr, cat, subcat, product_key)
+                    plm, addr, cat, subcat, product_key
+                )
                 if device:
-                    _LOGGER.debug('Device with id %s added to device list '
-                                  'from device override data.', addr)
+                    _LOGGER.debug(
+                        "Device with id %s added to device list "
+                        "from device override data.",
+                        addr,
+                    )
                     self[addr] = device
 
     # Save device information
@@ -179,39 +190,44 @@ class LinkedDevices():
                     for mem in device.aldb:
                         rec = device.aldb[mem]
                         if rec:
-                            aldbRec = {'memory': mem,
-                                       'control_flags': rec.control_flags.byte,
-                                       'group': rec.group,
-                                       'address': rec.address.id,
-                                       'data1': rec.data1,
-                                       'data2': rec.data2,
-                                       'data3': rec.data3}
+                            aldbRec = {
+                                "memory": mem,
+                                "control_flags": rec.control_flags.byte,
+                                "group": rec.group,
+                                "address": rec.address.id,
+                                "data1": rec.data1,
+                                "data2": rec.data2,
+                                "data3": rec.data3,
+                            }
                             aldb[mem] = aldbRec
-                    deviceInfo = {'address': device.address.id,
-                                  'cat': device.cat,
-                                  'subcat': device.subcat,
-                                  'product_key': device.product_key,
-                                  'aldb_status': device.aldb.status.value,
-                                  'aldb': aldb}
+                    deviceInfo = {
+                        "address": device.address.id,
+                        "cat": device.cat,
+                        "subcat": device.subcat,
+                        "product_key": device.product_key,
+                        "aldb_status": device.aldb.status.value,
+                        "aldb": aldb,
+                    }
                     devices.append(deviceInfo)
-            asyncio.ensure_future(self._write_saved_device_info(devices),
-                                  loop=self._loop)
+            asyncio.ensure_future(
+                self._write_saved_device_info(devices), loop=self._loop
+            )
 
     def _add_saved_device_info(self, **kwarg):
         """Register device info from the saved data file."""
-        addr = kwarg.get('address')
-        _LOGGER.debug('Found saved device with address %s', addr)
+        addr = kwarg.get("address")
+        _LOGGER.debug("Found saved device with address %s", addr)
         self._saved_devices[addr] = kwarg
 
     async def load_saved_device_info(self):
         """Load device information from the device info file."""
-        _LOGGER.debug("Loading saved device info.")
+        _LOGGER.info("Loading saved device info.")
         deviceinfo = []
         if self._workdir:
             _LOGGER.debug("Really Loading saved device info.")
             try:
-                device_file = '{}/{}'.format(self._workdir, DEVICE_INFO_FILE)
-                with open(device_file, 'r') as infile:
+                device_file = "{}/{}".format(self._workdir, DEVICE_INFO_FILE)
+                with open(device_file, "r") as infile:
                     try:
                         deviceinfo = json.load(infile)
                         _LOGGER.debug("Saved device file loaded")
@@ -224,10 +240,10 @@ class LinkedDevices():
 
     async def _write_saved_device_info(self, devices):
         if self._workdir:
-            _LOGGER.debug('Writing %d devices to save file', len(devices))
-            device_file = '{}/{}'.format(self._workdir, DEVICE_INFO_FILE)
+            _LOGGER.debug("Writing %d devices to save file", len(devices))
+            device_file = "{}/{}".format(self._workdir, DEVICE_INFO_FILE)
             try:
-                with open(device_file, 'w') as outfile:
+                with open(device_file, "w") as outfile:
                     json.dump(devices, outfile)
             except FileNotFoundError:
-                _LOGGER.error('Cannot write to file %s', device_file)
+                _LOGGER.error("Cannot write to file %s", device_file)

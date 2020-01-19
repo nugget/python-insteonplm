@@ -1,7 +1,9 @@
 """INSTEON Message All-LinkCleanup Failup Report."""
 from insteonplm.messages.message import Message
-from insteonplm.constants import (MESSAGE_ALL_LINK_CEANUP_FAILURE_REPORT_0X56,
-                                  MESSAGE_ALL_LINK_CEANUP_FAILURE_REPORT_SIZE)
+from insteonplm.constants import (
+    MESSAGE_ALL_LINK_CEANUP_FAILURE_REPORT_0X56,
+    MESSAGE_ALL_LINK_CEANUP_FAILURE_REPORT_SIZE,
+)
 from insteonplm.address import Address
 
 
@@ -14,7 +16,7 @@ class AllLinkCleanupFailureReport(Message):
     _code = MESSAGE_ALL_LINK_CEANUP_FAILURE_REPORT_0X56
     _sendSize = MESSAGE_ALL_LINK_CEANUP_FAILURE_REPORT_SIZE
     _receivedSize = MESSAGE_ALL_LINK_CEANUP_FAILURE_REPORT_SIZE
-    _description = 'INSTEON All-Link Failure Report Message'
+    _description = "INSTEON All-Link Failure Report Message"
 
     def __init__(self, group, address):
         """Init the AllLinkCleanupFailureReport Class."""
@@ -38,6 +40,8 @@ class AllLinkCleanupFailureReport(Message):
         return self._address
 
     def _message_properties(self):
-        return [{'failedFlag': self._failedFlag},
-                {'group': self._group},
-                {'address': self._address}]
+        return [
+            {"failedFlag": self._failedFlag},
+            {"group": self._group},
+            {"address": self._address},
+        ]

@@ -2,19 +2,21 @@
 
 import logging
 import binascii
-from insteonplm.constants import (MESSAGE_FLAG_EXTENDED_0X10,
-                                  MESSAGE_TYPE_ALL_LINK_BROADCAST,
-                                  MESSAGE_TYPE_ALL_LINK_CLEANUP,
-                                  MESSAGE_TYPE_ALL_LINK_CLEANUP_ACK,
-                                  MESSAGE_TYPE_ALL_LINK_CLEANUP_NAK,
-                                  MESSAGE_TYPE_BROADCAST_MESSAGE,
-                                  MESSAGE_TYPE_DIRECT_MESSAGE_ACK,
-                                  MESSAGE_TYPE_DIRECT_MESSAGE_NAK)
+from insteonplm.constants import (
+    MESSAGE_FLAG_EXTENDED_0X10,
+    MESSAGE_TYPE_ALL_LINK_BROADCAST,
+    MESSAGE_TYPE_ALL_LINK_CLEANUP,
+    MESSAGE_TYPE_ALL_LINK_CLEANUP_ACK,
+    MESSAGE_TYPE_ALL_LINK_CLEANUP_NAK,
+    MESSAGE_TYPE_BROADCAST_MESSAGE,
+    MESSAGE_TYPE_DIRECT_MESSAGE_ACK,
+    MESSAGE_TYPE_DIRECT_MESSAGE_NAK,
+)
 
 _LOGGER = logging.getLogger(__name__)
 
 
-class MessageFlags():
+class MessageFlags:
     """Message Flags class use in Standard and Extended messages."""
 
     def __init__(self, flags=0x00):
@@ -37,7 +39,7 @@ class MessageFlags():
 
     def __eq__(self, other):
         """Test for equality."""
-        if hasattr(other, 'messageType'):
+        if hasattr(other, "messageType"):
             is_eq = self._messageType == other.messageType
             is_eq = is_eq and self._extended == other.extended
             return is_eq
@@ -45,43 +47,44 @@ class MessageFlags():
 
     def __ne__(self, other):
         """Test for not equals."""
-        if hasattr(other, 'messageType'):
+        if hasattr(other, "messageType"):
             return not self.__eq__(other)
         return True
 
     def matches_pattern(self, other):
         """Test if current message match a patterns or template."""
-        if hasattr(other, 'messageType'):
+        if hasattr(other, "messageType"):
             messageTypeIsEqual = False
             if self.messageType is None or other.messageType is None:
                 messageTypeIsEqual = True
             else:
-                messageTypeIsEqual = (self.messageType == other.messageType)
+                messageTypeIsEqual = self.messageType == other.messageType
             extendedIsEqual = False
             if self.extended is None or other.extended is None:
                 extendedIsEqual = True
             else:
-                extendedIsEqual = (self.extended == other.extended)
+                extendedIsEqual = self.extended == other.extended
             return messageTypeIsEqual and extendedIsEqual
         return False
 
     @classmethod
     def get_properties(cls):
         """Get all properties of the MessageFlags class."""
-        property_names = [p for p in dir(cls)
-                          if isinstance(getattr(cls, p), property)]
+        property_names = [p for p in dir(cls) if isinstance(getattr(cls, p), property)]
         return property_names
 
     @property
     def isBroadcast(self):
         """Test if the message is a broadcast message type."""
-        return (self._messageType & MESSAGE_TYPE_BROADCAST_MESSAGE ==
-                MESSAGE_TYPE_BROADCAST_MESSAGE)
+        return (
+            self._messageType & MESSAGE_TYPE_BROADCAST_MESSAGE
+            == MESSAGE_TYPE_BROADCAST_MESSAGE
+        )
 
     @property
     def isDirect(self):
         """Test if the message is a direct message type."""
-        direct = (self._messageType == 0x00)
+        direct = self._messageType == 0x00
         if self.isDirectACK or self.isDirectNAK:
             direct = True
         return direct
@@ -197,8 +200,7 @@ class MessageFlags():
         return flags
 
     @classmethod
-    def template(cls, messageType=None, extended=None,
-                 hopsleft=None, hopsmax=None):
+    def template(cls, messageType=None, extended=None, hopsleft=None, hopsmax=None):
         """Create message flags template.
 
         messageType: integter 0 to 7 or None:
@@ -270,8 +272,7 @@ class MessageFlags():
         elif flags is None:
             norm = None
         else:
-            _LOGGER.warning('MessageFlags with unknown type %s: %r',
-                            type(flags), flags)
+            _LOGGER.warning("MessageFlags with unknown type %s: %r", type(flags), flags)
         return norm
 
     def _set_properties(self, flags):
@@ -279,9 +280,9 @@ class MessageFlags():
         flagByte = self._normalize(flags)
 
         if flagByte is not None:
-            self._messageType = (flagByte[0] & 0xe0) >> 5
+            self._messageType = (flagByte[0] & 0xE0) >> 5
             self._extended = (flagByte[0] & MESSAGE_FLAG_EXTENDED_0X10) >> 4
-            self._hopsLeft = (flagByte[0] & 0x0c) >> 2
+            self._hopsLeft = (flagByte[0] & 0x0C) >> 2
             self._hopsMax = flagByte[0] & 0x03
         else:
             self._messageType = None
