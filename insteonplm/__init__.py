@@ -400,7 +400,7 @@ class HttpTransport(asyncio.Transport):
                         self._write_last_read(0)
                     else:
                         self._log_error(response.status)
-                        await self._stop_reader(False)
+                        await self._stop_reader(True)
         except aiohttp.client_exceptions.ServerDisconnectedError:
             _LOGGER.error('Reconnect to Hub (ServerDisconnectedError)')
             await self._stop_reader(True)
@@ -460,7 +460,7 @@ class HttpTransport(asyncio.Transport):
                                 buffer = self._parse_buffer_v1(html)
                         else:
                             self._log_error(response.status)
-                            await self._stop_reader(False)
+                            await self._stop_reader(True)
                 if self._read_write_lock.locked():
                     self._read_write_lock.release()
                 if buffer:
@@ -470,22 +470,22 @@ class HttpTransport(asyncio.Transport):
                 await asyncio.sleep(1, loop=self._loop)
 
             except asyncio.CancelledError:
-                _LOGGER.debug('Stop connection to Hub (loop stopped)')
+                _LOGGER.info('Stop connection to Hub (loop stopped)')
                 await self._stop_reader(False)
             except GeneratorExit:
-                _LOGGER.debug('Stop connection to Hub (GeneratorExit)')
+                _LOGGER.info('Stop connection to Hub (GeneratorExit)')
                 await self._stop_reader(False)
             except aiohttp.client_exceptions.ServerDisconnectedError:
-                _LOGGER.debug('Reconnect to Hub (ServerDisconnectedError)')
+                _LOGGER.error('Reconnect to Hub (ServerDisconnectedError)')
                 await self._stop_reader(True)
             except aiohttp.client_exceptions.ClientConnectorError:
-                _LOGGER.debug('Reconnect to Hub (ClientConnectorError)')
+                _LOGGER.error('Reconnect to Hub (ClientConnectorError)')
                 await self._stop_reader(True)
             except asyncio.TimeoutError:
                 _LOGGER.error('Reconnect to Hub (TimeoutError)')
                 await self._stop_reader(True)
             except Exception as e:
-                _LOGGER.debug('Restarting reading due to %s', str(e))
+                _LOGGER.error('Restarting reading due to %s', str(e))
                 await self._stop_reader(True)
         _LOGGER.info('Insteon Hub reader stopped')
         return
@@ -597,7 +597,7 @@ class HttpTransport(asyncio.Transport):
         #     await self._close()
         if reconnect:
             _LOGGER.debug("We want to reconnect so we do...")
-            self._protocol.connection_lost(True)
+            self._protocol.connection_lost(False)
 
     def _log_error(self, status):
         if status == 401:
