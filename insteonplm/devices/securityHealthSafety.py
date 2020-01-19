@@ -1,11 +1,13 @@
 """INSTEON Security Health and Safety Device Class Module."""
 
-from insteonplm.states.sensor import (VariableSensor,
-                                      OnOffSensor,
-                                      SmokeCO2Sensor,
-                                      LeakSensorDryWet,
-                                      LeakSensorHeartbeat,
-                                      LeakSensorState)
+from insteonplm.states.sensor import (
+    VariableSensor,
+    OnOffSensor,
+    SmokeCO2Sensor,
+    LeakSensorDryWet,
+    LeakSensorHeartbeat,
+    LeakSensorState,
+)
 from insteonplm.devices import Device
 
 
@@ -24,17 +26,22 @@ class SecurityHealthSafety(Device):
         - callback(self, device_id, state, state_value)
     """
 
-    def __init__(self, plm, address, cat, subcat, product_key=None,
-                 description=None, model=None):
+    def __init__(
+        self, plm, address, cat, subcat, product_key=None, description=None, model=None
+    ):
         """Init the SecurityHealthSafety device class."""
-        super().__init__(plm, address, cat, subcat, product_key,
-                         description, model)
+        super().__init__(plm, address, cat, subcat, product_key, description, model)
 
         self._product_data_in_aldb = True
 
         self._stateList[0x01] = VariableSensor(
-            self._address, "generalSensor", 0x01, self._send_msg,
-            self._message_callbacks, 0x00)
+            self._address,
+            "generalSensor",
+            0x01,
+            self._send_msg,
+            self._message_callbacks,
+            0x00,
+        )
 
 
 class SecurityHealthSafety_2421(Device):
@@ -53,17 +60,22 @@ class SecurityHealthSafety_2421(Device):
         - callback(self, device_id, state, state_value)
     """
 
-    def __init__(self, plm, address, cat, subcat, product_key=None,
-                 description=None, model=None):
+    def __init__(
+        self, plm, address, cat, subcat, product_key=None, description=None, model=None
+    ):
         """Init the SecurityHealthSafety_2421 device class."""
-        super().__init__(plm, address, cat, subcat, product_key,
-                         description, model)
+        super().__init__(plm, address, cat, subcat, product_key, description, model)
 
         self._product_data_in_aldb = True
 
         self._stateList[0x01] = OnOffSensor(
-            self._address, "openClosedSensor", 0x01, self._send_msg,
-            self._message_callbacks, 0x00)
+            self._address,
+            "openClosedSensor",
+            0x01,
+            self._send_msg,
+            self._message_callbacks,
+            0x00,
+        )
 
 
 class SecurityHealthSafety_2842_222(Device):
@@ -82,25 +94,40 @@ class SecurityHealthSafety_2842_222(Device):
         - callback(self, device_id, state, state_value)
     """
 
-    def __init__(self, plm, address, cat, subcat, product_key=None,
-                 description=None, model=None):
+    def __init__(
+        self, plm, address, cat, subcat, product_key=None, description=None, model=None
+    ):
         """Init the SecurityHealthSafety_2842_222 device class."""
-        super().__init__(plm, address, cat, subcat, product_key,
-                         description, model)
+        super().__init__(plm, address, cat, subcat, product_key, description, model)
 
         self._product_data_in_aldb = True
 
         self._stateList[0x01] = OnOffSensor(
-            self._address, "motionSensor", 0x01, self._send_msg,
-            self._message_callbacks, 0x00)
+            self._address,
+            "motionSensor",
+            0x01,
+            self._send_msg,
+            self._message_callbacks,
+            0x00,
+        )
 
         self._stateList[0x02] = OnOffSensor(
-            self._address, "lightSensor", 0x02, self._send_msg,
-            self._message_callbacks, 0x00)
+            self._address,
+            "lightSensor",
+            0x02,
+            self._send_msg,
+            self._message_callbacks,
+            0x00,
+        )
 
         self._stateList[0x03] = OnOffSensor(
-            self._address, "batterySensor", 0x03, self._send_msg,
-            self._message_callbacks, 0x00)
+            self._address,
+            "batterySensor",
+            0x03,
+            self._send_msg,
+            self._message_callbacks,
+            0x00,
+        )
 
 
 class SecurityHealthSafety_2845_222(Device):
@@ -119,17 +146,22 @@ class SecurityHealthSafety_2845_222(Device):
         - callback(self, device_id, state, state_value)
     """
 
-    def __init__(self, plm, address, cat, subcat, product_key=None,
-                 description=None, model=None):
+    def __init__(
+        self, plm, address, cat, subcat, product_key=None, description=None, model=None
+    ):
         """Init the SecurityHealthSafety_2845_222 device class."""
-        super().__init__(plm, address, cat, subcat, product_key,
-                         description, model)
+        super().__init__(plm, address, cat, subcat, product_key, description, model)
 
         self._product_data_in_aldb = True
 
         self._stateList[0x01] = OnOffSensor(
-            self._address, "doorSensor", 0x01, self._send_msg,
-            self._message_callbacks, 0x00)
+            self._address,
+            "doorSensor",
+            0x01,
+            self._send_msg,
+            self._message_callbacks,
+            0x00,
+        )
 
 
 class SecurityHealthSafety_2852_222(Device):
@@ -148,43 +180,49 @@ class SecurityHealthSafety_2852_222(Device):
         - callback(self, device_id, state, state_value)
     """
 
-    def __init__(self, plm, address, cat, subcat, product_key=None,
-                 description=None, model=None):
+    def __init__(
+        self, plm, address, cat, subcat, product_key=None, description=None, model=None
+    ):
         """Init the SecurityHealthSafety_2852_222 device class."""
-        super().__init__(plm, address, cat, subcat, product_key,
-                         description, model)
+        super().__init__(plm, address, cat, subcat, product_key, description, model)
 
         self._product_data_in_aldb = True
 
         self._stateList[0x01] = LeakSensorDryWet(
-            self._address, "dryLeakSensor", 0x01, self._send_msg,
+            self._address,
+            "dryLeakSensor",
+            0x01,
+            self._send_msg,
             self._message_callbacks,
             defaultvalue=0x01,
-            dry_wet=LeakSensorState.DRY)
+            dry_wet=LeakSensorState.DRY,
+        )
         self._stateList[0x02] = LeakSensorDryWet(
-            self._address, "wetLeakSensor", 0x02, self._send_msg,
+            self._address,
+            "wetLeakSensor",
+            0x02,
+            self._send_msg,
             self._message_callbacks,
             defaultvalue=0x00,
-            dry_wet=LeakSensorState.WET)
+            dry_wet=LeakSensorState.WET,
+        )
         self._stateList[0x04] = LeakSensorHeartbeat(
-            self._address, "heartbeatLeakSensor", 0x04, self._send_msg,
+            self._address,
+            "heartbeatLeakSensor",
+            0x04,
+            self._send_msg,
             self._message_callbacks,
-            defaultvalue=0x11)
+            defaultvalue=0x11,
+        )
 
-        self._stateList[0x01].register_dry_wet_callback(
-            self._stateList[0x02].set_value)
-        self._stateList[0x01].register_dry_wet_callback(
-            self._stateList[0x04].set_value)
+        self._stateList[0x01].register_dry_wet_callback(self._stateList[0x02].set_value)
+        self._stateList[0x01].register_dry_wet_callback(self._stateList[0x04].set_value)
 
-        self._stateList[0x02].register_dry_wet_callback(
-            self._stateList[0x01].set_value)
-        self._stateList[0x02].register_dry_wet_callback(
-            self._stateList[0x04].set_value)
+        self._stateList[0x02].register_dry_wet_callback(self._stateList[0x01].set_value)
+        self._stateList[0x02].register_dry_wet_callback(self._stateList[0x04].set_value)
 
-        self._stateList[0x04].register_dry_wet_callback(
-            self._stateList[0x01].set_value)
-        self._stateList[0x04].register_dry_wet_callback(
-            self._stateList[0x02].set_value)
+        self._stateList[0x04].register_dry_wet_callback(self._stateList[0x01].set_value)
+        self._stateList[0x04].register_dry_wet_callback(self._stateList[0x02].set_value)
 
 
 class SecurityHealthSafety_2982_222(Device):
@@ -211,14 +249,19 @@ class SecurityHealthSafety_2982_222(Device):
         - callback(self, device_id, state, state_value)
     """
 
-    def __init__(self, plm, address, cat, subcat, product_key=None,
-                 description=None, model=None):
+    def __init__(
+        self, plm, address, cat, subcat, product_key=None, description=None, model=None
+    ):
         """Init the SecurityHealthSafety_2982_222 Class."""
-        super().__init__(plm, address, cat, subcat, product_key,
-                         description, model)
+        super().__init__(plm, address, cat, subcat, product_key, description, model)
 
         self._product_data_in_aldb = True
 
         self._stateList[0x01] = SmokeCO2Sensor(
-            self._address, "smokeCO2Sensor", 0x01, self._send_msg,
-            self._message_callbacks, 0x00)
+            self._address,
+            "smokeCO2Sensor",
+            0x01,
+            self._send_msg,
+            self._message_callbacks,
+            0x00,
+        )

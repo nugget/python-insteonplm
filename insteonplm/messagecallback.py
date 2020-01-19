@@ -5,7 +5,7 @@ import logging
 _LOGGER = logging.getLogger(__name__)
 
 
-class MessageCallback():
+class MessageCallback:
     """Message callback handler.
 
     Message patterns or templates are used as the key to a message/callback
@@ -98,11 +98,11 @@ class MessageCallback():
             except ValueError:
                 pass
             if cb:
-                _LOGGER.debug('%d callbacks for message: %s', len(cb), msg)
+                _LOGGER.debug("%d callbacks for message: %s", len(cb), msg)
                 self.add(msg, cb, True)
             else:
                 self._dict.pop(msg, None)
-                _LOGGER.debug('Removed all callbacks for message: %s', msg)
+                _LOGGER.debug("Removed all callbacks for message: %s", msg)
 
     def get_callbacks_from_message(self, msg):
         """Return the callbacks associated with a message template."""

@@ -4,13 +4,15 @@ import logging
 from insteonplm.messages.x10send import X10Send
 from insteonplm.messages.x10received import X10Received
 from insteonplm.states import State
-from insteonplm.constants import (X10_COMMAND_ALL_UNITS_OFF,
-                                  X10_COMMAND_ALL_LIGHTS_ON,
-                                  X10_COMMAND_ALL_LIGHTS_OFF,
-                                  X10_COMMAND_ON,
-                                  X10_COMMAND_OFF,
-                                  X10_COMMAND_DIM,
-                                  X10_COMMAND_BRIGHT)
+from insteonplm.constants import (
+    X10_COMMAND_ALL_UNITS_OFF,
+    X10_COMMAND_ALL_LIGHTS_ON,
+    X10_COMMAND_ALL_LIGHTS_OFF,
+    X10_COMMAND_ON,
+    X10_COMMAND_OFF,
+    X10_COMMAND_DIM,
+    X10_COMMAND_BRIGHT,
+)
 
 
 _LOGGER = logging.getLogger(__name__)
@@ -19,40 +21,53 @@ _LOGGER = logging.getLogger(__name__)
 class X10OnOffSwitch(State):
     """On / Off state for an X10 device."""
 
-    def __init__(self, address, statename, group, send_message_method,
-                 message_callbacks, defaultvalue=None):
+    def __init__(
+        self,
+        address,
+        statename,
+        group,
+        send_message_method,
+        message_callbacks,
+        defaultvalue=None,
+    ):
         """Init the X10OnOff state."""
-        super().__init__(address, statename, group, send_message_method,
-                         message_callbacks, defaultvalue)
+        super().__init__(
+            address,
+            statename,
+            group,
+            send_message_method,
+            message_callbacks,
+            defaultvalue,
+        )
 
         self._register_messages()
 
     def on(self):
         """Send the On command to an X10 device."""
-        msg = X10Send.unit_code_msg(self.address.x10_housecode,
-                                    self.address.x10_unitcode)
+        msg = X10Send.unit_code_msg(
+            self.address.x10_housecode, self.address.x10_unitcode
+        )
         self._send_method(msg)
 
-        msg = X10Send.command_msg(self.address.x10_housecode,
-                                  X10_COMMAND_ON)
+        msg = X10Send.command_msg(self.address.x10_housecode, X10_COMMAND_ON)
         self._send_method(msg, False)
-        self._update_subscribers(0xff)
+        self._update_subscribers(0xFF)
 
     def off(self):
         """Send the Off command to an X10 device."""
-        msg = X10Send.unit_code_msg(self.address.x10_housecode,
-                                    self.address.x10_unitcode)
+        msg = X10Send.unit_code_msg(
+            self.address.x10_housecode, self.address.x10_unitcode
+        )
         self._send_method(msg)
 
-        msg = X10Send.command_msg(self.address.x10_housecode,
-                                  X10_COMMAND_OFF)
+        msg = X10Send.command_msg(self.address.x10_housecode, X10_COMMAND_OFF)
         self._send_method(msg, False)
         self._update_subscribers(0x00)
 
     # pylint: disable=unused-argument
     def _on_message_received(self, msg):
         """Receive an ON message."""
-        self._update_subscribers(0xff)
+        self._update_subscribers(0xFF)
 
     # pylint: disable=unused-argument
     def _off_message_received(self, msg):
@@ -60,37 +75,47 @@ class X10OnOffSwitch(State):
         self._update_subscribers(0x00)
 
     def _register_messages(self):
-        on_msg = X10Received.command_msg(self.address.x10_housecode,
-                                         X10_COMMAND_ON)
-        off_msg = X10Received.command_msg(self.address.x10_housecode,
-                                          X10_COMMAND_OFF)
-        all_on_msg = X10Received.command_msg(self.address.x10_housecode,
-                                             X10_COMMAND_ALL_LIGHTS_ON)
-        all_off_msg = X10Received.command_msg(self.address.x10_housecode,
-                                              X10_COMMAND_ALL_LIGHTS_OFF)
-        all_units_off_msg = X10Received.command_msg(self.address.x10_housecode,
-                                                    X10_COMMAND_ALL_UNITS_OFF)
+        on_msg = X10Received.command_msg(self.address.x10_housecode, X10_COMMAND_ON)
+        off_msg = X10Received.command_msg(self.address.x10_housecode, X10_COMMAND_OFF)
+        all_on_msg = X10Received.command_msg(
+            self.address.x10_housecode, X10_COMMAND_ALL_LIGHTS_ON
+        )
+        all_off_msg = X10Received.command_msg(
+            self.address.x10_housecode, X10_COMMAND_ALL_LIGHTS_OFF
+        )
+        all_units_off_msg = X10Received.command_msg(
+            self.address.x10_housecode, X10_COMMAND_ALL_UNITS_OFF
+        )
 
-        self._message_callbacks.add(on_msg,
-                                    self._on_message_received)
-        self._message_callbacks.add(off_msg,
-                                    self._off_message_received)
-        self._message_callbacks.add(all_on_msg,
-                                    self._on_message_received)
-        self._message_callbacks.add(all_off_msg,
-                                    self._off_message_received)
-        self._message_callbacks.add(all_units_off_msg,
-                                    self._off_message_received)
+        self._message_callbacks.add(on_msg, self._on_message_received)
+        self._message_callbacks.add(off_msg, self._off_message_received)
+        self._message_callbacks.add(all_on_msg, self._on_message_received)
+        self._message_callbacks.add(all_off_msg, self._off_message_received)
+        self._message_callbacks.add(all_units_off_msg, self._off_message_received)
 
 
 class X10DimmableSwitch(X10OnOffSwitch):
     """Dimmable X10 Switch."""
 
-    def __init__(self, address, statename, group, send_message_method,
-                 message_callbacks, defaultvalue=0, dim_steps=22):
+    def __init__(
+        self,
+        address,
+        statename,
+        group,
+        send_message_method,
+        message_callbacks,
+        defaultvalue=0,
+        dim_steps=22,
+    ):
         """Init the Dimmable state."""
-        super().__init__(address, statename, group, send_message_method,
-                         message_callbacks, defaultvalue)
+        super().__init__(
+            address,
+            statename,
+            group,
+            send_message_method,
+            message_callbacks,
+            defaultvalue,
+        )
 
         self._steps = dim_steps
 
@@ -114,12 +139,12 @@ class X10DimmableSwitch(X10OnOffSwitch):
             setlevel = 255
             if val < 1:
                 setlevel = val * 255
-            elif val <= 0xff:
+            elif val <= 0xFF:
                 setlevel = val
             change = setlevel - self._value
             increment = 255 / self._steps
             steps = round(abs(change) / increment)
-            print('Steps: ', steps)
+            print("Steps: ", steps)
             if change > 0:
                 method = self.brighten
                 self._value += round(steps * increment)
@@ -135,24 +160,24 @@ class X10DimmableSwitch(X10OnOffSwitch):
 
     def brighten(self, defer_update=False):
         """Brighten the device one step."""
-        msg = X10Send.unit_code_msg(self.address.x10_housecode,
-                                    self.address.x10_unitcode)
+        msg = X10Send.unit_code_msg(
+            self.address.x10_housecode, self.address.x10_unitcode
+        )
         self._send_method(msg)
 
-        msg = X10Send.command_msg(self.address.x10_housecode,
-                                  X10_COMMAND_BRIGHT)
+        msg = X10Send.command_msg(self.address.x10_housecode, X10_COMMAND_BRIGHT)
         self._send_method(msg, False)
         if not defer_update:
             self._update_subscribers(self._value + 255 / self._steps)
 
     def dim(self, defer_update=False):
         """Dim the device one step."""
-        msg = X10Send.unit_code_msg(self.address.x10_housecode,
-                                    self.address.x10_unitcode)
+        msg = X10Send.unit_code_msg(
+            self.address.x10_housecode, self.address.x10_unitcode
+        )
         self._send_method(msg)
 
-        msg = X10Send.command_msg(self.address.x10_housecode,
-                                  X10_COMMAND_DIM)
+        msg = X10Send.command_msg(self.address.x10_housecode, X10_COMMAND_DIM)
         self._send_method(msg, False)
         if not defer_update:
             self._update_subscribers(self._value - 255 / self._steps)
@@ -169,31 +194,42 @@ class X10DimmableSwitch(X10OnOffSwitch):
 
     def _register_messages(self):
         super()._register_messages()
-        dim_msg = X10Received.command_msg(self.address.x10_housecode,
-                                          X10_COMMAND_DIM)
-        bri_msg = X10Received.command_msg(self.address.x10_housecode,
-                                          X10_COMMAND_BRIGHT)
-        self._message_callbacks.add(dim_msg,
-                                    self._dim_message_received)
-        self._message_callbacks.add(bri_msg,
-                                    self._bright_message_received)
+        dim_msg = X10Received.command_msg(self.address.x10_housecode, X10_COMMAND_DIM)
+        bri_msg = X10Received.command_msg(
+            self.address.x10_housecode, X10_COMMAND_BRIGHT
+        )
+        self._message_callbacks.add(dim_msg, self._dim_message_received)
+        self._message_callbacks.add(bri_msg, self._bright_message_received)
 
 
 class X10OnOffSensor(State):
     """On / Off state for an X10 device."""
 
-    def __init__(self, address, statename, group, send_message_method,
-                 message_callbacks, defaultvalue=None):
+    def __init__(
+        self,
+        address,
+        statename,
+        group,
+        send_message_method,
+        message_callbacks,
+        defaultvalue=None,
+    ):
         """Init the X10OnOff state."""
-        super().__init__(address, statename, group, send_message_method,
-                         message_callbacks, defaultvalue)
+        super().__init__(
+            address,
+            statename,
+            group,
+            send_message_method,
+            message_callbacks,
+            defaultvalue,
+        )
 
         self._register_messages()
 
     # pylint: disable=unused-argument
     def _on_message_received(self, msg):
         """Receive an ON message."""
-        self._update_subscribers(0xff)
+        self._update_subscribers(0xFF)
 
     # pylint: disable=unused-argument
     def _off_message_received(self, msg):
@@ -201,35 +237,44 @@ class X10OnOffSensor(State):
         self._update_subscribers(0x00)
 
     def _register_messages(self):
-        on_msg = X10Received.command_msg(self.address.x10_housecode,
-                                         X10_COMMAND_ON)
-        off_msg = X10Received.command_msg(self.address.x10_housecode,
-                                          X10_COMMAND_OFF)
-        all_units_off_msg = X10Received.command_msg(self.address.x10_housecode,
-                                                    X10_COMMAND_ALL_UNITS_OFF)
+        on_msg = X10Received.command_msg(self.address.x10_housecode, X10_COMMAND_ON)
+        off_msg = X10Received.command_msg(self.address.x10_housecode, X10_COMMAND_OFF)
+        all_units_off_msg = X10Received.command_msg(
+            self.address.x10_housecode, X10_COMMAND_ALL_UNITS_OFF
+        )
 
-        self._message_callbacks.add(on_msg,
-                                    self._on_message_received)
-        self._message_callbacks.add(off_msg,
-                                    self._off_message_received)
-        self._message_callbacks.add(all_units_off_msg,
-                                    self._off_message_received)
+        self._message_callbacks.add(on_msg, self._on_message_received)
+        self._message_callbacks.add(off_msg, self._off_message_received)
+        self._message_callbacks.add(all_units_off_msg, self._off_message_received)
 
 
 class X10AllUnitsOffSensor(State):
     """All Units Off state for an X10 device."""
 
-    def __init__(self, address, statename, group, send_message_method,
-                 message_callbacks, defaultvalue=0xff):
+    def __init__(
+        self,
+        address,
+        statename,
+        group,
+        send_message_method,
+        message_callbacks,
+        defaultvalue=0xFF,
+    ):
         """Init the X10AllUnitsOff state."""
-        super().__init__(address, statename, group, send_message_method,
-                         message_callbacks, defaultvalue)
+        super().__init__(
+            address,
+            statename,
+            group,
+            send_message_method,
+            message_callbacks,
+            defaultvalue,
+        )
 
         self._register_messages()
 
     def reset(self):
         """Reset the state to ON."""
-        self._update_subscribers(0xff)
+        self._update_subscribers(0xFF)
 
     # pylint: disable=unused-argument
     def _off_message_received(self, msg):
@@ -237,20 +282,33 @@ class X10AllUnitsOffSensor(State):
         self._update_subscribers(0x00)
 
     def _register_messages(self):
-        all_units_off_msg = X10Received.command_msg(self.address.x10_housecode,
-                                                    X10_COMMAND_ALL_UNITS_OFF)
-        self._message_callbacks.add(all_units_off_msg,
-                                    self._off_message_received)
+        all_units_off_msg = X10Received.command_msg(
+            self.address.x10_housecode, X10_COMMAND_ALL_UNITS_OFF
+        )
+        self._message_callbacks.add(all_units_off_msg, self._off_message_received)
 
 
 class X10AllLightsOnSensor(State):
     """All Units Off state for an X10 device."""
 
-    def __init__(self, address, statename, group, send_message_method,
-                 message_callbacks, defaultvalue=0x00):
+    def __init__(
+        self,
+        address,
+        statename,
+        group,
+        send_message_method,
+        message_callbacks,
+        defaultvalue=0x00,
+    ):
         """Init the X10AllLightsOn state."""
-        super().__init__(address, statename, group, send_message_method,
-                         message_callbacks, defaultvalue)
+        super().__init__(
+            address,
+            statename,
+            group,
+            send_message_method,
+            message_callbacks,
+            defaultvalue,
+        )
 
         self._register_messages()
 
@@ -261,29 +319,42 @@ class X10AllLightsOnSensor(State):
     # pylint: disable=unused-argument
     def _on_message_received(self, msg):
         """Receive an ON message."""
-        self._update_subscribers(0xff)
+        self._update_subscribers(0xFF)
 
     def _register_messages(self):
-        all_on_msg = X10Received.command_msg(self.address.x10_housecode,
-                                             X10_COMMAND_ALL_LIGHTS_ON)
-        self._message_callbacks.add(all_on_msg,
-                                    self._on_message_received)
+        all_on_msg = X10Received.command_msg(
+            self.address.x10_housecode, X10_COMMAND_ALL_LIGHTS_ON
+        )
+        self._message_callbacks.add(all_on_msg, self._on_message_received)
 
 
 class X10AllLightsOffSensor(State):
     """All Lights Off state for an X10 device."""
 
-    def __init__(self, address, statename, group, send_message_method,
-                 message_callbacks, defaultvalue=0xff):
+    def __init__(
+        self,
+        address,
+        statename,
+        group,
+        send_message_method,
+        message_callbacks,
+        defaultvalue=0xFF,
+    ):
         """Init the X10AllLightsOff state."""
-        super().__init__(address, statename, group, send_message_method,
-                         message_callbacks, defaultvalue)
+        super().__init__(
+            address,
+            statename,
+            group,
+            send_message_method,
+            message_callbacks,
+            defaultvalue,
+        )
 
         self._register_messages()
 
     def reset(self):
         """Reset the state to ON."""
-        self._update_subscribers(0xff)
+        self._update_subscribers(0xFF)
 
     # pylint: disable=unused-argument
     def _off_message_received(self, msg):
@@ -291,7 +362,7 @@ class X10AllLightsOffSensor(State):
         self._update_subscribers(0x00)
 
     def _register_messages(self):
-        all_off_msg = X10Received.command_msg(self.address.x10_housecode,
-                                              X10_COMMAND_ALL_LIGHTS_OFF)
-        self._message_callbacks.add(all_off_msg,
-                                    self._off_message_received)
+        all_off_msg = X10Received.command_msg(
+            self.address.x10_housecode, X10_COMMAND_ALL_LIGHTS_OFF
+        )
+        self._message_callbacks.add(all_off_msg, self._off_message_received)

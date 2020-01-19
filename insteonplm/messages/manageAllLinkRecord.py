@@ -5,7 +5,8 @@ from insteonplm.constants import (
     MESSAGE_MANAGE_ALL_LINK_RECORD_SIZE,
     MESSAGE_MANAGE_ALL_LINK_RECORD_RECEIVED_SIZE,
     MESSAGE_ACK,
-    MESSAGE_NAK)
+    MESSAGE_NAK,
+)
 from insteonplm.address import Address
 
 
@@ -19,10 +20,19 @@ class ManageAllLinkRecord(Message):
     _code = MESSAGE_MANAGE_ALL_LINK_RECORD_0X6F
     _sendSize = MESSAGE_MANAGE_ALL_LINK_RECORD_SIZE
     _receivedSize = MESSAGE_MANAGE_ALL_LINK_RECORD_RECEIVED_SIZE
-    _description = 'Insteon Manage All Link Record Message'
+    _description = "Insteon Manage All Link Record Message"
 
-    def __init__(self, control_code, flags, group, address,
-                 linkdata1, linkdata2, linkdata3, acknak=None):
+    def __init__(
+        self,
+        control_code,
+        flags,
+        group,
+        address,
+        linkdata1,
+        linkdata2,
+        linkdata3,
+        acknak=None,
+    ):
         """Init the ManageAllLinkRecord Class."""
         self._controlCode = control_code
         self._controlFlags = flags
@@ -36,13 +46,15 @@ class ManageAllLinkRecord(Message):
     @classmethod
     def from_raw_message(cls, rawmessage):
         """Create message from raw byte stream."""
-        return ManageAllLinkRecord(rawmessage[2:3],
-                                   rawmessage[3:4],
-                                   rawmessage[4:7],
-                                   rawmessage[7:8],
-                                   rawmessage[8:9],
-                                   rawmessage[9:10],
-                                   rawmessage[10:11])
+        return ManageAllLinkRecord(
+            rawmessage[2:3],
+            rawmessage[3:4],
+            rawmessage[4:7],
+            rawmessage[7:8],
+            rawmessage[8:9],
+            rawmessage[9:10],
+            rawmessage[10:11],
+        )
 
     @property
     def controlFlags(self):
@@ -90,11 +102,13 @@ class ManageAllLinkRecord(Message):
         return self._acknak is not None and self._acknak == MESSAGE_NAK
 
     def _message_properties(self):
-        return [{'controlCode': self._controlCode},
-                {'controlFlags': self._controlFlags},
-                {'group': self._group},
-                {'address': self._address},
-                {'linkdata1': self._linkdata1},
-                {'linkdata2': self._linkdata2},
-                {'linkdata3': self._linkdata3},
-                {'acknak': self._acknak}]
+        return [
+            {"controlCode": self._controlCode},
+            {"controlFlags": self._controlFlags},
+            {"group": self._group},
+            {"address": self._address},
+            {"linkdata1": self._linkdata1},
+            {"linkdata2": self._linkdata2},
+            {"linkdata3": self._linkdata3},
+            {"acknak": self._acknak},
+        ]

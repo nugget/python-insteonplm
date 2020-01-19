@@ -1,10 +1,12 @@
 """INSTEON Message Reset IM."""
 from insteonplm.messages.message import Message
-from insteonplm.constants import (MESSAGE_RESET_IM_0X67,
-                                  MESSAGE_RESET_IM_SIZE,
-                                  MESSAGE_RESET_IM_RECEIVED_SIZE,
-                                  MESSAGE_ACK,
-                                  MESSAGE_NAK)
+from insteonplm.constants import (
+    MESSAGE_RESET_IM_0X67,
+    MESSAGE_RESET_IM_SIZE,
+    MESSAGE_RESET_IM_RECEIVED_SIZE,
+    MESSAGE_ACK,
+    MESSAGE_NAK,
+)
 
 
 class ResetIM(Message):
@@ -16,7 +18,7 @@ class ResetIM(Message):
     _code = MESSAGE_RESET_IM_0X67
     _sendSize = MESSAGE_RESET_IM_SIZE
     _receivedSize = MESSAGE_RESET_IM_RECEIVED_SIZE
-    _description = 'Insteon Reset IM Message'
+    _description = "Insteon Reset IM Message"
 
     def __init__(self, acknak=None):
         """Init the ResetIM Class."""
@@ -43,4 +45,4 @@ class ResetIM(Message):
         return self._acknak is not None and self._acknak == MESSAGE_NAK
 
     def _message_properties(self):
-        return [{'acknak': self._acknak}]
+        return [{"acknak": self._acknak}]

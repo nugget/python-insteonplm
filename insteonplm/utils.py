@@ -1,12 +1,14 @@
 """Utility methods."""
 
 
-from insteonplm.constants import (HC_LOOKUP,
-                                  UC_LOOKUP,
-                                  X10_COMMAND_ALL_UNITS_OFF,
-                                  X10_COMMAND_ALL_LIGHTS_ON,
-                                  X10_COMMAND_ALL_LIGHTS_OFF,
-                                  X10CommandType)
+from insteonplm.constants import (
+    HC_LOOKUP,
+    UC_LOOKUP,
+    X10_COMMAND_ALL_UNITS_OFF,
+    X10_COMMAND_ALL_LIGHTS_ON,
+    X10_COMMAND_ALL_LIGHTS_OFF,
+    X10CommandType,
+)
 
 
 def housecode_to_byte(housecode):
@@ -33,9 +35,11 @@ def byte_to_unitcode(bytecode):
 def x10_command_type(command):
     """Return the X10 command type from an X10 command."""
     command_type = X10CommandType.DIRECT
-    if command in [X10_COMMAND_ALL_UNITS_OFF,
-                   X10_COMMAND_ALL_LIGHTS_ON,
-                   X10_COMMAND_ALL_LIGHTS_OFF]:
+    if command in [
+        X10_COMMAND_ALL_UNITS_OFF,
+        X10_COMMAND_ALL_LIGHTS_ON,
+        X10_COMMAND_ALL_LIGHTS_OFF,
+    ]:
         command_type = X10CommandType.BROADCAST
     return command_type
 
@@ -43,7 +47,7 @@ def x10_command_type(command):
 def rawX10_to_bytes(rawX10):
     """Return the byte value of a raw X10 command."""
     yield rawX10 >> 4
-    yield rawX10 & 0x0f
+    yield rawX10 & 0x0F
 
 
 def bit_is_set(bitmask, bit):
@@ -63,4 +67,4 @@ def set_bit(bitmask, bit, is_on):
     bitshift = bit - 1
     if is_on:
         return bitmask | (1 << bitshift)
-    return bitmask & (0xff & ~(1 << bitshift))
+    return bitmask & (0xFF & ~(1 << bitshift))

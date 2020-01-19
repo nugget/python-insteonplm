@@ -1,11 +1,13 @@
 """INSTEON Set IM Configuration Message."""
 
 from insteonplm.messages.message import Message
-from insteonplm.constants import (MESSAGE_SET_IM_CONFIGURATION_0X6B,
-                                  MESSAGE_SET_IM_CONFIGURATION_SIZE,
-                                  MESSAGE_SET_IM_CONFIGURATION_RECEIVED_SIZE,
-                                  MESSAGE_ACK,
-                                  MESSAGE_NAK)
+from insteonplm.constants import (
+    MESSAGE_SET_IM_CONFIGURATION_0X6B,
+    MESSAGE_SET_IM_CONFIGURATION_SIZE,
+    MESSAGE_SET_IM_CONFIGURATION_RECEIVED_SIZE,
+    MESSAGE_ACK,
+    MESSAGE_NAK,
+)
 
 
 class SetIMConfiguration(Message):
@@ -17,7 +19,7 @@ class SetIMConfiguration(Message):
     _code = MESSAGE_SET_IM_CONFIGURATION_0X6B
     _sendSize = MESSAGE_SET_IM_CONFIGURATION_SIZE
     _receivedSize = MESSAGE_SET_IM_CONFIGURATION_RECEIVED_SIZE
-    _description = 'INSTEON Set IM Configuration Message'
+    _description = "INSTEON Set IM Configuration Message"
 
     def __init__(self, flags=None, acknak=None):
         """Init the GetImInfo Class."""
@@ -27,8 +29,7 @@ class SetIMConfiguration(Message):
     @classmethod
     def from_raw_message(cls, rawmessage):
         """Create message from raw byte stream."""
-        return SetIMConfiguration(rawmessage[2],
-                                  rawmessage[3])
+        return SetIMConfiguration(rawmessage[2], rawmessage[3])
 
     @property
     def imConfigurationFlags(self):
@@ -51,5 +52,7 @@ class SetIMConfiguration(Message):
         return self._acknak is not None and self._acknak == MESSAGE_NAK
 
     def _message_properties(self):
-        return [{'imConfigurationFlags': self._imConfigurationFlags},
-                {'acknak': self.acknak}]
+        return [
+            {"imConfigurationFlags": self._imConfigurationFlags},
+            {"acknak": self.acknak},
+        ]

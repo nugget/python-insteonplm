@@ -1,10 +1,12 @@
 """INSTEON Message Start All-Linking."""
 from insteonplm.messages.message import Message
-from insteonplm.constants import (MESSAGE_START_ALL_LINKING_0X64,
-                                  MESSAGE_START_ALL_LINKING_SIZE,
-                                  MESSAGE_START_ALL_LINKING_RECEIVED_SIZE,
-                                  MESSAGE_ACK,
-                                  MESSAGE_NAK)
+from insteonplm.constants import (
+    MESSAGE_START_ALL_LINKING_0X64,
+    MESSAGE_START_ALL_LINKING_SIZE,
+    MESSAGE_START_ALL_LINKING_RECEIVED_SIZE,
+    MESSAGE_ACK,
+    MESSAGE_NAK,
+)
 
 
 class StartAllLinking(Message):
@@ -16,7 +18,7 @@ class StartAllLinking(Message):
     _code = MESSAGE_START_ALL_LINKING_0X64
     _sendSize = MESSAGE_START_ALL_LINKING_SIZE
     _receivedSize = MESSAGE_START_ALL_LINKING_RECEIVED_SIZE
-    _description = 'Insteon Start All Linking Message'
+    _description = "Insteon Start All Linking Message"
 
     def __init__(self, linkCode, group, acknak=None):
         """Init the StartAllLinking Class."""
@@ -56,6 +58,8 @@ class StartAllLinking(Message):
         return self._acknak is not None and self._acknak == MESSAGE_NAK
 
     def _message_properties(self):
-        return [{'linkCode': self._linkCode},
-                {'group': self._group},
-                {'acknak': self._acknak}]
+        return [
+            {"linkCode": self._linkCode},
+            {"group": self._group},
+            {"acknak": self._acknak},
+        ]

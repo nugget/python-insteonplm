@@ -30,15 +30,20 @@ class SensorsActuators(Device):
     sensor.
     """
 
-    def __init__(self, plm, address, cat, subcat, product_key=0,
-                 description='', model=''):
+    def __init__(
+        self, plm, address, cat, subcat, product_key=0, description="", model=""
+    ):
         """Init the SensorsActuators Class."""
-        super().__init__(plm, address, cat, subcat, product_key,
-                         description, model)
+        super().__init__(plm, address, cat, subcat, product_key, description, model)
 
         self._stateList[0x01] = OpenClosedRelay(
-            self._address, "openClosedRelay", 0x01, self._send_msg,
-            self._message_callbacks, 0x00)
+            self._address,
+            "openClosedRelay",
+            0x01,
+            self._send_msg,
+            self._message_callbacks,
+            0x00,
+        )
 
 
 class SensorsActuators_2450(SensorsActuators):
@@ -67,19 +72,29 @@ class SensorsActuators_2450(SensorsActuators):
         - callback(self, device_id, state, state_value)
     """
 
-    def __init__(self, plm, address, cat, subcat, product_key=None,
-                 description=None, model=None):
+    def __init__(
+        self, plm, address, cat, subcat, product_key=None, description=None, model=None
+    ):
         """Init the SensorsActuators_2450 Class."""
-        super().__init__(plm, address, cat, subcat, product_key,
-                         description, model)
+        super().__init__(plm, address, cat, subcat, product_key, description, model)
 
         self._stateList[0x01] = OpenClosedRelay(
-            self._address, "openClosedRelay", 0x01, self._send_msg,
-            self._message_callbacks, 0x00)
+            self._address,
+            "openClosedRelay",
+            0x01,
+            self._send_msg,
+            self._message_callbacks,
+            0x00,
+        )
 
         # Both the Relay and the Sensor are linked via group 1.
         # The sensor status updates are sent as group 1 updates.
         # The relay status is not relevent.
         self._stateList[0x02] = IoLincSensor(
-            self._address, "ioLincSensor", 0x02, self._send_msg,
-            self._message_callbacks, 0x00)
+            self._address,
+            "ioLincSensor",
+            0x02,
+            self._send_msg,
+            self._message_callbacks,
+            0x00,
+        )

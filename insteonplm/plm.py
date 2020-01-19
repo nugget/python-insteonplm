@@ -8,12 +8,14 @@ from collections import deque, namedtuple
 import async_timeout
 
 import insteonplm.messages
-from insteonplm.constants import (MESSAGE_ACK,
-                                  MESSAGE_NAK,
-                                  X10CommandType,
-                                  X10_COMMAND_ALL_UNITS_OFF,
-                                  X10_COMMAND_ALL_LIGHTS_ON,
-                                  X10_COMMAND_ALL_LIGHTS_OFF)
+from insteonplm.constants import (
+    MESSAGE_ACK,
+    MESSAGE_NAK,
+    X10CommandType,
+    X10_COMMAND_ALL_UNITS_OFF,
+    X10_COMMAND_ALL_LIGHTS_ON,
+    X10_COMMAND_ALL_LIGHTS_OFF,
+)
 from insteonplm.address import Address
 from insteonplm.devices import Device, ALDBRecord, ALDBStatus
 from insteonplm.linkedDevices import LinkedDevices
@@ -27,18 +29,20 @@ from insteonplm.messages.setImConfiguration import SetIMConfiguration
 from insteonplm.messages.startAllLinking import StartAllLinking
 from insteonplm.messages.x10received import X10Received
 from insteonplm.messages.x10send import X10Send
-from insteonplm.utils import (byte_to_housecode,
-                              byte_to_unitcode,
-                              rawX10_to_bytes,
-                              x10_command_type)
+from insteonplm.utils import (
+    byte_to_housecode,
+    byte_to_unitcode,
+    rawX10_to_bytes,
+    x10_command_type,
+)
 
-__all__ = ('PLM, Hub')
+__all__ = "PLM, Hub"
 _LOGGER = logging.getLogger(__name__)
 WAIT_TIMEOUT = 1.5
 ACKNAK_TIMEOUT = 2
 
 
-MessageInfo = namedtuple('MessageInfo', 'msg wait_nak wait_timeout')
+MessageInfo = namedtuple("MessageInfo", "msg wait_nak wait_timeout")
 
 
 # pylint: disable=too-many-instance-attributes
@@ -66,8 +70,14 @@ class IM(Device, asyncio.Protocol):
 
     """
 
-    def __init__(self, loop=None, connection_lost_callback=None,
-                 workdir=None, poll_devices=True, load_aldb=True):
+    def __init__(
+        self,
+        loop=None,
+        connection_lost_callback=None,
+        workdir=None,
+        poll_devices=True,
+        load_aldb=True,
+    ):
         """Protocol handler that handles all status and changes on PLM."""
         self._loop = loop
         self._connection_lost_callback = connection_lost_callback
@@ -89,7 +99,7 @@ class IM(Device, asyncio.Protocol):
         self._cb_load_all_link_db_done = []
         self._cb_device_not_active = []
 
-        super().__init__(self, '000000', 0x03, None, None, '', '')
+        super().__init__(self, "000000", 0x03, None, None, "", "")
 
         self.transport = None
 
@@ -128,11 +138,11 @@ class IM(Device, asyncio.Protocol):
         Called when asyncio.Protocol detects received data from network.
         """
         _LOGGER.debug("Starting: data_received")
-        _LOGGER.debug('Received %d bytes from PLM: %s',
-                      len(data), binascii.hexlify(data))
+        _LOGGER.debug(
+            "Received %d bytes from PLM: %s", len(data), binascii.hexlify(data)
+        )
         self._buffer.put_nowait(data)
-        asyncio.ensure_future(self._peel_messages_from_buffer(),
-                              loop=self._loop)
+        asyncio.ensure_future(self._peel_messages_from_buffer(), loop=self._loop)
 
         _LOGGER.debug("Finishing: data_received")
 
@@ -142,9 +152,9 @@ class IM(Device, asyncio.Protocol):
         Called when asyncio.Protocol loses the network connection.
         """
         if exc is None:
-            _LOGGER.warning('End of file received from Insteon Modem')
+            _LOGGER.warning("End of file received from Insteon Modem")
         else:
-            _LOGGER.warning('Lost connection to Insteon Modem: %s', exc)
+            _LOGGER.warning("Lost connection to Insteon Modem: %s", exc)
 
         self.transport = None
         asyncio.ensure_future(self.pause_writing(), loop=self.loop)
@@ -159,12 +169,12 @@ class IM(Device, asyncio.Protocol):
 
     def add_all_link_done_callback(self, callback):
         """Register a callback to be invoked when the ALDB is loaded."""
-        _LOGGER.debug('Added new callback %s ', callback)
+        _LOGGER.debug("Added new callback %s ", callback)
         self._cb_load_all_link_db_done.append(callback)
 
     def add_device_not_active_callback(self, callback):
         """Register callback to be invoked when a device is not responding."""
-        _LOGGER.debug('Added new callback %s ', callback)
+        _LOGGER.debug("Added new callback %s ", callback)
         self._cb_device_not_active.append(callback)
 
     # Public methods
@@ -180,8 +190,7 @@ class IM(Device, asyncio.Protocol):
 
         Message are sent in the order they are placed in the queue.
         """
-        msg_info = MessageInfo(msg=msg, wait_nak=wait_nak,
-                               wait_timeout=wait_timeout)
+        msg_info = MessageInfo(msg=msg, wait_nak=wait_nak, wait_timeout=wait_timeout)
         _LOGGER.debug("Queueing msg: %s", msg)
         self._send_queue.put_nowait(msg_info)
 
@@ -202,7 +211,7 @@ class IM(Device, asyncio.Protocol):
         msg = StartAllLinking(mode, group)
         self.send_msg(msg)
 
-    def add_x10_device(self, housecode, unitcode, feature='OnOff'):
+    def add_x10_device(self, housecode, unitcode, feature="OnOff"):
         """Add an X10 device based on a feature description.
 
         Current features are:
@@ -213,8 +222,7 @@ class IM(Device, asyncio.Protocol):
         - AllLightsOn
         - AllLightsOff
         """
-        device = insteonplm.devices.create_x10(self, housecode,
-                                               unitcode, feature)
+        device = insteonplm.devices.create_x10(self, housecode, unitcode, feature)
         if device:
             self.devices[device.address.id] = device
         return device
@@ -238,13 +246,14 @@ class IM(Device, asyncio.Protocol):
             remove_addr = addr
         try:
             self._aldb_devices.pop(remove_addr)
-            _LOGGER.debug('Removed ALDB device %s', remove_addr)
+            _LOGGER.debug("Removed ALDB device %s", remove_addr)
         except KeyError:
-            _LOGGER.debug('Device %s not in ALDB device list', remove_addr)
-        _LOGGER.debug('ALDB device count: %d', len(self._aldb_devices))
+            _LOGGER.debug("Device %s not in ALDB device list", remove_addr)
+        _LOGGER.debug("ALDB device count: %d", len(self._aldb_devices))
 
-    def manage_aldb_record(self, control_code, control_flags, group, address,
-                           data1, data2, data3):
+    def manage_aldb_record(
+        self, control_code, control_flags, group, address, data1, data2, data3
+    ):
         """Update an IM All-Link record.
 
         Control Code values:
@@ -307,8 +316,9 @@ class IM(Device, asyncio.Protocol):
         returned message if such an ALL-Link Record existed and was deleted,
         or else a NAK no such record exists.
         """
-        msg = ManageAllLinkRecord(control_code, control_flags, group, address,
-                                  data1, data2, data3)
+        msg = ManageAllLinkRecord(
+            control_code, control_flags, group, address, data1, data2, data3
+        )
         self.send_msg(msg)
 
     async def pause_writing(self):
@@ -316,14 +326,15 @@ class IM(Device, asyncio.Protocol):
         self._restart_writer = False
         if self._writer_task:
             self._send_queue.put_nowait(None)
-        await asyncio.sleep(.1)
+        await asyncio.sleep(0.1)
 
     # pylint: disable=unused-argument
     def restart_writing(self, task=None):
         """Resume writing."""
         if self._restart_writer and not self._write_transport_lock.locked():
             self._writer_task = asyncio.ensure_future(
-                self._get_message_from_send_queue(), loop=self._loop)
+                self._get_message_from_send_queue(), loop=self._loop
+            )
             self._writer_task.add_done_callback(self.restart_writing)
 
     async def close(self):
@@ -335,41 +346,44 @@ class IM(Device, asyncio.Protocol):
         """Trigger an All-Link Group on."""
         from .messages.standardSend import StandardSend
         from .constants import COMMAND_LIGHT_ON_0X11_NONE
+
         target = Address(bytearray([0x00, 0x00, group]))
-        flags = 0xcf
-        msg = StandardSend(target, COMMAND_LIGHT_ON_0X11_NONE,
-                           cmd2=0xff, flags=flags)
+        flags = 0xCF
+        msg = StandardSend(target, COMMAND_LIGHT_ON_0X11_NONE, cmd2=0xFF, flags=flags)
         self.send_msg(msg)
         dev_list = self._find_scene(group)
-        _LOGGER.debug('Scene %d turned on', group)
+        _LOGGER.debug("Scene %d turned on", group)
         for addr in dev_list:
             device = self._devices[addr.id]
-            flags = 0x4f
-            msg = StandardSend(device.address, COMMAND_LIGHT_ON_0X11_NONE,
-                               cmd2=group, flags=flags)
+            flags = 0x4F
+            msg = StandardSend(
+                device.address, COMMAND_LIGHT_ON_0X11_NONE, cmd2=group, flags=flags
+            )
             self.send_msg(msg)
-            if hasattr(device, 'async_refresh_state'):
-                _LOGGER.debug('Checking status of device %s', addr.human)
+            if hasattr(device, "async_refresh_state"):
+                _LOGGER.debug("Checking status of device %s", addr.human)
                 device.async_refresh_state()
 
     def trigger_group_off(self, group):
         """Trigger an All-Link Group off."""
         from .messages.standardSend import StandardSend
         from .constants import COMMAND_LIGHT_OFF_0X13_0X00
+
         target = Address(bytearray([0x00, 0x00, group]))
-        flags = 0xcf
+        flags = 0xCF
         msg = StandardSend(target, COMMAND_LIGHT_OFF_0X13_0X00, flags=flags)
         self.send_msg(msg)
         dev_list = self._find_scene(group)
-        _LOGGER.debug('Scene %d turned off', group)
+        _LOGGER.debug("Scene %d turned off", group)
         for addr in dev_list:
             device = self._devices[addr.id]
-            flags = 0x4f
-            msg = StandardSend(device.address, COMMAND_LIGHT_OFF_0X13_0X00,
-                               cmd2=group, flags=flags)
+            flags = 0x4F
+            msg = StandardSend(
+                device.address, COMMAND_LIGHT_OFF_0X13_0X00, cmd2=group, flags=flags
+            )
             self.send_msg(msg)
-            if hasattr(device, 'async_refresh_state'):
-                _LOGGER.debug('Checking status of device %s', addr.human)
+            if hasattr(device, "async_refresh_state"):
+                _LOGGER.debug("Checking status of device %s", addr.human)
                 device.async_refresh_state()
 
     def _find_scene(self, group):
@@ -377,8 +391,8 @@ class IM(Device, asyncio.Protocol):
         device_list = []
         for rec_num in self._aldb:
             rec = self._aldb[rec_num]
-            _LOGGER.debug('Checking record for scene: %s', rec)
-            if (rec.control_flags.is_controller and rec.group == group):
+            _LOGGER.debug("Checking record for scene: %s", rec)
+            if rec.control_flags.is_controller and rec.group == group:
                 if rec.address not in device_list:
                     device_list.append(rec.address)
         for addr in self._devices:
@@ -386,18 +400,19 @@ class IM(Device, asyncio.Protocol):
             aldb = device.aldb
             for mem_addr in aldb:
                 rec = aldb[mem_addr]
-                _LOGGER.debug('Checking record for scene: %s', rec)
-                if (rec.control_flags.is_in_use and
-                        rec.group == group and
-                        rec.address == self._address):
+                _LOGGER.debug("Checking record for scene: %s", rec)
+                if (
+                    rec.control_flags.is_in_use
+                    and rec.group == group
+                    and rec.address == self._address
+                ):
                     if rec.address not in device_list:
                         device_list.append(device.address)
         return device_list
 
     async def _setup_devices(self):
         await self.devices.load_saved_device_info()
-        _LOGGER.debug('Found %d saved devices',
-                      len(self.devices.saved_devices))
+        _LOGGER.debug("Found %d saved devices", len(self.devices.saved_devices))
         self._get_plm_info()
         self.devices.add_known_devices(self)
 
@@ -407,12 +422,12 @@ class IM(Device, asyncio.Protocol):
         else:
             self._complete_setup()
 
-        _LOGGER.debug('Ending _setup_devices in IM')
+        _LOGGER.debug("Ending _setup_devices in IM")
 
     # pylint: disable=broad-except
     async def _get_message_from_send_queue(self):
-        _LOGGER.debug('Starting Insteon Modem write message from send queue')
-        _LOGGER.debug('Aquiring write lock')
+        _LOGGER.debug("Starting Insteon Modem write message from send queue")
+        _LOGGER.debug("Aquiring write lock")
         await self._write_transport_lock.acquire()
         while self._restart_writer:
             # wait for an item from the queue
@@ -426,35 +441,32 @@ class IM(Device, asyncio.Protocol):
                     message_sent = await self._write_message(msg_info)
                 await asyncio.sleep(msg_info.wait_timeout, loop=self._loop)
             except asyncio.CancelledError:
-                _LOGGER.info('Stopping Insteon Modem writer due to '
-                             'CancelledError')
+                _LOGGER.info("Stopping Insteon Modem writer due to " "CancelledError")
                 self._restart_writer = False
             except GeneratorExit:
-                _LOGGER.error('Stopping Insteon Modem writer due to '
-                              'GeneratorExit')
+                _LOGGER.error("Stopping Insteon Modem writer due to " "GeneratorExit")
                 self._restart_writer = False
             except Exception as e:
-                _LOGGER.error('Restarting Insteon Modem writer due to %s',
-                              str(e))
-                _LOGGER.error('MSG: %s', str(msg_info.msg))
+                _LOGGER.error("Restarting Insteon Modem writer due to %s", str(e))
+                _LOGGER.error("MSG: %s", str(msg_info.msg))
                 self._restart_writer = True
         if self._write_transport_lock.locked():
             self._write_transport_lock.release()
-        _LOGGER.debug('Ending Insteon Modem write message from send queue')
+        _LOGGER.debug("Ending Insteon Modem write message from send queue")
 
     def _get_plm_info(self):
         """Request PLM Info."""
-        _LOGGER.info('Requesting Insteon Modem Info')
+        _LOGGER.info("Requesting Insteon Modem Info")
         msg = GetImInfo()
-        self.send_msg(msg, wait_nak=True, wait_timeout=.5)
+        self.send_msg(msg, wait_nak=True, wait_timeout=0.5)
 
     async def _write_message(self, msg_info: MessageInfo):
-        _LOGGER.debug('TX: %s', msg_info.msg)
+        _LOGGER.debug("TX: %s", msg_info.msg)
         is_sent = False
         if not self.transport.is_closing():
             self.transport.write(msg_info.msg.bytes)
             if msg_info.wait_nak:
-                _LOGGER.debug('Waiting for ACK or NAK message')
+                _LOGGER.debug("Waiting for ACK or NAK message")
                 is_sent = await self._wait_ack_nak(msg_info.msg)
             else:
                 is_sent = True
@@ -474,16 +486,16 @@ class IM(Device, asyncio.Protocol):
                     is_ack_nak = self._msg_is_ack_nak(msg, acknak)
                     is_sent = self._msg_is_sent(acknak)
         except asyncio.TimeoutError:
-            _LOGGER.debug('No ACK or NAK message received.')
+            _LOGGER.debug("No ACK or NAK message received.")
             is_sent = False
         return is_sent
 
     # pylint: disable=no-self-use
     def _msg_is_ack_nak(self, msg, acknak):
-        if not hasattr(acknak, 'isack'):
+        if not hasattr(acknak, "isack"):
             return False
         if msg.matches_pattern(acknak):
-            _LOGGER.debug('ACK or NAK received')
+            _LOGGER.debug("ACK or NAK received")
             return True
         return False
 
@@ -492,9 +504,10 @@ class IM(Device, asyncio.Protocol):
         # All Link record NAK is a valid last record response
         # However, we want to retry 3 times to make sure
         # it is a valid last record response and not a true NAK
-        if ((acknak.code == GetFirstAllLinkRecord.code or
-             acknak.code == GetNextAllLinkRecord.code) and
-                acknak.isnak):
+        if (
+            acknak.code == GetFirstAllLinkRecord.code
+            or acknak.code == GetNextAllLinkRecord.code
+        ) and acknak.isnak:
             return True
 
         return acknak.isack
@@ -502,14 +515,14 @@ class IM(Device, asyncio.Protocol):
     def _load_all_link_database(self):
         """Load the ALL-Link Database into object."""
         _LOGGER.debug("Starting: _load_all_link_database")
-        self.devices.state = 'loading'
+        self.devices.state = "loading"
         self._get_first_all_link_record()
         _LOGGER.debug("Ending: _load_all_link_database")
 
     def _get_first_all_link_record(self):
         """Request first ALL-Link record."""
         _LOGGER.debug("Starting: _get_first_all_link_record")
-        _LOGGER.info('Requesting ALL-Link Records')
+        _LOGGER.info("Requesting ALL-Link Records")
         if self.aldb.status == ALDBStatus.LOADED:
             self._next_all_link_rec_nak_retries = 3
             self._handle_get_next_all_link_record_nak(None)
@@ -517,7 +530,7 @@ class IM(Device, asyncio.Protocol):
         self.aldb.clear()
         self._next_all_link_rec_nak_retries = 0
         msg = GetFirstAllLinkRecord()
-        self.send_msg(msg, wait_nak=True, wait_timeout=.5)
+        self.send_msg(msg, wait_nak=True, wait_timeout=0.5)
         _LOGGER.debug("Ending: _get_first_all_link_record")
 
     def _get_next_all_link_record(self):
@@ -525,7 +538,7 @@ class IM(Device, asyncio.Protocol):
         _LOGGER.debug("Starting: _get_next_all_link_record")
         _LOGGER.debug("Requesting Next All-Link Record")
         msg = GetNextAllLinkRecord()
-        self.send_msg(msg, wait_nak=True, wait_timeout=.5)
+        self.send_msg(msg, wait_nak=True, wait_timeout=0.5)
         _LOGGER.debug("Ending: _get_next_all_link_record")
 
     def _new_device_added(self, device):
@@ -535,8 +548,9 @@ class IM(Device, asyncio.Protocol):
 
     # Inbound message handlers sepcific to the IM
     def _register_message_handlers(self):
-        template_all_link_response = AllLinkRecordResponse(None, None, None,
-                                                           None, None, None)
+        template_all_link_response = AllLinkRecordResponse(
+            None, None, None, None, None, None
+        )
         template_get_im_info = GetImInfo()
         template_next_all_link_rec = GetNextAllLinkRecord(acknak=MESSAGE_NAK)
         template_x10_send = X10Send(None, None, MESSAGE_ACK)
@@ -547,24 +561,20 @@ class IM(Device, asyncio.Protocol):
         #    self._handle_assign_to_all_link_group)
 
         self._message_callbacks.add(
-            template_all_link_response,
-            self._handle_all_link_record_response)
+            template_all_link_response, self._handle_all_link_record_response
+        )
+
+        self._message_callbacks.add(template_get_im_info, self._handle_get_plm_info)
 
         self._message_callbacks.add(
-            template_get_im_info,
-            self._handle_get_plm_info)
+            template_next_all_link_rec, self._handle_get_next_all_link_record_nak
+        )
+
+        self._message_callbacks.add(template_x10_send, self._handle_x10_send_receive)
 
         self._message_callbacks.add(
-            template_next_all_link_rec,
-            self._handle_get_next_all_link_record_nak)
-
-        self._message_callbacks.add(
-            template_x10_send,
-            self._handle_x10_send_receive)
-
-        self._message_callbacks.add(
-            template_x10_received,
-            self._handle_x10_send_receive)
+            template_x10_received, self._handle_x10_send_receive
+        )
 
     async def _peel_messages_from_buffer(self):
         lastlooplen = 0
@@ -575,7 +585,7 @@ class IM(Device, asyncio.Protocol):
             if len(buffer) < 2:
                 worktodo = False
                 break
-            _LOGGER.debug('Total buffer: %s', binascii.hexlify(buffer))
+            _LOGGER.debug("Total buffer: %s", binascii.hexlify(buffer))
             msg, buffer = insteonplm.messages.create(buffer)
 
             if msg is not None:
@@ -584,7 +594,7 @@ class IM(Device, asyncio.Protocol):
 
             # _LOGGER.debug('Post buffer: %s', binascii.hexlify(buffer))
             if len(buffer) < 2:
-                _LOGGER.debug('Buffer too short to have a message')
+                _LOGGER.debug("Buffer too short to have a message")
                 worktodo = False
                 break
 
@@ -598,22 +608,22 @@ class IM(Device, asyncio.Protocol):
             buffer.extend(self._unpack_buffer())
             self._buffer.put_nowait(buffer)
 
-        _LOGGER.debug('Messages in queue: %d', len(self._recv_queue))
+        _LOGGER.debug("Messages in queue: %d", len(self._recv_queue))
         worktodo = True
         while worktodo:
             try:
                 self._process_recv_queue()
             except IndexError:
-                _LOGGER.debug('Last item in self._recv_queue reached.')
+                _LOGGER.debug("Last item in self._recv_queue reached.")
                 worktodo = False
 
     def _process_recv_queue(self):
         msg = self._recv_queue.pop()
-        _LOGGER.debug('RX: %s', msg)
+        _LOGGER.debug("RX: %s", msg)
         callbacks = self._message_callbacks.get_callbacks_from_message(msg)
-        if hasattr(msg, 'isack') or hasattr(msg, 'isnak'):
+        if hasattr(msg, "isack") or hasattr(msg, "isnak"):
             self._acknak_queue.put_nowait(msg)
-        if hasattr(msg, 'address'):
+        if hasattr(msg, "address"):
             device = self.devices[msg.address.hex]
             if device:
                 device.receive_message(msg)
@@ -638,41 +648,51 @@ class IM(Device, asyncio.Protocol):
         self._load_all_link_database()
 
     def _handle_all_link_record_response(self, msg):
-        _LOGGER.debug('Found all link record for device %s', msg.address.hex)
+        _LOGGER.debug("Found all link record for device %s", msg.address.hex)
         cat = msg.linkdata1
         subcat = msg.linkdata2
         product_key = msg.linkdata3
         rec_num = len(self._aldb)
-        self._aldb[rec_num] = ALDBRecord(rec_num, msg.controlFlags,
-                                         msg.group, msg.address,
-                                         cat, subcat, product_key)
+        self._aldb[rec_num] = ALDBRecord(
+            rec_num, msg.controlFlags, msg.group, msg.address, cat, subcat, product_key
+        )
         if self.devices[msg.address.id] is None:
-            _LOGGER.debug('ALDB Data: address %s data1: %02x '
-                          'data1: %02x data3: %02x',
-                          msg.address.hex, cat, subcat, product_key)
+            _LOGGER.debug(
+                "ALDB Data: address %s data1: %02x " "data1: %02x data3: %02x",
+                msg.address.hex,
+                cat,
+                subcat,
+                product_key,
+            )
 
             # Get a device from the ALDB based on cat, subcat and product_key
             device = self.devices.create_device_from_category(
-                self, msg.address, cat, subcat, product_key)
+                self, msg.address, cat, subcat, product_key
+            )
 
             # If a device is returned and that device is of a type tha stores
             # the product data in the ALDB record we can use that as the device
             # type for this record. Otherwise we need to request the device ID.
             if device is not None:
-                if device.prod_data_in_aldb or \
-                        self.devices.has_override(device.address.id) or \
-                        self.devices.has_saved(device.address.id):
+                if (
+                    device.prod_data_in_aldb
+                    or self.devices.has_override(device.address.id)
+                    or self.devices.has_saved(device.address.id)
+                ):
                     if self.devices[device.id] is None:
                         self.devices[device.id] = device
-                        _LOGGER.debug('Device with id %s added to device list '
-                                      'from ALDB data.', device.id)
+                        _LOGGER.debug(
+                            "Device with id %s added to device list " "from ALDB data.",
+                            device.id,
+                        )
 
         # Check again that the device is not already added, otherwise queue it
         # up for Get ID request
         if not self.devices[msg.address.id]:
-            _LOGGER.debug('Found new device %s', msg.address.id)
+            _LOGGER.debug("Found new device %s", msg.address.id)
             unknowndevice = self.devices.create_device_from_category(
-                self, msg.address.hex, None, None, None)
+                self, msg.address.hex, None, None, None
+            )
             self._aldb_devices[msg.address.id] = unknowndevice
 
         self._next_all_link_rec_nak_retries = 0
@@ -685,8 +705,9 @@ class IM(Device, asyncio.Protocol):
             self._get_next_all_link_record()
             return
         self._aldb.status = ALDBStatus.LOADED
-        _LOGGER.debug('All-Link device records found in ALDB: %d',
-                      len(self._aldb_devices))
+        _LOGGER.debug(
+            "All-Link device records found in ALDB: %d", len(self._aldb_devices)
+        )
 
         while self._cb_load_all_link_db_done:
             callback = self._cb_load_all_link_db_done.pop()
@@ -695,7 +716,7 @@ class IM(Device, asyncio.Protocol):
         self._get_device_info()
 
     def _get_device_info(self):
-        _LOGGER.debug('Starting _get_device_info')
+        _LOGGER.debug("Starting _get_device_info")
         # Remove saved records for devices found in the ALDB
         for addr in self.devices:
             self.aldb_device_handled(addr)
@@ -705,10 +726,10 @@ class IM(Device, asyncio.Protocol):
         self.devices.add_device_callback(self._new_device_added)
 
         for addr in self._aldb_devices:
-            _LOGGER.debug('Getting device info for %s', Address(addr).human)
+            _LOGGER.debug("Getting device info for %s", Address(addr).human)
             self._aldb_devices[addr].id_request()
 
-        _LOGGER.debug('Ending _get_device_info')
+        _LOGGER.debug("Ending _get_device_info")
 
     def _complete_setup(self):
         self.devices.save_device_info()
@@ -716,16 +737,20 @@ class IM(Device, asyncio.Protocol):
             self._loop.call_soon(self.poll_devices)
 
     def _handle_nak(self, msg_info):
-        if msg_info.msg.code == GetFirstAllLinkRecord.code or \
-           msg_info.msg.code == GetNextAllLinkRecord.code:
+        if (
+            msg_info.msg.code == GetFirstAllLinkRecord.code
+            or msg_info.msg.code == GetNextAllLinkRecord.code
+        ):
             return
-        _LOGGER.debug('No response or NAK message received')
+        _LOGGER.debug("No response or NAK message received")
         self.send_msg(msg_info.msg, msg_info.wait_nak, msg_info.wait_timeout)
 
     def _handle_get_plm_info(self, msg):
         from insteonplm.devices import ALDB
-        _LOGGER.debug('Starting _handle_get_plm_info')
+
+        _LOGGER.debug("Starting _handle_get_plm_info")
         from insteonplm.devices.ipdb import IPDB
+
         ipdb = IPDB()
         self._address = msg.address
         self._cat = msg.category
@@ -736,7 +761,7 @@ class IM(Device, asyncio.Protocol):
         self._model = product.model
         self._aldb = ALDB(self._send_msg, self._plm.loop, self._address)
 
-        _LOGGER.debug('Ending _handle_get_plm_info')
+        _LOGGER.debug("Ending _handle_get_plm_info")
 
     # X10 Device methods
     def x10_all_units_off(self, housecode):
@@ -744,7 +769,7 @@ class IM(Device, asyncio.Protocol):
         if isinstance(housecode, str):
             housecode = housecode.upper()
         else:
-            raise TypeError('Housecode must be a string')
+            raise TypeError("Housecode must be a string")
         msg = X10Send.command_msg(housecode, X10_COMMAND_ALL_UNITS_OFF)
         self.send_msg(msg)
         self._x10_command_to_device(housecode, X10_COMMAND_ALL_UNITS_OFF, msg)
@@ -778,7 +803,7 @@ class IM(Device, asyncio.Protocol):
         if isinstance(housecode, str):
             housecode = housecode.upper()
         else:
-            raise TypeError('Housecode must be a string')
+            raise TypeError("Housecode must be a string")
         if x10_command_type(command) == X10CommandType.DIRECT:
             if self._x10_address and self.devices[self._x10_address.id]:
                 if self._x10_address.x10_housecode == housecode:
@@ -818,7 +843,7 @@ class PLM(IM):
 
         Called when asyncio.Protocol establishes the network connection.
         """
-        _LOGGER.info('Connection established to PLM')
+        _LOGGER.info("Connection established to PLM")
         self.transport = transport
 
         self._restart_writer = True
@@ -861,8 +886,8 @@ class Hub(IM):
 
         Called when asyncio.Protocol establishes the network connection.
         """
-        _LOGGER.info('Connection established to Hub')
-        _LOGGER.debug('Transport: %s', transport)
+        _LOGGER.info("Connection established to Hub")
+        _LOGGER.debug("Transport: %s", transport)
         self.transport = transport
 
         self._restart_writer = True

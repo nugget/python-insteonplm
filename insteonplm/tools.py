@@ -11,19 +11,21 @@ import insteonplm
 from insteonplm.address import Address
 from insteonplm.devices import create, ALDBStatus
 
-__all__ = ('Tools', 'Commander', 'monitor', 'interactive')
+__all__ = ("Tools", "Commander", "monitor", "interactive")
 _LOGGING = logging.getLogger(__name__)
-_INSTEONPLM_LOGGING = logging.getLogger('insteonplm')
-PROMPT = 'insteonplm: '
-INTRO = ('INSTEON PLM interactive command processor.\n'
-         'Type `help` for a list of commands.\n\n'
-         'This command line tool is still in development.\n'
-         '!!!! Please be VERY careful with the `write_aldb` command !!!!!!!')
-ALLOWEDCHARS = string.ascii_letters + string.digits + '_'
+_INSTEONPLM_LOGGING = logging.getLogger("insteonplm")
+PROMPT = "insteonplm: "
+INTRO = (
+    "INSTEON PLM interactive command processor.\n"
+    "Type `help` for a list of commands.\n\n"
+    "This command line tool is still in development.\n"
+    "!!!! Please be VERY careful with the `write_aldb` command !!!!!!!"
+)
+ALLOWEDCHARS = string.ascii_letters + string.digits + "_"
 
 
 # pylint: disable=too-many-instance-attributes
-class Tools():
+class Tools:
     """Set of tools to support utility programs."""
 
     def __init__(self, loop, args=None):
@@ -60,13 +62,13 @@ class Tools():
                 self.workdir = args.workdir
             if hasattr(args, "logfile"):
                 self.logfile = args.logfile
-            if hasattr(args, 'address'):
+            if hasattr(args, "address"):
                 self.address = args.address
-            if hasattr(args, 'group'):
+            if hasattr(args, "group"):
                 self.group = int(args.group)
-            if hasattr(args, 'linkcode'):
+            if hasattr(args, "linkcode"):
                 self.linkcode = int(args.linkcode)
-            if hasattr(args, 'wait'):
+            if hasattr(args, "wait"):
                 self.wait_time = int(args.wait)
 
         if self.logfile:
@@ -74,7 +76,7 @@ class Tools():
         else:
             handler = logging.StreamHandler(sys.stdout)
             _LOGGING.addHandler(handler)
-            _LOGGING.info('Setting log level to %s', self.loglevel)
+            _LOGGING.info("Setting log level to %s", self.loglevel)
             _LOGGING.setLevel(self.loglevel)
             _INSTEONPLM_LOGGING.setLevel(self.loglevel)
 
@@ -82,7 +84,7 @@ class Tools():
         """Connect to the IM."""
         await self.aldb_load_lock.acquire()
         device = self.host if self.host else self.device
-        _LOGGING.info('Connecting to Insteon Modem at %s', device)
+        _LOGGING.info("Connecting to Insteon Modem at %s", device)
         self.device = device if device else self.device
         self.workdir = workdir if workdir else self.workdir
         conn = await insteonplm.Connection.create(
@@ -93,18 +95,17 @@ class Tools():
             password=self.password,
             loop=self.loop,
             poll_devices=poll_devices,
-            workdir=self.workdir)
-        _LOGGING.info('Connecton made to Insteon Modem at %s', device)
+            workdir=self.workdir,
+        )
+        _LOGGING.info("Connecton made to Insteon Modem at %s", device)
         conn.protocol.add_device_callback(self.async_new_device_callback)
-        conn.protocol.add_all_link_done_callback(
-            self.async_aldb_loaded_callback)
+        conn.protocol.add_all_link_done_callback(self.async_aldb_loaded_callback)
         self.plm = conn.protocol
         await self.aldb_load_lock
         if self.aldb_load_lock.locked():
             self.aldb_load_lock.release()
 
-    async def monitor_mode(self, poll_devices=False, device=None,
-                           workdir=None):
+    async def monitor_mode(self, poll_devices=False, device=None, workdir=None):
         """Place the IM in monitoring mode."""
         print("Running monitor mode")
         await self.connect(poll_devices, device, workdir)
@@ -113,46 +114,47 @@ class Tools():
     def async_new_device_callback(self, device):
         """Log that our new device callback worked."""
         _LOGGING.info(
-            'New Device: %s cat: 0x%02x subcat: 0x%02x desc: %s, model: %s',
-            device.id, device.cat, device.subcat,
-            device.description, device.model)
+            "New Device: %s cat: 0x%02x subcat: 0x%02x desc: %s, model: %s",
+            device.id,
+            device.cat,
+            device.subcat,
+            device.description,
+            device.model,
+        )
         for state in device.states:
-            device.states[state].register_updates(
-                self.async_state_change_callback)
+            device.states[state].register_updates(self.async_state_change_callback)
 
     # pylint: disable=no-self-use
     def async_state_change_callback(self, addr, state, value):
         """Log the state change."""
-        _LOGGING.info('Device %s state %s value is changed to %s',
-                      addr, state, value)
+        _LOGGING.info("Device %s state %s value is changed to %s", addr, state, value)
 
     def async_aldb_loaded_callback(self):
         """Unlock the ALDB load lock when loading is complete."""
         if self.aldb_load_lock.locked():
             self.aldb_load_lock.release()
-        _LOGGING.info('ALDB Loaded')
+        _LOGGING.info("ALDB Loaded")
 
     async def start_all_linking(self, linkcode, group, address=None):
         """Start the All-Linking process with the IM and device."""
-        _LOGGING.info('Starting the All-Linking process')
+        _LOGGING.info("Starting the All-Linking process")
         if address:
             linkdevice = self.plm.devices[Address(address).id]
             if not linkdevice:
                 linkdevice = create(self.plm, address, None, None)
-            _LOGGING.info('Attempting to link the PLM to device %s. ',
-                          address)
+            _LOGGING.info("Attempting to link the PLM to device %s. ", address)
             self.plm.start_all_linking(linkcode, group)
-            await asyncio.sleep(.5, loop=self.loop)
+            await asyncio.sleep(0.5, loop=self.loop)
             linkdevice.enter_linking_mode(group=group)
         else:
-            _LOGGING.info('Starting All-Linking on PLM. '
-                          'Waiting for button press')
+            _LOGGING.info("Starting All-Linking on PLM. " "Waiting for button press")
             self.plm.start_all_linking(linkcode, group)
             await asyncio.sleep(self.wait_time, loop=self.loop)
 
-        _LOGGING.info('%d devices added to the All-Link Database',
-                      len(self.plm.devices))
-        await asyncio.sleep(.1, loop=self.loop)
+        _LOGGING.info(
+            "%d devices added to the All-Link Database", len(self.plm.devices)
+        )
+        await asyncio.sleep(0.1, loop=self.loop)
 
     def list_devices(self):
         """List devices in the ALDB."""
@@ -160,19 +162,23 @@ class Tools():
             for addr in self.plm.devices:
                 device = self.plm.devices[addr]
                 if device.address.is_x10:
-                    _LOGGING.info('Device: %s %s', device.address.human,
-                                  device.description)
+                    _LOGGING.info(
+                        "Device: %s %s", device.address.human, device.description
+                    )
                 else:
-                    _LOGGING.info('Device: %s cat: 0x%02x subcat: 0x%02x '
-                                  'desc: %s, model: %s',
-                                  device.address.human, device.cat,
-                                  device.subcat, device.description,
-                                  device.model)
+                    _LOGGING.info(
+                        "Device: %s cat: 0x%02x subcat: 0x%02x " "desc: %s, model: %s",
+                        device.address.human,
+                        device.cat,
+                        device.subcat,
+                        device.description,
+                        device.model,
+                    )
         else:
-            _LOGGING.info('No devices found')
+            _LOGGING.info("No devices found")
             if not self.plm.transport:
-                _LOGGING.info('IM connection has not been made.')
-                _LOGGING.info('Use `connect [device]` to open the connection')
+                _LOGGING.info("IM connection has not been made.")
+                _LOGGING.info("Use `connect [device]` to open the connection")
 
     async def on_off_test(self, addr, group):
         """Test the on/off method of a device.
@@ -193,32 +199,35 @@ class Tools():
             state = device.states[group]
 
         if state:
-            if hasattr(state, 'on') and hasattr(state, 'off'):
-                _LOGGING.info('Send on request')
-                _LOGGING.info('----------------------')
+            if hasattr(state, "on") and hasattr(state, "off"):
+                _LOGGING.info("Send on request")
+                _LOGGING.info("----------------------")
                 device.states[group].on()
                 await asyncio.sleep(2, loop=self.loop)
 
-                _LOGGING.info('Send off request')
-                _LOGGING.info('----------------------')
+                _LOGGING.info("Send off request")
+                _LOGGING.info("----------------------")
                 device.states[group].off()
                 await asyncio.sleep(2, loop=self.loop)
 
-                _LOGGING.info('Send on request')
-                _LOGGING.info('----------------------')
+                _LOGGING.info("Send on request")
+                _LOGGING.info("----------------------")
                 device.states[group].on()
                 await asyncio.sleep(2, loop=self.loop)
 
-                _LOGGING.info('Send off request')
-                _LOGGING.info('----------------------')
+                _LOGGING.info("Send off request")
+                _LOGGING.info("----------------------")
                 device.states[group].off()
                 await asyncio.sleep(2, loop=self.loop)
             else:
-                _LOGGING.warning('Device %s with state %d is not an on/off'
-                                 'device.', device.id, state.name)
+                _LOGGING.warning(
+                    "Device %s with state %d is not an on/off" "device.",
+                    device.id,
+                    state.name,
+                )
 
         else:
-            _LOGGING.error('Could not find device %s', addr)
+            _LOGGING.error("Could not find device %s", addr)
 
     def print_device_aldb(self, addr):
         """Diplay the All-Link database for a device."""
@@ -230,32 +239,32 @@ class Tools():
         if device:
             if device.aldb.status in [ALDBStatus.LOADED, ALDBStatus.PARTIAL]:
                 if device.aldb.status == ALDBStatus.PARTIAL:
-                    _LOGGING.info('ALDB partially loaded for device %s', addr)
+                    _LOGGING.info("ALDB partially loaded for device %s", addr)
                 for mem_addr in device.aldb:
                     record = device.aldb[mem_addr]
-                    _LOGGING.debug('mem_addr: %s', mem_addr)
-                    _LOGGING.info('ALDB record: %s', record)
+                    _LOGGING.debug("mem_addr: %s", mem_addr)
+                    _LOGGING.info("ALDB record: %s", record)
             else:
-                _LOGGING.info('ALDB not loaded. '
-                              'Use `load_aldb %s` first.',
-                              device.address.id)
+                _LOGGING.info(
+                    "ALDB not loaded. " "Use `load_aldb %s` first.", device.address.id
+                )
         else:
-            _LOGGING.info('Device not found.')
+            _LOGGING.info("Device not found.")
 
     def print_all_aldb(self):
         """Diplay the All-Link database for all devices."""
         addr = self.plm.address.id
-        _LOGGING.info('ALDB for PLM device %s', addr)
+        _LOGGING.info("ALDB for PLM device %s", addr)
         self.print_device_aldb(addr)
         if self.plm.devices:
             for addr in self.plm.devices:
-                _LOGGING.info('ALDB for device %s', addr)
+                _LOGGING.info("ALDB for device %s", addr)
                 self.print_device_aldb(addr)
         else:
-            _LOGGING.info('No devices found')
+            _LOGGING.info("No devices found")
             if not self.plm.transport:
-                _LOGGING.info('IM connection has not been made.')
-                _LOGGING.info('Use `connect [device]` to open the connection')
+                _LOGGING.info("IM connection has not been made.")
+                _LOGGING.info("Use `connect [device]` to open the connection")
 
     async def load_device_aldb(self, addr, clear=True):
         """Read the device ALDB."""
@@ -273,26 +282,34 @@ class Tools():
             while device.aldb.status == ALDBStatus.LOADING:
                 await asyncio.sleep(1, loop=self.loop)
             if device.aldb.status == ALDBStatus.LOADED:
-                _LOGGING.info('ALDB loaded for device %s', addr)
+                _LOGGING.info("ALDB loaded for device %s", addr)
             self.print_device_aldb(addr)
         else:
-            _LOGGING.error('Could not find device %s', addr)
+            _LOGGING.error("Could not find device %s", addr)
 
     async def load_all_aldb(self, clear=True):
         """Read all devices ALDB."""
         for addr in self.plm.devices:
             await self.load_device_aldb(addr, clear)
 
-    async def write_aldb(self, addr, mem_addr: int, mode: str, group: int,
-                         target, data1=0x00, data2=0x00, data3=0x00):
+    async def write_aldb(
+        self,
+        addr,
+        mem_addr: int,
+        mode: str,
+        group: int,
+        target,
+        data1=0x00,
+        data2=0x00,
+        data3=0x00,
+    ):
         """Write a device All-Link record."""
         dev_addr = Address(addr)
         target_addr = Address(target)
         device = self.plm.devices[dev_addr.id]
         if device:
-            _LOGGING.debug('calling device write_aldb')
-            device.write_aldb(mem_addr, mode, group, target_addr,
-                              data1, data2, data3)
+            _LOGGING.debug("calling device write_aldb")
+            device.write_aldb(mem_addr, mode, group, target_addr, data1, data2, data3)
             await asyncio.sleep(1, loop=self.loop)
             while device.aldb.status == ALDBStatus.LOADING:
                 await asyncio.sleep(1, loop=self.loop)
@@ -303,7 +320,7 @@ class Tools():
         dev_addr = Address(addr)
         device = self.plm.devices[dev_addr.id]
         if device:
-            _LOGGING.debug('calling device del_aldb')
+            _LOGGING.debug("calling device del_aldb")
             device.del_aldb(mem_addr)
             await asyncio.sleep(1, loop=self.loop)
             while device.aldb.status == ALDBStatus.LOADING:
@@ -312,17 +329,18 @@ class Tools():
 
     def add_device_override(self, addr, cat, subcat, firmware=None):
         """Add a device override to the PLM."""
-        self.plm.devices.add_override(addr, 'cat', cat)
-        self.plm.devices.add_override(addr, 'subcat', subcat)
+        self.plm.devices.add_override(addr, "cat", cat)
+        self.plm.devices.add_override(addr, "subcat", subcat)
         if firmware:
-            self.plm.devices.add_override(addr, 'firmware', firmware)
+            self.plm.devices.add_override(addr, "firmware", firmware)
 
     def add_x10_device(self, housecode, unitcode, dev_type):
         """Add an X10 device to the PLM."""
         device = None
         try:
-            device = self.plm.devices.add_x10_device(self.plm, housecode,
-                                                     unitcode, dev_type)
+            device = self.plm.devices.add_x10_device(
+                self.plm, housecode, unitcode, dev_type
+            )
         except ValueError:
             pass
         return device
@@ -353,7 +371,7 @@ class Tools():
 
 
 # pylint: disable=too-many-public-methods
-class Commander():
+class Commander:
     """Command object to manage itneractive sessions."""
 
     def __init__(self, loop, args=None):
@@ -382,11 +400,11 @@ class Commander():
             command, arg = self._parse_cmd(cmd)
             if command is None:
                 return self._invalid(cmd)
-            if command == '':
+            if command == "":
                 return self._invalid(cmd)
 
             try:
-                func = getattr(self, 'do_' + command)
+                func = getattr(self, "do_" + command)
             except AttributeError:
                 func = self._invalid
                 arg = str(cmd)
@@ -431,7 +449,7 @@ class Commander():
             workdir: Working directory to save and load device information
         """
         params = args.split()
-        device = '/dev/ttyUSB0'
+        device = "/dev/ttyUSB0"
         workdir = None
 
         try:
@@ -447,7 +465,7 @@ class Commander():
 
         if device:
             await self.tools.connect(False, device=device, workdir=workdir)
-        _LOGGING.info('Connection complete.')
+        _LOGGING.info("Connection complete.")
 
     # pylint: disable=unused-argument
     def do_running_tasks(self, arg):
@@ -489,8 +507,8 @@ class Commander():
         if addr and group:
             await self.tools.on_off_test(addr, group)
         else:
-            _LOGGING.error('Invalid address or group')
-            self.do_help('on_off_test')
+            _LOGGING.error("Invalid address or group")
+            self.do_help("on_off_test")
 
     # pylint: disable=unused-argument
     def do_list_devices(self, args):
@@ -540,12 +558,10 @@ class Commander():
                 addr = None
 
         if linkcode in [0, 1, 3] and 255 >= group >= 0:
-            self.loop.create_task(
-                self.tools.start_all_linking(linkcode, group, addr))
+            self.loop.create_task(self.tools.start_all_linking(linkcode, group, addr))
         else:
-            _LOGGING.error('Link code %d or group number %d not valid',
-                           linkcode, group)
-            self.do_help('add_all_link')
+            _LOGGING.error("Link code %d or group number %d not valid", linkcode, group)
+            self.do_help("add_all_link")
 
     def do_del_all_link(self, args):
         """Delete an All-Link record to the IM and a device.
@@ -574,11 +590,10 @@ class Commander():
                 addr = None
 
         if group and 0 <= group <= 255:
-            self.loop.create_task(
-                self.tools.start_all_linking(linkcode, group, addr))
+            self.loop.create_task(self.tools.start_all_linking(linkcode, group, addr))
         else:
-            _LOGGING.error('Group number not valid')
-            self.do_help('del_all_link')
+            _LOGGING.error("Group number not valid")
+            self.do_help("del_all_link")
 
     def do_print_aldb(self, args):
         """Print the All-Link database for a device.
@@ -600,13 +615,13 @@ class Commander():
         try:
             addr = params[0]
         except IndexError:
-            _LOGGING.error('Device address required.')
-            self.do_help('print_aldb')
+            _LOGGING.error("Device address required.")
+            self.do_help("print_aldb")
 
         if addr:
-            if addr.lower() == 'all':
+            if addr.lower() == "all":
                 self.tools.print_all_aldb()
-            elif addr.lower() == 'plm':
+            elif addr.lower() == "plm":
                 addr = self.tools.plm.address.id
                 self.tools.print_device_aldb(addr)
             else:
@@ -646,8 +661,8 @@ class Commander():
             self.tools.host = host
             self.tools.port = port
         else:
-            _LOGGING.error('username password host are required')
-            self.do_help('set_hub_connection')
+            _LOGGING.error("username password host are required")
+            self.do_help("set_hub_connection")
 
     def do_set_log_file(self, args):
         """Set the log file.
@@ -665,7 +680,7 @@ class Commander():
             filename = params[0]
             logging.basicConfig(filename=filename)
         except IndexError:
-            self.do_help('set_log_file')
+            self.do_help("set_log_file")
 
     async def do_load_aldb(self, args):
         """Load the All-Link database for a device.
@@ -689,29 +704,29 @@ class Commander():
         try:
             addr = params[0]
         except IndexError:
-            _LOGGING.error('Device address required.')
-            self.do_help('load_aldb')
+            _LOGGING.error("Device address required.")
+            self.do_help("load_aldb")
 
         try:
             clear_prior = params[1]
-            _LOGGING.info('param clear_prior %s', clear_prior)
-            if clear_prior.lower() == 'y':
+            _LOGGING.info("param clear_prior %s", clear_prior)
+            if clear_prior.lower() == "y":
                 clear = True
-            elif clear_prior.lower() == 'n':
+            elif clear_prior.lower() == "n":
                 clear = False
             else:
-                _LOGGING.error('Invalid value for parameter `clear_prior`')
-                _LOGGING.error('Valid values are `y` or `n`')
+                _LOGGING.error("Invalid value for parameter `clear_prior`")
+                _LOGGING.error("Valid values are `y` or `n`")
         except IndexError:
             pass
 
         if addr:
-            if addr.lower() == 'all':
+            if addr.lower() == "all":
                 await self.tools.load_all_aldb(clear)
             else:
                 await self.tools.load_device_aldb(addr, clear)
         else:
-            self.do_help('load_aldb')
+            self.do_help("load_aldb")
 
     async def do_write_aldb(self, args):
         """Write device All-Link record.
@@ -756,24 +771,25 @@ class Commander():
         try:
             addr = Address(params[0])
             mem_bytes = binascii.unhexlify(params[1])
-            memory = int.from_bytes(mem_bytes, byteorder='big')
+            memory = int.from_bytes(mem_bytes, byteorder="big")
             mode = params[2]
             group = int(params[3])
             target = Address(params[4])
 
-            _LOGGING.info('address: %s', addr)
-            _LOGGING.info('memory: %04x', memory)
-            _LOGGING.info('mode: %s', mode)
-            _LOGGING.info('group: %d', group)
-            _LOGGING.info('target: %s', target)
+            _LOGGING.info("address: %s", addr)
+            _LOGGING.info("memory: %04x", memory)
+            _LOGGING.info("mode: %s", mode)
+            _LOGGING.info("group: %d", group)
+            _LOGGING.info("target: %s", target)
 
         except IndexError:
-            _LOGGING.error('Device address memory mode group and target '
-                           'are all required.')
-            self.do_help('write_aldb')
+            _LOGGING.error(
+                "Device address memory mode group and target " "are all required."
+            )
+            self.do_help("write_aldb")
         except ValueError:
-            _LOGGING.error('Value error - Check parameters')
-            self.do_help('write_aldb')
+            _LOGGING.error("Value error - Check parameters")
+            self.do_help("write_aldb")
 
         try:
             data1 = int(params[5])
@@ -783,13 +799,14 @@ class Commander():
             pass
         except ValueError:
             addr = None
-            _LOGGING.error('Value error - Check parameters')
-            self.do_help('write_aldb')
+            _LOGGING.error("Value error - Check parameters")
+            self.do_help("write_aldb")
             return
 
         if addr and memory and mode and isinstance(group, int) and target:
-            await self.tools.write_aldb(addr, memory, mode, group, target,
-                                        data1, data2, data3)
+            await self.tools.write_aldb(
+                addr, memory, mode, group, target, data1, data2, data3
+            )
 
     async def do_del_aldb(self, args):
         """Delete device All-Link record.
@@ -818,17 +835,17 @@ class Commander():
         try:
             addr = Address(params[0])
             mem_bytes = binascii.unhexlify(params[1])
-            memory = int.from_bytes(mem_bytes, byteorder='big')
+            memory = int.from_bytes(mem_bytes, byteorder="big")
 
-            _LOGGING.info('address: %s', addr)
-            _LOGGING.info('memory: %04x', memory)
+            _LOGGING.info("address: %s", addr)
+            _LOGGING.info("memory: %04x", memory)
 
         except IndexError:
-            _LOGGING.error('Device address and memory are required.')
-            self.do_help('del_aldb')
+            _LOGGING.error("Device address and memory are required.")
+            self.do_help("del_aldb")
         except ValueError:
-            _LOGGING.error('Value error - Check parameters')
-            self.do_help('write_aldb')
+            _LOGGING.error("Value error - Check parameters")
+            self.do_help("write_aldb")
 
         if addr and memory:
             await self.tools.del_aldb(addr, memory)
@@ -842,17 +859,17 @@ class Commander():
             log_level: i - info | v - verbose
 
         """
-        if arg in ['i', 'v']:
-            _LOGGING.info('Setting log level to %s', arg)
-            if arg == 'i':
+        if arg in ["i", "v"]:
+            _LOGGING.info("Setting log level to %s", arg)
+            if arg == "i":
                 _LOGGING.setLevel(logging.INFO)
                 _INSTEONPLM_LOGGING.setLevel(logging.INFO)
             else:
                 _LOGGING.setLevel(logging.DEBUG)
                 _INSTEONPLM_LOGGING.setLevel(logging.DEBUG)
         else:
-            _LOGGING.error('Log level value error.')
-            self.do_help('set_log_level')
+            _LOGGING.error("Log level value error.")
+            self.do_help("set_log_level")
 
     def do_set_device(self, args):
         """Set the PLM OS device.
@@ -870,8 +887,8 @@ class Commander():
         try:
             device = params[0]
         except IndexError:
-            _LOGGING.error('Device name required.')
-            self.do_help('set_device')
+            _LOGGING.error("Device name required.")
+            self.do_help("set_device")
 
         if device:
             self.tools.device = device
@@ -898,8 +915,8 @@ class Commander():
         try:
             workdir = params[0]
         except IndexError:
-            _LOGGING.error('Device name required.')
-            self.do_help('set_workdir')
+            _LOGGING.error("Device name required.")
+            self.do_help("set_workdir")
 
         if workdir:
             self.tools.workdir = workdir
@@ -916,15 +933,15 @@ class Commander():
         cmds = arg.split()
 
         if cmds:
-            func = getattr(self, 'do_{}'.format(cmds[0]))
+            func = getattr(self, "do_{}".format(cmds[0]))
             if func:
                 _LOGGING.info(func.__doc__)
             else:
-                _LOGGING.error('Command %s not found', cmds[0])
+                _LOGGING.error("Command %s not found", cmds[0])
         else:
             _LOGGING.info("Available command list: ")
             for curr_cmd in dir(self.__class__):
-                if curr_cmd.startswith("do_") and not curr_cmd == 'do_test':
+                if curr_cmd.startswith("do_") and not curr_cmd == "do_test":
                     print(" - ", curr_cmd[3:])
             _LOGGING.info("For help with a command type `help command`")
 
@@ -978,20 +995,22 @@ class Commander():
             subcat = binascii.unhexlify(params[2][2:])
             firmware = binascii.unhexlify(params[3][2:])
         except IndexError:
-            error = 'missing'
+            error = "missing"
         except ValueError:
-            error = 'value'
+            error = "value"
 
         if addr and cat and subcat:
             self.tools.add_device_override(addr, cat, subcat, firmware)
         else:
-            if error == 'missing':
-                _LOGGING.error('Device address, category and subcategory are '
-                               'required.')
+            if error == "missing":
+                _LOGGING.error(
+                    "Device address, category and subcategory are " "required."
+                )
             else:
-                _LOGGING.error('Check the vales for address, category and '
-                               'subcategory.')
-            self.do_help('add_device_override')
+                _LOGGING.error(
+                    "Check the vales for address, category and " "subcategory."
+                )
+            self.do_help("add_device_override")
 
     def do_add_x10_device(self, args):
         """Add an X10 device to the IM.
@@ -1026,19 +1045,19 @@ class Commander():
         except IndexError:
             pass
         except ValueError:
-            _LOGGING.error('X10 unit code must be an integer 1 - 16')
+            _LOGGING.error("X10 unit code must be an integer 1 - 16")
             unitcode = None
 
         if housecode and unitcode and dev_type:
             device = self.tools.add_x10_device(housecode, unitcode, dev_type)
             if not device:
-                _LOGGING.error('Device not added. Please check the '
-                               'information you provided.')
-                self.do_help('add_x10_device')
+                _LOGGING.error(
+                    "Device not added. Please check the " "information you provided."
+                )
+                self.do_help("add_x10_device")
         else:
-            _LOGGING.error('Device housecode, unitcode and type are '
-                           'required.')
-            self.do_help('add_x10_device')
+            _LOGGING.error("Device housecode, unitcode and type are " "required.")
+            self.do_help("add_x10_device")
 
     def do_kpl_status(self, args):
         """Get the status of a KeypadLinc button.
@@ -1055,10 +1074,10 @@ class Commander():
             group = int(params[1])
         except IndexError:
             _LOGGING.error("Address and group are regquired")
-            self.do_help('kpl_status')
+            self.do_help("kpl_status")
         except TypeError:
             _LOGGING.error("Group must be an integer")
-            self.do_help('kpl_status')
+            self.do_help("kpl_status")
 
         if address and group:
             self.tools.kpl_status(address, group)
@@ -1078,10 +1097,10 @@ class Commander():
             group = int(params[1])
         except IndexError:
             _LOGGING.error("Address and group are regquired")
-            self.do_help('kpl_status')
+            self.do_help("kpl_status")
         except TypeError:
             _LOGGING.error("Group must be an integer")
-            self.do_help('kpl_status')
+            self.do_help("kpl_status")
 
         if address and group:
             self.tools.kpl_on(address, group)
@@ -1101,10 +1120,10 @@ class Commander():
             group = int(params[1])
         except IndexError:
             _LOGGING.error("Address and group are regquired")
-            self.do_help('kpl_status')
+            self.do_help("kpl_status")
         except TypeError:
             _LOGGING.error("Group must be an integer")
-            self.do_help('kpl_status')
+            self.do_help("kpl_status")
 
         if address and group:
             self.tools.kpl_off(address, group)
@@ -1125,16 +1144,16 @@ class Commander():
             address = params[0]
             group = int(params[1])
             mask_string = params[2]
-            if mask_string[0:2].lower() == '0x':
+            if mask_string[0:2].lower() == "0x":
                 mask = binascii.unhexlify(mask_string[2:])
             else:
                 mask = int(mask_string)
         except IndexError:
             _LOGGING.error("Address, group and mask are regquired")
-            self.do_help('kpl_status')
+            self.do_help("kpl_status")
         except TypeError:
             _LOGGING.error("Group must be an integer")
-            self.do_help('kpl_status')
+            self.do_help("kpl_status")
 
         if address and group and mask:
             self.tools.kpl_set_on_mask(address, group, mask)
@@ -1168,15 +1187,16 @@ def monitor():
         Show debug logging.
     """
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument('--device', default='/dev/ttyUSB0',
-                        help='Path to PLM device')
-    parser.add_argument('--verbose', '-v', action='count',
-                        help='Set logging level to verbose')
-    parser.add_argument('-l', '--logfile', default='',
-                        help='Log file name')
-    parser.add_argument('--workdir', default='',
-                        help='Working directory for reading and saving '
-                        'device information.')
+    parser.add_argument("--device", default="/dev/ttyUSB0", help="Path to PLM device")
+    parser.add_argument(
+        "--verbose", "-v", action="count", help="Set logging level to verbose"
+    )
+    parser.add_argument("-l", "--logfile", default="", help="Log file name")
+    parser.add_argument(
+        "--workdir",
+        default="",
+        help="Working directory for reading and saving " "device information.",
+    )
 
     args = parser.parse_args()
     loop = asyncio.get_event_loop()
@@ -1187,7 +1207,7 @@ def monitor():
     except KeyboardInterrupt:
         if monTool.plm:
             if monTool.plm.transport:
-                _LOGGING.info('Closing the session')
+                _LOGGING.info("Closing the session")
                 asyncio.ensure_future(monTool.plm.transport.close(), loop=loop)
         loop.stop()
         pending = asyncio.Task.all_tasks(loop=loop)
@@ -1208,15 +1228,16 @@ def interactive():
     Wrapper for an interactive session for manual commands to be entered.
     """
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument('--device', default='/dev/ttyUSB0',
-                        help='Path to PLM device')
-    parser.add_argument('-v', '--verbose', action='count',
-                        help='Set logging level to verbose')
-    parser.add_argument('-l', '--logfile', default='',
-                        help='Log file name')
-    parser.add_argument('--workdir', default='',
-                        help='Working directory for reading and saving '
-                        'device information.')
+    parser.add_argument("--device", default="/dev/ttyUSB0", help="Path to PLM device")
+    parser.add_argument(
+        "-v", "--verbose", action="count", help="Set logging level to verbose"
+    )
+    parser.add_argument("-l", "--logfile", default="", help="Log file name")
+    parser.add_argument(
+        "--workdir",
+        default="",
+        help="Working directory for reading and saving " "device information.",
+    )
     args = parser.parse_args()
 
     loop = asyncio.get_event_loop()
