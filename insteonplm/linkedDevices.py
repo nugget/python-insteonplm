@@ -50,11 +50,11 @@ class LinkedDevices():
         self._devices[key] = device
 
         if device.address.is_x10:
-            _LOGGER.debug('New X10 Device %r: %s', key, device.description)
+            _LOGGER.info('New X10 Device %r: %s', key, device.description)
         else:
-            _LOGGER.debug('New INSTEON Device %r: %s (%02x:%02x)',
-                          key, device.description, device.cat,
-                          device.subcat)
+            _LOGGER.info('New INSTEON Device %r: %s (%02x:%02x)',
+                         key, device.description, device.cat,
+                         device.subcat)
 
         for callback in self._cb_new_device:
             callback(device)
@@ -163,8 +163,8 @@ class LinkedDevices():
                 device = self.create_device_from_category(
                     plm, addr, cat, subcat, product_key)
                 if device:
-                    _LOGGER.debug('Device with id %s added to device list '
-                                  'from device override data.', addr)
+                    _LOGGER.info('Device with id %s added to device list '
+                                 'from device override data.', addr)
                     self[addr] = device
 
     # Save device information
@@ -200,12 +200,12 @@ class LinkedDevices():
     def _add_saved_device_info(self, **kwarg):
         """Register device info from the saved data file."""
         addr = kwarg.get('address')
-        _LOGGER.debug('Found saved device with address %s', addr)
+        _LOGGER.info('Found saved device with address %s', addr)
         self._saved_devices[addr] = kwarg
 
     async def load_saved_device_info(self):
         """Load device information from the device info file."""
-        _LOGGER.debug("Loading saved device info.")
+        _LOGGER.info("Loading saved device info.")
         deviceinfo = []
         if self._workdir:
             _LOGGER.debug("Really Loading saved device info.")

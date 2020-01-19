@@ -305,7 +305,7 @@ class IPDB():
         Product(0x0E, 0x02, 0x0000000, 'Micro Open/Close', '2444-422', WindowCovering),
         Product(0x0E, 0x03, 0x0000000, 'Micro Open/Close', '2444-522', WindowCovering),
 
-        Product(0x0F, None, None, 'Generic Plumbing Controller', '', None),
+        Product(0x0F, None, None, 'Generic Access Controller', '', None),
         Product(0x0F, 0x00, 0x000000E, 'Weiland Doors Central Drive and Controller', '', None),
         Product(0x0F, 0x01, 0x000000F, 'Weiland Doors Secondary Central Drive', '', None),
         Product(0x0F, 0x02, 0x0000010, 'Weiland Doors Assist Drive', '', None),
