@@ -354,15 +354,19 @@ class HttpTransport(asyncio.Transport):
         self._reader_task = None
 
     def abort(self):
+        """Abort the connection."""
         self.close()
 
     def can_write_eof(self):
+        """Return if modem can write end of file."""
         return False
 
     def is_closing(self):
+        """Return the state of the connection."""
         return self._closing
 
     def close(self):
+        """Close connection to modem."""
         _LOGGER.debug("Closing Hub session")
         asyncio.ensure_future(self._close(), loop=self._loop)
 
@@ -372,19 +376,24 @@ class HttpTransport(asyncio.Transport):
         _LOGGER.info("Insteon Hub session closed")
 
     def get_write_buffer_size(self):
+        """Get write buffer size."""
         return 0
 
     def pause_reading(self):
+        """Pause reading."""
         asyncio.ensure_future(self._stop_reader(False), loop=self._loop)
 
     def resume_reading(self):
+        """Resume reading."""
         self._restart_reader = True
         self._start_reader()
 
     def set_write_buffer_limits(self, high=None, low=None):
+        """Set write buffer limits."""
         raise NotImplementedError("HTTP connections do not support write buffer limits")
 
     def write(self, data):
+        """Write to modem."""
         _LOGGER.debug("..................Writing a message..............")
         hex_data = binascii.hexlify(data).decode()
         url = "http://{:s}:{:d}/3?{:s}=I=3".format(self._host, self._port, hex_data)
@@ -453,9 +462,11 @@ class HttpTransport(asyncio.Transport):
         return return_status
 
     def write_eof(self):
+        """Write end of file."""
         raise NotImplementedError("HTTP connections do not support end-of-file")
 
     def writelines(self, list_of_data):
+        """Write lines."""
         raise NotImplementedError("HTTP connections do not support writelines")
 
     def clear_buffer(self):
@@ -580,7 +591,7 @@ class HttpTransport(asyncio.Transport):
         if raw_text == "0" * len_raw_text:
             print("Likely the buffer was cleared")
             return msg, None, False
-        while pos < (len_raw_text - 2) and raw_text[pos : pos + 2] != "02":
+        while pos < (len_raw_text - 2) and raw_text[pos:pos + 2] != "02":
             pos = pos + 2
         print("pos is: ", pos)
         print("len_raw_text is: ", len_raw_text)
@@ -603,7 +614,7 @@ class HttpTransport(asyncio.Transport):
             raw_text = None
         else:
             if pos > 0 and raw_text:
-                raw_text = raw_text[len(raw_text) - pos :] + raw_text[:-pos]
+                raw_text = raw_text[len(raw_text) - pos:] + raw_text[:-pos]
         return (msg, raw_text)
 
     def _write_last_read(self, val):
