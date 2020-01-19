@@ -122,15 +122,20 @@ class Tools:
             device.model,
         )
         for state in device.states:
-            device.states[state].register_updates(
-                self.async_state_change_callback)
-            _LOGGING.info("Device: %s:%x New state registered: %s",
-                          device.id, state, device.states[state].name)
+            device.states[state].register_updates(self.async_state_change_callback)
+            _LOGGING.info(
+                "Device: %s:%x New state registered: %s",
+                device.id,
+                state,
+                device.states[state].name,
+            )
 
     # pylint: disable=no-self-use
     def async_state_change_callback(self, addr, state, value):
         """Log the state change."""
-        _LOGGING.info("Device %s state %s value is changed to %s", addr.human, state, value)
+        _LOGGING.info(
+            "Device %s state %s value is changed to %s", addr.human, state, value
+        )
 
     def async_aldb_loaded_callback(self):
         """Unlock the ALDB load lock when loading is complete."""
@@ -203,29 +208,38 @@ class Tools:
         if device:
             state = device.states[group]
             if state:
-                _LOGGING.info('----------------------')
-                if command == 'level50':
-                    _LOGGING.info('Send set_level(50) to device %s:0x%x',
-                                  dev_addr.human, group)
+                _LOGGING.info("----------------------")
+                if command == "level50":
+                    _LOGGING.info(
+                        "Send set_level(50) to device %s:0x%x", dev_addr.human, group
+                    )
                     device.set_level(50)
                 else:
                     try:
-                        _LOGGING.info('Send %s to device %s:0x%x',
-                                      command, dev_addr.human, group)
+                        _LOGGING.info(
+                            "Send %s to device %s:0x%x", command, dev_addr.human, group
+                        )
                         func = getattr(state, command)
                         func()
                     except AttributeError:
                         _LOGGING.warning(
-                            'device %s:%s-%s state %s: does not '
-                            'support command %s', state.address.human,
-                            device.model, device.description, state.name,
-                            command)
+                            "device %s:%s-%s state %s: does not " "support command %s",
+                            state.address.human,
+                            device.model,
+                            device.description,
+                            state.name,
+                            command,
+                        )
             else:
-                _LOGGING.warning('device %s:%s-%s does not have group %s',
-                                 device.address.human, device.model,
-                                 device.description, group)
+                _LOGGING.warning(
+                    "device %s:%s-%s does not have group %s",
+                    device.address.human,
+                    device.model,
+                    device.description,
+                    group,
+                )
         else:
-            _LOGGING.warning('device %s does not exist', addr)
+            _LOGGING.warning("device %s does not exist", addr)
 
     async def on_off_test(self, addr, group):
         """Test the on/off method of a device.
@@ -284,8 +298,8 @@ class Tools:
             dev_addr = Address(addr)
             device = self.plm.devices[dev_addr.id]
         if device:
-            _LOGGING.info('----------------------')
-            _LOGGING.info('Printing ALDB for %s', device.address.human)
+            _LOGGING.info("----------------------")
+            _LOGGING.info("Printing ALDB for %s", device.address.human)
             if device.aldb.status in [ALDBStatus.LOADED, ALDBStatus.PARTIAL]:
                 if device.aldb.status == ALDBStatus.PARTIAL:
                     _LOGGING.info("ALDB partially loaded for device %s", addr)
@@ -561,8 +575,8 @@ class Commander:
         if addr and cmd and group:
             await self.tools.device_test(addr, cmd, group)
         else:
-            _LOGGING.error('Invalid address, command, or group')
-            self.do_help('device_test')
+            _LOGGING.error("Invalid address, command, or group")
+            self.do_help("device_test")
 
     async def do_on_off_test(self, args):
         """Test the on/off method of a device in sequence.
