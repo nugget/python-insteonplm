@@ -749,7 +749,7 @@ class Commander:
             username = params[0]
             password = params[1]
             host = params[2]
-            port = params[3]
+            port = int(params[3])
         except IndexError:
             pass
 
