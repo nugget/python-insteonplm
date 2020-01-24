@@ -578,9 +578,8 @@ class Device:
         if device:
             if not self._plm.devices[device.id]:
                 self._plm.devices[device.id] = device
-                _LOGGER.debug("Device with id %s added to device list.", device.id)
-
-            _LOGGER.info("Total Insteon devices found: %d", len(self._plm.devices))
+                _LOGGER.info("Device with id %s added to device list.", device.id)
+            _LOGGER.debug("Total Insteon devices found: %d", len(self._plm.devices))
             self._plm.aldb_device_handled(self._address)
             self._plm.devices.save_device_info()
         else:
@@ -739,38 +738,39 @@ class Device:
     # Send / Receive message processing
     def receive_message(self, msg):
         """Receive a messages sent to this device."""
-        _LOGGER.debug('Starting Device.receive_message for %s',
-                      msg.address.human)
-        if hasattr(msg, 'isack') and msg.isack:
-            _LOGGER.debug('Got Message ACK %s', id(msg))
-            if self._sent_msg_wait_for_directACK.get('callback') is not None:
-                _LOGGER.debug('Look for direct ACK')
-                asyncio.ensure_future(self._wait_for_direct_ACK(),
-                                      loop=self._plm.loop)
+        _LOGGER.debug("Starting Device.receive_message for %s", msg.address.human)
+        if hasattr(msg, "isack") and msg.isack:
+            _LOGGER.debug("Got Message ACK %s", id(msg))
+            if self._sent_msg_wait_for_directACK.get("callback") is not None:
+                _LOGGER.debug("Look for direct ACK")
+                asyncio.ensure_future(self._wait_for_direct_ACK(), loop=self._plm.loop)
             else:
-                _LOGGER.debug('DA queue: %s',
-                              self._sent_msg_wait_for_directACK)
-                _LOGGER.debug('Message ACK with no callback')
+                _LOGGER.debug("MSG queue: %s", self._sent_msg_wait_for_directACK)
+                _LOGGER.debug("Message ACK with no callback")
 
         if not self._is_duplicate(msg):
-            if (hasattr(msg, 'flags') and
-                    hasattr(msg.flags, 'isDirectACK') and
-                    msg.flags.isDirectACK):
-                _LOGGER.debug('Got Direct ACK message. Already in queue: %d, '
-                              'Queueing %s:%s',
-                              self._directACK_received_queue.qsize(),
-                              id(msg), msg)
+            if (
+                hasattr(msg, "flags")
+                and hasattr(msg.flags, "isDirectACK")
+                and msg.flags.isDirectACK
+            ):
+                _LOGGER.debug(
+                    "Got Direct ACK message. Already in queue: %d, Queueing %s:%s",
+                    self._directACK_received_queue.qsize(),
+                    id(msg),
+                    msg,
+                )
                 if self._send_msg_lock.locked():
                     self._directACK_received_queue.put_nowait(msg)
                 else:
-                    _LOGGER.debug('But Direct ACK not expected')
+                    _LOGGER.debug("But Direct ACK not expected")
 
             callbacks = self._message_callbacks.get_callbacks_from_message(msg)
             for callback in callbacks:
                 _LOGGER.debug("Scheduling msg callback: %s", callback)
                 self._plm.loop.call_soon(callback, msg)
         else:
-            _LOGGER.debug('msg is duplicate: %s', id(msg))
+            _LOGGER.debug("msg is duplicate: %s", id(msg))
         self._last_communication_received = datetime.datetime.now()
         _LOGGER.debug("Ending Device.receive_message")
 
@@ -785,29 +785,83 @@ class Device:
         while not self._recent_messages.empty():
             recent_message = self._recent_messages.get_nowait()
             if recent_message:
-                msg_received = recent_message.get("received")
+                msg_received = recent_message["received"]
                 if msg_received >= (
                     datetime.datetime.now() - datetime.timedelta(0, 0, 500000)
                 ):
                     recent_messages.append(recent_message)
 
-        ret_val = False
+        # Save remaining messages for next call
         for recent_message in recent_messages:
-            prev_msg = recent_message.get("msg")
             self._recent_messages.put_nowait(recent_message)
-            if msg.matches_pattern(prev_msg):
-                ret_val = True
+        self._save_recent_message(msg)
 
-        self._recent_messages.put_nowait(
-            {"msg": msg, "received": datetime.datetime.now()})
-        return ret_val
+        for recent_message in recent_messages:
+            prev_msg = recent_message["msg"]
+            # Create a template to compare current message to (ignore hops)
+            if prev_msg.flags.isExtended:
+                template = ExtendedReceive.template(
+                    prev_msg.address,
+                    prev_msg.target,
+                    {"cmd1": prev_msg.cmd1, "cmd2": prev_msg.cmd2},
+                    MessageFlags.template(
+                        prev_msg.flags.messageType, prev_msg.flags.extended
+                    ),
+                )
+            else:
+                template = StandardReceive.template(
+                    prev_msg.address,
+                    prev_msg.target,
+                    {"cmd1": prev_msg.cmd1, "cmd2": prev_msg.cmd2},
+                    MessageFlags.template(
+                        prev_msg.flags.messageType, prev_msg.flags.extended
+                    ),
+                )
+            if msg.matches_pattern(template):
+                return True
+
+            # Check if this is a cleanup message from a broadcast
+            prev_cmd1 = prev_msg.cmd1
+            if prev_msg.flags.isAllLinkBroadcast:
+                prev_group = prev_msg.target.bytes[2]
+            elif prev_msg.flags.isAllLinkCleanup:
+                prev_group = prev_msg.cmd2
+
+            if msg.flags.isAllLinkCleanup or msg.flags.isAllLinkBroadcast:
+                cmd1 = msg.cmd1
+                if msg.flags.isAllLinkBroadcast:
+                    group = msg.target.bytes[2]
+                else:
+                    group = msg.cmd2
+                if prev_cmd1 == cmd1 and prev_group == group:
+                    return True
+
+        # Address an edge case where two directACKs arrive back to back
+        # Keep the first one (see insteonplm issue # 215)
+        recent = self._get_most_recent_message(recent_messages)
+        if recent and msg.flags.isDirectACK and recent.flags.isDirectACK:
+            return True
+
+        return False
+
+    def _save_recent_message(self, msg):
+        recent_message = {"msg": msg, "received": datetime.datetime.now()}
+        self._recent_messages.put_nowait(recent_message)
+
+    def _get_most_recent_message(self, recent_messages):
+        if not recent_messages:
+            return None
+        most_recent = recent_messages[0]
+        for recent in recent_messages[1:]:
+            if recent["received"] > most_recent["received"]:
+                most_recent = recent
+        return most_recent["msg"]
 
     def _send_msg(self, msg, callback=None, on_timeout=False):
-        _LOGGER.debug('Starting %s Device._send_msg: Queuing message',
-                      self.address.human)
-        msg_info = {'msg': msg,
-                    'callback': callback,
-                    'on_timeout': on_timeout}
+        _LOGGER.debug(
+            "Starting %s Device._send_msg: Queuing message", self.address.human
+        )
+        msg_info = {"msg": msg, "callback": callback, "on_timeout": on_timeout}
         self._send_msg_queue.put_nowait(msg_info)
         asyncio.ensure_future(self._process_send_queue(), loop=self._plm.loop)
         # _LOGGER.debug('Ending Device._send_msg')
@@ -837,9 +891,12 @@ class Device:
             try:
                 with async_timeout.timeout(DIRECT_ACK_WAIT_TIMEOUT):
                     msg = await self._directACK_received_queue.get()
-                    _LOGGER.debug('Remaining queue %d, Direct ACK: %s:%s',
-                                  self._directACK_received_queue.qsize(),
-                                  id(msg), msg)
+                    _LOGGER.debug(
+                        "Remaining queue %d, Direct ACK: %s:%s",
+                        self._directACK_received_queue.qsize(),
+                        id(msg),
+                        msg,
+                    )
                     break
             except asyncio.TimeoutError:
                 _LOGGER.debug("No direct ACK messages received.")
@@ -856,8 +913,7 @@ class Device:
         if msg or self._sent_msg_wait_for_directACK.get("on_timeout"):
             callback = self._sent_msg_wait_for_directACK.get("callback", None)
             if callback is not None:
-                _LOGGER.debug('Scheduling msg directACK callback: %s',
-                              callback)
+                _LOGGER.debug("Scheduling msg directACK callback: %s", callback)
                 callback(msg)
         self._sent_msg_wait_for_directACK = {}
         _LOGGER.debug("Ending Device._wait_for_direct_ACK")
@@ -926,20 +982,21 @@ class X10Device:
             _LOGGER.debug("Scheduling msg callback: %s", callback)
             self._plm.loop.call_soon(callback, msg)
         self._last_communication_received = datetime.datetime.now()
-        _LOGGER.debug('Ending x10Device.receive_message')
+        _LOGGER.debug("Ending x10Device.receive_message")
 
     async def close(self):
         """Close the writer for a clean shutdown."""
         # Nothing actually needed here.
 
     def _send_msg(self, msg, wait_ack=True):
-        _LOGGER.debug('Starting X10Device._send_msg')
-        asyncio.ensure_future(self._process_send_queue(msg, wait_ack),
-                              loop=self._plm.loop)
-        _LOGGER.debug('Ending x10Device._send_msg')
+        _LOGGER.debug("Starting X10Device._send_msg")
+        asyncio.ensure_future(
+            self._process_send_queue(msg, wait_ack), loop=self._plm.loop
+        )
+        _LOGGER.debug("Ending x10Device._send_msg")
 
     async def _process_send_queue(self, msg, wait_ack):
-        _LOGGER.debug('Starting x10Device._process_send_queue')
+        _LOGGER.debug("Starting x10Device._process_send_queue")
         await self._send_msg_lock
         if self._send_msg_lock.locked():
             _LOGGER.debug("Lock is locked from yield from")
@@ -949,7 +1006,7 @@ class X10Device:
             _LOGGER.debug("No directACK wait")
             _LOGGER.debug("Releasing lock")
             self._send_msg_lock.release()
-        _LOGGER.debug('Ending x10Device._process_send_queue')
+        _LOGGER.debug("Ending x10Device._process_send_queue")
 
 
 class StateList:
