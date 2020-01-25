@@ -779,6 +779,7 @@ class Device:
             MESSAGE_STANDARD_MESSAGE_RECEIVED_0X50,
             MESSAGE_EXTENDED_MESSAGE_RECEIVED_0X51,
         ]:
+            self._save_recent_message(msg)
             return False
 
         recent_messages = []
@@ -795,33 +796,36 @@ class Device:
         for recent_message in recent_messages:
             self._recent_messages.put_nowait(recent_message)
         self._save_recent_message(msg)
+        # Create a template to compare current message to (ignore hops)
+        if msg.flags.isExtended:
+            template = ExtendedReceive.template(
+                address=msg.address,
+                target=msg.target,
+                commandtuple={"cmd1": msg.cmd1, "cmd2": msg.cmd2},
+                flags=MessageFlags.template(
+                    msg.flags.messageType, msg.flags.extended
+                ),
+                userdata=msg.userdata
+            )
+        else:
+            template = StandardReceive.template(
+                address=msg.address,
+                target=msg.target,
+                commandtuple={"cmd1": msg.cmd1, "cmd2": msg.cmd2},
+                flags=MessageFlags.template(
+                    msg.flags.messageType, msg.flags.extended
+                ),
+            )
 
         for recent_message in recent_messages:
             prev_msg = recent_message["msg"]
-            # Create a template to compare current message to (ignore hops)
-            if prev_msg.flags.isExtended:
-                template = ExtendedReceive.template(
-                    prev_msg.address,
-                    prev_msg.target,
-                    {"cmd1": prev_msg.cmd1, "cmd2": prev_msg.cmd2},
-                    MessageFlags.template(
-                        prev_msg.flags.messageType, prev_msg.flags.extended
-                    ),
-                )
-            else:
-                template = StandardReceive.template(
-                    prev_msg.address,
-                    prev_msg.target,
-                    {"cmd1": prev_msg.cmd1, "cmd2": prev_msg.cmd2},
-                    MessageFlags.template(
-                        prev_msg.flags.messageType, prev_msg.flags.extended
-                    ),
-                )
-            if msg.matches_pattern(template):
+            if prev_msg.matches_pattern(template):
+                _LOGGER.debug("Duplicate matches pattern")
+                _LOGGER.debug("TEMP: %s", template)
+                _LOGGER.debug("Prev: %s", prev_msg)
                 return True
 
             # Check if this is a cleanup message from a broadcast
-            prev_cmd1 = prev_msg.cmd1
             if prev_msg.flags.isAllLinkBroadcast:
                 prev_group = prev_msg.target.bytes[2]
             elif prev_msg.flags.isAllLinkCleanup:
@@ -833,13 +837,18 @@ class Device:
                     group = msg.target.bytes[2]
                 else:
                     group = msg.cmd2
-                if prev_cmd1 == cmd1 and prev_group == group:
+                if prev_msg.cmd1 == cmd1 and prev_group == group:
                     return True
 
         # Address an edge case where two directACKs arrive back to back
         # Keep the first one (see insteonplm issue # 215)
         recent = self._get_most_recent_message(recent_messages)
+        for recent_msg in recent_messages:
+            _LOGGER.debug("RCT: %s", recent_msg['msg'])
         if recent and msg.flags.isDirectACK and recent.flags.isDirectACK:
+            _LOGGER.debug("Duplicate direct ACK")
+            _LOGGER.debug("TEMP: %s", msg)
+            _LOGGER.debug("Prev: %s", prev_msg)
             return True
 
         return False
