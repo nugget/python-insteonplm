@@ -85,6 +85,7 @@ def create_x10(plm, housecode, unitcode, feature):
         device = deviceclass(plm, housecode, unitcode)
     return device
 
+
 def _get_most_recent_message(recent_messages):
     if not recent_messages:
         return None
@@ -93,6 +94,7 @@ def _get_most_recent_message(recent_messages):
         if recent["received"] > most_recent["received"]:
             most_recent = recent
     return most_recent["msg"]
+
 
 # pylint: disable=too-many-instance-attributes
 # pylint: disable=too-many-public-methods
