@@ -86,6 +86,16 @@ def create_x10(plm, housecode, unitcode, feature):
     return device
 
 
+def _get_most_recent_message(recent_messages):
+    if not recent_messages:
+        return None
+    most_recent = recent_messages[0]
+    for recent in recent_messages[1:]:
+        if recent["received"] > most_recent["received"]:
+            most_recent = recent
+    return most_recent["msg"]
+
+
 # pylint: disable=too-many-instance-attributes
 # pylint: disable=too-many-public-methods
 class Device:
@@ -842,7 +852,7 @@ class Device:
 
         # Address an edge case where two directACKs arrive back to back
         # Keep the first one (see insteonplm issue # 215)
-        recent = self._get_most_recent_message(recent_messages)
+        recent = _get_most_recent_message(recent_messages)
         for recent_msg in recent_messages:
             _LOGGER.debug("RCT: %s", recent_msg['msg'])
         if recent and msg.flags.isDirectACK and recent.flags.isDirectACK:
@@ -856,15 +866,6 @@ class Device:
     def _save_recent_message(self, msg):
         recent_message = {"msg": msg, "received": datetime.datetime.now()}
         self._recent_messages.put_nowait(recent_message)
-
-    def _get_most_recent_message(self, recent_messages):
-        if not recent_messages:
-            return None
-        most_recent = recent_messages[0]
-        for recent in recent_messages[1:]:
-            if recent["received"] > most_recent["received"]:
-                most_recent = recent
-        return most_recent["msg"]
 
     def _send_msg(self, msg, callback=None, on_timeout=False):
         _LOGGER.debug(
