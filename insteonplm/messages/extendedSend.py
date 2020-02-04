@@ -157,7 +157,7 @@ class ExtendedSend(Message):
         for i in range(1, 14):
             data_sum += self._userdata["d{:d}".format(i)]
         chksum = 0xFF - (data_sum & 0xFF) + 1
-        self._userdata["d14"] = chksum
+        self._userdata["d14"] = chksum & 0xff
 
     def set_crc(self):
         """Set Userdata[13] and Userdata[14] to the CRC value."""
